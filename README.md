@@ -10,7 +10,7 @@
 
 # Overview
 
-This is a PRISM Node implementation in Rust according to the [PRISM DID Method](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md).
+A PRISM node monitors the Cardano blockchain, validates PRISM DID operations, and maintains an up-to-date index of DID Documents, enabling applications to resolve DIDs and retrieve their current state according to the PRISM DID method specification.
 
 ## PRISM DID Introduction
 
