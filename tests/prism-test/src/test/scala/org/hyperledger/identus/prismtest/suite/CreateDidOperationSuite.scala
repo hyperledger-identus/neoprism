@@ -42,7 +42,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("should reject create operation with non-secp256k1 master key") {
+    test("should reject with non-secp256k1 master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -53,7 +53,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("should reject create operations with invalid signing keys") {
+    test("should reject with invalid signing keys") {
       for
         seed <- newSeed
         // key id not exist
@@ -74,7 +74,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def publicKeySpec = suite("PublicKey")(
-    test("should accept create operation with only master key") {
+    test("should accept with only master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -87,7 +87,7 @@ object CreateDidOperationSuite extends TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("should accept create operation with all supported key types") {
+    test("should accept with all supported key types") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -108,7 +108,7 @@ object CreateDidOperationSuite extends TestUtils:
         assert(didData.publicKeys)(hasSize(equalTo(8))) &&
         assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
     } @@ NodeName.skipIf("prism-node"),
-    test("should reject create operation without master key") {
+    test("should reject without master key") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -119,7 +119,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("should accept create operation with maximum allowed keys (50)") {
+    test("should accept with maximum allowed keys (50)") {
       for
         seed <- newSeed
         spo = (0 until 50)
@@ -132,7 +132,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys.length)(equalTo(50))
     },
-    test("should reject create operation exceeding maximum key limit (51)") {
+    test("should reject exceeding maximum key limit (51)") {
       for
         seed <- newSeed
         spo = (0 until 51)
@@ -145,7 +145,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should accept create operation with maximum key ID length (50 chars)") {
+    test("should accept with maximum key ID length (50 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -156,7 +156,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("should reject create operation with excessive key ID length (51 chars)") {
+    test("should reject with excessive key ID length (51 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -167,7 +167,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with invalid key ID format") {
+    test("should reject with invalid key ID format") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -178,7 +178,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with empty key ID") {
+    test("should reject with empty key ID") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -189,7 +189,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("should reject create operation with duplicate key IDs") {
+    test("should reject with duplicate key IDs") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -204,7 +204,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def serviceSpec = suite("Service")(
-    test("should accept create operation with maximum allowed services (50)") {
+    test("should accept with maximum allowed services (50)") {
       for
         seed <- newSeed
         opBuider = builder(seed).createDid
@@ -217,7 +217,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services.length)(equalTo(50))
     },
-    test("should reject create operation exceeding maximum service limit (51)") {
+    test("should reject exceeding maximum service limit (51)") {
       for
         seed <- newSeed
         opBuider = builder(seed).createDid
@@ -230,7 +230,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should accept create operation with maximum service ID length (50 chars)") {
+    test("should accept with maximum service ID length (50 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -242,7 +242,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("should reject create operation with excessive service ID length (51 chars)") {
+    test("should reject with excessive service ID length (51 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -254,7 +254,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with invalid service ID format") {
+    test("should reject with invalid service ID format") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -266,7 +266,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with empty service ID") {
+    test("should reject with empty service ID") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -278,7 +278,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("should reject create operation with duplicate service IDs") {
+    test("should reject with duplicate service IDs") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -291,7 +291,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     },
-    test("should accept create operation with maximum service type length (100 chars)") {
+    test("should accept with maximum service type length (100 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -303,7 +303,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("should reject create operation with excessive service type length (101 chars)") {
+    test("should reject with excessive service type length (101 chars)") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -315,7 +315,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with invalid service type format") {
+    test("should reject with invalid service type format") {
       for
         seed <- newSeed
         buildOperation = (serviceType: String) =>
@@ -340,7 +340,7 @@ object CreateDidOperationSuite extends TestUtils:
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
     } @@ NodeName.skipIf("scala-did"),
-    test("should accept create operation with maximum service endpoint length (300 chars)") {
+    test("should accept with maximum service endpoint length (300 chars)") {
       for
         seed <- newSeed
         serviceEndpoint = s"http://example.com/${"0" * 300}".take(300)
@@ -353,7 +353,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get).map(_.get)
       yield assert(didData.services)(hasSize(equalTo(1)))
     },
-    test("should reject create operation with excessive service endpoint length (301 chars)") {
+    test("should reject with excessive service endpoint length (301 chars)") {
       for
         seed <- newSeed
         serviceEndpoint = s"http://example.com/${"0" * 300}".take(301)
@@ -366,7 +366,7 @@ object CreateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
     } @@ NodeName.skipIf("scala-did"),
-    test("should reject create operation with invalid service endpoint format") {
+    test("should reject with invalid service endpoint format") {
       for
         seed <- newSeed
         buildOperation = (serviceEndpoint: String) =>
@@ -393,7 +393,7 @@ object CreateDidOperationSuite extends TestUtils:
   )
 
   private def vdrSpec = suite("VDR")(
-    test("should reject create operation with invalid VDR key type") {
+    test("should reject with invalid VDR key type") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
