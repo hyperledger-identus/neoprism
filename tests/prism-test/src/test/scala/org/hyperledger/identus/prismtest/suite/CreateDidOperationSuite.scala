@@ -8,7 +8,7 @@ import zio.test.Assertion.*
 import zio.ZIO
 
 object CreateDidOperationSuite extends TestUtils:
-  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec) @@ TestAspect.tag("dev")
+  def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec)
 
   private def contextSpec = suite("Context")(
     test("should accept with valid context values") {

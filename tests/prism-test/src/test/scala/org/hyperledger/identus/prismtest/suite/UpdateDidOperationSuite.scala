@@ -8,14 +8,54 @@ import zio.test.Assertion.*
 
 object UpdateDidOperationSuite extends TestUtils:
   // TODO: check if scala-did is patched correctly
-  // TODO: add tests for update context action
   // TODO: add tests for add / remove / update service action
   def allSpecs = suite("UpdateDidOperation")(
     signatureSpec,
     prevOperationHashSpec,
     addPublicKeySpec,
-    removePublicKeySpec
+    removePublicKeySpec,
+    contextSpec
   ) @@ NodeName.skipIf("scala-did")
+
+  private def contextSpec = suite("Context")(
+    test("should accept when adding new context values") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .context("https://www.w3.org/ns/did/v1")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
+          .patchContext(Seq("https://www.w3.org/ns/credentials/v1"))
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo1, spo2))
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.context)(
+        hasSameElements(Seq("https://www.w3.org/ns/credentials/v1"))
+      )
+    },
+    test("should reject when adding duplicate context values") {
+      for
+        seed <- newSeed
+        spo1 = builder(seed).createDid
+          .key("master-0")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/0'")
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        did = spo1.getDid.get
+        spo2 = builder(seed)
+          .updateDid(spo1.getOperationHash.get, did)
+          .patchContext(Seq("https://www.w3.org/ns/did/v1", "https://www.w3.org/ns/did/v1"))
+          .build
+          .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
+        _ <- scheduleOperations(Seq(spo1, spo2))
+        didData <- getDidDocument(did).map(_.get)
+      yield assert(didData.context)(isEmpty)
+    }
+  )
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
     test("should reject when using invalid operation hash") {
