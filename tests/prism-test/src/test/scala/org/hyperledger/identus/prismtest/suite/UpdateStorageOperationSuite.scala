@@ -16,7 +16,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
   ) @@ NodeName.skipIf("prism-node", "scala-did")
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
-    test("update storage with valid operation hash should be indexed successfully") {
+    test("should accept update storage with valid operation hash") {
       for
         seed <- newSeed
         updateStorage = (spo: SignedPrismOperation, dataHex: String) =>
@@ -42,7 +42,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("02")))
     },
-    test("update storage with invalid operation hash should not be indexed") {
+    test("should reject update storage with invalid operation hash") {
       for
         seed <- newSeed
         updateStorage = (spo: SignedPrismOperation, dataHex: String) =>
@@ -71,7 +71,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         storage2 <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage1)(hasSameElements(Seq("01"))) && assert(storage2)(hasSameElements(Seq("03")))
     },
-    test("update storage with multiple storage entries should be indexed successfully") {
+    test("should accept update storage with multiple storage entries") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -107,7 +107,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("update storage with signature signed with non-VDR key should not be indexed") {
+    test("should reject update storage signed with non-VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -130,7 +130,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
-    test("update storage with signature signed with non-existing key should not be indexed") {
+    test("should reject update storage signed with non-existing key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -153,7 +153,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
-    test("update storage with signature signed with removed VDR key should not be indexed") {
+    test("should reject update storage signed with removed VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
