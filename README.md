@@ -10,19 +10,22 @@
 
 ## Overview
 
-NeoPRISM is an open-source project for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) on the Cardano blockchain. PRISM DIDs provide unique, verifiable identifiers for people, organizations, and devices, with their associated DID Documents securely anchored on-chain.
+NeoPRISM is an open-source project for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) on the Cardano blockchain. It provides robust, extensible infrastructure for DID operations, supporting both on-chain anchoring and fast, standards-compliant resolution.
 
-NeoPRISM is designed to be extensible and is not limited to a single service. In addition to providing networked services, NeoPRISM aims to offer SDKs, WASM/FFI libraries, and other bindings to support a wide range of application integrations.
+NeoPRISM supports two main roles, which can be deployed together or separately:
 
-NeoPRISM supports two main roles:
+- **Indexer:** Monitors the Cardano blockchain for PRISM DID operations, validates them, and maintains an up-to-date index for efficient DID resolution.
+- **Submitter:** Provides an interface for clients to create, update, or deactivate PRISM DIDs by submitting operations to the Cardano blockchain.
 
-- **Indexer:** Continuously monitors the Cardano blockchain for PRISM DID operations, validates them, and maintains an up-to-date index of all active DIDs and their current documents. This enables fast, reliable DID resolution and retrieval of W3C-compliant DID Documents via a simple API.
+## Introduction to PRISM DID
 
-- **Submitter:** Provides an interface for clients to create, update, or deactivate PRISM DIDs by submitting new operations to the Cardano blockchain. The submitter ensures that all operations are properly formatted, signed, and compliant with the [PRISM DID method specification](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md).
+[PRISM Decentralized Identifiers (DIDs)](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md) are unique, verifiable identifiers anchored on the Cardano blockchain. Each PRISM DID is linked to a DID Document, which contains public keys and service endpoints, allowing for secure and decentralized digital identity.
 
-By separating these roles, NeoPRISM Node enables both robust DID resolution (read) and secure DID management (write), making it easy for applications to integrate decentralized identity on Cardano without handling blockchain details directly.
+PRISM DIDs can be either short-form (anchored on the blockchain) or long-form (containing all necessary information within the identifier itself). This approach gives flexibility for both quick, off-chain use and strong, on-chain trust.
 
-For a more detailed protocol overview, see the [PRISM DID method specification](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md#high-level-protocol-description).
+A PRISM node is responsible for monitoring the Cardano blockchain for DID operations, validating and indexing them, and providing a way to look up DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are followed.
+
+By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without relying on a central authority.
 
 # Quickstart
 
