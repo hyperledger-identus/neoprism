@@ -246,10 +246,22 @@ impl UpdateOperationAction {
                     service_endpoints,
                 }
             }
-            Action::PatchContext(patch_ctx) => Self::PatchContext(patch_ctx.context.clone()),
+            Action::PatchContext(patch_ctx) => {
+                let context = patch_ctx.context.clone();
+                Self::validate_context_list(&context)?;
+                Self::PatchContext(context)
+            }
         };
 
         Ok(Some(action))
+    }
+
+    fn validate_context_list(contexts: &[String]) -> Result<(), UpdateDidOperationError> {
+        if is_slice_unique(contexts) {
+            Ok(())
+        } else {
+            Err(UpdateDidOperationError::DuplicateContext)?
+        }
     }
 }
 
