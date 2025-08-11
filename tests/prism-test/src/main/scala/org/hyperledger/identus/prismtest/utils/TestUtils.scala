@@ -175,6 +175,11 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         .focus(_.op.actions)
         .modify(_ :+ UpdateDIDAction(Action.RemoveKey(RemoveKeyAction(keyId))))
 
+    def patchContext(context: Seq[String]): UpdateDidOpBuilder =
+      this
+        .focus(_.op.actions)
+        .modify(_ :+ UpdateDIDAction(Action.PatchContext(proto.prism_ssi.PatchContextAction(context))))
+
   case class CreateStorageBuilder(seed: Array[Byte], op: ProtoCreateStorageEntry):
     def build: PrismOperation = PrismOperation(Operation.CreateStorageEntry(op))
 
