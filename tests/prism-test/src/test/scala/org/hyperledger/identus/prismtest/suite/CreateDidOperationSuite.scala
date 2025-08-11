@@ -11,7 +11,7 @@ object CreateDidOperationSuite extends TestUtils:
   def allSpecs = suite("CreateDidOperation")(signatureSpec, publicKeySpec, serviceSpec, vdrSpec, contextSpec) @@ TestAspect.tag("dev")
 
   private def contextSpec = suite("Context")(
-    test("create operation should preserve context values") {
+    test("should accept with valid context values") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
@@ -26,7 +26,7 @@ object CreateDidOperationSuite extends TestUtils:
         hasSameElements(Seq("https://www.w3.org/ns/did/v1", "https://example.com/custom-context"))
       )
     },
-    test("create operation with duplicate context values should not be indexed") {
+    test("should reject with duplicate context values") {
       for
         seed <- newSeed
         spo = builder(seed).createDid
