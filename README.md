@@ -1,7 +1,8 @@
 # NeoPRISM Node
 
 ![Rust Edition](https://img.shields.io/badge/edition-2024-blue)
-[![Build Status](https://github.com/hyperledger-identus/neoprism/actions/workflows/ci.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
+[![Unit tests](https://github.com/hyperledger-identus/neoprism/actions/workflows/checks.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
+[![PRISM tests](https://github.com/hyperledger-identus/neoprism/actions/workflows/integration-test.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
 [![GitHub release](https://img.shields.io/github/release/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/releases)
 [![GitHub tag](https://img.shields.io/github/tag/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/tags)
 [![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
