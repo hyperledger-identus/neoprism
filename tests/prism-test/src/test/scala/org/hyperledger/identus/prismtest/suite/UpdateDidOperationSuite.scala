@@ -51,7 +51,7 @@ object UpdateDidOperationSuite extends TestUtils:
           .patchContext(Seq("https://www.w3.org/ns/did/v1", "https://www.w3.org/ns/did/v1"))
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        _ <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2), batch = false)
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.context)(isEmpty)
     }
