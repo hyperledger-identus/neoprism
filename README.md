@@ -21,25 +21,25 @@ NeoPRISM supports two primary roles, which can be deployed independently or toge
 
 ## Features
 
-1. **PRISM DID Indexing and Resolution**
+1. **🔗 PRISM DID Indexing and Resolution**
    - Monitors the Cardano blockchain for PRISM DID operations, parses and validates them, and provides a W3C-compliant DID document resolution API.
 
-2. **Web User Interface (WebUI)**
+2. **🌐 Web User Interface (WebUI)**
    - User-friendly web interface to explore DIDs and interact with the resolver endpoint, available both locally and via public demo instances.
 
-3. **API Explorer and Documentation**
+3. **📚 API Explorer and Documentation**
    - Integrated OpenAPI/Swagger UI for programmatic access and interactive documentation of all available REST endpoints.
 
-4. **Operation Submission**
+4. **🚀 Operation Submission**
    - Supports submitting PRISM DID operations via the API, including integration with cardano-wallet for operation submission.
 
-5. **Configurable Infrastructure**
+5. **⚙️ Configurable Infrastructure**
    - Easily configurable to connect with Cardano mainnet, pre-production, or local testnets, with support for multi-architecture Docker images.
 
-6. **Development and Testnet Support**
+6. **🧪 Development and Testnet Support**
    - Tools and scripts for spinning up local development environments and testnets, including automated database management and test suites for integration and interoperability.
 
-7. **CORS and Security**
+7. **🔐 CORS and Security**
    - CORS enabled for secure cross-origin requests in API integrations.
 
 ## Introduction to PRISM DID
