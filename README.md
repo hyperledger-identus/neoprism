@@ -7,7 +7,6 @@
 [![GitHub tag](https://img.shields.io/github/tag/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/tags)
 [![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
-[![Docker Image Size](https://img.shields.io/docker/image-size/hyperledgeridentus/identus-neoprism/latest)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 
 # Overview
 
