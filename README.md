@@ -10,7 +10,9 @@
 
 ## Overview
 
-NeoPRISM is an open-source project for managing PRISM DIDs. PRISM DID is a type of [Decentralized Identifier (DID)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain. NeoPRISM provides a robust and extensible PRISM node, supporting both on-chain anchoring and fast, standards-compliant DID resolution.
+NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain. It supports both on-chain anchoring and fast, standards-compliant DID resolution.
+
+A PRISM node continuously monitors the Cardano blockchain for DID operations, validates and indexes them, and enables efficient lookup of DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are enforced. By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without reliance on a central authority.
 
 NeoPRISM supports two primary roles, which can be deployed independently or together in the same process:
 
@@ -23,9 +25,6 @@ NeoPRISM supports two primary roles, which can be deployed independently or toge
 
 PRISM DIDs can be either short-form (anchored on the blockchain) or long-form (containing all necessary information within the identifier itself). This approach provides flexibility for both quick, off-chain use and strong, on-chain trust.
 
-A PRISM node is responsible for monitoring the Cardano blockchain for DID operations, validating and indexing them, and providing a way to look up DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring that all protocol rules and security checks are followed.
-
-By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without relying on a central authority.
 
 # Quickstart
 
