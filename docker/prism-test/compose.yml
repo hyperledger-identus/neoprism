@@ -196,7 +196,8 @@ services:
       NODE_PSQL_PASSWORD: postgres
       NODE_PSQL_USERNAME: postgres
       NODE_REFRESH_AND_SUBMIT_PERIOD: "1s"
-    image: ghcr.io/input-output-hk/prism-node:2.6.0
+      NODE_SCHEDULE_SYNC_PERIOD: "1s"
+    image: ghcr.io/input-output-hk/prism-node:2.6.1
     ports:
       - "50053:50053"
     restart: always
