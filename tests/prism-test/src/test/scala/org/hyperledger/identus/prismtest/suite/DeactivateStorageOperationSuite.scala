@@ -14,7 +14,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
   ) @@ NodeName.skipIf("prism-node", "scala-did")
 
   private def deactivatedStorageSpec = suite("Deactivated storage")(
-    test("deactivated storage cannot be created again with same data and same nonce") {
+    test("should reject resubmitting same create storage operation after deactivation") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -40,7 +40,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
   )
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
-    test("deactivate storage with multiple storage entries should be indexed successfully") {
+    test("should accept multiple storage deactivations") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -80,7 +80,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
         assert(storage2)(isEmpty) &&
         assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("deactivate storage with invalid operation hash should not be indexed") {
+    test("should reject with invalid operation hash") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -104,7 +104,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("deactivate storage with active VDR key should be indexed successfully") {
+    test("should accept when signed with active VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -126,7 +126,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
         storage = extractStorageHex(didData)
       yield assert(storage)(isEmpty) && assert(didData.publicKeys)(hasSize(equalTo(2)))
     },
-    test("deactivate storage with non-exist VDR key should not be indexed") {
+    test("should reject when signed with non-existing VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -147,7 +147,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
-    test("deactivate storage with removed VDR key should not be indexed") {
+    test("should reject when signed with removed VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
