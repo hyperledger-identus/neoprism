@@ -19,6 +19,29 @@ NeoPRISM supports two primary roles, which can be deployed independently or toge
 - **Indexer:** Monitors the Cardano blockchain for PRISM DID operations, validates them, and maintains an up-to-date index for efficient DID resolution.
 - **Submitter:** Provides an interface for clients to create, update, or deactivate PRISM DIDs by submitting operations to the Cardano blockchain.
 
+## Features
+
+1. **PRISM DID Indexing and Resolution**
+   - Monitors the Cardano blockchain for PRISM DID operations, parses and validates them, and provides a W3C-compliant DID document resolution API.
+
+2. **Web User Interface (WebUI)**
+   - User-friendly web interface to explore DIDs and interact with the resolver endpoint, available both locally and via public demo instances.
+
+3. **API Explorer and Documentation**
+   - Integrated OpenAPI/Swagger UI for programmatic access and interactive documentation of all available REST endpoints.
+
+4. **Operation Submission**
+   - Supports submitting PRISM DID operations via the API, including integration with cardano-wallet for operation submission.
+
+5. **Configurable Infrastructure**
+   - Easily configurable to connect with Cardano mainnet, pre-production, or local testnets, with support for multi-architecture Docker images.
+
+6. **Development and Testnet Support**
+   - Tools and scripts for spinning up local development environments and testnets, including automated database management and test suites for integration and interoperability.
+
+7. **CORS and Security**
+   - CORS enabled for secure cross-origin requests in API integrations.
+
 ## Introduction to PRISM DID
 
 [PRISM Decentralized Identifiers (DIDs)](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md) are unique, verifiable identifiers anchored on the Cardano blockchain. Each PRISM DID is linked to a DID Document, which contains public keys and service endpoints, allowing for secure and decentralized digital identity.
