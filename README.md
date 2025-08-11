@@ -1,3 +1,12 @@
+# NeoPRISM Node
+
+![Rust Edition](https://img.shields.io/badge/edition-2024-blue)
+[![Build Status](https://github.com/hyperledger-identus/neoprism/actions/workflows/ci.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
+[![GitHub release](https://img.shields.io/github/release/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/releases)
+[![GitHub tag](https://img.shields.io/github/tag/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/tags)
+[![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
+[![Docker Pulls](https://img.shields.io/docker/pulls/hyperledger-identus/neoprism.svg)](https://hub.docker.com/r/hyperledger-identus/neoprism)
+
 # Overview
 
 This is a PRISM Node implementation in Rust according to the [PRISM DID Method](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md).
