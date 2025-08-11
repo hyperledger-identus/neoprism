@@ -19,7 +19,7 @@ object DeactivateDidOperationSuite extends TestUtils:
   ) @@ NodeName.skipIf("scala-did")
 
   private def deactivatedSpec = suite("Deactivated DID")(
-    test("deactivated DID cannot be created again") {
+    test("should reject re-creation") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -37,7 +37,7 @@ object DeactivateDidOperationSuite extends TestUtils:
   )
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
-    test("deactivate operation with invalid operation hash should not be indexed") {
+    test("should reject invalid operation hash") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -52,7 +52,7 @@ object DeactivateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("deactivate operation with non-latest operation hash should not be indexed") {
+    test("should reject non-latest operation hash") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -75,7 +75,7 @@ object DeactivateDidOperationSuite extends TestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("deactivate operation with active master-key should be indexed successfully") {
+    test("should accept active master-key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -90,7 +90,7 @@ object DeactivateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assertDidDeactivated(didData)
     },
-    test("deactivate operation with signature signed with non-existing master-key should not be indexed") {
+    test("should reject non-existing master-key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -105,7 +105,7 @@ object DeactivateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(1)))
     },
-    test("deactivate operation with signature signed with removed master-key should not be indexed") {
+    test("should reject revoked master-key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid

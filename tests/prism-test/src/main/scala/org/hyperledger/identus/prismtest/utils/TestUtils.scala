@@ -141,6 +141,11 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
         .focus(_.op.didData.some.publicKeys)
         .modify(_ :+ PublicKey(id = keyId, usage = keyUsage, keyData = hdKey))
 
+    def context(value: String): CreateDidOpBuilder =
+      this
+        .focus(_.op.didData.some.context)
+        .modify(_ :+ value)
+
     def service(serviceId: String)(serviceType: String, serviceEndpoint: String): CreateDidOpBuilder =
       this
         .focus(_.op.didData.some.services)
@@ -169,6 +174,11 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
       this
         .focus(_.op.actions)
         .modify(_ :+ UpdateDIDAction(Action.RemoveKey(RemoveKeyAction(keyId))))
+
+    def patchContext(context: Seq[String]): UpdateDidOpBuilder =
+      this
+        .focus(_.op.actions)
+        .modify(_ :+ UpdateDIDAction(Action.PatchContext(proto.prism_ssi.PatchContextAction(context))))
 
   case class CreateStorageBuilder(seed: Array[Byte], op: ProtoCreateStorageEntry):
     def build: PrismOperation = PrismOperation(Operation.CreateStorageEntry(op))

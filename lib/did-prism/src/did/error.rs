@@ -100,11 +100,13 @@ pub enum UpdateDidOperationError {
         field_name: &'static str,
     },
     #[from]
-    #[display("invalid public key found in CreateDidOperation")]
+    #[display("invalid public key found in UpdateDidOperation")]
     InvalidPublicKey { source: PublicKeyError },
     #[from]
-    #[display("invalid service found in CreateDidOperation")]
+    #[display("invalid service found in UpdateDidOperation")]
     InvalidService { source: ServiceError },
+    #[display("duplicate context found in UpdateDidOperation")]
+    DuplicateContext,
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]

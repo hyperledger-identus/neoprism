@@ -15,7 +15,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
   ) @@ NodeName.skipIf("prism-node", "scala-did")
 
   private def deactivatedSpec = suite("Deactivated DID")(
-    test("deactivated DID cannot create a storage") {
+    test("should reject storage creation by deactivated DID") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -36,7 +36,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(isEmpty)
     },
-    test("deactivated DID has all storage removed") {
+    test("should remove storage on DID deactivation") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -60,7 +60,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
   )
 
   private def nonceSpec = suite("Nonce")(
-    test("create storage with same data and same nonce should not be indexed") {
+    test("should reject duplicate storage with same nonce") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -83,7 +83,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
-    test("create storage with same data and different nonce should be indexed successfully") {
+    test("should accept duplicate storage with different nonce") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -106,7 +106,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00", "00")))
     },
-    test("create storage with different data and same nonce should be indexed successfully") {
+    test("should accept different storage with same nonce") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -132,7 +132,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("create storage with valid VDR key should be indexed successfully") {
+    test("should accept signature by VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -150,7 +150,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(hasSameElements(Seq("00")))
     },
-    test("create storage with invalid VDR key should not be indexed") {
+    test("should reject signature by non-matching VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -168,7 +168,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(isEmpty)
     },
-    test("create storage with non-VDR key should not be indexed") {
+    test("should reject signature by non-VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -185,7 +185,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
       yield assert(storage)(isEmpty)
     },
-    test("create storage with removed VDR key should not be indexed") {
+    test("should reject signature by removed VDR key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid

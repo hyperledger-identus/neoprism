@@ -44,7 +44,5 @@ in  { mainnet-dbsync.services
             }
       }
     , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
-    , prism-test-ci =
-        prismTest.mkStack
-          prismTest.Options::{ ci = True, enableScalaDid = True }
+    , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
     }

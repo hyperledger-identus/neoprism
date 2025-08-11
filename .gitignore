@@ -5,3 +5,4 @@
 node_modules/
 result
 .cardano-prism-config.json
+.aider*

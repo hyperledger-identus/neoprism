@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "ghcr.io/input-output-hk/prism-node:2.6.0"
+let image = "ghcr.io/input-output-hk/prism-node:2.6.1"
 
 let Options =
       { Type =
@@ -47,6 +47,7 @@ let mkService =
                     Prelude.Natural.show options.confirmationBlocks
                 , NODE_REFRESH_AND_SUBMIT_PERIOD = "1s"
                 , NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD = "1s"
+                , NODE_SCHEDULE_SYNC_PERIOD = "1s"
                 , NODE_CARDANO_NETWORK = "testnet"
                 , NODE_CARDANO_WALLET_PASSPHRASE = options.walletPassphrase
                 , NODE_CARDANO_WALLET_ID = options.walletId
