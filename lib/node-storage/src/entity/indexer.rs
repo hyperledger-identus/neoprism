@@ -13,7 +13,7 @@ pub struct DltCursor {
     pub block_hash: Vec<u8>,
 }
 
-#[derive(Entity)]
+#[derive(Entity, sqlx::FromRow)]
 #[lazybe(table = "raw_operation")]
 #[allow(unused)]
 pub struct RawOperation {

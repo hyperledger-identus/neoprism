@@ -38,19 +38,23 @@ impl OperationRepo for PostgresDb {
     type Error = Error;
 
     async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error> {
-        let mut tx = self.pool.begin().await?;
-        let ops_page = self
-            .db_ctx
-            .list::<entity::RawOperation>(
-                &mut tx,
-                Filter::all([entity::RawOperationFilter::is_indexed().eq(true)]),
-                Sort::new([entity::RawOperationSort::slot().desc()]),
-                Some(PaginationInput { page: 0, limit: 1 }),
-            )
-            .await?;
-        tx.commit().await?;
+        let rows: Vec<entity::RawOperation> = sqlx::query_as(
+            r#"
+SELECT *
+FROM raw_operation
+WHERE
+    is_indexed = true AND block_number NOT IN (
+        SELECT DISTINCT block_number FROM raw_operation
+        WHERE is_indexed = false
+    )
+ORDER BY block_number DESC
+LIMIT 1
+            "#,
+        )
+        .fetch_all(&self.pool)
+        .await?;
 
-        let last_op = ops_page.data.into_iter().next();
+        let last_op = rows.into_iter().next();
         Ok(last_op.map(|op| {
             let slot: SlotNo = u64::try_from(op.slot).expect("slot_number does not fit in u64").into();
             let block: BlockNo = u64::try_from(op.block_number)
