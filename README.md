@@ -1,4 +1,4 @@
-# NeoPRISM Node
+# NeoPRISM
 
 ![Rust Edition](https://img.shields.io/badge/edition-2024-blue)
 [![Unit tests](https://github.com/hyperledger-identus/neoprism/actions/workflows/checks.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
@@ -10,9 +10,9 @@
 
 ## Overview
 
-NeoPRISM is an open-source project for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) on the Cardano blockchain. It provides robust, extensible infrastructure for DID operations, supporting both on-chain anchoring and fast, standards-compliant resolution.
+NeoPRISM is an open-source project for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) on the Cardano blockchain. It provides a robust and extensible infrastructure for DID operations, supporting both on-chain anchoring and fast, standards-compliant resolution.
 
-NeoPRISM supports two main roles, which can be deployed together or separately:
+NeoPRISM supports two main roles, which can be deployed either together or separately:
 
 - **Indexer:** Monitors the Cardano blockchain for PRISM DID operations, validates them, and maintains an up-to-date index for efficient DID resolution.
 - **Submitter:** Provides an interface for clients to create, update, or deactivate PRISM DIDs by submitting operations to the Cardano blockchain.
@@ -21,9 +21,9 @@ NeoPRISM supports two main roles, which can be deployed together or separately:
 
 [PRISM Decentralized Identifiers (DIDs)](https://github.com/input-output-hk/prism-did-method-spec/blob/main/w3c-spec/PRISM-method.md) are unique, verifiable identifiers anchored on the Cardano blockchain. Each PRISM DID is linked to a DID Document, which contains public keys and service endpoints, allowing for secure and decentralized digital identity.
 
-PRISM DIDs can be either short-form (anchored on the blockchain) or long-form (containing all necessary information within the identifier itself). This approach gives flexibility for both quick, off-chain use and strong, on-chain trust.
+PRISM DIDs can be either short-form (anchored on the blockchain) or long-form (containing all necessary information within the identifier itself). This approach provides flexibility for both quick, off-chain use and strong, on-chain trust.
 
-A PRISM node is responsible for monitoring the Cardano blockchain for DID operations, validating and indexing them, and providing a way to look up DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are followed.
+A PRISM node is responsible for monitoring the Cardano blockchain for DID operations, validating and indexing them, and providing a way to look up DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring that all protocol rules and security checks are followed.
 
 By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without relying on a central authority.
 
@@ -36,16 +36,16 @@ A public preprod instance is also available at [https://neoprism-preprod.patlo.d
 
 ## Self-hosting
 
-Start the node and sync block metadata from the relay node `backbone.mainnet.cardanofoundation.org:3001`
+Start the node and sync block metadata from the relay node at `backbone.mainnet.cardanofoundation.org:3001`:
 
 ```bash
 cd docker/mainnet-relay
 docker-compose up
 ```
 
-The WebUI is available at `http://localhost:8080`
+The Web UI is available at `http://localhost:8080`.
 
-The resolver endpoint is available at `http://localhost:8080/api/dids/<did>`
+The resolver endpoint is available at `http://localhost:8080/api/dids/<did>`.
 
 
 # Development guide
@@ -55,33 +55,33 @@ Follow the instructions [here](https://nixos.org/download/#download-nix) to inst
 
 __Entering the development shell__
 
-If you already have `cargo` and other required dependencies (e.g. `protoc`) installed, you can use your own environment.
+If you already have `cargo` and other required dependencies (e.g., `protoc`) installed, you can use your own environment.
 Feel free to check the [nix shell](./nix/devShells/neoprism.nix) to see the required dependencies and port them to your own environment.
 
-A recommended approach is to use `nix develop` command to enter the development shell.
-This way, the development shell is consistent and the same version of the libraries are used to build and test.
+A recommended approach is to use the `nix develop` command to enter the development shell.
+This ensures that the development environment is consistent and that the same versions of the libraries are used to build and test.
 
 
 ```bash
 nix develop
 
-# you can now run command like "cargo version"
+# you can now run commands like "cargo version"
 ```
 Note that you may need to enable experimental flake commands. Please follow the instructions [here](https://nixos.wiki/wiki/Flakes).
 
-Additionally, you can use `--unset <ENV>` to disable host environment variable to make development shell more pure.
+Additionally, you can use `--unset <ENV>` to disable host environment variables and make the development shell more pure.
 For example:
 
 ```bash
 nix develop --unset PATH
 ```
 
-to disable all binaries available on host `PATH`.
+to disable all binaries available on the host `PATH`.
 
 
 ## Development quickstart
 
-Spinning up services in dev shell
+Starting services in the development shell
 
 ```bash
 nix develop --unset PATH
@@ -90,7 +90,7 @@ dbUp
 runNode
 ```
 
-Cleaning up services in dev shell
+Cleaning up services in the development shell
 
 ```bash
 dbDown
@@ -98,14 +98,14 @@ dbDown
 
 ## Frequently used commands
 
-These are commands you can run outside the development shell
+These are commands you can run outside the development shell:
 
 | command                                                 | description                                                        |
 |---------------------------------------------------------|--------------------------------------------------------------------|
 | `nix build .#neoprism-docker`                           | Use nix to build the docker image (output available at `./result`) |
 | `nix build .#neoprism-docker && docker load < ./result` | Use nix to build the docker image and load it using docker         |
 
-Assuming you are in the development shell, these are frequently used commands.
+Assuming you are in the development shell, here are some frequently used commands:
 
 | command                          | description                                    |
 |----------------------------------|------------------------------------------------|
@@ -115,18 +115,18 @@ Assuming you are in the development shell, these are frequently used commands.
 | `cargo r -p neoprism-node -- -h` | See `neoprism-node` service CLI options        |
 | `cargo test --all-features`      | Run tests that enable all crate features       |
 
-These are some scripts provided by the shell to automate the local development workflow:
+The following scripts are provided by the shell to automate the local development workflow:
 
-| command                                 | description                                                      |
-|-----------------------------------------|------------------------------------------------------------------|
-| `format`                                | Run formatter on everything                                      |
-| `build`                                 | Building the whole project                                       |
-| `buildAssets`                           | Building the WebUI assets (css, javascript, static assets)       |
-| `buildConfig`                           | Building the generated config                                    |
-| `dbUp`                                  | Spin up the local database                                       |
-| `dbDown`                                | Tear down the local database                                     |
-| `pgDump`                                | Dump the local database to `postgres.dump` file                  |
-| `pgRestore`                             | Restore the local database from `postgres.dump` file             |
-| `runNode indexer`                       | Run the indexer node connecting to the local database            |
-| `runNode indexer --cardano-addr <ADDR>` | Run the indexer node connecting to the cardano relay at `ADDR`   |
-| `runNode indexer --dbsync-url <URL>`    | Run the indexer node connecting to the DB Sync instance at `URL` |
+| command                                 | description                                                        |
+|-----------------------------------------|--------------------------------------------------------------------|
+| `format`                                | Run the formatter on everything                                    |
+| `build`                                 | Build the whole project                                            |
+| `buildAssets`                           | Build the Web UI assets (CSS, JavaScript, static assets)           |
+| `buildConfig`                           | Build the generated config                                         |
+| `dbUp`                                  | Spin up the local database                                         |
+| `dbDown`                                | Tear down the local database                                       |
+| `pgDump`                                | Dump the local database to the `postgres.dump` file                |
+| `pgRestore`                             | Restore the local database from the `postgres.dump` file           |
+| `runNode indexer`                       | Run the indexer node, connecting to the local database             |
+| `runNode indexer --cardano-addr <ADDR>` | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
+| `runNode indexer --dbsync-url <URL>`    | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
