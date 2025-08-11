@@ -10,7 +10,7 @@
 
 ## Overview
 
-NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain. It supports both on-chain anchoring and fast, standards-compliant DID resolution.
+NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
 
 A PRISM node continuously monitors the Cardano blockchain for DID operations, validates and indexes them, and enables efficient lookup of DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are enforced. By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without reliance on a central authority.
 
