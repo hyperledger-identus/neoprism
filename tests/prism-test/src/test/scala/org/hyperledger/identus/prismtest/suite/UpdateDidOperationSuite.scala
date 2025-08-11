@@ -18,7 +18,7 @@ object UpdateDidOperationSuite extends TestUtils:
   ) @@ NodeName.skipIf("scala-did")
 
   private def contextSpec = suite("Context")(
-    test("should accept when adding new context values") {
+    test("should accept new context values") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -38,7 +38,7 @@ object UpdateDidOperationSuite extends TestUtils:
         hasSameElements(Seq("https://www.w3.org/ns/credentials/v1"))
       )
     },
-    test("should reject when adding duplicate context values") {
+    test("should reject duplicate context values") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -58,7 +58,7 @@ object UpdateDidOperationSuite extends TestUtils:
   )
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
-    test("should reject when using invalid operation hash") {
+    test("should reject invalid operation hash") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -75,7 +75,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should reject when using non-latest operation hash") {
+    test("should reject non-latest operation hash") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -100,7 +100,7 @@ object UpdateDidOperationSuite extends TestUtils:
   )
 
   private def signatureSpec = suite("Signature")(
-    test("should reject when signed with non-existing master key") {
+    test("should reject non-existing signing key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -117,7 +117,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should accept when signed with key being removed in same operation") {
+    test("should accept signing key being removed") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -135,7 +135,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should reject when signed with previously removed key") {
+    test("should reject revoked signing key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -161,7 +161,7 @@ object UpdateDidOperationSuite extends TestUtils:
   )
 
   private def addPublicKeySpec = suite("AddPublicKey action")(
-    test("should succeed when adding new public key") {
+    test("should accept new public key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -178,7 +178,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     },
-    test("should reject when adding duplicate key ID") {
+    test("should reject duplicate key ID") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -196,7 +196,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should succeed when adding up to 50 public keys") {
+    test("should accept 50 public keys") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -214,7 +214,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(50)))
     },
-    test("should reject when exceeding 50 public keys") {
+    test("should reject 51 public keys") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -232,7 +232,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should succeed with 50-character key ID") {
+    test("should accept maximum key ID length (50 chars)") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -249,7 +249,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(2)))
     },
-    test("should reject with 51-character key ID") {
+    test("should reject excessive key ID length (51 chars)") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -266,7 +266,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should reject when re-adding removed key ID") {
+    test("should reject re-added key ID") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -292,7 +292,7 @@ object UpdateDidOperationSuite extends TestUtils:
   )
 
   private def removePublicKeySpec = suite("RemovePublicKey action")(
-    test("should accept when removing existing public key") {
+    test("should accept existing public key removal") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -310,7 +310,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should reject when removing last master key") {
+    test("should reject last master key removal") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -327,7 +327,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
-    test("should reject when removing non-existent key ID") {
+    test("should reject non-existent key ID removal") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
@@ -346,7 +346,7 @@ object UpdateDidOperationSuite extends TestUtils:
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     },
-    test("should reject when re-removing already removed key") {
+    test("should reject re-removed key") {
       for
         seed <- newSeed
         spo1 = builder(seed).createDid
