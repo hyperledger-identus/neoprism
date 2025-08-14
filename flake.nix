@@ -21,6 +21,7 @@
 
   outputs =
     {
+      self,
       nixpkgs,
       rust-overlay,
       sbt,
@@ -55,7 +56,7 @@
       in
       {
         checks = import ./nix/checks/default.nix { inherit pkgs; };
-        devShells = import ./nix/devShells/default.nix { inherit pkgs; };
+        devShells = import ./nix/devShells/default.nix { inherit pkgs self; };
         packages = import ./nix/packages/default.nix { inherit pkgs; };
       }
     );

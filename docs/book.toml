@@ -1,0 +1,19 @@
+[book]
+title = "NeoPRISM Documentation"
+authors = []
+
+[build]
+build-dir = "book"
+
+[preprocessor.cmdrun]
+renderers = ["html", "markdown"]
+
+[preprocessor.d2]
+command = "mdbook-d2"
+renderer = ["html", "markdown"]
+
+[output.markdown]
+
+[output.linkcheck]
+
+[output.html]

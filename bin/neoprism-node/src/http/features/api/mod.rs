@@ -27,16 +27,20 @@ mod tags {
     pub const OP_SUBMIT: &str = "PRISM submitter";
 }
 
-pub fn router(mode: RunMode) -> Router<AppState> {
+pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
     let base_oas = BaseOpenApiDoc::openapi().merge_from(SystemOpenApiDoc::openapi());
     let indexer_oas = IndexerOpenApiDoc::openapi();
     let submitter_oas = SubmitterOpenApiDoc::openapi();
 
-    let oas = match mode {
+    match mode {
         RunMode::Indexer => base_oas.merge_from(indexer_oas),
         RunMode::Submitter => base_oas.merge_from(submitter_oas),
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
-    };
+    }
+}
+
+pub fn router(mode: RunMode) -> Router<AppState> {
+    let oas = open_api(&mode);
 
     let base_router = Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))
