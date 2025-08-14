@@ -7,7 +7,6 @@
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
 - [Architecture](./architecture/README.md)
-  - [Indexer deployment](./architecture/indexer.md)
 - [Configuration](./configuration/README.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
