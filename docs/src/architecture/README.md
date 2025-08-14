@@ -12,9 +12,9 @@ When a user requests the current state of a DID, NeoPRISM replays the relevant o
 In its role as a submitter, NeoPRISM receives signed DID operations and batches them into Cardano transaction metadata.
 It does not manage private keys for either DID operations or Cardano wallets.
 The metadata is sent to the wallet component (currently supporting only `cardano-wallet`) for publishing.
-This process is stateless and requires the wallet passphrase along with other related wallet configurations, which are provided through CLI options or environment variables.
+This process is stateless and requires the wallet passphrase, along with other related wallet configurations, which are provided through CLI options or environment variables.
 
-## Simple standalone deployment
+## Closed-loop standalone deployment
 
 In this mode, both the indexer and submitter run in the same process, which is suitable for a small and simple deployment setup.
 You may also add a reverse proxy to handle authentication and routing for the submitter API paths.
@@ -43,6 +43,6 @@ internal: "Deployment" {
 
 internal.neoprism <- cardano-node: stream operations using Oura
 did-controller -> internal.neoprism: submit signed PRISM operations
-verifier -> internal.neoprism: resolve DID document
+verifier -> internal.neoprism: resolve DID documents
 internal.cardano-blockproducer -> cardano-node: propagate blocks
 ```
