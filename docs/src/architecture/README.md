@@ -21,7 +21,7 @@ You may also add a reverse proxy to handle authentication and routing for the su
 
 ```d2
 did-controller: "DID controller"
-verifier: "Verifying client"
+verifier: "Verifier"
 cardano-node: "Cardano relay node" {
   shape: cloud
 }
@@ -56,7 +56,7 @@ A reverse proxy is recommended to route requests to the appropriate service, han
 
 ```d2
 did-controller: "DID controller"
-verifier: "Verifying client"
+verifier: "Verifier"
 cardano-node: "Cardano relay node" {
   shape: cloud
 }
