@@ -24,7 +24,7 @@ NeoPRISM can be built and run using [Nix flakes](https://nixos.wiki/wiki/Flakes)
 3. **Run NeoPRISM and link the UI assets:**
    - Use the `--assets-path` flag to specify the UI assets directory:
      ```bash
-     ./result/bin/neoprism-node indexer --assets-path ./result-ui-assets [options]
+     ./result/bin/neoprism-node indexer --assets-path ./result-ui-assets/assets [options]
      ```
    - For details on available commands and options, see the CLI help:
      ```bash
