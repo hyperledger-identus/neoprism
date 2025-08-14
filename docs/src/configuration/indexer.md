@@ -9,15 +9,19 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
 
 - **Oura:**  
   Connects to a Cardano relay node and streams block data in real time.
-  - Key options: Cardano network, relay address.
+  - Key options: 
+    - Cardano network: `--cardano-network` or `NPRISM_CARDANO_NETWORK`
+    - Relay address: `--cardano-relay-addr` or `NPRISM_CARDANO_RELAY_ADDR`
 
 - **DB-Sync:**  
   Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.
-  - Key options: DB-Sync URL, poll interval.
+  - Key options: 
+    - DB-Sync URL: `--db-sync-url` or `NPRISM_DB_SYNC_URL`
+    - Poll interval: `--db-sync-poll-interval` or `NPRISM_DB_SYNC_POLL_INTERVAL`
 
 - **Common DLT Source Options:**  
-  - Index interval: How often to check for unindexed operations.
-  - Confirmation blocks: Number of blocks to wait before considering an operation final.
+  - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL`
+  - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
 
 Choose the DLT source that best fits your infrastructure and reliability needs.
 
