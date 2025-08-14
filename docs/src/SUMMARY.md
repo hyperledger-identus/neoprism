@@ -10,6 +10,7 @@
 - [Configuration](./configuration/README.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
+  - [Logging](./configuration/logging.md)
 
 # Reference Guide
 

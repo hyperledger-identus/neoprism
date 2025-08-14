@@ -1,9 +1,9 @@
-## Indexer Configuration
+# Indexer Configuration
 
 The **Indexer node** monitors the Cardano blockchain for PRISM DID operations, validates and indexes them, and enables efficient lookup of DID Documents.  
 It is typically used for DID resolution and verification services.
 
-### DLT Source
+## DLT Source
 
 The Indexer node supports multiple DLT sources for ingesting DID operations:
 
@@ -25,7 +25,7 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
 
 ---
 
-### DLT Source Comparison
+## DLT Source Comparison
 
 **Oura**
 
@@ -44,7 +44,7 @@ If you can afford to run DBSync, it is recommended to use this option, as the in
 
 ---
 
-### How Common DLT Source Configuration Works
+## How Common DLT Source Configuration Works
 
 NeoPRISM streams blocks from the Cardano blockchain and extracts PRISM metadata, which is then persisted to the database. These operations are initially stored as raw, unindexed data. At every configured interval (set by the index interval option), NeoPRISM wakes up and picks up unindexed operations from the database. It then runs the indexing logic, which extracts, validates, and transforms each raw operation into an efficient lookup data structure.
 

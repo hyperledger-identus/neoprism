@@ -1,9 +1,9 @@
-## Submitter Configuration
+# Submitter Configuration
 
 The **Submitter node** publishes PRISM DID operations to the Cardano blockchain.  
 It is typically used for creating, updating, or deactivating DIDs.
 
-### DLT Sink
+## DLT Sink
 
 The Submitter node currently supports Cardano wallet integration as its DLT sink:
 
