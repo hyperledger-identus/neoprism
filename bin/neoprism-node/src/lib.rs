@@ -80,7 +80,7 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
     if let Some(path) = args.output {
         fs::write(path, &openapi_json)?;
     } else {
-        println!("{}", openapi_json);
+        println!("{openapi_json}");
     }
     Ok(())
 }
