@@ -1,4 +1,4 @@
-{ pkgs }:
+{ self, pkgs }:
 
 let
   rootDir = "$ROOT_DIR";
@@ -20,5 +20,5 @@ in
   release = import ./release.nix { inherit pkgs buildConfig; };
   cardano = import ./cardano.nix { inherit pkgs; };
   prism-test = import ./prism-test.nix { inherit pkgs; };
-  docs = import ./docs.nix { inherit pkgs; };
+  docs = import ./docs.nix { inherit pkgs self; };
 }

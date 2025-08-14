@@ -4,3 +4,9 @@ authors = []
 
 [build]
 build-dir = "book"
+
+[preprocessor.cmdrun]
+
+[output.markdown]
+
+[output.html]

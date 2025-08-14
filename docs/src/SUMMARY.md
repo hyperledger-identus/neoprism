@@ -1,9 +1,15 @@
 # Summary
 
+# Usage Guide
+
 - [Welcome](README.md)
 - [Installation](./installation/README.md)
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
 - [Configuration](./configuration/README.md)
-  - [Indexer configuration](./configuration/indexer.md)
-  - [Submitter configuration](./configuration/submitter.md)
+  - [Indexer](./configuration/indexer.md)
+  - [Submitter](./configuration/submitter.md)
+
+# Reference Guide
+
+- [CLI options](./references/cli-options.md)
