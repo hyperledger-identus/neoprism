@@ -23,3 +23,9 @@
 ```
 <!-- cmdrun neoprism-node standalone -h -->
 ```
+
+## Generate OpenAPI options
+
+```
+<!-- cmdrun neoprism-node generate-openapi -h -->
+```

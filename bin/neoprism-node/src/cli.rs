@@ -20,7 +20,7 @@ pub enum Command {
     /// Start the node in standalone mode.
     Standalone(StandaloneArgs),
     /// Generate OpenAPI specification for the API.
-    GenerateOpenApi(GenerateOpenApiArgs),
+    GenerateOpenapi(GenerateOpenApiArgs),
 }
 
 #[derive(Args)]

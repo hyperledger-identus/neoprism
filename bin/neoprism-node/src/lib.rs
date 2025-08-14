@@ -66,7 +66,7 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
-        cli::Command::GenerateOpenApi(args) => {
+        cli::Command::GenerateOpenapi(args) => {
             generate_openapi(args)?;
         }
     };
