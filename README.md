@@ -66,23 +66,37 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 # Quickstart
 
-## Public demo instance
+## Public Demo Instance
 
-A public instance of neoprism is hosted at [https://neoprism.patlo.dev](https://neoprism.patlo.dev).  
-A public preprod instance is also available at [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev).
+- Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
+- Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
 
 ## Self-hosting
 
-Start the node and sync block metadata from the relay node at `backbone.mainnet.cardanofoundation.org:3001`:
+This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura. It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database. Once operations are indexed, you can browse them using the Explorer page in the Web UI.
 
-```bash
-cd docker/mainnet-relay
-docker-compose up
-```
+**Prerequisites:**
+- [Docker](https://docs.docker.com/get-docker/)
 
-The Web UI is available at `http://localhost:8080`.
+**Supported Platforms:**
+- The official NeoPRISM Docker image supports both x86_64 and arm64 architectures.
+- Compatible with Linux, macOS, and Windows hosts that can run Docker.
 
-The resolver endpoint is available at `http://localhost:8080/api/dids/<did>`.
+**Steps:**
+
+1. Clone the repository and navigate to the example directory:
+   ```bash
+   cd docker/mainnet-relay
+   ```
+2. Start the node and sync block metadata:
+   ```bash
+   docker-compose up
+   ```
+3. Access the Web UI at [http://localhost:8080](http://localhost:8080). The Explorer page allows you to browse indexed DID operations.
+4. Use the resolver endpoint to resolve DIDs:
+   ```bash
+   curl http://localhost:8080/api/dids/<did>
+   ```
 
 
 # Development guide
