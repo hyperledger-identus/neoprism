@@ -1,34 +1,18 @@
 ## Submitter Mode Configuration
 
-When running NeoPRISM in submitter mode, the following configuration options are available. You can set these using command-line flags or environment variables.
+The **Submitter node** publishes PRISM DID operations to the Cardano blockchain.  
+It is typically used for creating, updating, or deactivating DIDs.
 
-### Server Settings
+### DLT Sink
 
-See [Common Configuration](./common.md) for server settings.
+The Submitter node currently supports Cardano wallet integration as its DLT sink:
 
-### Database Settings
+- **Cardano Wallet:**  
+  Uses a Cardano wallet to sign and submit transactions containing DID operations.
+  - Key options: Wallet base URL, wallet ID, passphrase, payment address.
 
-- `--db-url` / `NPRISM_DB_URL`  
-  Database URL (e.g., `postgres://user:pass@host:5432/db`)
-- `--skip-migration` / `NPRISM_SKIP_MIGRATION`  
-  Skip database migration on node startup
+Configure the wallet integration to match your operational and security requirements.
 
-### DLT Sink Settings
+See [Common Configuration](./common.md) for general server settings.
 
-Currently, the supported DLT sink is:
-- Cardano wallet
-
-#### Cardano Wallet Options
-
-- `--cardano-wallet-base-url` / `NPRISM_CARDANO_WALLET_BASE_URL`  
-  Base URL of the Cardano wallet
-- `--cardano-wallet-wallet-id` / `NPRISM_CARDANO_WALLET_WALLET_ID`  
-  Wallet ID to use for making transactions
-- `--cardano-wallet-passphrase` / `NPRISM_CARDANO_WALLET_PASSPHRASE`  
-  Passphrase for the wallet
-- `--cardano-wallet-payment-addr` / `NPRISM_CARDANO_WALLET_PAYMENT_ADDR`  
-  Payment address for making transactions
-
----
-
-You can use either command-line flags or the corresponding environment variables to configure submitter mode. Adjust these options to fit your deployment and operational requirements.
+For a full list of flags and environment variables, see [CLI Options](../references/cli-options.md).
