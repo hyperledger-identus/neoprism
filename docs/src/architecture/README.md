@@ -3,7 +3,7 @@
 NeoPRISM supports multiple roles within its system architecture:
 - **Indexer**: Reads, validates, and indexes DID operations from the Cardano blockchain.
 - **Submitter**: Batches and submits signed DID operations to the Cardano blockchain.
-- **Resolver**: Resolves and returns the current state of a DID.
+- **Standalone**: Runs both indexer and submitter in a single process for simple deployments.
 
 NeoPRISM acts as an indexer by reading DID operations from the Cardano blockchain, validating them, and storing them in a local PostgreSQL database.
 It organizes these operations using keys such as DIDs or storage hashes.
@@ -27,11 +27,9 @@ cardano-node: "Cardano relay node" {
 }
 
 internal: "Deployment" {
-  neoprism: "NeoPRISM standalone node"
+  neoprism: "NeoPRISM Standalone"
   cardano-wallet: "Cardano HTTP wallet"
-  cardano-blockproducer: "Cardano block-producer node" {
-    shape: cloud
-  }
+  cardano-blockproducer: "Cardano block-producer node"
   db: "PostgreSQL" {
     shape: cylinder
   }
@@ -78,10 +76,7 @@ verifier -> indexer-deployment.indexer: resolve DID documents
 submitter-deployment: "Submitter Deployment" {
   submitter: "NeoPRISM Submitter"
   cardano-wallet: "Cardano HTTP wallet"
-  cardano-blockproducer: "Cardano block-producer node" {
-    shape: cloud
-  }
-
+  cardano-blockproducer: "Cardano block-producer node"
   submitter -> cardano-wallet: create transactions
   cardano-wallet -> cardano-blockproducer: submit transactions
 }
@@ -89,3 +84,17 @@ submitter-deployment: "Submitter Deployment" {
 did-controller -> submitter-deployment.submitter: submit signed PRISM operations
 submitter-deployment.cardano-blockproducer -> cardano-node: propagate blocks
 ```
+
+## Open-loop Indexer-only and Submitter-only deployments
+
+NeoPRISM also supports deploying only a subset of its components, depending on your use case and requirements:
+
+- **Indexer-only deployment:**  
+  Only the indexer process is deployed. This setup allows you to read, validate, and index DID operations from the Cardano blockchain, and serve DID resolution requests via the REST API. No submission of new DID operations to the blockchain is possible in this mode.
+
+- **Submitter-only deployment:**  
+  Only the submitter process is deployed. This setup allows you to batch and submit signed DID operations to the Cardano blockchain via the wallet component. DID resolution and indexing are not available in this mode.
+
+These deployment options provide flexibility for scenarios where you may only need to resolve DIDs (indexer-only) or only need to submit new DID operations (submitter-only), without running the full NeoPRISM stack.
+
+> Note: These modes are subsets of the closed-loop indexer–submitter deployment, and can be scaled or combined as needed.
