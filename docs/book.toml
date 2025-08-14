@@ -1,0 +1,7 @@
+[book]
+title = "NeoPRISM Documentation"
+authors = ["NeoPRISM Contributors"]
+description = "Technical documentation for the NeoPRISM project."
+
+[build]
+build-dir = "book"
