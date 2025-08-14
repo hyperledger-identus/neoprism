@@ -130,20 +130,37 @@ to disable all binaries available on the host `PATH`.
 
 ## Development quickstart
 
-Starting services in the development shell
+Follow these steps to set up and run NeoPRISM for development:
 
-```bash
-nix develop --unset PATH
-npm install
-dbUp
-runNode
-```
+1. **Enter the development shell:**
+   ```bash
+   nix develop --unset PATH
+   ```
+2. **Install web UI dependencies** (only required the first time):
+   ```bash
+   npm install
+   ```
+3. **Start the local PostgreSQL database** (required for NeoPRISM to store data):
+   ```bash
+   dbUp
+   ```
+4. **Run the NeoPRISM node** (this will automatically generate all required assets):
+   ```bash
+   runNode
+   ```
+5. **Access the Web UI and API** at [http://localhost:8080](http://localhost:8080).
 
-Cleaning up services in the development shell
+**Cleaning up services**
 
-```bash
-dbDown
-```
+- To stop and remove the local database:
+  ```bash
+  dbDown
+  ```
+
+**Notes**
+- Default port used is `8080`.
+- No need to run `buildAssets` manually; `runNode` handles asset generation automatically.
+- You can run `buildAssets` separately if you only want to generate web UI assets without starting the node.
 
 ## Frequently used commands
 
