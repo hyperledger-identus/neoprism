@@ -1,4 +1,4 @@
-## Submitter Mode Configuration
+## Submitter Configuration
 
 The **Submitter node** publishes PRISM DID operations to the Cardano blockchain.  
 It is typically used for creating, updating, or deactivating DIDs.

@@ -1,4 +1,4 @@
-## Indexer Mode Configuration
+## Indexer Configuration
 
 The **Indexer node** monitors the Cardano blockchain for PRISM DID operations, validates and indexes them, and enables efficient lookup of DID Documents.  
 It is typically used for DID resolution and verification services.
