@@ -99,38 +99,37 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 # Development guide
 
-This project uses Nix for the local development environment and artifact packaging.
-Follow the instructions [here](https://nixos.org/download/#download-nix) to install Nix—it's all you need!
+This project uses Nix to provide a consistent local development environment and to package build artifacts.
+To get started, install Nix by following the instructions [here](https://nixos.org/download/#download-nix).
 
 __Entering the development shell__
 
-If you already have `cargo` and other required dependencies (e.g., `protoc`) installed, you can use your own environment.
-Feel free to check the [nix shell](./nix/devShells/neoprism.nix) to see the required dependencies and port them to your own environment.
+If you already have `cargo` and other required dependencies (such as `protoc`) installed, you can use your own environment.
+You can review the [nix shell](./nix/devShells/neoprism.nix) file to see the required dependencies and adapt them to your setup.
 
-A recommended approach is to use the `nix develop` command to enter the development shell.
-This ensures that the development environment is consistent and that the same versions of the libraries are used to build and test.
-
+We recommend using the `nix develop` command to enter the development shell.
+This ensures a consistent environment and uses the same library versions for building and testing.
 
 ```bash
 nix develop
 
-# you can now run commands like "cargo version"
+# You can now run commands like "cargo version"
 ```
-Note that you may need to enable experimental flake commands. Please follow the instructions [here](https://nixos.wiki/wiki/Flakes).
+Note: You may need to enable experimental flake commands. Please follow the instructions [here](https://nixos.wiki/wiki/Flakes).
 
-Additionally, you can use `--unset <ENV>` to disable host environment variables and make the development shell more pure.
+You can also use `--unset <ENV>` to disable host environment variables and make the development shell more pure.
 For example:
 
 ```bash
 nix develop --unset PATH
 ```
 
-to disable all binaries available on the host `PATH`.
+This disables all binaries available on the host `PATH`.
 
 
 ## Development quickstart
 
-Follow these steps to set up and run NeoPRISM for development:
+To set up and run NeoPRISM for development, follow these steps:
 
 1. **Enter the development shell:**
    ```bash
