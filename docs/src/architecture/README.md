@@ -46,3 +46,46 @@ did-controller -> internal.neoprism: submit signed PRISM operations
 verifier -> internal.neoprism: resolve DID documents
 internal.cardano-blockproducer -> cardano-node: propagate blocks
 ```
+
+## Closed-loop indexer - submitter deployment
+
+In this deployment mode, the indexer and submitter run as separate processes, which may be hosted on different machines. This separation allows for independent scaling of each component; for example, multiple indexer instances can be deployed to support high read volume.
+
+- The **indexer** process reads, validates, and indexes DID operations from the Cardano blockchain, storing them in a shared PostgreSQL database.
+- The **submitter** process is stateless and receives signed DID operations, batching and submitting them to the Cardano blockchain via the wallet component. It does not use the database.
+
+A reverse proxy is recommended to route requests to the appropriate service, handling authentication and API path routing for both the indexer and submitter.
+
+```d2
+did-controller: "DID controller"
+verifier: "Verifying client"
+cardano-node: "Cardano relay node" {
+  shape: cloud
+}
+
+indexer-deployment: "Indexer Deployment" {
+  indexer: "NeoPRISM Indexer"
+  db: "PostgreSQL" {
+    shape: cylinder
+  }
+
+  indexer <-> db: read / write indexed operations
+}
+
+indexer-deployment.indexer <- cardano-node: stream operations using Oura
+verifier -> indexer-deployment.indexer: resolve DID documents
+
+submitter-deployment: "Submitter Deployment" {
+  submitter: "NeoPRISM Submitter"
+  cardano-wallet: "Cardano HTTP wallet"
+  cardano-blockproducer: "Cardano block-producer node" {
+    shape: cloud
+  }
+
+  submitter -> cardano-wallet: create transactions
+  cardano-wallet -> cardano-blockproducer: submit transactions
+}
+
+did-controller -> submitter-deployment.submitter: submit signed PRISM operations
+submitter-deployment.cardano-blockproducer -> cardano-node: propagate blocks
+```
