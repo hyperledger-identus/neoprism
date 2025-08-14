@@ -253,7 +253,7 @@ cd neoprism/docker/mainnet-relay
 <ul>
 <li>
 <p>Use the <code>--assets-path</code> flag to specify the UI assets directory:</p>
-<pre><code class="language-bash">./result/bin/neoprism-node indexer --assets-path ./result-ui-assets [options]
+<pre><code class="language-bash">./result/bin/neoprism-node indexer --assets-path ./result-ui-assets/assets [options]
 </code></pre>
 </li>
 <li>
@@ -580,10 +580,10 @@ Options:
 </code></pre>
 <p>The standalone mode combines both indexer and submitter functionalities.
 You can refer to the configuration options for each mode and apply them together when using standalone.</p>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
 <p>The <strong>Indexer node</strong> monitors the Cardano blockchain for PRISM DID operations, validates and indexes them, and enables efficient lookup of DID Documents.<br />
 It is typically used for DID resolution and verification services.</p>
-<h3 id="dlt-source"><a class="header" href="#dlt-source">DLT Source</a></h3>
+<h2 id="dlt-source"><a class="header" href="#dlt-source">DLT Source</a></h2>
 <p>The Indexer node supports multiple DLT sources for ingesting DID operations:</p>
 <ul>
 <li>
@@ -619,7 +619,7 @@ Connects to a Cardano DB-Sync instance and polls for new blocks and transactions
 </li>
 </ul>
 <hr />
-<h3 id="dlt-source-comparison"><a class="header" href="#dlt-source-comparison">DLT Source Comparison</a></h3>
+<h2 id="dlt-source-comparison"><a class="header" href="#dlt-source-comparison">DLT Source Comparison</a></h2>
 <p><strong>Oura</strong></p>
 <p>Oura works by performing a chainsync protocol with a Cardano relay node.
 This setup is quite lean, as you can connect to any available public relay.
@@ -632,7 +632,7 @@ DBSync is known to be resource-heavy and requires significant disk space.
 The advantage is that sync speed is very fast, since NeoPRISM only needs to read the database tables and parse the operations.
 If you can afford to run DBSync, it is recommended to use this option, as the initial sync is much faster compared to Oura.</p>
 <hr />
-<h3 id="how-common-dlt-source-configuration-works"><a class="header" href="#how-common-dlt-source-configuration-works">How Common DLT Source Configuration Works</a></h3>
+<h2 id="how-common-dlt-source-configuration-works"><a class="header" href="#how-common-dlt-source-configuration-works">How Common DLT Source Configuration Works</a></h2>
 <p>NeoPRISM streams blocks from the Cardano blockchain and extracts PRISM metadata, which is then persisted to the database. These operations are initially stored as raw, unindexed data. At every configured interval (set by the index interval option), NeoPRISM wakes up and picks up unindexed operations from the database. It then runs the indexing logic, which extracts, validates, and transforms each raw operation into an efficient lookup data structure.</p>
 <p>A faster index interval reduces the lag between when an operation is streamed and when it becomes indexed and available for fast lookup. However, setting a very short interval can put additional pressure on the database due to more frequent indexing cycles. NeoPRISM comes with a sensible default value for the index interval to balance performance and resource usage.</p>
 <p>Choose the DLT source and interval settings that best fit your infrastructure and performance needs.</p>
@@ -641,10 +641,10 @@ If you can afford to run DBSync, it is recommended to use this option, as the in
 <ul>
 <li><a href="configuration/../references/cli-options.html">CLI Options</a>: Full list of flags and environment variables.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><h2 id="submitter-configuration"><a class="header" href="#submitter-configuration">Submitter Configuration</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="submitter-configuration"><a class="header" href="#submitter-configuration">Submitter Configuration</a></h1>
 <p>The <strong>Submitter node</strong> publishes PRISM DID operations to the Cardano blockchain.<br />
 It is typically used for creating, updating, or deactivating DIDs.</p>
-<h3 id="dlt-sink"><a class="header" href="#dlt-sink">DLT Sink</a></h3>
+<h2 id="dlt-sink"><a class="header" href="#dlt-sink">DLT Sink</a></h2>
 <p>The Submitter node currently supports Cardano wallet integration as its DLT sink:</p>
 <ul>
 <li><strong>Cardano Wallet:</strong><br />
@@ -672,6 +672,7 @@ Make sure you use your own payment address. Using an incorrect or third-party ad
 <ul>
 <li><a href="configuration/../references/cli-options.html">CLI Options</a>: Full list of flags and environment variables.</li>
 </ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="logging"><a class="header" href="#logging">Logging</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cli-options"><a class="header" href="#cli-options">CLI Options</a></h1>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
 <pre><code>Usage: neoprism-node &lt;COMMAND&gt;

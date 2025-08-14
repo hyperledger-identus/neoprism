@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>CLI options - NeoPRISM Documentation</title>
+        <title>Logging - NeoPRISM Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -166,143 +166,17 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="cli-options"><a class="header" href="#cli-options">CLI Options</a></h1>
-<h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
-<pre><code>Usage: neoprism-node &lt;COMMAND&gt;
-
-Commands:
-  indexer           Start the node in indexer mode
-  submitter         Start the node in submitter mode
-  standalone        Start the node in standalone mode
-  generate-openapi  Generate OpenAPI specification for the API
-  help              Print this message or the help of the given subcommand(s)
-
-Options:
-  -h, --help     Print help
-  -V, --version  Print version
-</code></pre>
-<h2 id="indexer-options"><a class="header" href="#indexer-options">Indexer options</a></h2>
-<pre><code>Start the node in indexer mode
-
-Usage: neoprism-node indexer [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt;
-
-Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --db-url &lt;DB_URL&gt;
-          Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
-      --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
-      --cardano-network &lt;CARDANO_NETWORK&gt;
-          A Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
-      --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, it will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
-      --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, it will sync events from the DB sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
-      --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
-          Number of sesconds to wait before polling DB Sync for next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
-      --index-interval &lt;INDEX_INTERVAL&gt;
-          Number of seconds to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10]
-      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
-          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
-  -h, --help
-          Print help
-</code></pre>
-<h2 id="submitter-options"><a class="header" href="#submitter-options">Submitter options</a></h2>
-<pre><code>Start the node in submitter mode
-
-Usage: neoprism-node submitter [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-
-Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --db-url &lt;DB_URL&gt;
-          Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
-      --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
-      --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
-      --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transaction [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
-      --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
-          Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
-      --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transaction [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
-  -h, --help
-          Print help
-</code></pre>
-<h2 id="standalone-options"><a class="header" href="#standalone-options">Standalone options</a></h2>
-<pre><code>Start the node in standalone mode
-
-Usage: neoprism-node standalone [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-
-Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --db-url &lt;DB_URL&gt;
-          Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
-      --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
-      --cardano-network &lt;CARDANO_NETWORK&gt;
-          A Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
-      --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, it will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
-      --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, it will sync events from the DB sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
-      --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
-          Number of sesconds to wait before polling DB Sync for next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
-      --index-interval &lt;INDEX_INTERVAL&gt;
-          Number of seconds to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10]
-      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
-          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
-      --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
-      --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transaction [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
-      --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
-          Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
-      --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transaction [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
-  -h, --help
-          Print help
-</code></pre>
-<h2 id="generate-openapi-options"><a class="header" href="#generate-openapi-options">Generate OpenAPI options</a></h2>
-<pre><code>Generate OpenAPI specification for the API
-
-Usage: neoprism-node generate-openapi [OPTIONS]
-
-Options:
-      --output &lt;OUTPUT&gt;  Output file for the OpenAPI spec (stdout if not provided)
-  -h, --help             Print help
-</code></pre>
+                        <h1 id="logging"><a class="header" href="#logging">Logging</a></h1>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../configuration/logging.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../configuration/submitter.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next prefetch" href="../references/openapi.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../references/cli-options.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -312,11 +186,11 @@ Options:
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../configuration/logging.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../configuration/submitter.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next prefetch" href="../references/openapi.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../references/cli-options.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
