@@ -8,6 +8,40 @@
 [![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 
+## Quickstart
+
+### Public Demo Instance
+
+- Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
+- Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
+
+### Self-hosting
+
+This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura. It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database. Once operations are indexed, you can browse them using the Explorer page in the Web UI.
+
+**Prerequisites:**
+- [Docker](https://docs.docker.com/get-docker/)
+
+**Supported Platforms:**
+- The official NeoPRISM Docker image supports both x86_64 and arm64 architectures.
+- Compatible with Linux, macOS, and Windows hosts that can run Docker.
+
+**Steps:**
+
+1. Clone the repository and navigate to the example directory:
+   ```bash
+   cd docker/mainnet-relay
+   ```
+2. Start the node and sync block metadata:
+   ```bash
+   docker-compose up
+   ```
+3. Access the Web UI at [http://localhost:8080](http://localhost:8080). The Explorer page allows you to browse indexed DID operations.
+4. Use the resolver endpoint to resolve DIDs:
+   ```bash
+   curl http://localhost:8080/api/dids/<did>
+   ```
+
 ## Overview
 
 NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
@@ -62,42 +96,6 @@ Long-form DID:
 ```
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU
 ```
-
-
-# Quickstart
-
-## Public Demo Instance
-
-- Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
-- Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
-
-## Self-hosting
-
-This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura. It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database. Once operations are indexed, you can browse them using the Explorer page in the Web UI.
-
-**Prerequisites:**
-- [Docker](https://docs.docker.com/get-docker/)
-
-**Supported Platforms:**
-- The official NeoPRISM Docker image supports both x86_64 and arm64 architectures.
-- Compatible with Linux, macOS, and Windows hosts that can run Docker.
-
-**Steps:**
-
-1. Clone the repository and navigate to the example directory:
-   ```bash
-   cd docker/mainnet-relay
-   ```
-2. Start the node and sync block metadata:
-   ```bash
-   docker-compose up
-   ```
-3. Access the Web UI at [http://localhost:8080](http://localhost:8080). The Explorer page allows you to browse indexed DID operations.
-4. Use the resolver endpoint to resolve DIDs:
-   ```bash
-   curl http://localhost:8080/api/dids/<did>
-   ```
-
 
 # Development guide
 
