@@ -23,7 +23,7 @@ A PRISM node continuously monitors the Cardano blockchain for DID operations, va
     - **Standalone:** Combines indexing and submission capabilities into a single process.
 
 - **🔗 Cardano Data Source Integration**
-  - Ingests DID operations from various Cardano data sources, including Oura and DBSync.
+  - Ingests DID operations from various Cardano data sources, including [Oura](https://github.com/txpipe/oura) and [DBSync](https://github.com/input-output-hk/cardano-db-sync).
 
 - **🆔 W3C-Compliant DID Resolution**
   - Provides a universal-resolver compatible HTTP endpoint.
