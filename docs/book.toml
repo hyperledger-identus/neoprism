@@ -14,4 +14,6 @@ renderer = ["html", "markdown"]
 
 [output.markdown]
 
+[output.linkcheck]
+
 [output.html]

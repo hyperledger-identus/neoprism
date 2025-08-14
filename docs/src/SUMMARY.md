@@ -8,7 +8,6 @@
   - [Nix installation](./installation/nix.md)
 - [Architecture](./architecture/README.md)
 - [Configuration](./configuration/README.md)
-  - [Common](./configuration/common.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
 

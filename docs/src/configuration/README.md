@@ -1,16 +1,16 @@
 # Configuration
 
-NeoPRISM nodes are highly configurable to suit different deployment scenarios.  
-Configuration options can be set using command-line flags or environment variables.
+NeoPRISM nodes are highly configurable for different deployment scenarios.
 
-This section provides:
-- A summary of each node mode and its configuration concepts.
-- Guidance on DLT Source and DLT Sink options.
-- References to the [CLI Options](../references/cli-options.md) page for a complete list of flags and environment variables.
+## Configuration Workflow
+
+1. Select your node mode: [Indexer](./indexer.md) or [Submitter](./submitter.md)
+2. Configure DLT Source/Sink integration
+3. Review all available flags and environment variables ([CLI Options](../references/cli-options.md))
 
 See the following pages for details:
-- [Indexer Configuration](./indexer.md): Indexer node summary and DLT Source explanation.
-- [Submitter Configuration](./submitter.md): Submitter node summary and DLT Sink explanation.
+- [Indexer Configuration](./indexer.md)
+- [Submitter Configuration](./submitter.md)
 
 For a full list of available options, see [CLI Options](../references/cli-options.md).
 

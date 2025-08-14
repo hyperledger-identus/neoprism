@@ -21,6 +21,7 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
 
 Choose the DLT source that best fits your infrastructure and reliability needs.
 
-See [Common Configuration](./common.md) for general server settings.
+---
 
-For a full list of flags and environment variables, see [CLI Options](../references/cli-options.md).
+**Next Steps:**
+- [CLI Options](../references/cli-options.md): Full list of flags and environment variables.

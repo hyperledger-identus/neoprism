@@ -13,6 +13,7 @@ The Submitter node currently supports Cardano wallet integration as its DLT sink
 
 Configure the wallet integration to match your operational and security requirements.
 
-See [Common Configuration](./common.md) for general server settings.
+---
 
-For a full list of flags and environment variables, see [CLI Options](../references/cli-options.md).
+**Next Steps:**
+- [CLI Options](../references/cli-options.md): Full list of flags and environment variables.
