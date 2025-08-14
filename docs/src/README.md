@@ -1,13 +1,8 @@
 # NeoPRISM Documentation
 
-Welcome to the official documentation for NeoPRISM.
+Welcome to the NeoPRISM documentation site!
 
-## Getting Started
-
-- [Installation Guide](./installation.md)
-- [Node Configuration](./configuration.md)
-- [API Reference](./api/index.md)
-- [Usage Examples](./examples.md)
+Use the navigation panel on the left to browse different sections of the documentation, including guides, references, and community resources.
 
 ## Community & Support
 
