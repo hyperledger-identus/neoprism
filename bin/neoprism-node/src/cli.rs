@@ -19,6 +19,8 @@ pub enum Command {
     Submitter(SubmitterArgs),
     /// Start the node in standalone mode.
     Standalone(StandaloneArgs),
+    /// Generate OpenAPI specification for the API.
+    GenerateOpenApi(GenerateOpenApiArgs),
 }
 
 #[derive(Args)]
@@ -67,6 +69,13 @@ pub struct ServerArgs {
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
     #[arg(long, env = "NPRISM_CORS_ENABLED")]
     pub cors_enabled: bool,
+}
+
+#[derive(Args)]
+pub struct GenerateOpenApiArgs {
+    /// Output file for the OpenAPI spec (stdout if not provided)
+    #[arg(long)]
+    pub output: Option<PathBuf>,
 }
 
 #[derive(Args)]

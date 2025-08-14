@@ -12,6 +12,8 @@ mod components;
 mod features;
 mod urls;
 
+pub use features::api::open_api;
+
 pub fn router(assets_dir: &Path, mode: RunMode) -> Router<AppState> {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 

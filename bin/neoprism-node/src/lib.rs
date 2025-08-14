@@ -1,6 +1,7 @@
 #![allow(non_snake_case)]
 #![feature(error_reporter)]
 
+use std::fs;
 use std::sync::Arc;
 
 use app::service::DidService;
@@ -65,7 +66,22 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
+        cli::Command::GenerateOpenApi(args) => {
+            generate_openapi(args)?;
+        }
     };
+    Ok(())
+}
+
+fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()> {
+    let oas = crate::http::open_api(&RunMode::Standalone);
+    let openapi_json = oas.to_pretty_json()?;
+
+    if let Some(path) = args.output {
+        fs::write(path, &openapi_json)?;
+    } else {
+        println!("{}", openapi_json);
+    }
     Ok(())
 }
 

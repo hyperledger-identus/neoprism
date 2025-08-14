@@ -11,6 +11,7 @@ pkgs.mkShell {
     mdbook-cmdrun
     mdbook-d2
     mdbook-linkcheck
+    yq-go
     self.packages.${pkgs.system}.neoprism-bin
   ];
   shellHook = ''

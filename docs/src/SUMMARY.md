@@ -14,3 +14,4 @@
 # Reference Guide
 
 - [CLI options](./references/cli-options.md)
+- [OpenAPI specification](./references/openapi.md)
