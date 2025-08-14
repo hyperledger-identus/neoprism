@@ -8,14 +8,14 @@
 [![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 
-## Quickstart
+# Quickstart
 
-### Public Demo Instance
+## Public Demo Instance
 
 - Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
 - Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
 
-### Self-hosting
+## Self-hosting
 
 This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura. It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database. Once operations are indexed, you can browse them using the Explorer page in the Web UI.
 
@@ -42,7 +42,7 @@ This example setup runs a NeoPRISM node that connects to the Cardano mainnet pub
    curl http://localhost:8080/api/dids/<did>
    ```
 
-## Overview
+# Overview
 
 NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
 
