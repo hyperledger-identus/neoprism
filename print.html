@@ -673,6 +673,22 @@ Make sure you use your own payment address. Using an incorrect or third-party ad
 <li><a href="configuration/../references/cli-options.html">CLI Options</a>: Full list of flags and environment variables.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="logging"><a class="header" href="#logging">Logging</a></h1>
+<p>NeoPRISM uses structured logging to help you diagnose issues and monitor node activity.
+Logging is powered by the <a href="https://docs.rs/tracing/latest/tracing/"><code>tracing</code></a> crate, and log verbosity is controlled via the standard <code>RUST_LOG</code> environment variable.
+By default, NeoPRISM outputs all logs to stdout.</p>
+<h2 id="configuring-logging"><a class="header" href="#configuring-logging">Configuring Logging</a></h2>
+<p>To set the log level, set the <code>RUST_LOG</code> environment variable before starting NeoPRISM. For example:</p>
+<pre><code class="language-bash">RUST_LOG=info
+</code></pre>
+<p>Supported log levels (in increasing verbosity) are: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, and <code>trace</code>.</p>
+<p>You can also filter logs by module. For example, to see only database-related logs at debug level:</p>
+<pre><code class="language-bash">RUST_LOG=neoprism_node::http=debug
+</code></pre>
+<p>Multiple filters can be combined:</p>
+<pre><code class="language-bash">RUST_LOG=info,oura=warn,neoprism_node::http=trace,tower_http::trace=debug
+</code></pre>
+<h2 id="about-rust_log"><a class="header" href="#about-rust_log">About <code>RUST_LOG</code></a></h2>
+<p>NeoPRISM uses the standard <a href="https://docs.rs/tracing/latest/tracing/"><code>tracing</code></a> environment variables to control log verbosity and filtering, including <code>RUST_LOG</code>. For more details on how <code>RUST_LOG</code> works and advanced usage, see the <a href="https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html">tracing-subscriber EnvFilter documentation</a>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cli-options"><a class="header" href="#cli-options">CLI Options</a></h1>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
 <pre><code>Usage: neoprism-node &lt;COMMAND&gt;
