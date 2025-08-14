@@ -27,3 +27,9 @@ This guide will help you install and run a NeoPRISM node using Docker.
    ```bash
    curl http://localhost:8080/api/dids/<did>
    ```
+
+---
+
+> **Note:** The example above demonstrates one way to run NeoPRISM using Docker. You can find additional deployment examples and configurations in the `docker` directory of the repository.  
+>  
+> If you are deploying NeoPRISM in a production environment, please take extra care to harden your setup according to your organization's security requirements.
