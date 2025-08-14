@@ -13,8 +13,5 @@ Welcome to the official documentation for NeoPRISM.
 
 - [GitHub Repository](https://github.com/hyperledger-identus/neoprism)
 - [Issue Tracker](https://github.com/hyperledger-identus/neoprism/issues)
-- [Discussion Forum](https://forums.hyperledger.org/)
+- [Discord Channel](https://discord.com/channels/905194001349627914/1230596020790886490)
 
----
-
-Use the navigation menu to explore detailed technical documentation.
