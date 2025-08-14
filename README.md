@@ -13,7 +13,9 @@
 
 NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
 
-A PRISM node continuously monitors the Cardano blockchain for DID operations, validates and indexes them, and enables efficient lookup of DID Documents. It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are enforced. By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without reliance on a central authority.
+A PRISM node continuously monitors the Cardano blockchain for DID operations, validates and indexes them, and enables efficient lookup of DID Documents.
+It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are enforced.
+By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without reliance on a central authority.
 
 ## Features
 
@@ -46,11 +48,17 @@ A PRISM node continuously monitors the Cardano blockchain for DID operations, va
 
 ## Introduction to PRISM DID
 
-The [PRISM DID method](https://github.com/input-output-hk/prism-did-method-spec) (`did:prism`) is a protocol for creating and managing Decentralized Identifiers (DIDs) built on the Cardano blockchain. This specification defines the operations, serialization formats, and rules for managing the lifecycle of DIDs and their associated DID documents.
+The [PRISM DID method](https://github.com/input-output-hk/prism-did-method-spec) (`did:prism`) is a protocol for creating and managing Decentralized Identifiers (DIDs) built on the Cardano blockchain.
+This specification defines the operations, serialization formats, and rules for managing the lifecycle of DIDs and their associated DID documents.
 
-At its core, PRISM works by encoding identity operations (Create, Update, Deactivate) as Protocol Buffer messages that are signed, batched into blocks, and published as metadata in Cardano transactions. PRISM nodes continuously monitor the blockchain, processing these operations to maintain an up-to-date map of DIDs and their states. The method requires a "secure depth" of 112 block confirmations before considering operations final. During this confirmation period, users can leverage long form DIDs immediately without waiting for on-chain anchoring, providing flexibility while maintaining the ability to later publish these DIDs to the blockchain.
+At its core, PRISM works by encoding identity operations (Create, Update, Deactivate) as Protocol Buffer messages that are signed, batched into blocks, and published as metadata in Cardano transactions.
+PRISM nodes continuously monitor the blockchain, processing these operations to maintain an up-to-date map of DIDs and their states.
+The method requires a "secure depth" of 112 block confirmations before considering operations final.
+During this confirmation period, users can leverage long form DIDs immediately without waiting for on-chain anchoring, providing flexibility while maintaining the ability to later publish these DIDs to the blockchain.
 
-The protocol defines clear rules for constructing and validating operations, translating internal state to W3C-compliant DID Documents, and resolving DIDs. Security is enforced through cryptographic signatures, with each DID having at least one master key for operation signing. PRISM is designed to be scalable and secure, with support for various verification methods, services, and key types including secp256k1, Ed25519, and X25519.
+The protocol defines clear rules for constructing and validating operations, translating internal state to W3C-compliant DID Documents, and resolving DIDs.
+Security is enforced through cryptographic signatures, with each DID having at least one master key for operation signing.
+PRISM is designed to be scalable and secure, with support for various verification methods, services, and key types including secp256k1, Ed25519, and X25519.
 
 **Examples:**
 
@@ -73,7 +81,9 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 ## Self-hosting
 
-This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura. It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database. Once operations are indexed, you can browse them using the Explorer page in the Web UI.
+This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura.
+It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database.
+Once operations are indexed, you can browse them using the Explorer page in the Web UI.
 
 **Prerequisites:**
 - [Docker](https://docs.docker.com/get-docker/)
