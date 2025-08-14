@@ -6,6 +6,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -15,7 +17,7 @@ jobs:
         uses: cachix/install-nix-action@v31
 
       - name: Build docs site
-        run: nix build .#docs-site
+        run: nix build .#docs-site -L
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4

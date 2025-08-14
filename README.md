@@ -9,6 +9,12 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 [![Discord](https://img.shields.io/discord/905194001349627914?label=discord)](https://discord.com/channels/905194001349627914/1230596020790886490)
 
+---
+
+**📚 [Documentation Site](https://hyperledger-identus.github.io/neoprism/)**
+
+---
+
 # Overview
 
 NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
