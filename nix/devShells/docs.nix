@@ -6,8 +6,10 @@ in
 pkgs.mkShell {
   name = "docs-shell";
   buildInputs = with pkgs; [
+    d2
     mdbook
     mdbook-cmdrun
+    mdbook-d2
     self.packages.${pkgs.system}.neoprism-bin
   ];
   shellHook = ''
