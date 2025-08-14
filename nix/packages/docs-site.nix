@@ -2,6 +2,7 @@
   stdenv,
   lib,
   version,
+  d2,
   mdbook,
   mdbook-d2,
   mdbook-cmdrun,
@@ -17,6 +18,7 @@ stdenv.mkDerivation {
   src = lib.cleanSource ../../docs;
 
   buildInputs = [
+    d2
     mdbook
     mdbook-cmdrun
     mdbook-d2
