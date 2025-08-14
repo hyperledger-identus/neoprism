@@ -45,6 +45,11 @@ rec {
         tagSuffix = "-arm64";
       };
 
+  # docs-site
+  docs-site = pkgs.callPackage ./docs-site.nix {
+    inherit version neoprism-bin;
+  };
+
   # cardano-testnet
   cardano-testnet-docker = pkgs.callPackage ./cardano-testnet-docker.nix { };
   cardano-testnet-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./cardano-testnet-docker.nix {
