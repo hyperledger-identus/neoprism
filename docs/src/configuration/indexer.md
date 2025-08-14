@@ -23,7 +23,28 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
   - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL`
   - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
 
-#### How Common DLT Source Configuration Works
+---
+
+### DLT Source Comparison
+
+**Oura**
+
+Oura works by performing a chainsync protocol with a Cardano relay node.
+This setup is quite lean, as you can connect to any available public relay.
+The downside is that sync progress can be slow, since it performs a full sync from the blockchain.
+If possible, connect to a Cardano node close to your location, as syncing across different geographic regions can be very slow.
+The initial sync may take multiple days. The best option is to connect to your own Cardano node within the same network for optimal performance.
+
+**DB Sync**
+
+DBSync is a service that syncs the Cardano blockchain and writes the data to a PostgreSQL database.
+DBSync is known to be resource-heavy and requires significant disk space.
+The advantage is that sync speed is very fast, since NeoPRISM only needs to read the database tables and parse the operations.
+If you can afford to run DBSync, it is recommended to use this option, as the initial sync is much faster compared to Oura.
+
+---
+
+### How Common DLT Source Configuration Works
 
 NeoPRISM streams blocks from the Cardano blockchain and extracts PRISM metadata, which is then persisted to the database. These operations are initially stored as raw, unindexed data. At every configured interval (set by the index interval option), NeoPRISM wakes up and picks up unindexed operations from the database. It then runs the indexing logic, which extracts, validates, and transforms each raw operation into an efficient lookup data structure.
 
