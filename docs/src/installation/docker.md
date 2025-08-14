@@ -7,9 +7,7 @@ This guide will help you install and run a NeoPRISM node using Docker.
 - **Docker**: [Install Docker](https://docs.docker.com/get-docker/)
 - **Git**: [Install Git](https://git-scm.com/downloads)
 
----
-
-## Quick Start (Mainnet Relay Example)
+## Steps (Mainnet Relay Example)
 
 1. **Clone the NeoPRISM repository:**
    ```bash
@@ -29,5 +27,3 @@ This guide will help you install and run a NeoPRISM node using Docker.
    ```bash
    curl http://localhost:8080/api/dids/<did>
    ```
-
----

@@ -7,9 +7,7 @@ NeoPRISM can be built and run using [Nix flakes](https://nixos.wiki/wiki/Flakes)
 - **Nix** with flake support enabled. See [Nix Flakes documentation](https://nixos.wiki/wiki/Flakes) for setup instructions.
 - **Git**: [Install Git](https://git-scm.com/downloads)
 
----
-
-## Quick Start
+## Steps
 
 1. **Build the NeoPRISM binary from the remote flake:**
    ```bash
@@ -35,5 +33,3 @@ NeoPRISM can be built and run using [Nix flakes](https://nixos.wiki/wiki/Flakes)
 
 4. **Access the Web UI:**
    - Open [http://localhost:8080](http://localhost:8080) in your browser.
-
----
