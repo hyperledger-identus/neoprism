@@ -23,7 +23,13 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
   - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL`
   - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
 
-Choose the DLT source that best fits your infrastructure and reliability needs.
+#### How Common DLT Source Configuration Works
+
+NeoPRISM streams blocks from the Cardano blockchain and extracts PRISM metadata, which is then persisted to the database. These operations are initially stored as raw, unindexed data. At every configured interval (set by the index interval option), NeoPRISM wakes up and picks up unindexed operations from the database. It then runs the indexing logic, which extracts, validates, and transforms each raw operation into an efficient lookup data structure.
+
+A faster index interval reduces the lag between when an operation is streamed and when it becomes indexed and available for fast lookup. However, setting a very short interval can put additional pressure on the database due to more frequent indexing cycles. NeoPRISM comes with a sensible default value for the index interval to balance performance and resource usage.
+
+Choose the DLT source and interval settings that best fit your infrastructure and performance needs.
 
 ---
 
