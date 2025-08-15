@@ -18,7 +18,7 @@ docker-compose up
 ```
 
 > **Note:**  
-> If you are testing changes to a PRISM node implementation locally, you may need to adjust the `docker-compose.yml` file to use your locally built Docker image instead of the default image.  
+> If you are testing changes to a PRISM node implementation locally, you may need to adjust the `compose.yml` or `docker-compose.yml` file (depending on which is present in your project) to use your locally built Docker image instead of the default image.  
 > For example, update the `image:` field or use the `build:` directive to point to your local source.
 
 This will launch all necessary dependencies for the test suite.
