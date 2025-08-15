@@ -226,6 +226,7 @@ pub struct DidState {
     pub storage: Vec<StorageState>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    pub is_published: bool,
 }
 
 impl DidState {
