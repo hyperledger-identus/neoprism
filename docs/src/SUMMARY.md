@@ -11,6 +11,7 @@
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
   - [Logging](./configuration/logging.md)
+- [PRISM specification tests](./prism-test/README.md)
 
 # Reference Guide
 
