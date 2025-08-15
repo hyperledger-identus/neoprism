@@ -66,6 +66,7 @@ type InternalMap<K, V> = im_rc::HashMap<K, Revocable<V>>;
 #[derive(Debug, Clone)]
 struct DidStateRc {
     did: Rc<CanonicalPrismDid>,
+    is_published: bool,
     context: Rc<Vec<String>>,
     prev_operation_hash: Rc<Sha256Digest>,
     public_keys: InternalMap<PublicKeyId, PublicKey>,
@@ -81,10 +82,11 @@ struct StorageStateRc {
 }
 
 impl DidStateRc {
-    fn new(did: CanonicalPrismDid) -> Self {
+    fn new(did: CanonicalPrismDid, is_published: bool) -> Self {
         let last_operation_hash = did.suffix.clone();
         Self {
             did: Rc::new(did),
+            is_published,
             prev_operation_hash: Rc::new(last_operation_hash),
             context: Default::default(),
             public_keys: Default::default(),
@@ -331,6 +333,7 @@ impl DidStateRc {
             storage,
             created_at,
             updated_at,
+            is_published: self.is_published,
         }
     }
 }
@@ -355,7 +358,7 @@ fn init_published_context(
     let did = CanonicalPrismDid::from_operation(operation)?;
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
-            let initial_state = DidStateRc::new(did);
+            let initial_state = DidStateRc::new(did, true);
             let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state =
                 processor.create_did(&initial_state, metadata, op.clone(), operation.special_fields.clone())?;
@@ -386,7 +389,7 @@ fn init_unpublished_context(
     let did = CanonicalPrismDid::from_operation(&operation)?;
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
-            let initial_state = DidStateRc::new(did);
+            let initial_state = DidStateRc::new(did, false);
             let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state = processor.create_did(
                 &initial_state,

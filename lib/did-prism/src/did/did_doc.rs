@@ -11,6 +11,10 @@ use crate::did::{DidState, PrismDid, PrismDidOps, operation};
 impl DidState {
     pub fn to_resolution_result(&self, did: &PrismDid) -> ResolutionResult {
         let did_document = self.to_did_document(&did.to_did());
+        let canonical_id = match did {
+            PrismDid::LongForm(did) if self.is_published => Some(did.clone().into_canonical().to_did()),
+            _ => None,
+        };
         ResolutionResult {
             did_document: Some(did_document).filter(|_| !self.is_deactivated()),
             did_resolution_metadata: DidResolutionMetadata {
@@ -21,7 +25,7 @@ impl DidState {
                 created: Some(self.created_at),
                 updated: Some(self.updated_at),
                 deactivated: Some(self.is_deactivated()),
-                canonical_id: Some(did.clone().into_canonical().to_did()), // TODO: show only when published
+                canonical_id,
                 version_id: Some(HexStr::from(self.last_operation_hash.as_bytes()).to_string()),
             },
         }
