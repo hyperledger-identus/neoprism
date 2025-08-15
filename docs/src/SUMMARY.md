@@ -3,6 +3,7 @@
 # Usage Guide
 
 - [Welcome](README.md)
+- [Useful links](./useful-links.md)
 - [Installation](./installation/README.md)
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
