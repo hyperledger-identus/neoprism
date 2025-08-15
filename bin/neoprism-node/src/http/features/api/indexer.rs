@@ -44,7 +44,7 @@ mod models {
     ),
     params(
         ("did" = Did, Path, description = "The DID to resolve"),
-        ("Accept" = String, Header, description = "Required: application/did-resolution")
+        ("Accept" = String, Header, description = "Required: application/did-resolution", example = "application/did-resolution")
     )
 )]
 pub async fn resolve_did(
