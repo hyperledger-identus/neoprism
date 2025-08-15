@@ -1,0 +1,67 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct ResolutionResult {
+    pub did_document: Option<serde_json::Value>,
+    pub did_resolution_metadata: DidResolutionMetadata,
+    pub did_document_metadata: DidDocumentMetadata,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct DidDocumentMetadata {
+    pub created: Option<String>,
+    pub updated: Option<String>,
+    pub deactivated: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct DidResolutionMetadata {
+    pub content_type: Option<String>,
+    pub error: Option<DidResolutionError>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
+pub struct DidResolutionError {
+    pub r#type: DidResolutionErrorCode,
+    pub title: Option<String>,
+    pub detail: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+pub enum DidResolutionErrorCode {
+    #[serde(rename = "https://www.w3.org/ns/did#INVALID_DID")]
+    InvalidDid,
+    #[serde(rename = "https://www.w3.org/ns/did#INVALID_DID_DOCUMENT")]
+    InvalidDidDocument,
+    #[serde(rename = "https://www.w3.org/ns/did#NOT_FOUND")]
+    NotFound,
+    #[serde(rename = "https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED")]
+    RepresentationNotSupported,
+    #[serde(rename = "https://www.w3.org/ns/did#INVALID_DID_URL")]
+    InvalidDidUrl,
+    #[serde(rename = "https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED")]
+    MethodNotSupported,
+    #[serde(rename = "https://www.w3.org/ns/did#INVALID_OPTIONS")]
+    InvalidOptions,
+    #[serde(rename = "https://www.w3.org/ns/did#INTERNAL_ERROR")]
+    InternalError,
+
+    // Additional error codes from w3id.org/security
+    #[serde(rename = "https://w3id.org/security#INVALID_PUBLIC_KEY")]
+    InvalidPublicKey,
+    #[serde(rename = "https://w3id.org/security#INVALID_PUBLIC_KEY_LENGTH")]
+    InvalidPublicKeyLength,
+    #[serde(rename = "https://w3id.org/security#INVALID_PUBLIC_KEY_TYPE")]
+    InvalidPublicKeyType,
+    #[serde(rename = "https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE")]
+    UnsupportedPublicKeyType,
+}
