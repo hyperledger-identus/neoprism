@@ -1,6 +1,7 @@
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
-use crate::DidDocument;
+use crate::{Did, DidDocument};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -15,9 +16,10 @@ pub struct ResolutionResult {
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocumentMetadata {
-    pub created: Option<String>,
-    pub updated: Option<String>,
+    pub created: Option<DateTime<Utc>>,
+    pub updated: Option<DateTime<Utc>>,
     pub deactivated: Option<bool>,
+    pub canonical_id: Option<Did>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

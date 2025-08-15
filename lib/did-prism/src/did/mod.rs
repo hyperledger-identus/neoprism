@@ -225,6 +225,12 @@ pub struct DidState {
     pub storage: Vec<StorageState>,
 }
 
+impl DidState {
+    pub fn is_deactivated(&self) -> bool {
+        self.public_keys.is_empty()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StorageState {
     pub init_operation_hash: Rc<Sha256Digest>,

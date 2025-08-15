@@ -4,6 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+chrono = { workspace = true }
 derive_more = { workspace = true, features = ["from", "display", "error"] }
 identus-apollo = { workspace = true, features = ["base64", "serde", "jwk"] }
 serde = { workspace = true, features = ["derive"] }

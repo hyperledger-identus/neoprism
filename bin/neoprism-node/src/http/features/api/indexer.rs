@@ -1,9 +1,8 @@
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::{HeaderMap, StatusCode};
+use axum::http::StatusCode;
 use identus_apollo::hex::HexStr;
-use identus_did_core::{Did, DidDocument, DidResolutionError, ResolutionResult};
-use identus_did_prism::did::PrismDidOps;
+use identus_did_core::{Did, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
 use utoipa::OpenApi;
@@ -43,48 +42,17 @@ mod models {
         (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ResolutionResult, content_type = "application/did-resolution"),
     ),
     params(
-        ("did" = Did, Path, description = "The DID to resolve"),
-        ("Accept" = String, Header, description = "Required: application/did-resolution", example = "application/did-resolution")
+        ("did" = Did, Path, description = "The DID to resolve")
     )
 )]
 pub async fn resolve_did(
     Path(did): Path<String>,
     State(state): State<AppState>,
-    headers: HeaderMap,
 ) -> (StatusCode, Json<ResolutionResult>) {
-    let accept_header = headers.get("accept").and_then(|v| v.to_str().ok());
-    match accept_header {
-        Some("application/did-resolution") | None => {
-            let (result, _) = state.did_service.resolve_did(&did).await;
-            match result {
-                Err(ResolutionError::InvalidDid { .. }) => (
-                    StatusCode::BAD_REQUEST,
-                    Json(ResolutionResult {
-                        did_resolution_metadata: identus_did_core::DidResolutionMetadata {
-                            error: Some(DidResolutionError {
-                                r#type: identus_did_core::DidResolutionErrorCode::InvalidDid,
-                                title: None,
-                                detail: None,
-                            }),
-                            ..Default::default()
-                        },
-                        ..Default::default()
-                    }),
-                ),
-                Err(ResolutionError::NotFound) => (StatusCode::NOT_FOUND, Json(Default::default())),
-                Err(ResolutionError::InternalError { .. }) => {
-                    (StatusCode::INTERNAL_SERVER_ERROR, Json(Default::default()))
-                }
-                Ok((did, did_state)) => (
-                    StatusCode::OK,
-                    Json(ResolutionResult {
-                        did_document: Some(did_state.to_did_document(&did.to_did())),
-                        ..Default::default()
-                    }),
-                ),
-            }
-        }
-        _ => (StatusCode::NOT_ACCEPTABLE, Default::default()),
+    let (result, _) = state.did_service.resolve_did(&did).await;
+    match result {
+        Err(e) => (e.status_code(), Json(e.into())),
+        Ok((did, did_state)) => (StatusCode::OK, Json(did_state.to_resolution_result(&did))),
     }
 }
 
