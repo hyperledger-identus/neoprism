@@ -42,7 +42,10 @@ mod models {
         (status = GONE, description = "DID deactivated", body = ResolutionResult, content_type = "application/did-resolution"),
         (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ResolutionResult, content_type = "application/did-resolution"),
     ),
-    params(("did" = Did, Path, description = "The DID to resolve"))
+    params(
+        ("did" = Did, Path, description = "The DID to resolve"),
+        ("Accept" = String, Header, description = "Required: application/did-resolution")
+    )
 )]
 pub async fn resolve_did(
     Path(did): Path<String>,
