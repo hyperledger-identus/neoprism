@@ -64,4 +64,16 @@ pub enum DidResolutionErrorCode {
     InvalidPublicKeyType,
     #[serde(rename = "https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE")]
     UnsupportedPublicKeyType,
+
+    // Additional error codes from CID specs
+    #[serde(rename = "https://w3id.org/security#INVALID_VERIFICATION_METHOD_URL")]
+    InvalidVerificationMethodUrl,
+    #[serde(rename = "https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID")]
+    InvalidControlledIdentifierDocumentId,
+    #[serde(rename = "https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT")]
+    InvalidControlledIdentifierDocument,
+    #[serde(rename = "https://w3id.org/security#INVALID_VERIFICATION_METHOD")]
+    InvalidVerificationMethod,
+    #[serde(rename = "https://w3id.org/security#INVALID_RELATIONSHIP_FOR_VERIFICATION_METHOD")]
+    InvalidRelationshipForVerificationMethod,
 }
