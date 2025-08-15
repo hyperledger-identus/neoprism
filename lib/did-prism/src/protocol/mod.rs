@@ -274,6 +274,29 @@ impl DidStateRc {
         let did: CanonicalPrismDid = (*self.did).clone();
         let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
         let last_operation_hash = self.prev_operation_hash.clone();
+        let all_times = || {
+            std::iter::empty()
+                .chain(self.public_keys.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(self.services.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(self.storage.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(
+                    self.public_keys
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+                .chain(
+                    self.services
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+                .chain(
+                    self.storage
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+        };
+        let created_at = all_times().min().unwrap_or_default();
+        let updated_at = all_times().max().unwrap_or_default();
         let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
@@ -306,6 +329,8 @@ impl DidStateRc {
             public_keys,
             services,
             storage,
+            created_at,
+            updated_at,
         }
     }
 }

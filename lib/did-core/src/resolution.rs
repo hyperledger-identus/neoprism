@@ -20,6 +20,7 @@ pub struct DidDocumentMetadata {
     pub updated: Option<DateTime<Utc>>,
     pub deactivated: Option<bool>,
     pub canonical_id: Option<Did>,
+    pub version_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]

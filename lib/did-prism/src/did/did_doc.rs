@@ -1,3 +1,4 @@
+use identus_apollo::hex::HexStr;
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
     Did, DidDocument, DidDocumentMetadata, DidResolutionMetadata, ResolutionResult, Service, ServiceEndpoint,
@@ -17,10 +18,11 @@ impl DidState {
                 ..Default::default()
             },
             did_document_metadata: DidDocumentMetadata {
-                created: None, // TODO: populate this field
-                updated: None, // TODO: populate this field
+                created: Some(self.created_at),
+                updated: Some(self.updated_at),
                 deactivated: Some(self.is_deactivated()),
-                canonical_id: Some(did.clone().into_canonical().to_did()),
+                canonical_id: Some(did.clone().into_canonical().to_did()), // TODO: show only when published
+                version_id: Some(HexStr::from(self.last_operation_hash.as_bytes()).to_string()),
             },
         }
     }
