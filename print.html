@@ -170,11 +170,21 @@
                         <h1 id="neoprism-documentation"><a class="header" href="#neoprism-documentation">NeoPRISM Documentation</a></h1>
 <p>Welcome to the NeoPRISM documentation site!</p>
 <p>Use the navigation panel on the left to browse different sections of the documentation, including guides, references, and community resources.</p>
-<h2 id="community--support"><a class="header" href="#community--support">Community &amp; Support</a></h2>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="useful-links"><a class="header" href="#useful-links">Useful links</a></h1>
+<h2 id="neoprism--support"><a class="header" href="#neoprism--support">NeoPRISM &amp; Support</a></h2>
 <ul>
-<li><a href="https://github.com/hyperledger-identus/neoprism">GitHub Repository</a></li>
+<li><a href="https://github.com/hyperledger-identus/neoprism">NeoPRISM GitHub Repository</a></li>
+<li><a href="https://github.com/hyperledger-identus/neoprism/releases">Releases</a></li>
 <li><a href="https://github.com/hyperledger-identus/neoprism/issues">Issue Tracker</a></li>
-<li><a href="https://discord.com/channels/905194001349627914/1230596020790886490">Discord Channel</a></li>
+<li><a href="https://hub.docker.com/r/hyperledgeridentus/identus-neoprism">DockerHub</a></li>
+<li><a href="https://discord.com/channels/905194001349627914/1230596020790886490">Discord Community</a></li>
+</ul>
+<h2 id="external-resources"><a class="header" href="#external-resources">External Resources</a></h2>
+<ul>
+<li><a href="https://github.com/input-output-hk/prism-did-method-spec">PRISM DID Method Specification</a></li>
+<li><a href="https://github.com/txpipe/oura">Oura Cardano Indexer</a></li>
+<li><a href="https://github.com/input-output-hk/cardano-db-sync">Cardano DB Sync</a></li>
+<li><a href="https://github.com/input-output-hk/cardano-wallet">Cardano Wallet</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="neoprism-installation"><a class="header" href="#neoprism-installation">NeoPRISM Installation</a></h1>
 <p>NeoPRISM can be installed and run using either Docker or Nix. Choose the method that best fits your environment.</p>
@@ -747,7 +757,7 @@ Options:
 <h2 id="indexer-options"><a class="header" href="#indexer-options">Indexer options</a></h2>
 <pre><code>Start the node in indexer mode
 
-Usage: neoprism-node indexer [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt;
+Usage: neoprism-node indexer [OPTIONS] --db-url &lt;DB_URL&gt;
 
 Options:
       --address &lt;ADDRESS&gt;
@@ -763,7 +773,7 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
@@ -809,7 +819,7 @@ Options:
 <h2 id="standalone-options"><a class="header" href="#standalone-options">Standalone options</a></h2>
 <pre><code>Start the node in standalone mode
 
-Usage: neoprism-node standalone [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
+Usage: neoprism-node standalone [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
 
 Options:
       --address &lt;ADDRESS&gt;
@@ -825,7 +835,7 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
@@ -938,17 +948,35 @@ paths:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: Resolve DID successfully
+          description: DID Resolution Result
           content:
-            application/json:
+            application/did-resolution:
               schema:
-                $ref: '#/components/schemas/DidDocument'
+                $ref: '#/components/schemas/ResolutionResult'
         "400":
           description: Invalid DID
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
         "404":
           description: DID not found
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "410":
+          description: DID deactivated
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
         "500":
           description: Internal server error
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
   /api/indexer-stats:
     get:
       tags:
@@ -1069,6 +1097,77 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VerificationMethod'
+    DidDocumentMetadata:
+      type: object
+      properties:
+        canonicalId:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/Did'
+        created:
+          type:
+            - string
+            - "null"
+          format: date-time
+        deactivated:
+          type:
+            - boolean
+            - "null"
+        updated:
+          type:
+            - string
+            - "null"
+          format: date-time
+        versionId:
+          type:
+            - string
+            - "null"
+    DidResolutionError:
+      type: object
+      required:
+        - type
+      properties:
+        detail:
+          type:
+            - string
+            - "null"
+        title:
+          type:
+            - string
+            - "null"
+        type:
+          $ref: '#/components/schemas/DidResolutionErrorCode'
+    DidResolutionErrorCode:
+      type: string
+      enum:
+        - https://www.w3.org/ns/did#INVALID_DID
+        - https://www.w3.org/ns/did#INVALID_DID_DOCUMENT
+        - https://www.w3.org/ns/did#NOT_FOUND
+        - https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED
+        - https://www.w3.org/ns/did#INVALID_DID_URL
+        - https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED
+        - https://www.w3.org/ns/did#INVALID_OPTIONS
+        - https://www.w3.org/ns/did#INTERNAL_ERROR
+        - https://w3id.org/security#INVALID_PUBLIC_KEY
+        - https://w3id.org/security#INVALID_PUBLIC_KEY_LENGTH
+        - https://w3id.org/security#INVALID_PUBLIC_KEY_TYPE
+        - https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE
+        - https://w3id.org/security#INVALID_VERIFICATION_METHOD_URL
+        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID
+        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT
+        - https://w3id.org/security#INVALID_VERIFICATION_METHOD
+        - https://w3id.org/security#INVALID_RELATIONSHIP_FOR_VERIFICATION_METHOD
+    DidResolutionMetadata:
+      type: object
+      properties:
+        contentType:
+          type:
+            - string
+            - "null"
+        error:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/DidResolutionError'
     IndexerStats:
       type: object
       properties:
@@ -1098,6 +1197,20 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/Base64UrlStrNoPad'
+    ResolutionResult:
+      type: object
+      required:
+        - didResolutionMetadata
+        - didDocumentMetadata
+      properties:
+        didDocument:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/DidDocument'
+        didDocumentMetadata:
+          $ref: '#/components/schemas/DidDocumentMetadata'
+        didResolutionMetadata:
+          $ref: '#/components/schemas/DidResolutionMetadata'
     Service:
       type: object
       required:

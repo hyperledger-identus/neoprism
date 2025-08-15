@@ -184,7 +184,7 @@ Options:
 <h2 id="indexer-options"><a class="header" href="#indexer-options">Indexer options</a></h2>
 <pre><code>Start the node in indexer mode
 
-Usage: neoprism-node indexer [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt;
+Usage: neoprism-node indexer [OPTIONS] --db-url &lt;DB_URL&gt;
 
 Options:
       --address &lt;ADDRESS&gt;
@@ -200,7 +200,7 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
@@ -246,7 +246,7 @@ Options:
 <h2 id="standalone-options"><a class="header" href="#standalone-options">Standalone options</a></h2>
 <pre><code>Start the node in standalone mode
 
-Usage: neoprism-node standalone [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-network &lt;CARDANO_NETWORK&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
+Usage: neoprism-node standalone [OPTIONS] --db-url &lt;DB_URL&gt; --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
 
 Options:
       --address &lt;ADDRESS&gt;
@@ -262,7 +262,7 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;

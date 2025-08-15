@@ -248,17 +248,35 @@ paths:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: Resolve DID successfully
+          description: DID Resolution Result
           content:
-            application/json:
+            application/did-resolution:
               schema:
-                $ref: '#/components/schemas/DidDocument'
+                $ref: '#/components/schemas/ResolutionResult'
         "400":
           description: Invalid DID
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
         "404":
           description: DID not found
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "410":
+          description: DID deactivated
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
         "500":
           description: Internal server error
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
   /api/indexer-stats:
     get:
       tags:
@@ -379,6 +397,77 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/VerificationMethod'
+    DidDocumentMetadata:
+      type: object
+      properties:
+        canonicalId:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/Did'
+        created:
+          type:
+            - string
+            - "null"
+          format: date-time
+        deactivated:
+          type:
+            - boolean
+            - "null"
+        updated:
+          type:
+            - string
+            - "null"
+          format: date-time
+        versionId:
+          type:
+            - string
+            - "null"
+    DidResolutionError:
+      type: object
+      required:
+        - type
+      properties:
+        detail:
+          type:
+            - string
+            - "null"
+        title:
+          type:
+            - string
+            - "null"
+        type:
+          $ref: '#/components/schemas/DidResolutionErrorCode'
+    DidResolutionErrorCode:
+      type: string
+      enum:
+        - https://www.w3.org/ns/did#INVALID_DID
+        - https://www.w3.org/ns/did#INVALID_DID_DOCUMENT
+        - https://www.w3.org/ns/did#NOT_FOUND
+        - https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED
+        - https://www.w3.org/ns/did#INVALID_DID_URL
+        - https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED
+        - https://www.w3.org/ns/did#INVALID_OPTIONS
+        - https://www.w3.org/ns/did#INTERNAL_ERROR
+        - https://w3id.org/security#INVALID_PUBLIC_KEY
+        - https://w3id.org/security#INVALID_PUBLIC_KEY_LENGTH
+        - https://w3id.org/security#INVALID_PUBLIC_KEY_TYPE
+        - https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE
+        - https://w3id.org/security#INVALID_VERIFICATION_METHOD_URL
+        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID
+        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT
+        - https://w3id.org/security#INVALID_VERIFICATION_METHOD
+        - https://w3id.org/security#INVALID_RELATIONSHIP_FOR_VERIFICATION_METHOD
+    DidResolutionMetadata:
+      type: object
+      properties:
+        contentType:
+          type:
+            - string
+            - "null"
+        error:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/DidResolutionError'
     IndexerStats:
       type: object
       properties:
@@ -408,6 +497,20 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/Base64UrlStrNoPad'
+    ResolutionResult:
+      type: object
+      required:
+        - didResolutionMetadata
+        - didDocumentMetadata
+      properties:
+        didDocument:
+          oneOf:
+            - type: "null"
+            - $ref: '#/components/schemas/DidDocument'
+        didDocumentMetadata:
+          $ref: '#/components/schemas/DidDocumentMetadata'
+        didResolutionMetadata:
+          $ref: '#/components/schemas/DidResolutionMetadata'
     Service:
       type: object
       required:
