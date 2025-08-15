@@ -91,7 +91,7 @@ pub struct DbArgs {
 #[derive(Args)]
 pub struct DltSourceArgs {
     /// The Cardano network the node is syncing from.
-    #[arg(long, env = "NPRISM_CARDANO_NETWORK")]
+    #[arg(long, env = "NPRISM_CARDANO_NETWORK", default_value = "mainnet")]
     pub cardano_network: NetworkIdentifierCliOption,
     /// Address of the Cardano relay node to sync from.
     /// If provided, the node will sync events from the Cardano relay node.

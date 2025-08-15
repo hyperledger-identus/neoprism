@@ -1,3 +1,4 @@
+use axum::http::StatusCode;
 use identus_did_core::{
     DidDocumentMetadata, DidResolutionError, DidResolutionErrorCode, DidResolutionMetadata, ResolutionResult,
 };
@@ -52,6 +53,16 @@ impl From<ResolutionError> for ResolutionResult {
                 error: Some(error),
             },
             did_document_metadata: DidDocumentMetadata::default(),
+        }
+    }
+}
+
+impl ResolutionError {
+    pub fn status_code(&self) -> StatusCode {
+        match self {
+            ResolutionError::InvalidDid { .. } => StatusCode::BAD_REQUEST,
+            ResolutionError::NotFound => StatusCode::NOT_FOUND,
+            ResolutionError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 }
