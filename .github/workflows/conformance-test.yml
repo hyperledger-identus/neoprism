@@ -13,7 +13,7 @@ on:
     - main
 
 jobs:
-  run-integration-test:
+  run-conformance-test:
     runs-on: ubuntu-latest
     env:
       JAVA_TOOL_OPTIONS: -Djava.net.preferIPv4Stack=true
