@@ -681,7 +681,7 @@ By default, NeoPRISM outputs all logs to stdout.</p>
 <pre><code class="language-bash">RUST_LOG=info
 </code></pre>
 <p>Supported log levels (in increasing verbosity) are: <code>error</code>, <code>warn</code>, <code>info</code>, <code>debug</code>, and <code>trace</code>.</p>
-<p>You can also filter logs by module. For example, to see only database-related logs at debug level:</p>
+<p>You can also filter logs by module. For example, to see only HTTP-related logs at debug level:</p>
 <pre><code class="language-bash">RUST_LOG=neoprism_node::http=debug
 </code></pre>
 <p>Multiple filters can be combined:</p>
@@ -689,6 +689,46 @@ By default, NeoPRISM outputs all logs to stdout.</p>
 </code></pre>
 <h2 id="about-rust_log"><a class="header" href="#about-rust_log">About <code>RUST_LOG</code></a></h2>
 <p>NeoPRISM uses the standard <a href="https://docs.rs/tracing/latest/tracing/"><code>tracing</code></a> environment variables to control log verbosity and filtering, including <code>RUST_LOG</code>. For more details on how <code>RUST_LOG</code> works and advanced usage, see the <a href="https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html">tracing-subscriber EnvFilter documentation</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="prism-specification-tests"><a class="header" href="#prism-specification-tests">PRISM Specification Tests</a></h1>
+<p>The <code>prism-test</code> suite provides conformance tests for PRISM node implementations. These tests help developers verify that their NeoPRISM or PRISM node changes adhere to the PRISM specification.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>The tests are located in the <code>tests/prism-test</code> directory. They cover key PRISM features such as DID creation, update, deactivation, and storage operations, ensuring your node implementation behaves as expected.</p>
+<h2 id="running-the-tests"><a class="header" href="#running-the-tests">Running the Tests</a></h2>
+<h3 id="1-start-required-services"><a class="header" href="#1-start-required-services">1. Start Required Services</a></h3>
+<p>Navigate to the <code>docker/prism-test</code> directory and start the required services using Docker Compose:</p>
+<pre><code class="language-sh">cd docker/prism-test
+docker-compose up
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong><br />
+If you are testing changes to a PRISM node implementation locally, you may need to adjust the <code>compose.yml</code> or <code>docker-compose.yml</code> file (depending on which is present in your project) to use your locally built Docker image instead of the default image.<br />
+For example, update the <code>image:</code> field or use the <code>build:</code> directive to point to your local source.</p>
+</blockquote>
+<p>This will launch all necessary dependencies for the test suite.</p>
+<h3 id="2-run-the-test-suite"><a class="header" href="#2-run-the-test-suite">2. Run the Test Suite</a></h3>
+<p>In a separate terminal, navigate to the <code>tests/prism-test</code> directory and run the tests using <code>sbt</code>:</p>
+<pre><code class="language-sh">cd tests/prism-test
+sbt test
+</code></pre>
+<p>The test results will indicate whether your PRISM node implementation conforms to the specification.</p>
+<h2 id="who-should-use-these-tests"><a class="header" href="#who-should-use-these-tests">Who Should Use These Tests?</a></h2>
+<ul>
+<li><strong>NeoPRISM Developers:</strong> Use these tests when making changes to NeoPRISM to ensure continued compliance.</li>
+<li><strong>PRISM Node Developers:</strong> Run the suite to validate your node implementation against the PRISM specification.</li>
+</ul>
+<h2 id="adding-a-new-prism-node-implementation"><a class="header" href="#adding-a-new-prism-node-implementation">Adding a New PRISM Node Implementation</a></h2>
+<p>To include a new PRISM node implementation in the test suite:</p>
+<ol>
+<li>
+<p><strong>Edit <code>MainSpec.scala</code>:</strong><br />
+Go to <code>MainSpec.scala</code> and add your new node to the test suite by providing the appropriate layer and configuration.</p>
+</li>
+<li>
+<p><strong>Implement NodeClient Interface (if needed):</strong><br />
+If your node uses a different RPC or API, you may need to implement the <code>NodeClient</code> interface in <code>NodeClient.scala</code> to adapt the test suite to your node’s communication protocol.</p>
+</li>
+</ol>
+<p>This allows you to run the conformance tests against your custom PRISM node implementation and verify its compliance with the PRISM specification.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cli-options"><a class="header" href="#cli-options">CLI Options</a></h1>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
 <pre><code>Usage: neoprism-node &lt;COMMAND&gt;
@@ -715,21 +755,21 @@ Options:
   -p, --port &lt;PORT&gt;
           Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
       --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
       --db-url &lt;DB_URL&gt;
           Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
       --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
+          Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          A Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, it will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+          Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, it will sync events from the DB sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync url. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
-          Number of sesconds to wait before polling DB Sync for next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
+          Number of seconds to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
       --index-interval &lt;INDEX_INTERVAL&gt;
           Number of seconds to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10]
       --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
@@ -748,21 +788,21 @@ Options:
   -p, --port &lt;PORT&gt;
           Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
       --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
       --db-url &lt;DB_URL&gt;
           Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
       --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
+          Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
           Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transaction [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
+          Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
           Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
       --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transaction [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
+          Payment address for making transactions [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
   -h, --help
           Print help
 </code></pre>
@@ -777,21 +817,21 @@ Options:
   -p, --port &lt;PORT&gt;
           Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
       --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web-ui assets (CSS, Javascripts) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
       --db-url &lt;DB_URL&gt;
           Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
       --skip-migration
-          Skip database migration on Node startup [env: NPRISM_SKIP_MIGRATION=]
+          Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          A Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [possible values: mainnet, preprod, preview]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, it will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+          Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, it will sync events from the DB sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync url. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
-          Number of sesconds to wait before polling DB Sync for next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
+          Number of seconds to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
       --index-interval &lt;INDEX_INTERVAL&gt;
           Number of seconds to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10]
       --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
@@ -799,11 +839,11 @@ Options:
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
           Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transaction [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
+          Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
           Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
       --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transaction [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
+          Payment address for making transactions [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
   -h, --help
           Print help
 </code></pre>
