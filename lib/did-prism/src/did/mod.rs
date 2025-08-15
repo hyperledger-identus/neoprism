@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::LazyLock;
 
+use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use error::DidSyntaxError;
 use identus_apollo::base64::Base64UrlStrNoPad;
@@ -223,6 +224,8 @@ pub struct DidState {
     pub public_keys: Vec<PublicKey>,
     pub services: Vec<Service>,
     pub storage: Vec<StorageState>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 impl DidState {
