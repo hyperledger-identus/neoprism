@@ -17,6 +17,10 @@ cd docker/prism-test
 docker-compose up
 ```
 
+> **Note:**  
+> If you are testing changes to a PRISM node implementation locally, you may need to adjust the `docker-compose.yml` file to use your locally built Docker image instead of the default image.  
+> For example, update the `image:` field or use the `build:` directive to point to your local source.
+
 This will launch all necessary dependencies for the test suite.
 
 ### 2. Run the Test Suite
@@ -40,9 +44,9 @@ The test results will indicate whether your PRISM node implementation conforms t
 To include a new PRISM node implementation in the test suite:
 
 1. **Edit `MainSpec.scala`:**  
-   Go to `tests/prism-test/src/test/scala/org/hyperledger/identus/prismtest/MainSpec.scala` and add your new node to the test suite by providing the appropriate layer and configuration.
+   Go to `MainSpec.scala` and add your new node to the test suite by providing the appropriate layer and configuration.
 
 2. **Implement NodeClient Interface (if needed):**  
-   If your node uses a different RPC or API, you may need to implement the `NodeClient` interface in `tests/prism-test/src/main/scala/org/hyperledger/identus/prismtest/NodeClient.scala` to adapt the test suite to your node's communication protocol.
+   If your node uses a different RPC or API, you may need to implement the `NodeClient` interface in `NodeClient.scala` to adapt the test suite to your node's communication protocol.
 
 This allows you to run the conformance tests against your custom PRISM node implementation and verify its compliance with the PRISM specification.
