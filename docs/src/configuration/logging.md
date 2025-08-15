@@ -14,7 +14,7 @@ RUST_LOG=info
 
 Supported log levels (in increasing verbosity) are: `error`, `warn`, `info`, `debug`, and `trace`.
 
-You can also filter logs by module. For example, to see only database-related logs at debug level:
+You can also filter logs by module. For example, to see only HTTP-related logs at debug level:
 
 ```bash
 RUST_LOG=neoprism_node::http=debug

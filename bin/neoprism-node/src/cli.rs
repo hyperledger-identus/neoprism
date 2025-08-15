@@ -63,7 +63,7 @@ pub struct ServerArgs {
     /// Node HTTP server listening port
     #[arg(long, short, env = "NPRISM_PORT", default_value_t = 8080)]
     pub port: u16,
-    /// The directory containing the web-ui assets (CSS, Javascripts)
+    /// The directory containing the web UI assets (CSS, JavaScript files).
     #[arg(long, env = "NPRISM_ASSETS_PATH", default_value = "./bin/neoprism-node/assets")]
     pub assets_path: PathBuf,
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
@@ -83,27 +83,27 @@ pub struct DbArgs {
     /// Database URL (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_DB_URL")]
     pub db_url: String,
-    /// Skip database migration on Node startup
+    /// Skip database migration on node startup.
     #[arg(long, env = "NPRISM_SKIP_MIGRATION")]
     pub skip_migration: bool,
 }
 
 #[derive(Args)]
 pub struct DltSourceArgs {
-    /// A Cardano network the node is syncing from.
+    /// The Cardano network the node is syncing from.
     #[arg(long, env = "NPRISM_CARDANO_NETWORK")]
     pub cardano_network: NetworkIdentifierCliOption,
     /// Address of the Cardano relay node to sync from.
-    /// If provided, it will sync events from the Cardano relay node.
+    /// If provided, the node will sync events from the Cardano relay node.
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
     #[arg(long, env = "NPRISM_CARDANO_RELAY_ADDR", group = "dlt-source")]
     pub cardano_relay_addr: Option<String>,
     /// DB-Sync url.
-    /// If provided, it will sync events from the DB sync.
+    /// If provided, the node will sync events from DB Sync.
     /// (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
     pub cardano_dbsync_url: Option<String>,
-    /// Number of sesconds to wait before polling DB Sync for next update.
+    /// Number of seconds to wait before polling DB Sync for the next update.
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value_t = 10)]
     pub cardano_dbsync_poll_interval: u64,
     /// Number of seconds to wait before checking for unindexed operations.
@@ -119,13 +119,13 @@ pub struct DltSinkArgs {
     /// Base url of cardano wallet
     #[arg(long, env = "NPRISM_CARDANO_WALLET_BASE_URL")]
     pub cardano_wallet_base_url: String,
-    /// Wallet ID to use for making transaction
+    /// Wallet ID to use for making transactions.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_WALLET_ID")]
     pub cardano_wallet_wallet_id: String,
     /// Passphrase for the wallet
     #[arg(long, env = "NPRISM_CARDANO_WALLET_PASSPHRASE")]
     pub cardano_wallet_passphrase: String,
-    /// Payment address for making transaction
+    /// Payment address for making transactions.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_PAYMENT_ADDR")]
     pub cardano_wallet_payment_addr: String,
 }
