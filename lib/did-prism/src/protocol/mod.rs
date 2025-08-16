@@ -66,6 +66,7 @@ type InternalMap<K, V> = im_rc::HashMap<K, Revocable<V>>;
 #[derive(Debug, Clone)]
 struct DidStateRc {
     did: Rc<CanonicalPrismDid>,
+    is_published: bool,
     context: Rc<Vec<String>>,
     prev_operation_hash: Rc<Sha256Digest>,
     public_keys: InternalMap<PublicKeyId, PublicKey>,
@@ -81,10 +82,11 @@ struct StorageStateRc {
 }
 
 impl DidStateRc {
-    fn new(did: CanonicalPrismDid) -> Self {
+    fn new(did: CanonicalPrismDid, is_published: bool) -> Self {
         let last_operation_hash = did.suffix.clone();
         Self {
             did: Rc::new(did),
+            is_published,
             prev_operation_hash: Rc::new(last_operation_hash),
             context: Default::default(),
             public_keys: Default::default(),
@@ -274,6 +276,29 @@ impl DidStateRc {
         let did: CanonicalPrismDid = (*self.did).clone();
         let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
         let last_operation_hash = self.prev_operation_hash.clone();
+        let all_times = || {
+            std::iter::empty()
+                .chain(self.public_keys.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(self.services.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(self.storage.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
+                .chain(
+                    self.public_keys
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+                .chain(
+                    self.services
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+                .chain(
+                    self.storage
+                        .iter()
+                        .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
+                )
+        };
+        let created_at = all_times().min().unwrap_or_default();
+        let updated_at = all_times().max().unwrap_or_default();
         let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
@@ -306,6 +331,9 @@ impl DidStateRc {
             public_keys,
             services,
             storage,
+            created_at,
+            updated_at,
+            is_published: self.is_published,
         }
     }
 }
@@ -330,7 +358,7 @@ fn init_published_context(
     let did = CanonicalPrismDid::from_operation(operation)?;
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
-            let initial_state = DidStateRc::new(did);
+            let initial_state = DidStateRc::new(did, true);
             let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state =
                 processor.create_did(&initial_state, metadata, op.clone(), operation.special_fields.clone())?;
@@ -361,7 +389,7 @@ fn init_unpublished_context(
     let did = CanonicalPrismDid::from_operation(&operation)?;
     match &operation.operation {
         Some(Operation::CreateDid(op)) => {
-            let initial_state = DidStateRc::new(did);
+            let initial_state = DidStateRc::new(did, false);
             let processor = OperationProcessor::V1(V1Processor::default());
             let candidate_state = processor.create_did(
                 &initial_state,

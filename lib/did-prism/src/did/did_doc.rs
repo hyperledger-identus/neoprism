@@ -1,12 +1,36 @@
+use identus_apollo::hex::HexStr;
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
-    Did, DidDocument, Service, ServiceEndpoint, ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
+    Did, DidDocument, DidDocumentMetadata, DidResolutionMetadata, ResolutionResult, Service, ServiceEndpoint,
+    ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
 };
 
 use crate::did::operation::KeyUsage;
-use crate::did::{DidState, operation};
+use crate::did::{DidState, PrismDid, PrismDidOps, operation};
 
 impl DidState {
+    pub fn to_resolution_result(&self, did: &PrismDid) -> ResolutionResult {
+        let did_document = self.to_did_document(&did.to_did());
+        let canonical_id = match did {
+            PrismDid::LongForm(did) if self.is_published => Some(did.clone().into_canonical().to_did()),
+            _ => None,
+        };
+        ResolutionResult {
+            did_document: Some(did_document).filter(|_| !self.is_deactivated()),
+            did_resolution_metadata: DidResolutionMetadata {
+                content_type: Some("application/did-resolution".to_string()),
+                ..Default::default()
+            },
+            did_document_metadata: DidDocumentMetadata {
+                created: Some(self.created_at),
+                updated: Some(self.updated_at),
+                deactivated: Some(self.is_deactivated()),
+                canonical_id,
+                version_id: Some(HexStr::from(self.last_operation_hash.as_bytes()).to_string()),
+            },
+        }
+    }
+
     pub fn to_did_document(&self, did: &Did) -> DidDocument {
         let mut context = vec!["https://www.w3.org/ns/did/v1".to_string()];
         context.extend(self.context.clone());

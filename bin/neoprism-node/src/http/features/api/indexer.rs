@@ -2,8 +2,7 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use identus_apollo::hex::HexStr;
-use identus_did_core::{Did, DidDocument};
-use identus_did_prism::did::PrismDidOps;
+use identus_did_core::{Did, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
 use utoipa::OpenApi;
@@ -36,23 +35,24 @@ mod models {
     path = ApiDid::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
-        (status = OK, description = "Resolve DID successfully", body = DidDocument),
-        (status = BAD_REQUEST, description = "Invalid DID"),
-        (status = NOT_FOUND, description = "DID not found"),
-        (status = INTERNAL_SERVER_ERROR, description = "Internal server error"),
+        (status = OK, description = "DID Resolution Result", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = BAD_REQUEST, description = "Invalid DID", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = NOT_FOUND, description = "DID not found", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = GONE, description = "DID deactivated", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ResolutionResult, content_type = "application/did-resolution"),
     ),
-    params(("did" = Did, Path, description = "The DID to resolve"))
+    params(
+        ("did" = Did, Path, description = "The DID to resolve")
+    )
 )]
 pub async fn resolve_did(
     Path(did): Path<String>,
     State(state): State<AppState>,
-) -> Result<Json<DidDocument>, StatusCode> {
+) -> (StatusCode, Json<ResolutionResult>) {
     let (result, _) = state.did_service.resolve_did(&did).await;
     match result {
-        Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
-        Err(ResolutionError::NotFound) => Err(StatusCode::NOT_FOUND),
-        Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-        Ok((did, did_state)) => Ok(Json(did_state.to_did_document(&did.to_did()))),
+        Err(e) => (e.status_code(), Json(e.into())),
+        Ok((did, did_state)) => (StatusCode::OK, Json(did_state.to_resolution_result(&did))),
     }
 }
 
