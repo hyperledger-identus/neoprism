@@ -19,7 +19,8 @@ let mkStack =
                       "backbone.mainnet.cardanofoundation.org:3001"
                 }
           , uni-resolver-web =
-              uniResolverWeb.mkService uniResolverWeb.Options::{ port = 8080 }
+              uniResolverWeb.mkService
+                uniResolverWeb.Options::{ hostPort = 8080 }
           }
         }
 
