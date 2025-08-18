@@ -13,10 +13,10 @@ use crate::AppState;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats};
+use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, UniversalResolverDid};
 
 #[derive(OpenApi)]
-#[openapi(paths(resolve_did, did_data, indexer_stats))]
+#[openapi(paths(resolve_did, did_data, indexer_stats, universal_resolver_did))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
@@ -55,6 +55,26 @@ pub async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>)
     };
     let body = serde_json::to_string(&resolution_result).expect("ResolutionResult should always be serializable");
     (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
+}
+
+#[utoipa::path(
+    get,
+    summary = "Universal Resolver driver endpoint for DID resolution",
+    path = UniversalResolverDid::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "DID Resolution Result", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = BAD_REQUEST, description = "Invalid DID", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = NOT_FOUND, description = "DID not found", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = GONE, description = "DID deactivated", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = INTERNAL_SERVER_ERROR, description = "Internal server error", body = ResolutionResult, content_type = "application/did-resolution"),
+    ),
+    params(
+        ("did" = Did, Path, description = "The DID to resolve")
+    )
+)]
+pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+    resolve_did(path, state).await
 }
 
 #[utoipa::path(

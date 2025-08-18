@@ -30,3 +30,4 @@ typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
 typed_uri!(ApiDid, "api" / "dids" / (did: String));
 typed_uri!(ApiDidData, "api" / "did-data" / (did: String));
 typed_uri!(ApiIndexerStats, "api" / "indexer-stats");
+typed_uri!(UniversalResolverDid, "1.0" / "identifiers" / (did: String));
