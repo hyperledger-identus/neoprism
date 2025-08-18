@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::rc::Rc;
 
-use chrono::DateTime;
+use chrono::{DateTime, Utc};
 use enum_dispatch::enum_dispatch;
 use error::{DidStateConflictError, ProcessError};
 use identus_apollo::hash::Sha256Digest;
@@ -276,8 +276,8 @@ impl DidStateRc {
         let did: CanonicalPrismDid = (*self.did).clone();
         let context: Vec<String> = self.context.iter().map(|s| s.as_str().to_string()).collect();
         let last_operation_hash = self.prev_operation_hash.clone();
-        let all_times = || {
-            std::iter::empty()
+        let (created_at, updated_at) = {
+            let times_iter = std::iter::empty()
                 .chain(self.public_keys.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
                 .chain(self.services.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
                 .chain(self.storage.iter().map(|(_, i)| i.added_at.block_metadata.cbt))
@@ -295,10 +295,15 @@ impl DidStateRc {
                     self.storage
                         .iter()
                         .flat_map(|(_, i)| i.revoked_at.as_ref().map(|i| i.block_metadata.cbt)),
-                )
+                );
+            let (created_at, updated_at) = times_iter.fold((None, None), |(min, max), t| {
+                let min = Some(min.map_or(t, |m: DateTime<Utc>| m.min(t)));
+                let max = Some(max.map_or(t, |m: DateTime<Utc>| m.max(t)));
+                (min, max)
+            });
+            (created_at.unwrap_or_default(), updated_at.unwrap_or_default())
         };
-        let created_at = all_times().min().unwrap_or_default();
-        let updated_at = all_times().max().unwrap_or_default();
+
         let public_keys: Vec<PublicKey> = self
             .public_keys
             .into_iter()
