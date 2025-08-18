@@ -22,10 +22,9 @@ mod system;
 struct BaseOpenApiDoc;
 
 mod tags {
-    pub const SYSTEM: &str = "System";
-    pub const OP_INDEX: &str = "PRISM indexer";
-    pub const OP_SUBMIT: &str = "PRISM submitter";
-    pub const UNI_RESOLVER: &str = "Universal Resolver Driver";
+    pub const SYSTEM: &str = "System API";
+    pub const OP_INDEX: &str = "Indexer API";
+    pub const OP_SUBMIT: &str = "Submitter API";
 }
 
 pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {

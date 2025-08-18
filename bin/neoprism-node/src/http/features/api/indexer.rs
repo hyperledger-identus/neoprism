@@ -34,6 +34,7 @@ mod models {
 #[utoipa::path(
     get,
     summary = "Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.",
+    description = "This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.",
     path = ApiDid::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
@@ -46,7 +47,6 @@ mod models {
     params(
         ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve.")
     ),
-    description = "This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process."
 )]
 pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
     let (status, result) = resolution_logic(path, state).await;
@@ -57,8 +57,9 @@ pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl Int
 #[utoipa::path(
     get,
     summary = "Universal Resolver driver endpoint for resolving DIDs, designed for use behind a Universal Resolver proxy.",
+    description = "This endpoint implements the Universal Resolver driver interface. It is intended to be used as a backend for the Universal Resolver proxy, enabling DID resolution via the Universal Resolver ecosystem. The response format and behavior are compatible with Universal Resolver expectations.",
     path = UniversalResolverDid::AXUM_PATH,
-    tags = [tags::UNI_RESOLVER],
+    tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully resolved the DID. Returns the DID Resolution Result.", body = ResolutionResult, content_type = "application/did-resolution"),
         (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
@@ -68,8 +69,7 @@ pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl Int
     ),
     params(
         ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.")
-    ),
-    description = "This endpoint implements the Universal Resolver driver interface. It is intended to be used as a backend for the Universal Resolver proxy, enabling DID resolution via the Universal Resolver ecosystem. The response format and behavior are compatible with Universal Resolver expectations."
+    )
 )]
 pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
     let (status, mut result) = resolution_logic(path, state).await;
@@ -104,6 +104,7 @@ pub async fn resolution_logic(
 #[utoipa::path(
     get,
     summary = "Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.",
+    description = "The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.",
     path = ApiDidData::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
@@ -112,8 +113,7 @@ pub async fn resolution_logic(
         (status = NOT_FOUND, description = "The DID does not exist in the index."),
         (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData."),
     ),
-    params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message.")),
-    description = "The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain."
+    params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message."))
 )]
 pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) -> Result<String, StatusCode> {
     let (result, _) = state.did_service.resolve_did(&did).await;
