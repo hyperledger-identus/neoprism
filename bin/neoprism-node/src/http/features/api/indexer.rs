@@ -1,10 +1,12 @@
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{StatusCode, header};
+use axum::response::IntoResponse;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
+use serde_json;
 use utoipa::OpenApi;
 
 use crate::AppState;
@@ -45,15 +47,14 @@ mod models {
         ("did" = Did, Path, description = "The DID to resolve")
     )
 )]
-pub async fn resolve_did(
-    Path(did): Path<String>,
-    State(state): State<AppState>,
-) -> (StatusCode, Json<ResolutionResult>) {
+pub async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> impl IntoResponse {
     let (result, _) = state.did_service.resolve_did(&did).await;
-    match result {
-        Err(e) => (e.status_code(), Json(e.into())),
-        Ok((did, did_state)) => (StatusCode::OK, Json(did_state.to_resolution_result(&did))),
-    }
+    let (status, resolution_result) = match result {
+        Err(e) => (e.status_code(), e.into()),
+        Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
+    };
+    let body = serde_json::to_string(&resolution_result).expect("ResolutionResult should always be serializable");
+    (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
 }
 
 #[utoipa::path(
