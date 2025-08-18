@@ -1,0 +1,18 @@
+version: "3.6"
+
+networks:
+  default:
+    name: universal-resolver
+
+services:
+  uni-resolver-web:
+    image: universalresolver/uni-resolver-web:1.9.0
+    ports:
+      - "8080:8080"
+    environment:
+      uniresolver_web_driver_url_did_prism: http://driver-did-prism:9090/
+
+  driver-did-prism:
+    image: ghcr.io/fabiopinheiro/uni-resolver-driver-did-prism:1.1
+    ports:
+      - "9090:9090"
