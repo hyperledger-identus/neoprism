@@ -47,13 +47,9 @@ mod models {
         ("did" = Did, Path, description = "The DID to resolve")
     )
 )]
-pub async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>) -> impl IntoResponse {
-    let (result, _) = state.did_service.resolve_did(&did).await;
-    let (status, resolution_result) = match result {
-        Err(e) => (e.status_code(), e.into()),
-        Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
-    };
-    let body = serde_json::to_string(&resolution_result).expect("ResolutionResult should always be serializable");
+pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+    let (status, result) = resolution_logic(path, state).await;
+    let body = serde_json::to_string(&result).expect("ResolutionResult should always be serializable");
     (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
 }
 
@@ -61,7 +57,7 @@ pub async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>)
     get,
     summary = "Universal Resolver driver endpoint for DID resolution",
     path = UniversalResolverDid::AXUM_PATH,
-    tags = [tags::OP_INDEX],
+    tags = [tags::UNI_RESOLVER],
     responses(
         (status = OK, description = "DID Resolution Result", body = ResolutionResult, content_type = "application/did-resolution"),
         (status = BAD_REQUEST, description = "Invalid DID", body = ResolutionResult, content_type = "application/did-resolution"),
@@ -74,7 +70,33 @@ pub async fn resolve_did(Path(did): Path<String>, State(state): State<AppState>)
     )
 )]
 pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
-    resolve_did(path, state).await
+    let (status, mut result) = resolution_logic(path, state).await;
+    result.did_resolution_metadata.content_type = result
+        .did_resolution_metadata
+        .content_type
+        .map(|_| "application/did".to_string());
+    let body = if result.did_document.is_some() {
+        serde_json::to_string(&result.did_document)
+    } else {
+        serde_json::to_string(&result)
+    };
+    (
+        status,
+        [(header::CONTENT_TYPE, "application/did")],
+        body.expect("ResolutionResult should always be serializable"),
+    )
+}
+
+pub async fn resolution_logic(
+    Path(did): Path<String>,
+    State(state): State<AppState>,
+) -> (StatusCode, ResolutionResult) {
+    let (result, _) = state.did_service.resolve_did(&did).await;
+    let (status, resolution_result) = match result {
+        Err(e) => (e.status_code(), e.into()),
+        Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
+    };
+    (status, resolution_result)
 }
 
 #[utoipa::path(

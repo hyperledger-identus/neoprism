@@ -25,6 +25,7 @@ mod tags {
     pub const SYSTEM: &str = "System";
     pub const OP_INDEX: &str = "PRISM indexer";
     pub const OP_SUBMIT: &str = "PRISM submitter";
+    pub const UNI_RESOLVER: &str = "Universal Resolver Driver";
 }
 
 pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
