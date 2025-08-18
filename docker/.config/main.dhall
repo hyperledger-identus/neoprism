@@ -4,6 +4,8 @@ let neoprism = ./services/neoprism.dhall
 
 let db = ./services/db.dhall
 
+let uniResolver = ./stack/universal-resolver.dhall
+
 let prismTest = ./stack/prism-test.dhall
 
 in  { mainnet-dbsync.services
@@ -45,4 +47,5 @@ in  { mainnet-dbsync.services
       }
     , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
     , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
+    , mainnet-universal-resolver = uniResolver.services
     }
