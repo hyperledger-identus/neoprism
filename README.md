@@ -11,7 +11,7 @@
 
 ---
 
-**📚 [Documentation Site](https://hyperledger-identus.github.io/neoprism/)**
+**📚 [Documentation](https://hyperledger-identus.github.io/neoprism/)**
 
 ---
 

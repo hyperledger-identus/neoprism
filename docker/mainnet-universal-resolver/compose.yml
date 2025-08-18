@@ -1,0 +1,50 @@
+services:
+  db:
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
+      timeout: "5s"
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    restart: always
+  neoprism-indexer:
+    command:
+      - indexer
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CARDANO_RELAY_ADDR: backbone.mainnet.cardanofoundation.org:3001
+      NPRISM_DB_URL: "postgres://postgres:postgres@db:5432/postgres"
+      RUST_LOG: "oura=warn,tracing::span=warn,info"
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - curl
+        - "-f"
+        - http://localhost:8080/api/_system/health
+      timeout: "5s"
+    image: hyperledgeridentus/identus-neoprism:0.3.1
+    ports:
+      - "8081:8080"
+    restart: always
+  uni-resolver-web:
+    environment:
+      uniresolver_web_driver_url_did_prism: http://neoprism-indexer:8080
+    image: universalresolver/uni-resolver-web:0.43.0-362c5ca
+    ports:
+      - "8080:8080"
+    restart: always

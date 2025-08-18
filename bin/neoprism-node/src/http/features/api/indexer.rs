@@ -1,21 +1,22 @@
 use axum::Json;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{StatusCode, header};
+use axum::response::IntoResponse;
 use identus_apollo::hex::HexStr;
-use identus_did_core::{Did, DidDocument};
-use identus_did_prism::did::PrismDidOps;
+use identus_did_core::{Did, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
+use serde_json;
 use utoipa::OpenApi;
 
 use crate::AppState;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats};
+use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, UniversalResolverDid};
 
 #[derive(OpenApi)]
-#[openapi(paths(resolve_did, did_data, indexer_stats))]
+#[openapi(paths(resolve_did, did_data, indexer_stats, universal_resolver_did))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
@@ -32,42 +33,87 @@ mod models {
 
 #[utoipa::path(
     get,
-    summary = "W3C DID resolution endpoint",
+    summary = "Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.",
+    description = "This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.",
     path = ApiDid::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
-        (status = OK, description = "Resolve DID successfully", body = DidDocument),
-        (status = BAD_REQUEST, description = "Invalid DID"),
-        (status = NOT_FOUND, description = "DID not found"),
-        (status = INTERNAL_SERVER_ERROR, description = "Internal server error"),
+        (status = OK, description = "Successfully resolved the DID. Returns the DID Resolution Result.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = NOT_FOUND, description = "The DID does not exist in the index.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = GONE, description = "The DID has been deactivated.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during resolution.", body = ResolutionResult, content_type = "application/did-resolution"),
     ),
-    params(("did" = Did, Path, description = "The DID to resolve"))
+    params(
+        ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve.")
+    ),
 )]
-pub async fn resolve_did(
-    Path(did): Path<String>,
-    State(state): State<AppState>,
-) -> Result<Json<DidDocument>, StatusCode> {
-    let (result, _) = state.did_service.resolve_did(&did).await;
-    match result {
-        Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
-        Err(ResolutionError::NotFound) => Err(StatusCode::NOT_FOUND),
-        Err(ResolutionError::InternalError { .. }) => Err(StatusCode::INTERNAL_SERVER_ERROR),
-        Ok((did, did_state)) => Ok(Json(did_state.to_did_document(&did.to_did()))),
-    }
+pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+    let (status, result) = resolution_logic(path, state).await;
+    let body = serde_json::to_string(&result).expect("ResolutionResult should always be serializable");
+    (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
 }
 
 #[utoipa::path(
     get,
-    summary = "Adapter for returning DIDData protobuf message",
+    summary = "Universal Resolver driver endpoint for resolving DIDs, designed for use behind a Universal Resolver proxy.",
+    description = "This endpoint implements the Universal Resolver driver interface. It is intended to be used as a backend for the Universal Resolver proxy, enabling DID resolution via the Universal Resolver ecosystem. The response format and behavior are compatible with Universal Resolver expectations.",
+    path = UniversalResolverDid::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "Successfully resolved the DID. Returns the DID Resolution Result.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = NOT_FOUND, description = "The DID does not exist in the index.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = GONE, description = "The DID has been deactivated.", body = ResolutionResult, content_type = "application/did-resolution"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during resolution.", body = ResolutionResult, content_type = "application/did-resolution"),
+    ),
+    params(
+        ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.")
+    )
+)]
+pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+    let (status, mut result) = resolution_logic(path, state).await;
+    result.did_resolution_metadata.content_type = result
+        .did_resolution_metadata
+        .content_type
+        .map(|_| "application/did".to_string());
+    let body = if result.did_document.is_some() {
+        serde_json::to_string(&result.did_document)
+    } else {
+        serde_json::to_string(&result)
+    };
+    (
+        status,
+        [(header::CONTENT_TYPE, "application/did")],
+        body.expect("ResolutionResult should always be serializable"),
+    )
+}
+
+pub async fn resolution_logic(
+    Path(did): Path<String>,
+    State(state): State<AppState>,
+) -> (StatusCode, ResolutionResult) {
+    let (result, _) = state.did_service.resolve_did(&did).await;
+    let (status, resolution_result) = match result {
+        Err(e) => (e.status_code(), e.into()),
+        Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
+    };
+    (status, resolution_result)
+}
+
+#[utoipa::path(
+    get,
+    summary = "Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.",
+    description = "The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.",
     path = ApiDidData::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
-        (status = OK, description = "DIDData proto message in hexacedimal format", body = String),
-        (status = BAD_REQUEST, description = "Invalid DID"),
-        (status = NOT_FOUND, description = "DID not found"),
-        (status = INTERNAL_SERVER_ERROR, description = "Internal server error"),
+        (status = OK, description = "Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.", body = String),
+        (status = BAD_REQUEST, description = "The provided DID is invalid."),
+        (status = NOT_FOUND, description = "The DID does not exist in the index."),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData."),
     ),
-    params(("did" = Did, Path, description = "The DID to resolve"))
+    params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message."))
 )]
 pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) -> Result<String, StatusCode> {
     let (result, _) = state.did_service.resolve_did(&did).await;
@@ -86,10 +132,11 @@ pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) ->
 
 #[utoipa::path(
     get,
+    summary = "Retrieves statistics about the indexer's latest processed slot and block.",
     path = ApiIndexerStats::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
-        (status = OK, description = "DIDData proto message in hexacedimal format", body = IndexerStats),
+        (status = OK, description = "Successfully retrieved indexer statistics, including the latest processed slot and block numbers.", body = IndexerStats),
     )
 )]
 pub async fn indexer_stats(State(state): State<AppState>) -> Result<Json<IndexerStats>, StatusCode> {

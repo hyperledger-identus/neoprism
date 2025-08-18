@@ -22,9 +22,9 @@ mod system;
 struct BaseOpenApiDoc;
 
 mod tags {
-    pub const SYSTEM: &str = "System";
-    pub const OP_INDEX: &str = "PRISM indexer";
-    pub const OP_SUBMIT: &str = "PRISM submitter";
+    pub const SYSTEM: &str = "System API";
+    pub const OP_INDEX: &str = "Indexer API";
+    pub const OP_SUBMIT: &str = "Submitter API";
 }
 
 pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
@@ -50,7 +50,11 @@ pub fn router(mode: RunMode) -> Router<AppState> {
     let indexer_router = Router::new()
         .route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did))
         .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data))
-        .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats));
+        .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats))
+        .route(
+            urls::UniversalResolverDid::AXUM_PATH,
+            get(indexer::universal_resolver_did),
+        );
 
     let submitter_router = Router::new().route(
         urls::ApiSignedOpSubmissions::AXUM_PATH,

@@ -1650,6 +1650,7 @@ dependencies = [
 name = "identus-did-core"
 version = "0.3.1"
 dependencies = [
+ "chrono",
  "derive_more",
  "identity_did",
  "identus-apollo",
