@@ -3,7 +3,7 @@ val scala3Version = "3.3.6"
 val V = new {
   val zio = "2.1.20"
   val zioHttp = "3.3.3"
-  val monocle = "3.1.0"
+  val monocle = "3.3.0"
   val apollo = "1.8.0"
   val grpcNetty = "1.74.0"
 }
