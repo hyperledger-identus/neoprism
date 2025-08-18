@@ -179,10 +179,19 @@
 <li><a href="https://hub.docker.com/r/hyperledgeridentus/identus-neoprism">DockerHub</a></li>
 <li><a href="https://discord.com/channels/905194001349627914/1230596020790886490">Discord Community</a></li>
 </ul>
+<h2 id="publicly-available-instances"><a class="header" href="#publicly-available-instances">Publicly Available Instances</a></h2>
+<ul>
+<li><a href="https://neoprism.patlo.dev">Mainnet Instance</a></li>
+<li><a href="https://neoprism-preprod.patlo.dev">Preprod Instance</a></li>
+</ul>
+<blockquote>
+<p><strong>Note:</strong> The public NeoPRISM instances below are personal deployments by the project author, intended for quick evaluation and testing. Please do not use them for production purposes.</p>
+</blockquote>
 <h2 id="external-resources"><a class="header" href="#external-resources">External Resources</a></h2>
 <ul>
 <li><a href="https://github.com/input-output-hk/prism-did-method-spec">PRISM DID Method Specification</a></li>
-<li><a href="https://github.com/txpipe/oura">Oura Cardano Indexer</a></li>
+<li><a href="https://github.com/txpipe/oura">Oura</a></li>
+<li><a href="https://docs.uniresolver.io/">Universal Resolver Documentation</a></li>
 <li><a href="https://github.com/input-output-hk/cardano-db-sync">Cardano DB Sync</a></li>
 <li><a href="https://github.com/input-output-hk/cardano-wallet">Cardano Wallet</a></li>
 </ul>
@@ -882,10 +891,55 @@ servers:
   - url: https://neoprism-preprod.patlo.dev
     description: Public - preprod
 paths:
+  /1.0/identifiers/{did}:
+    get:
+      tags:
+        - Indexer API
+      summary: Universal Resolver driver endpoint for resolving DIDs, designed for use behind a Universal Resolver proxy.
+      description: This endpoint implements the Universal Resolver driver interface. It is intended to be used as a backend for the Universal Resolver proxy, enabling DID resolution via the Universal Resolver ecosystem. The response format and behavior are compatible with Universal Resolver expectations.
+      operationId: universal_resolver_did
+      parameters:
+        - name: did
+          in: path
+          description: The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.
+          required: true
+          schema:
+            $ref: '#/components/schemas/Did'
+      responses:
+        "200":
+          description: Successfully resolved the DID. Returns the DID Resolution Result.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "400":
+          description: The provided DID is invalid.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "404":
+          description: The DID does not exist in the index.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "410":
+          description: The DID has been deactivated.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "500":
+          description: An unexpected error occurred during resolution.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
   /api/_system/health:
     get:
       tags:
-        - System
+        - System API
       operationId: health
       responses:
         "200":
@@ -898,7 +952,7 @@ paths:
   /api/_system/metadata:
     get:
       tags:
-        - System
+        - System API
       operationId: app_meta
       responses:
         "200":
@@ -910,69 +964,71 @@ paths:
   /api/did-data/{did}:
     get:
       tags:
-        - PRISM indexer
-      summary: Adapter for returning DIDData protobuf message
+        - Indexer API
+      summary: Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.
+      description: The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.
       operationId: did_data
       parameters:
         - name: did
           in: path
-          description: The DID to resolve
+          description: The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message.
           required: true
           schema:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: DIDData proto message in hexacedimal format
+          description: Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.
           content:
             text/plain:
               schema:
                 type: string
         "400":
-          description: Invalid DID
+          description: The provided DID is invalid.
         "404":
-          description: DID not found
+          description: The DID does not exist in the index.
         "500":
-          description: Internal server error
+          description: An unexpected error occurred while retrieving DIDData.
   /api/dids/{did}:
     get:
       tags:
-        - PRISM indexer
-      summary: W3C DID resolution endpoint
+        - Indexer API
+      summary: Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.
+      description: This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
       operationId: resolve_did
       parameters:
         - name: did
           in: path
-          description: The DID to resolve
+          description: The Decentralized Identifier (DID) to resolve.
           required: true
           schema:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: DID Resolution Result
+          description: Successfully resolved the DID. Returns the DID Resolution Result.
           content:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "400":
-          description: Invalid DID
+          description: The provided DID is invalid.
           content:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "404":
-          description: DID not found
+          description: The DID does not exist in the index.
           content:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "410":
-          description: DID deactivated
+          description: The DID has been deactivated.
           content:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "500":
-          description: Internal server error
+          description: An unexpected error occurred during resolution.
           content:
             application/did-resolution:
               schema:
@@ -980,11 +1036,12 @@ paths:
   /api/indexer-stats:
     get:
       tags:
-        - PRISM indexer
+        - Indexer API
+      summary: Retrieves statistics about the indexer's latest processed slot and block.
       operationId: indexer_stats
       responses:
         "200":
-          description: DIDData proto message in hexacedimal format
+          description: Successfully retrieved indexer statistics, including the latest processed slot and block numbers.
           content:
             application/json:
               schema:
@@ -992,7 +1049,7 @@ paths:
   /api/signed-operation-submissions:
     post:
       tags:
-        - PRISM submitter
+        - Submitter API
       operationId: submit_signed_operations
       requestBody:
         content:
