@@ -47,5 +47,5 @@ in  { mainnet-dbsync.services
       }
     , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
     , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
-    , mainnet-universal-resolver = uniResolver.services
+    , mainnet-universal-resolver = uniResolver.mkStack {=}
     }
