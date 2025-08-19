@@ -10,10 +10,10 @@
 
 stdenv.mkDerivation rec {
   pname = "midnight-compactc";
-  version = "0.25.0";
+  version = "0.24.0";
   src = fetchurl {
-    url = "https://d3fazakqrumx6p.cloudfront.net/artifacts/compiler/compactc_v${version}/compactc_v${version}_x86_64-unknown-linux-musl.zip";
-    hash = "sha256-1YATOMiNYHVRT38HbGHVZIqZB18DA/BCjmsd5618djc=";
+    url = "https://d3fazakqrumx6p.cloudfront.net/artifacts/compiler/compactc_${version}/compactc_v${version}_x86_64-unknown-linux-musl.zip";
+    hash = "sha256-4pi2/kVe0DjUp2SWm6fUMNyylLDZtTJ8lKsaAjouSn0=";
   };
   nativeBuildInputs = [
     unzip

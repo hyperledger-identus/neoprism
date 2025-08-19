@@ -11,15 +11,18 @@ pkgs.mkShell {
       git
       hurl
       jq
+      python313
       # midnight
       pkgsInternal.compactc
-    ]
-    ++ (builtins.attrValues scripts);
+      nodejs_22
+      typescript
+      nodePackages.typescript-language-server
+    ];
 
   shellHook = ''
     export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
     export COMPACT_HOME="${pkgs.pkgsInternal.compactc}/bin"
     ${pkgs.cowsay}/bin/cowsay "Working on Midnight blockchain: ${rootDir}"
-    cd "${rootDir}"
+    cd "${rootDir}/../example-counter"
   '';
 }
