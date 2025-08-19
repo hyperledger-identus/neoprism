@@ -8,8 +8,6 @@ let uniResolver = ./stack/universal-resolver.dhall
 
 let prismTest = ./stack/prism-test.dhall
 
-let midnight = ./stack/midnight.dhall
-
 in  { mainnet-dbsync.services
       =
       { db = db.mkService db.Options::{ hostPort = Some 5432 }
@@ -50,5 +48,4 @@ in  { mainnet-dbsync.services
     , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
     , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
     , mainnet-universal-resolver = uniResolver.mkStack {=}
-    , midnight = midnight.mkStack {=}
     }
