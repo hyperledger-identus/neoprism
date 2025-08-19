@@ -1,0 +1,26 @@
+services:
+  db:
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
+      timeout: "5s"
+    image: postgres:16
+    restart: always
+  midnight-proof-server:
+    command:
+      - midnight-proof-server
+      - "--network"
+      - testnet
+    image: midnightnetwork/proof-server:4.0.0
+    ports:
+      - "6300:6300"
+    restart: always
