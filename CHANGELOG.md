@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0] - 2025-08-19
+
+### 🚀 Features
+
+- Universal resolver compatibility and driver endpoint ([#94](https://github.com/hyperledger-identus/neoprism/pull/94))
+
+### 🐛 Bug Fixes
+
+- Improving indexing logic, validation and prevent flaky tests ([#84](https://github.com/hyperledger-identus/neoprism/pull/84))
+- Use correct permission in deploy-docs action ([#90](https://github.com/hyperledger-identus/neoprism/pull/90))
+
+### 📚 Documentation
+
+- Update project readme and improve clarity ([#87](https://github.com/hyperledger-identus/neoprism/pull/87))
+- Add content for documentation site ([#89](https://github.com/hyperledger-identus/neoprism/pull/89))
+- Add documentation about logging config ([#91](https://github.com/hyperledger-identus/neoprism/pull/91))
+- Add missing page about logging ([#92](https://github.com/hyperledger-identus/neoprism/pull/92))
+- Add documentation page about prism-test ([#93](https://github.com/hyperledger-identus/neoprism/pull/93))
+- Fix PRISM tests badge link to use conformance-test.yml workflow ([#95](https://github.com/hyperledger-identus/neoprism/pull/95))
+
+### 🧪 Testing
+
+- Run prism test on github action ([#83](https://github.com/hyperledger-identus/neoprism/pull/83))
+
+### ⚙️ Miscellaneous Tasks
+
+- Add scala-steward config ([#96](https://github.com/hyperledger-identus/neoprism/pull/96))
+- Fix scala-steward config ([#97](https://github.com/hyperledger-identus/neoprism/pull/97))
+- Fix scala-steward config ([#98](https://github.com/hyperledger-identus/neoprism/pull/98))
+- Fix token issue for scala-steward action ([#102](https://github.com/hyperledger-identus/neoprism/pull/102))
+- Update monocle-core, monocle-macro to 3.3.0 ([#99](https://github.com/hyperledger-identus/neoprism/pull/99))
+- Update sbt, scripted-plugin to 1.11.4 in main ([#101](https://github.com/hyperledger-identus/neoprism/pull/101))
+- Update zio-http to 3.4.0 in main ([#100](https://github.com/hyperledger-identus/neoprism/pull/100))
+
 ## [0.3.1] - 2025-08-07
 
 ### 🐛 Bug Fixes
