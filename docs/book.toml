@@ -12,8 +12,10 @@ renderers = ["html", "markdown"]
 command = "mdbook-d2"
 renderer = ["html", "markdown"]
 
+[output.html]
+
 [output.markdown]
 
 [output.linkcheck]
-
-[output.html]
+follow-web-links = false # enable this when checking broken links
+exclude = [ 'localhost' ]
