@@ -1,5 +1,5 @@
 [package]
-name = "identus-did-prism"
+name              = "identus-did-prism"
 version.workspace = true
 edition.workspace = true
 
@@ -7,38 +7,25 @@ edition.workspace = true
 
 [dependencies]
 # general
-chrono = { workspace = true }
-derive_more = { workspace = true, features = [
-  "as_ref",
-  "from",
-  "into",
-  "debug",
-  "display",
-  "error",
-] }
+chrono        = { workspace = true }
+derive_more   = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
 enum_dispatch = { workspace = true }
-im-rc = { workspace = true }
-protobuf = { workspace = true }
-regex = { workspace = true }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-strum = { workspace = true, features = ["derive"] }
-tracing = { workspace = true }
-uriparse = { workspace = true }
-utoipa = { workspace = true, optional = true }
+im-rc         = { workspace = true }
+protobuf      = { workspace = true }
+regex         = { workspace = true }
+serde         = { workspace = true, features = [ "derive" ] }
+serde_json    = { workspace = true }
+strum         = { workspace = true, features = [ "derive" ] }
+tracing       = { workspace = true }
+uriparse      = { workspace = true }
+utoipa        = { workspace = true, optional = true }
 
 identus-did-core = { workspace = true }
-identus-apollo = { workspace = true, features = [
-  "hash",
-  "hex",
-  "secp256k1",
-  "ed25519",
-  "x25519",
-] }
+identus-apollo   = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 
 [build-dependencies]
 protobuf-codegen = { workspace = true }
 
 [features]
-default = []
-openapi = ["dep:utoipa"]
+default = [  ]
+openapi = [ "dep:utoipa" ]

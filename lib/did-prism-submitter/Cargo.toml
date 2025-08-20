@@ -1,28 +1,19 @@
 [package]
-name = "identus-did-prism-submitter"
+name              = "identus-did-prism-submitter"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-derive_more = { workspace = true, features = ["from", "debug", "display"] }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-reqwest = { workspace = true, optional = true, features = [
-  "rustls-tls",
-  "json",
-] }
+derive_more = { workspace = true, features = [ "from", "debug", "display" ] }
+serde       = { workspace = true, features = [ "derive" ] }
+serde_json  = { workspace = true }
+reqwest     = { workspace = true, optional = true, features = [ "rustls-tls", "json" ] }
 
-identus-apollo = { workspace = true, features = [
-  "hash",
-  "hex",
-  "secp256k1",
-  "ed25519",
-  "x25519",
-] }
+identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 identus-did-prism = { workspace = true }
 
 [features]
-default = []
-cardano-wallet = ["dep:reqwest"]
+default        = [  ]
+cardano-wallet = [ "dep:reqwest" ]
