@@ -20,7 +20,7 @@ in
   default = import ./neoprism.nix { inherit pkgs buildConfig; };
   release = import ./release.nix { inherit pkgs buildConfig; };
   cardano = import ./cardano.nix { inherit pkgs; };
-  midnight = import ./midnight.nix { inherit pkgs; };
+  midnight-did = import ./midnight-did.nix { inherit pkgs; };
   prism-test = import ./prism-test.nix { inherit pkgs; };
   docs = import ./docs.nix { inherit pkgs self; };
 }
