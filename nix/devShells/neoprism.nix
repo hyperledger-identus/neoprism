@@ -134,6 +134,7 @@ pkgs.mkShell {
       # node
       nodejs_20
       tailwindcss_4
+      deno
     ]
     ++ (builtins.attrValues scripts);
 

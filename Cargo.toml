@@ -3,6 +3,7 @@ resolver = "3"
 members = [
   "lib/apollo",
   "lib/did-core",
+  "lib/did-midnight",
   "lib/did-prism",
   "lib/did-prism-indexer",
   "lib/did-prism-submitter",
@@ -19,6 +20,7 @@ license = "Apache-2.0"
 # internal
 identus-apollo              = { path = "lib/apollo" }
 identus-did-core            = { path = "lib/did-core" }
+identus-did-midnight        = { path = "lib/did-midnight" }
 identus-did-prism           = { path = "lib/did-prism" }
 identus-did-prism-indexer   = { path = "lib/did-prism-indexer" }
 identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
@@ -38,6 +40,7 @@ regex              = { version = "1" }
 reqwest            = { version = "0.12", default-features = false }
 serde              = { version = "1" }
 serde_json         = { version = "1" }
+rustyscript        = { version = "0.12.2" }
 strum              = { version = "0.27" }
 tokio              = { version = "1" }
 tower              = { version = "0.5" }
