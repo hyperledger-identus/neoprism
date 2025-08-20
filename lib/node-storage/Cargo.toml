@@ -1,25 +1,21 @@
 [package]
-name = "node-storage"
+name              = "node-storage"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-async-trait = { workspace = true }
-chrono = { workspace = true, features = ["serde"] }
-derive_more = { workspace = true, features = ["from", "display", "error"] }
-identus-apollo = { workspace = true, features = ["hex"] }
-lazybe = { workspace = true, features = ["postgres"] }
-protobuf = { workspace = true }
-sea-query = { workspace = true, features = [
-  "backend-postgres",
-  "with-uuid",
-  "with-chrono",
-] }
-serde = { workspace = true }
-sqlx = { workspace = true, features = ["postgres", "uuid", "chrono"] }
-tracing = { workspace = true }
-uuid = { workspace = true, features = ["serde"] }
+async-trait    = { workspace = true }
+chrono         = { workspace = true, features = [ "serde" ] }
+derive_more    = { workspace = true, features = [ "from", "display", "error" ] }
+identus-apollo = { workspace = true, features = [ "hex" ] }
+lazybe         = { workspace = true, features = [ "postgres" ] }
+protobuf       = { workspace = true }
+sea-query      = { workspace = true, features = [ "backend-postgres", "with-uuid", "with-chrono" ] }
+serde          = { workspace = true }
+sqlx           = { workspace = true, features = [ "postgres", "uuid", "chrono" ] }
+tracing        = { workspace = true }
+uuid           = { workspace = true, features = [ "serde" ] }
 
-identus-did-prism = { workspace = true }
-identus-did-prism-indexer = { workspace = true }
+identus-did-prism           = { workspace = true }
+identus-did-prism-indexer   = { workspace = true }
 identus-did-prism-submitter = { workspace = true }

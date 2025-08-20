@@ -17,42 +17,42 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 # internal
-identus-apollo = { path = "lib/apollo" }
-identus-did-core = { path = "lib/did-core" }
-identus-did-prism = { path = "lib/did-prism" }
-identus-did-prism-indexer = { path = "lib/did-prism-indexer" }
+identus-apollo              = { path = "lib/apollo" }
+identus-did-core            = { path = "lib/did-core" }
+identus-did-prism           = { path = "lib/did-prism" }
+identus-did-prism-indexer   = { path = "lib/did-prism-indexer" }
 identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
-node-storage = { path = "lib/node-storage" }
+node-storage                = { path = "lib/node-storage" }
 # general
-anyhow = "1"
-async-trait = "0.1"
-axum = "0.8"
-chrono = "0.4"
-clap = "4"
-derive_more = "2"
-enum_dispatch = "0.3"
-im-rc = "15"
-lazybe = "0.2"
-maud = "0.27"
-regex = "1"
-reqwest = { version = "0.12", default-features = false }
-serde = "1"
-serde_json = "1"
-strum = "0.27"
-tokio = "1"
-tower = "0.5"
-tower-http = "0.6"
-tracing = "0.1"
-tracing-subscriber = "0.3"
-uriparse = "0.6"
-utoipa = "5"
-uuid = "1"
+anyhow             = { version = "1" }
+async-trait        = { version = "0.1" }
+axum               = { version = "0.8" }
+chrono             = { version = "0.4" }
+clap               = { version = "4" }
+derive_more        = { version = "2" }
+enum_dispatch      = { version = "0.3" }
+im-rc              = { version = "15" }
+lazybe             = { version = "0.2" }
+maud               = { version = "0.27" }
+regex              = { version = "1" }
+reqwest            = { version = "0.12", default-features = false }
+serde              = { version = "1" }
+serde_json         = { version = "1" }
+strum              = { version = "0.27" }
+tokio              = { version = "1" }
+tower              = { version = "0.5" }
+tower-http         = { version = "0.6" }
+tracing            = { version = "0.1" }
+tracing-subscriber = { version = "0.3" }
+uriparse           = { version = "0.6" }
+utoipa             = { version = "5" }
+uuid               = { version = "1" }
 # db
-sqlx = "0.8"
-sea-query = "0.32"
+sqlx      = { version = "0.8" }
+sea-query = { version = "0.32" }
 # cardano
-oura = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
-pallas-primitives = "0.30"
+oura              = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
+pallas-primitives = { version = "0.30" }
 # proto
-protobuf = "3"
-protobuf-codegen = "3"
+protobuf         = { version = "3" }
+protobuf-codegen = { version = "3" }

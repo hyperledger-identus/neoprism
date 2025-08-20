@@ -1,18 +1,18 @@
 [package]
-name = "identus-did-core"
+name              = "identus-did-core"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-chrono = { workspace = true, features = ["serde"] }
-derive_more = { workspace = true, features = ["from", "display", "error"] }
-identus-apollo = { workspace = true, features = ["base64", "serde", "jwk"] }
-serde = { workspace = true, features = ["derive"] }
-serde_json = { workspace = true }
-utoipa = { workspace = true, optional = true, features = ["chrono"] }
+chrono         = { workspace = true, features = [ "serde" ] }
+derive_more    = { workspace = true, features = [ "from", "display", "error" ] }
+identus-apollo = { workspace = true, features = [ "base64", "serde", "jwk" ] }
+serde          = { workspace = true, features = [ "derive" ] }
+serde_json     = { workspace = true }
+utoipa         = { workspace = true, optional = true, features = [ "chrono" ] }
 
 identity_did = { version = "1.5" }
 
 [features]
-default = []
-openapi = ["dep:utoipa", "identus-apollo/openapi"]
+default = [  ]
+openapi = [ "dep:utoipa", "identus-apollo/openapi" ]
