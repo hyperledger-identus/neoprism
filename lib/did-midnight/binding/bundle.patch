@@ -1,0 +1,28 @@
+diff --git a/bundle.js b/bundle_patched.js
+index 584422d..318d934 100644
+--- a/bundle.js
++++ b/bundle_patched.js
+@@ -7716,11 +7716,6 @@ function __wbindgen_throw(arg0, arg1) {
+   throw new Error(getStringFromWasm0(arg0, arg1));
+ }
+ 
+-// ../../../../../../../.cache/deno/npm/registry.npmjs.org/@midnight-ntwrk/ledger/4.0.0/midnight_ledger_wasm_fs.js
+-import { readFileSync } from "node:fs";
+-import { join, dirname } from "node:path";
+-import { fileURLToPath } from "node:url";
+-
+ // ../../../../../../../.cache/deno/npm/registry.npmjs.org/@midnight-ntwrk/ledger/4.0.0/snippets/midnight-ledger-wasm-c311d63f8bcc3530/inline0.js
+ var inline0_exports = {};
+ __export(inline0_exports, {
+@@ -7784,10 +7779,7 @@ imports["./snippets/midnight-ledger-wasm-c311d63f8bcc3530/inline2.js"] = inline2
+ imports["./snippets/midnight-ledger-wasm-c311d63f8bcc3530/inline3.js"] = inline3_exports;
+ imports["./snippets/midnight-ledger-wasm-c311d63f8bcc3530/inline4.js"] = inline4_exports;
+ imports["./snippets/midnight-zswap-wasm-41bcd0561f7a9007/inline0.js"] = inline0_exports2;
+-var __filename = fileURLToPath(import.meta.url);
+-var __dirname = dirname(__filename);
+-var wasmPath = join(__dirname, "midnight_ledger_wasm_bg.wasm");
+-var bytes = readFileSync(wasmPath);
++var bytes = await Deno.readFile("/home/pat/Desktop/workspace/personal/neoprism/lib/did-midnight/binding/dist/midnight_ledger_wasm_bg.wasm")
+ var wasmModule = new WebAssembly.Module(bytes);
+ var wasmInstance = new WebAssembly.Instance(wasmModule, imports);
+ var wasm2 = wasmInstance.exports;
