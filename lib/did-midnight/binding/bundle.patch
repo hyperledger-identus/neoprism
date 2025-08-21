@@ -1,7 +1,7 @@
-diff --git a/bundle.js b/bundle_patched.js
+diff --git a/bundle.js b/bundle.js
 index 584422d..318d934 100644
 --- a/bundle.js
-+++ b/bundle_patched.js
++++ b/bundle.js
 @@ -7716,11 +7716,6 @@ function __wbindgen_throw(arg0, arg1) {
    throw new Error(getStringFromWasm0(arg0, arg1));
  }
@@ -22,7 +22,7 @@ index 584422d..318d934 100644
 -var __dirname = dirname(__filename);
 -var wasmPath = join(__dirname, "midnight_ledger_wasm_bg.wasm");
 -var bytes = readFileSync(wasmPath);
-+var bytes = await Deno.readFile("/home/pat/Desktop/workspace/personal/neoprism/lib/did-midnight/binding/dist/midnight_ledger_wasm_bg.wasm")
++var bytes = await Deno.readFile("./midnight_ledger_wasm_bg.wasm")
  var wasmModule = new WebAssembly.Module(bytes);
  var wasmInstance = new WebAssembly.Instance(wasmModule, imports);
  var wasm2 = wasmInstance.exports;

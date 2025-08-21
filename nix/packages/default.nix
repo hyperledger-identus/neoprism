@@ -61,6 +61,7 @@ rec {
         tagSuffix = "-arm64";
       };
 
-  # scala-did
+  # misc
   scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
+  midnight-js-binding = pkgs.pkgsInternal.midnight-js-binding;
 }
