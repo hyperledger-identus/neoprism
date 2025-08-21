@@ -26,6 +26,7 @@ stdenv.mkDerivation {
     mkdir -p dist
     cp -r $DENO_DIR/npm/registry.npmjs.org/@midnight-ntwrk/ledger/4.0.0/midnight_ledger_wasm_bg.wasm ./dist/midnight_ledger_wasm_bg.wasm
     deno bundle --vendor index.ts > ./dist/bundle.js
+    patch ./dist/bundle.js < ./bundle.patch
   '';
   installPhase = ''
     mkdir -p $out
