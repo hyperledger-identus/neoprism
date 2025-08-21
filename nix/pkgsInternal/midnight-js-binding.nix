@@ -16,7 +16,6 @@ let
     installPhase = "true";
   };
 in
-# /home/pat/Desktop/workspace/personal/neoprism/result/npm/registry.npmjs.org/@midnight-ntwrk/ledger/4.0.0/midnight_ledger_wasm_bg.wasm
 stdenv.mkDerivation {
   name = "midnight-js-binding";
   src = ./../../lib/did-midnight/binding;

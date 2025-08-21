@@ -4,10 +4,11 @@
 < import { join, dirname } from "node:path";
 < import { fileURLToPath } from "node:url";
 < 
-7787,7790c7782
+7787,7790c7782,7783
 < var __filename = fileURLToPath(import.meta.url);
 < var __dirname = dirname(__filename);
 < var wasmPath = join(__dirname, "midnight_ledger_wasm_bg.wasm");
 < var bytes = readFileSync(wasmPath);
 ---
-> var bytes = await Deno.readFile("./midnight_ledger_wasm_bg.wasm")
+> const scriptDir = new URL(".", import.meta.url).pathname;
+> var bytes = await Deno.readFile(`${scriptDir}/midnight_ledger_wasm_bg.wasm`);
