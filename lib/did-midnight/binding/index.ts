@@ -1,3 +1,5 @@
+// @ts-types="./managed/contract/index.d.cts"
+import Api from "./managed/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
 
 export function decodeContractState(
@@ -6,7 +8,8 @@ export function decodeContractState(
 ): string {
   const buffer = hexToUint8Array(contractStateHex);
   const state = ContractState.deserialize(buffer, networkId);
-  console.log(state.data.asArray());
+  const contractState = Api.ledger(state.data);
+  console.log(contractState);
   return "Hello";
 }
 

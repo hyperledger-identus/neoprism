@@ -3,7 +3,7 @@
   deno,
   writeText,
   runCommand,
-  ...
+  compactc
 }:
 
 let
@@ -11,7 +11,7 @@ let
     name = "deno-vendor";
     src = ./../../lib/did-midnight/binding;
     buildInputs = [ deno ];
-    outputHash = "sha256-p3Cmn7XMraXr5xh/d662phlgJQH+1fyLO8m4P73MBSY=";
+    outputHash = "sha256-GMOLT/K4E+ILrAHmnRGcWBPFaH4LLiqETCZ9efUUakA=";
     outputHashAlgo = "sha256";
     outputHashMode = "recursive";
     buildPhase = ''
@@ -24,9 +24,13 @@ let
   binding = stdenv.mkDerivation {
     name = "midnight-js-binding";
     src = ./../../lib/did-midnight/binding;
-    buildInputs = [ deno ];
+    buildInputs = [ deno compactc ];
     buildPhase = ''
       export DENO_DIR=${denoCache}
+
+      mkdir -p managed
+      compactc --skip-zk did.compact managed/
+
       mkdir -p dist
       cp -r $DENO_DIR/npm/registry.npmjs.org/@midnight-ntwrk/ledger/4.0.0/midnight_ledger_wasm_bg.wasm ./dist/midnight_ledger_wasm_bg.wasm
       deno bundle --vendor index.ts > ./dist/bundle.js
