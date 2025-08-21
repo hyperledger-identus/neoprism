@@ -146,4 +146,5 @@ pkgs.mkShell {
 
   # envs
   RUST_LOG = "info,oura=warn,tower_http::trace=debug";
+  MIDNIGHT_JS_BINDING_DIR = "${pkgs.pkgsInternal.midnight-js-binding}";
 }
