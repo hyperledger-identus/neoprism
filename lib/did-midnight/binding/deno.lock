@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@1": "1.0.14",
     "jsr:@std/internal@^1.0.10": "1.0.10",
+    "npm:@midnight-ntwrk/compact-runtime@~0.8.1": "0.8.1",
     "npm:@midnight-ntwrk/ledger@4": "4.0.0"
   },
   "jsr": {
@@ -17,13 +18,31 @@
     }
   },
   "npm": {
+    "@midnight-ntwrk/compact-runtime@0.8.1": {
+      "integrity": "sha512-ZXG/iprEqTCxQC/P1oETGOR5CnsoemPsfb17eSANPRsm+11AcIOP0Tp8KJipN+GbycgxOA+fAVwLFqA1hDCgbw==",
+      "dependencies": [
+        "@midnight-ntwrk/onchain-runtime",
+        "@types/object-inspect",
+        "object-inspect"
+      ]
+    },
     "@midnight-ntwrk/ledger@4.0.0": {
       "integrity": "sha512-cnJisY8uQ4NO54miDnjs/ov6n102ZPfKEPxtiDKVEdlKijcc70jz/CI2yBCc0itlwwaqma7FM2Ou5N4pWpbwbg=="
+    },
+    "@midnight-ntwrk/onchain-runtime@0.3.0": {
+      "integrity": "sha512-vZWPoz7MhXO5UgWZET50g7APOcT5dbAfADDcrSreeOagV8lj7JJzlnYIIhrcUaMOv+NHWxPaUcJUYUkmu9LoTA=="
+    },
+    "@types/object-inspect@1.13.0": {
+      "integrity": "sha512-lwGTVESDDV+XsQ1pH4UifpJ1f7OtXzQ6QBOX2Afq2bM/T3oOt8hF6exJMjjIjtEWeAN2YAo25J7HxWh97CCz9w=="
+    },
+    "object-inspect@1.13.4": {
+      "integrity": "sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew=="
     }
   },
   "workspace": {
     "dependencies": [
       "jsr:@std/assert@1",
+      "npm:@midnight-ntwrk/compact-runtime@~0.8.1",
       "npm:@midnight-ntwrk/ledger@4"
     ]
   }
