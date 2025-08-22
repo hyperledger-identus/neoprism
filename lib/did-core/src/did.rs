@@ -8,7 +8,11 @@ use crate::Error;
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(feature = "openapi", schema(value_type = String, example = "did:example:123456789abcdefghi"))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS), ts(type = "string"))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(type = "string", export_to = "../bindings/did_core_types.ts")
+)]
 #[debug("{}", self.0.to_string())]
 #[display("{}", self.0.to_string())]
 pub struct Did(#[cfg_attr(feature = "ts-types", ts(type = "string"))] identity_did::CoreDID);
