@@ -1,12 +1,15 @@
 // @ts-types="./managed/contract/index.d.cts"
-import * as DidContract from "./managed/contract/index.cjs";
+import DidContract from "./managed/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
-import { decodeHex } from "jsr:@std/encoding/hex";
+// Node.js Buffer is used for hex decoding
+function decodeHex(hex: string): Buffer {
+  return Buffer.from(hex, 'hex');
+}
 import {
   DidDocument,
   Service,
   VerificationMethod,
-} from "../../../lib/did-core/bindings/did_core_types.ts";
+} from "../../../lib/did-core/bindings/did_core_types";
 
 export function decodeContractState(
   networkId: number,
