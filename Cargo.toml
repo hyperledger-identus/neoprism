@@ -40,7 +40,6 @@ regex              = { version = "1" }
 reqwest            = { version = "0.12", default-features = false }
 serde              = { version = "1" }
 serde_json         = { version = "1" }
-rustyscript        = { version = "0.12.2" }
 strum              = { version = "0.27" }
 tokio              = { version = "1" }
 tower              = { version = "0.5" }
