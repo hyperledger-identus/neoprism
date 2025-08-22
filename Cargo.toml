@@ -47,6 +47,7 @@ tower              = { version = "0.5" }
 tower-http         = { version = "0.6" }
 tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
+ts-rs              = { version = "11.0" }
 uriparse           = { version = "0.6" }
 utoipa             = { version = "5" }
 uuid               = { version = "1" }
