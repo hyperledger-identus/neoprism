@@ -3191,6 +3191,7 @@ dependencies = [
  "identus-apollo",
  "serde",
  "serde_json",
+ "ts-rs",
  "utoipa",
 ]
 
@@ -3205,7 +3206,6 @@ dependencies = [
  "rustyscript",
  "serde",
  "serde_json",
- "ts-rs",
  "utoipa",
 ]
 
