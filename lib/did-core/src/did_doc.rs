@@ -5,7 +5,11 @@ use crate::Did;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
     #[serde(rename(serialize = "@context", deserialize = "@context"))]
@@ -22,7 +26,11 @@ pub struct DidDocument {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(rename_all = "camelCase")]
 pub struct VerificationMethod {
     pub id: String,
@@ -34,7 +42,11 @@ pub struct VerificationMethod {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(untagged)]
 pub enum VerificationMethodOrRef {
     #[cfg_attr(feature = "ts-types", ts(type = "string"))]
@@ -44,7 +56,11 @@ pub enum VerificationMethodOrRef {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
     pub id: String,
@@ -54,7 +70,11 @@ pub struct Service {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(untagged)]
 pub enum ServiceType {
     Str(String),
@@ -63,7 +83,11 @@ pub enum ServiceType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(untagged)]
 pub enum ServiceEndpoint {
     StrOrMap(StringOrMap),
@@ -72,7 +96,11 @@ pub enum ServiceEndpoint {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "ts-types", derive(ts_rs::TS), ts(export))]
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(export, export_to = "../bindings/did_core_types.ts")
+)]
 #[serde(untagged)]
 pub enum StringOrMap {
     Str(String),
@@ -88,6 +116,7 @@ mod ts_export {
     use super::*;
     #[test]
     fn export_types() {
+        Did::export().unwrap();
         DidDocument::export().unwrap();
         VerificationMethod::export().unwrap();
         VerificationMethodOrRef::export().unwrap();
