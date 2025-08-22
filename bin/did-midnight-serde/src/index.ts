@@ -2,16 +2,25 @@
 import * as DidContract from "./managed/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
 import { decodeHex } from "@std/encoding/hex";
-import { DidDocument } from "../../../lib/did-core/bindings/DidDocument.ts";
+import { DidDocument } from "../../../lib/did-core/bindings/did_core_types.ts";
 
 export function decodeContractState(
-  contractStateHex: string,
   networkId: number,
-): string {
-  if (contractStateHex.length % 2 !== 0) throw new Error("Hex string must have an even length");
+  contractStateHex: string,
+): DidDocument {
   const buffer = decodeHex(contractStateHex);
   const state = ContractState.deserialize(buffer, networkId);
-  const ledger = DidContract.ledger(state.data);
-  return "Hello";
+  const ledger: DidContract.Ledger = DidContract.ledger(state.data);
+  const didDocument: DidDocument = {
+    context: [],
+    id: "",
+    verificationMethod: [],
+    authentication: [],
+    assertionMethod: [],
+    keyAgreement: [],
+    capabilityInvocation: [],
+    capabilityDelegation: [],
+    service: [],
+  };
+  return didDocument;
 }
-
