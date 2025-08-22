@@ -6,5 +6,6 @@
     "@midnight-ntwrk/compact-runtime": "npm:@midnight-ntwrk/compact-runtime@^0.8.1",
     "@midnight-ntwrk/ledger": "npm:@midnight-ntwrk/ledger@^4.0.0",
     "@std/assert": "jsr:@std/assert@1",
+    "@std/encoding": "jsr:@std/encoding@^1.0.10",
   }
 }

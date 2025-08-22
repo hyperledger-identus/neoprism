@@ -1,21 +1,18 @@
 // @ts-types="./managed/contract/index.d.cts"
 import * as DidContract from "./managed/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
+import { decodeHex } from "@std/encoding/hex";
 
 export function decodeContractState(
   contractStateHex: string,
   networkId: number,
-): string {
-  const buffer = hexToUint8Array(contractStateHex);
+): DidDocument {
+  if (contractStateHex.length % 2 !== 0) throw new Error("Hex string must have an even length");
+  const buffer = decodeHex(contractStateHex);
   const state = ContractState.deserialize(buffer, networkId);
   const ledger = DidContract.ledger(state.data);
   return "Hello";
 }
 
-function hexToUint8Array(hex: string): Uint8Array {
-  if (hex.length % 2 !== 0) throw new Error("Hex string must have an even length");
+type DidDocument = string;
 
-  return new Uint8Array(
-    hex.match(/.{2}/g)!.map(byte => parseInt(byte, 16))
-  );
-}
