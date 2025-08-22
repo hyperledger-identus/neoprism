@@ -3,7 +3,7 @@
   deno,
   writeText,
   runCommand,
-  compactc
+  compactc,
 }:
 
 let
@@ -24,7 +24,10 @@ let
   binding = stdenv.mkDerivation {
     name = "midnight-js-binding";
     src = ./../../lib/did-midnight/binding;
-    buildInputs = [ deno compactc ];
+    buildInputs = [
+      deno
+      compactc
+    ];
     buildPhase = ''
       export DENO_DIR=${denoCache}
 
