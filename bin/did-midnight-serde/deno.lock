@@ -2,6 +2,7 @@
   "version": "5",
   "specifiers": {
     "jsr:@std/assert@1": "1.0.14",
+    "jsr:@std/encoding@*": "1.0.10",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/internal@^1.0.10": "1.0.10",
     "npm:@midnight-ntwrk/compact-runtime@~0.8.1": "0.8.1",
