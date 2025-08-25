@@ -140,12 +140,14 @@ pkgs.mkShell {
       cargo-license
       cargo-udeps
       rust
-      # node
+      # js
       nodejs_20
       tailwindcss_4
+      typescript-language-server
       esbuild
-      # midnight
+      # internal
       pkgsInternal.compactc
+      # pkgsInternal.did-midnight-serde
     ]
     ++ (builtins.attrValues scripts);
 
