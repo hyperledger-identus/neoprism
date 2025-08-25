@@ -4,17 +4,17 @@ use axum::routing::get;
 use maud::Markup;
 use models::DidQuery;
 
-use crate::AppState;
+use crate::IndexerState;
 use crate::http::urls;
 
 pub(in crate::http) mod models;
 mod views;
 
-pub fn router() -> Router<AppState> {
+pub fn router() -> Router<IndexerState> {
     Router::new().route(urls::Resolver::AXUM_PATH, get(index))
 }
 
-async fn index(Query(query): Query<DidQuery>, State(state): State<AppState>) -> Markup {
+async fn index(Query(query): Query<DidQuery>, State(state): State<IndexerState>) -> Markup {
     let network = state.dlt_source.map(|i| i.network);
     match query.did.as_ref() {
         None => views::index(network),

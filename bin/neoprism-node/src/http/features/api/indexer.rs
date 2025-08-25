@@ -9,7 +9,7 @@ use identus_did_prism::proto::node_api::DIDData;
 use serde_json;
 use utoipa::OpenApi;
 
-use crate::AppState;
+use crate::IndexerState;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
@@ -48,7 +48,7 @@ mod models {
         ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve.")
     ),
 )]
-pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+pub async fn resolve_did(path: Path<String>, state: State<IndexerState>) -> impl IntoResponse {
     let (status, result) = resolution_logic(path, state).await;
     let body = serde_json::to_string(&result).expect("ResolutionResult should always be serializable");
     (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
@@ -71,7 +71,7 @@ pub async fn resolve_did(path: Path<String>, state: State<AppState>) -> impl Int
         ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.")
     )
 )]
-pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) -> impl IntoResponse {
+pub async fn universal_resolver_did(path: Path<String>, state: State<IndexerState>) -> impl IntoResponse {
     let (status, mut result) = resolution_logic(path, state).await;
     result.did_resolution_metadata.content_type = result
         .did_resolution_metadata
@@ -91,7 +91,7 @@ pub async fn universal_resolver_did(path: Path<String>, state: State<AppState>) 
 
 pub async fn resolution_logic(
     Path(did): Path<String>,
-    State(state): State<AppState>,
+    State(state): State<IndexerState>,
 ) -> (StatusCode, ResolutionResult) {
     let (result, _) = state.did_service.resolve_did(&did).await;
     let (status, resolution_result) = match result {
@@ -115,7 +115,7 @@ pub async fn resolution_logic(
     ),
     params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message."))
 )]
-pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) -> Result<String, StatusCode> {
+pub async fn did_data(Path(did): Path<String>, State(state): State<IndexerState>) -> Result<String, StatusCode> {
     let (result, _) = state.did_service.resolve_did(&did).await;
     match result {
         Err(ResolutionError::InvalidDid { .. }) => Err(StatusCode::BAD_REQUEST),
@@ -139,7 +139,7 @@ pub async fn did_data(Path(did): Path<String>, State(state): State<AppState>) ->
         (status = OK, description = "Successfully retrieved indexer statistics, including the latest processed slot and block numbers.", body = IndexerStats),
     )
 )]
-pub async fn indexer_stats(State(state): State<AppState>) -> Result<Json<IndexerStats>, StatusCode> {
+pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<IndexerStats>, StatusCode> {
     let result = state.did_service.get_indexer_stats().await;
     let stats = match result {
         Ok(None) => IndexerStats {

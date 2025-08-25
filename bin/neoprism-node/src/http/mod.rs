@@ -6,7 +6,7 @@ use axum::routing::get;
 use features::{api, ui_explorer, ui_resolver};
 use tower_http::services::ServeDir;
 
-use crate::{AppState, RunMode};
+use crate::{AppState, IndexerState, RunMode, SubmitterState};
 
 mod components;
 mod features;
@@ -14,7 +14,13 @@ mod urls;
 
 pub use features::api::open_api;
 
-pub fn router(assets_dir: &Path, mode: RunMode) -> Router<AppState> {
+pub struct AggregateRouter {
+    app_router: Router<AppState>,
+    indexer_router: Router<IndexerState>,
+    submitter_router: Router<SubmitterState>,
+}
+
+pub fn router(assets_dir: &Path, mode: RunMode) -> AggregateRouter {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
     let api_router = api::router(mode);

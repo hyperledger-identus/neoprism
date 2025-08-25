@@ -6,7 +6,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use crate::http::features::api::indexer::IndexerOpenApiDoc;
 use crate::http::features::api::submitter::SubmitterOpenApiDoc;
 use crate::http::features::api::system::SystemOpenApiDoc;
-use crate::http::urls;
+use crate::http::{AggregateRouter, urls};
 use crate::{AppState, RunMode};
 
 mod indexer;
@@ -39,7 +39,7 @@ pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
     }
 }
 
-pub fn router(mode: RunMode) -> Router<AppState> {
+pub fn router(mode: RunMode) -> AggregateRouter {
     let oas = open_api(&mode);
 
     let base_router = Router::new()
@@ -61,9 +61,9 @@ pub fn router(mode: RunMode) -> Router<AppState> {
         post(submitter::submit_signed_operations),
     );
 
-    match mode {
-        RunMode::Indexer => base_router.merge(indexer_router),
-        RunMode::Submitter => base_router.merge(submitter_router),
-        RunMode::Standalone => base_router.merge(indexer_router).merge(submitter_router),
+    AggregateRouter {
+        app_router: base_router,
+        indexer_router,
+        submitter_router,
     }
 }
