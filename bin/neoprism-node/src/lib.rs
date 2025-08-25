@@ -114,7 +114,7 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
     let app_state = AppState {
         run_mode: RunMode::Submitter,
     };
-    let submitter_state = SubmitterState { dlt_sink: dlt_sink };
+    let submitter_state = SubmitterState { dlt_sink };
     run_server(app_state, None, Some(submitter_state), &args.server).await
 }
 
@@ -131,7 +131,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
         did_service: DidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
-    let submitter_state = SubmitterState { dlt_sink: dlt_sink };
+    let submitter_state = SubmitterState { dlt_sink };
     run_server(app_state, Some(indexer_state), Some(submitter_state), &args.server).await
 }
 
