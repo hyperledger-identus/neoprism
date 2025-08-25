@@ -1,5 +1,4 @@
-// @ts-types="./managed/contract/index.d.cts"
-import DidContract from "./managed/contract/index.cjs";
+import DidContract from "./managed/did/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
 // Node.js Buffer is used for hex decoding
 function decodeHex(hex: string): Buffer {
