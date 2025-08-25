@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node --loader ts-node/esm src/index.ts",
-    "build": "tsc",
+    "compact": "compactc --skip-zk src/did.compact src/managed/did",
+    "build": "npm run compact && tsc",
     "dev": "ts-node-dev src/index.ts"
   },
   "dependencies": {
