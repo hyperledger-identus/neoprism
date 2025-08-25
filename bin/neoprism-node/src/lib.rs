@@ -5,6 +5,7 @@ use std::fs;
 use std::sync::Arc;
 
 use app::service::DidService;
+use axum::Router;
 use clap::Parser;
 use cli::Cli;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
@@ -143,8 +144,19 @@ async fn run_server(
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
-    let router = http::router(&server_args.assets_path, app_state.run_mode)
-        .with_state(app_state)
+    let routers = http::router(&server_args.assets_path, app_state.run_mode);
+    let router = Router::new()
+        .merge(routers.app_router.with_state(app_state))
+        .merge(
+            indexer_state
+                .map(|s| routers.indexer_router.with_state(s))
+                .unwrap_or_default(),
+        )
+        .merge(
+            submitter_state
+                .map(|s| routers.submitter_router.with_state(s))
+                .unwrap_or_default(),
+        )
         .layer(layer);
     let bind_addr = format!("{}:{}", server_args.address, server_args.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;

@@ -3,11 +3,11 @@ use axum::routing::{get, post};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::RunMode;
 use crate::http::features::api::indexer::IndexerOpenApiDoc;
 use crate::http::features::api::submitter::SubmitterOpenApiDoc;
 use crate::http::features::api::system::SystemOpenApiDoc;
-use crate::http::{AggregateRouter, urls};
-use crate::{AppState, RunMode};
+use crate::http::{Routers, urls};
 
 mod indexer;
 mod submitter;
@@ -39,10 +39,10 @@ pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
     }
 }
 
-pub fn router(mode: RunMode) -> AggregateRouter {
+pub fn router(mode: RunMode) -> Routers {
     let oas = open_api(&mode);
 
-    let base_router = Router::new()
+    let app_router = Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))
         .route(urls::ApiHealth::AXUM_PATH, get(system::health))
         .route(urls::ApiAppMeta::AXUM_PATH, get(system::app_meta));
@@ -61,8 +61,8 @@ pub fn router(mode: RunMode) -> AggregateRouter {
         post(submitter::submit_signed_operations),
     );
 
-    AggregateRouter {
-        app_router: base_router,
+    Routers {
+        app_router,
         indexer_router,
         submitter_router,
     }

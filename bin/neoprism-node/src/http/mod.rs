@@ -14,13 +14,13 @@ mod urls;
 
 pub use features::api::open_api;
 
-pub struct AggregateRouter {
-    app_router: Router<AppState>,
-    indexer_router: Router<IndexerState>,
-    submitter_router: Router<SubmitterState>,
+pub struct Routers {
+    pub app_router: Router<AppState>,
+    pub indexer_router: Router<IndexerState>,
+    pub submitter_router: Router<SubmitterState>,
 }
 
-pub fn router(assets_dir: &Path, mode: RunMode) -> AggregateRouter {
+pub fn router(assets_dir: &Path, mode: RunMode) -> Routers {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
     let api_router = api::router(mode);
@@ -30,19 +30,20 @@ pub fn router(assets_dir: &Path, mode: RunMode) -> AggregateRouter {
         .merge(ui_explorer::router())
         .merge(ui_resolver::router());
 
-    match mode {
-        RunMode::Submitter => Router::new()
-            .route(
-                urls::Home::AXUM_PATH,
-                get(Redirect::temporary(&urls::Swagger::new_uri())),
-            )
-            .merge(api_router),
-        RunMode::Indexer | RunMode::Standalone => Router::new()
-            .route(
-                urls::Home::AXUM_PATH,
-                get(Redirect::temporary(&urls::Resolver::new_uri(None))),
-            )
-            .merge(api_router)
-            .merge(ui_router),
+    let home_router = match mode {
+        RunMode::Submitter => Router::new().route(
+            urls::Home::AXUM_PATH,
+            get(Redirect::temporary(&urls::Swagger::new_uri())),
+        ),
+        RunMode::Indexer | RunMode::Standalone => Router::new().route(
+            urls::Home::AXUM_PATH,
+            get(Redirect::temporary(&urls::Resolver::new_uri(None))),
+        ),
+    };
+
+    Routers {
+        app_router: api_router.app_router.merge(home_router),
+        indexer_router: api_router.indexer_router.merge(ui_router),
+        submitter_router: api_router.submitter_router,
     }
 }
