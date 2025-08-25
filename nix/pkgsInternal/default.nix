@@ -3,5 +3,5 @@
 rec {
   scala-did = pkgs.callPackage ./scala-did { };
   compactc = pkgs.callPackage ./compactc.nix { };
-  midnight-js-binding = pkgs.callPackage ./midnight-js-binding.nix { inherit compactc; };
+  did-midnight-serde = pkgs.callPackage ./did-midnight-serde.nix { inherit compactc; };
 }
