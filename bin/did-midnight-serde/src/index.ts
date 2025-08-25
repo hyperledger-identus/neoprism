@@ -1,9 +1,5 @@
 import DidContract from "./managed/did/contract/index.cjs";
 import { ContractState } from "@midnight-ntwrk/ledger";
-// Node.js Buffer is used for hex decoding
-function decodeHex(hex: string): Buffer {
-  return Buffer.from(hex, 'hex');
-}
 import {
   DidDocument,
   Service,
@@ -14,7 +10,7 @@ export function decodeContractState(
   networkId: number,
   contractStateHex: string,
 ): DidDocument {
-  const buffer = decodeHex(contractStateHex);
+  const buffer = Buffer.from(contractStateHex, 'hex');
   const state = ContractState.deserialize(buffer, networkId);
   const ledger = DidContract.ledger(state.data);
   const didDocument: DidDocument = {

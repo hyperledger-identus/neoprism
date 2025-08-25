@@ -143,6 +143,7 @@ pkgs.mkShell {
       # node
       nodejs_20
       tailwindcss_4
+      esbuild
       # midnight
       pkgsInternal.compactc
     ]

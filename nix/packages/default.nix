@@ -63,5 +63,5 @@ rec {
 
   # misc
   scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
-  midnight-js-binding = pkgs.pkgsInternal.midnight-js-binding;
+  did-midnight-serde = pkgs.pkgsInternal.did-midnight-serde;
 }
