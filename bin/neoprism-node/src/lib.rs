@@ -5,6 +5,7 @@ use std::fs;
 use std::sync::Arc;
 
 use app::service::DidService;
+use axum::Router;
 use clap::Parser;
 use cli::Cli;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
@@ -38,11 +39,19 @@ enum RunMode {
 
 #[derive(Clone)]
 struct AppState {
+    run_mode: RunMode,
+}
+
+#[derive(Clone)]
+struct IndexerState {
     pg_pool: PgPool,
     did_service: DidService,
     dlt_source: Option<DltSourceState>,
-    dlt_sink: Option<Arc<dyn DltSink>>,
-    run_mode: RunMode,
+}
+
+#[derive(Clone)]
+struct SubmitterState {
+    dlt_sink: Arc<dyn DltSink>,
 }
 
 #[derive(Clone)]
@@ -51,7 +60,7 @@ struct DltSourceState {
     network: NetworkIdentifier,
 }
 
-impl RouteConfig for AppState {
+impl RouteConfig for IndexerState {
     type Ctx = PostgresDbCtx;
     type Db = Postgres;
 
@@ -90,26 +99,23 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.cardano_network.clone().into();
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
     let app_state = AppState {
-        pg_pool: db.pool.clone(),
         run_mode: RunMode::Indexer,
+    };
+    let indexer_state = IndexerState {
+        pg_pool: db.pool.clone(),
         did_service: DidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
-        dlt_sink: None,
     };
-    run_server(app_state, &args.server).await
+    run_server(app_state, Some(indexer_state), None, &args.server).await
 }
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
-        pg_pool: db.pool.clone(),
         run_mode: RunMode::Submitter,
-        did_service: DidService::new(&db),
-        dlt_source: None,
-        dlt_sink: Some(dlt_sink),
     };
-    run_server(app_state, &args.server).await
+    let submitter_state = SubmitterState { dlt_sink };
+    run_server(app_state, None, Some(submitter_state), &args.server).await
 }
 
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
@@ -118,21 +124,39 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
-        pg_pool: db.pool.clone(),
         run_mode: RunMode::Standalone,
+    };
+    let indexer_state = IndexerState {
+        pg_pool: db.pool.clone(),
         did_service: DidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
-        dlt_sink: Some(dlt_sink),
     };
-    run_server(app_state, &args.server).await
+    let submitter_state = SubmitterState { dlt_sink };
+    run_server(app_state, Some(indexer_state), Some(submitter_state), &args.server).await
 }
 
-async fn run_server(app_state: AppState, server_args: &ServerArgs) -> anyhow::Result<()> {
+async fn run_server(
+    app_state: AppState,
+    indexer_state: Option<IndexerState>,
+    submitter_state: Option<SubmitterState>,
+    server_args: &ServerArgs,
+) -> anyhow::Result<()> {
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
-    let router = http::router(&server_args.assets_path, app_state.run_mode)
-        .with_state(app_state)
+    let routers = http::router(&server_args.assets_path, app_state.run_mode);
+    let router = Router::new()
+        .merge(routers.app_router.with_state(app_state))
+        .merge(
+            indexer_state
+                .map(|s| routers.indexer_router.with_state(s))
+                .unwrap_or_default(),
+        )
+        .merge(
+            submitter_state
+                .map(|s| routers.submitter_router.with_state(s))
+                .unwrap_or_default(),
+        )
         .layer(layer);
     let bind_addr = format!("{}:{}", server_args.address, server_args.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;

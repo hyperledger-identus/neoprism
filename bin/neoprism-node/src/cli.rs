@@ -38,8 +38,6 @@ pub struct SubmitterArgs {
     #[clap(flatten)]
     pub server: ServerArgs,
     #[clap(flatten)]
-    pub db: DbArgs,
-    #[clap(flatten)]
     pub dlt_sink: DltSinkArgs,
 }
 

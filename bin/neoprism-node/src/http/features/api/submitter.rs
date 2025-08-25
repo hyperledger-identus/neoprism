@@ -3,7 +3,7 @@ use axum::extract::State;
 use axum::http::StatusCode;
 use utoipa::OpenApi;
 
-use crate::AppState;
+use crate::SubmitterState;
 use crate::http::features::api::submitter::models::{
     SignedOperationSubmissionRequest, SignedOperationSubmissionResponse,
 };
@@ -41,15 +41,11 @@ mod models {
     )
 )]
 pub async fn submit_signed_operations(
-    State(state): State<AppState>,
+    State(state): State<SubmitterState>,
     Json(req): Json<SignedOperationSubmissionRequest>,
 ) -> Result<Json<SignedOperationSubmissionResponse>, StatusCode> {
     let ops = req.signed_operations.into_iter().map(|i| i.into()).collect();
-    let result = state
-        .dlt_sink
-        .expect("DLT sink is not configured for operation submission")
-        .publish_operations(ops)
-        .await;
+    let result = state.dlt_sink.publish_operations(ops).await;
 
     // TODO: improve error handling
     match result {
