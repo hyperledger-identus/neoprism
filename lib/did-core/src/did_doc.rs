@@ -49,7 +49,6 @@ pub struct VerificationMethod {
 )]
 #[serde(untagged)]
 pub enum VerificationMethodOrRef {
-    #[cfg_attr(feature = "ts-types", ts(type = "string"))]
     Embedded(VerificationMethod),
     Ref(String),
 }
