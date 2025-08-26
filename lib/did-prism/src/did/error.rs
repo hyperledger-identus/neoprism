@@ -11,25 +11,25 @@ pub enum Error {
     #[display("operation does not exist in PrismOperation")]
     OperationMissingFromPrismOperation,
     #[from]
-    #[display("invalid did syntax")]
+    #[display("did syntax is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[from]
-    #[display("error occurred in CreateDidOperation")]
+    #[display("failed to create did operation")]
     CreateDidOperation { source: CreateDidOperationError },
     #[from]
-    #[display("error occurred in UpdateDidOperation")]
+    #[display("failed to update did operation")]
     UpdateDidOperation { source: UpdateDidOperationError },
     #[from]
-    #[display("error occurred in DeactivateDidOperation")]
+    #[display("failed to deactivate did operation")]
     DeactivateDidOperation { source: DeactivateDidOperationError },
     #[from]
-    #[display("error occurred in CreateStorageOperation")]
+    #[display("failed to create storage operation")]
     CreateStorageOperation { source: CreateStorageOperationError },
     #[from]
-    #[display("error occurred in UpdateStorageOperation")]
+    #[display("failed to update storage operation")]
     UpdateStorageOperation { source: UpdateStorageOperationError },
     #[from]
-    #[display("error occurred in DeactivateStorageOperation")]
+    #[display("failed to deactivate storage operation")]
     DeactivateStorageOperation { source: DeactivateStorageOperationError },
 }
 
@@ -40,12 +40,12 @@ pub enum DidSyntaxError {
         source: identus_apollo::hash::Error,
         suffix: HexStr,
     },
-    #[display("did suffix {suffix} is not valid")]
+    #[display("did suffix {suffix} is invalid")]
     DidSuffixInvalidStr {
         source: identus_apollo::hex::Error,
         suffix: String,
     },
-    #[display("did encoded state {encoded_state} is not valid")]
+    #[display("did encoded state {encoded_state} is invalid")]
     DidEncodedStateInvalidStr {
         source: identus_apollo::base64::Error,
         encoded_state: String,
@@ -68,7 +68,7 @@ pub enum DidSyntaxError {
 pub enum CreateDidOperationError {
     #[display("missing did_data in CreateDidOperation")]
     MissingDidData,
-    #[display("no master key found in CreateDidOperation")]
+    #[display("master key is missing in CreateDidOperation")]
     MissingMasterKey,
     #[from]
     #[display("invalid public key found in CreateDidOperation")]
@@ -92,9 +92,9 @@ pub enum UpdateDidOperationError {
     #[display("invalid previous operation hash in UpdateDidOperation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
-    #[display("did provided in UpdateDidOperation is not valid")]
+    #[display("did provided in UpdateDidOperation is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
-    #[display("update action type '{action_type}' in UpdateDidOperation is missing a field '{field_name}'")]
+    #[display("update action type '{action_type}' in UpdateDidOperation is missing field '{field_name}'")]
     MissingUpdateActionData {
         action_type: &'static str,
         field_name: &'static str,
@@ -114,16 +114,16 @@ pub enum DeactivateDidOperationError {
     #[display("invalid previous operation hash in DeactivateDidOperation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
-    #[display("did provided in DeactivateDidOperation is not valid")]
+    #[display("did provided in DeactivateDidOperation is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum PublicKeyError {
     #[from]
-    #[display("invalid public key id {id}")]
+    #[display("public key id {id} is invalid")]
     InvalidKeyId { source: PublicKeyIdError, id: String },
-    #[display("missing key data for key id {id}")]
+    #[display("key data for key id {id} is missing")]
     MissingKeyData {
         #[error(not(source))]
         id: PublicKeyId,
@@ -165,7 +165,7 @@ pub enum PublicKeyIdError {
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum ServiceError {
     #[from]
-    #[display("invalid service id {id}")]
+    #[display("service id {id} is invalid")]
     InvalidServiceId { source: ServiceIdError, id: String },
     #[from]
     #[display("invalid service type {type_name}")]
@@ -174,7 +174,7 @@ pub enum ServiceError {
         type_name: String,
     },
     #[from]
-    #[display("invalid service endpoint {endpoint}")]
+    #[display("service endpoint {endpoint} is invalid")]
     InvalidServiceEndpoint {
         source: ServiceEndpointError,
         endpoint: String,
@@ -193,7 +193,7 @@ pub enum ServiceIdError {
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum ServiceTypeError {
-    #[display("service type exceed max size of {limit}")]
+    #[display("service type exceeds max size of {limit}")]
     ExceedMaxSize {
         #[error(not(source))]
         limit: usize,
@@ -206,7 +206,7 @@ pub enum ServiceTypeError {
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum ServiceEndpointError {
-    #[display("service endpoint exceed max size of {limit}")]
+    #[display("service endpoint exceeds max size of {limit}")]
     ExceedMaxSize {
         #[error(not(source))]
         limit: usize,
@@ -220,7 +220,7 @@ pub enum ServiceEndpointError {
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum CreateStorageOperationError {
     #[from]
-    #[display("did provided in CreateStorageOperation is not valid")]
+    #[display("did provided in CreateStorageOperation is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[display("missing storage data in CreateStorageOperation")]
     EmptyStorageData,

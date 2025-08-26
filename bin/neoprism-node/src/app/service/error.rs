@@ -22,7 +22,7 @@ pub enum InvalidDid {
     #[display("cannot parse the did")]
     ParsingFail { source: did::Error },
     #[from]
-    #[display("cannot process did state from did")]
+    #[display("failed to process did state from did")]
     ProcessFail { source: protocol::error::ProcessError },
 }
 
