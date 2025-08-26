@@ -5,6 +5,7 @@
   importNpmLock,
   nodejs_20,
   writeShellApplication,
+  symlinkJoin,
 }:
 
 let
@@ -29,23 +30,29 @@ let
         --platform=node \
         --outdir=dist \
         --format=cjs \
-        src/index.ts
+        src/cli.ts
     '';
 
     installPhase = ''
-      ls -aoh dist
       mkdir -p $out/dist
       mkdir -p $out/node_modules
       cp -r dist/* $out/dist
       cp -r node_modules/* $out/node_modules
     '';
   };
+  wrapper = writeShellApplication {
+    name = "did-midnight-serde";
+    runtimeInputs = [ nodejs_20 ];
+    text = ''
+      export NODE_PATH=${bundle}/node_modules
+      node ${bundle}/dist/cli.js "$@"
+    '';
+  };
 in
-writeShellApplication {
+symlinkJoin {
   name = "did-midnight-serde";
-  runtimeInputs = [ nodejs_20 ];
-  text = ''
-    export NODE_PATH=${bundle}/node_modules
-    node ${bundle}/dist/index.js "$@"
-  '';
+  paths = [
+    bundle
+    wrapper
+  ];
 }

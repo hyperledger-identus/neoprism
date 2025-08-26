@@ -1,11 +1,11 @@
 import DidContract from "./managed/did/contract/index.cjs";
-import { ContractState } from "@midnight-ntwrk/ledger";
 import {
   Did,
   DidDocument,
   Service,
   VerificationMethod,
 } from "../../../lib/did-core/bindings/did_core_types";
+import { ContractState } from "@midnight-ntwrk/compact-runtime";
 
 export function decodeContractState(
   did: Did,
@@ -40,10 +40,10 @@ function mapVerificationMethods(
       type: DidContract.VerificationMethodType[method.type],
       controller: did,
       publicKeyJwk: {
-        x: method.publicKeyJwk.x,
-        y: method.publicKeyJwk.y,
-        kty: method.publicKeyJwk.kty,
-        crv: method.publicKeyJwk.crv,
+        x: bigintToBase64Url(method.publicKeyJwk.x),
+        y: bigintToBase64Url(method.publicKeyJwk.y),
+        kty: DidContract.KeyType[method.publicKeyJwk.kty],
+        crv: DidContract.CurveType[method.publicKeyJwk.crv],
       },
     });
   }
@@ -72,4 +72,10 @@ function mapServices(ledger: DidContract.Ledger): Service[] {
     });
   }
   return services;
+}
+
+function bigintToBase64Url(n: bigint): string {
+  let hex = n.toString(16);
+  if (hex.length % 2) hex = "0" + hex;
+  return Buffer.from(hex, "hex").toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }

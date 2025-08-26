@@ -55,7 +55,7 @@ export enum KeyType {
 }
 
 export enum CurveType {
-  ed25519, Jubjub
+  Ed25519, Jubjub
 }
 
 export struct PublicKeyJwk {
