@@ -24,6 +24,12 @@ let
 
     buildPhase = ''
       cd ./bin/did-midnight-serde
+
+      # run typescheck
+      npm run build
+      rm -rf dist
+
+      # actual build
       compactc --skip-zk src/did.compact src/managed/did
       esbuild --bundle \
         --packages=external \
