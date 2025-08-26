@@ -24,7 +24,7 @@ pub(crate) enum MetadataReadError {
         block_hash: Option<String>,
         tx_idx: Option<usize>,
     },
-    #[display("cannot decode prism_block hex on block {block_hash:?} tx {tx_idx:?}")]
+    #[display("failed to decode prism_block hex on block {block_hash:?} tx {tx_idx:?}")]
     PrismBlockHexDecode {
         source: identus_apollo::hex::Error,
         block_hash: Option<String>,
