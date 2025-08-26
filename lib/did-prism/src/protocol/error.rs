@@ -12,17 +12,17 @@ pub enum ProcessError {
     DidStateInitFromNonCreateOperation,
     #[display("did state update cannot be performed by CreateOperation")]
     DidStateUpdateFromCreateOperation,
-    #[display("operation is missing from SignedPrismOperation")]
+    #[display("operation is missing from signed-prism-operation")]
     SignedPrismOperationMissingOperation,
-    #[display("invalid signed_with key id in SignedPrismOperation")]
+    #[display("invalid signed_with key id in signed-prism-operation")]
     SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
-    #[display("signed_with key id {id} not found")]
+    #[display("signed_with key id {id} not found in signed-prism-operation")]
     SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
-    #[display("signed_with key id {id} is revoked")]
+    #[display("signed_with key id {id} is revoked in signed-prism-operation")]
     SignedPrismOperationSignedWithRevokedKey { id: PublicKeyId },
-    #[display("signed_with key id {id} has usage of {usage:?} which is not expected key")]
+    #[display("signed_with key id {id} has usage of {usage:?} which is not expected key in signed-prism-operation")]
     SignedPrismOperationSignedWithInvalidKey { id: PublicKeyId, usage: KeyUsage },
-    #[display("signature verification failed for SignedPrismOperation")]
+    #[display("signature verification failed for signed-prism-operation")]
     SignedPrismOperationInvalidSignature,
     #[from]
     #[display("applied operation has conflict with the current did state")]
@@ -57,9 +57,7 @@ pub enum DidStateConflictError {
     AfterUpdateServiceExceedLimit { limit: usize, actual: usize },
     #[display("cannot add storage entry: entry with hash {initial_hash:?} already exists")]
     AddStorageEntryWithExistingHash { initial_hash: Sha256Digest },
-    #[display(
-        "cannot update storage entry: entry with hash {prev_operation_hash:?} does not exist in the did state"
-    )]
+    #[display("cannot update storage entry: entry with hash {prev_operation_hash:?} does not exist in the did state")]
     UpdateStorageEntryNotExists { prev_operation_hash: Sha256Digest },
     #[display("cannot update storage entry: entry with hash {prev_operation_hash:?} is already revoked")]
     UpdateStorageEntryAlreadyRevoked { prev_operation_hash: Sha256Digest },

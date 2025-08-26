@@ -17,5 +17,5 @@ renderer = [ "html", "markdown" ]
 [output.markdown]
 
 [output.linkcheck]
-follow-web-links = false # enable this when checking broken links
-exclude = [ 'localhost' ]
+follow-web-links = false           # enable this when checking broken links
+exclude          = [ 'localhost' ]
