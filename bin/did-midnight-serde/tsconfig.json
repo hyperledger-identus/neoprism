@@ -12,6 +12,6 @@
   },
   "include": [
     "src/**/*",
-    "../../lib/did-core/bindings/*.ts"
+    "../../bindings/ts-types/*.ts"
   ]
 }

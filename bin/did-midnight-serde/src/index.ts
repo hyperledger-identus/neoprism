@@ -4,7 +4,7 @@ import {
   DidDocument,
   Service,
   VerificationMethod,
-} from "../../../lib/did-core/bindings/did_core_types";
+} from "../../../bindings/ts-types/did_core_types";
 import { ContractState } from "@midnight-ntwrk/compact-runtime";
 
 export function decodeContractState(

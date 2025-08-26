@@ -11,7 +11,7 @@ use crate::Error;
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(type = "string", export_to = "../bindings/did_core_types.ts")
+    ts(type = "string", export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[debug("{}", self.0.to_string())]
 #[display("{}", self.0.to_string())]

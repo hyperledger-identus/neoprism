@@ -25,7 +25,7 @@ let
     buildPhase = ''
       cd ./bin/did-midnight-serde
 
-      # run typescheck
+      # run typecheck
       npm run build
       rm -rf dist
 

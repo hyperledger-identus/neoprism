@@ -8,7 +8,7 @@ use crate::Did;
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
@@ -29,7 +29,7 @@ pub struct DidDocument {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(rename_all = "camelCase")]
 pub struct VerificationMethod {
@@ -45,7 +45,7 @@ pub struct VerificationMethod {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(untagged)]
 pub enum VerificationMethodOrRef {
@@ -58,7 +58,7 @@ pub enum VerificationMethodOrRef {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(rename_all = "camelCase")]
 pub struct Service {
@@ -72,7 +72,7 @@ pub struct Service {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(untagged)]
 pub enum ServiceType {
@@ -85,7 +85,7 @@ pub enum ServiceType {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export_to = "../bindings/did_core_types.ts")
+    ts(export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(untagged)]
 pub enum ServiceEndpoint {
@@ -98,7 +98,7 @@ pub enum ServiceEndpoint {
 #[cfg_attr(
     feature = "ts-types",
     derive(ts_rs::TS),
-    ts(export, export_to = "../bindings/did_core_types.ts")
+    ts(export, export_to = "../../../bindings/ts-types/did_core_types.ts")
 )]
 #[serde(untagged)]
 pub enum StringOrMap {
