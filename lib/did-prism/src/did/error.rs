@@ -14,22 +14,22 @@ pub enum Error {
     #[display("did syntax is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[from]
-    #[display("failed to create create-did-operation")]
+    #[display("error occurred in create-did-operation")]
     CreateDidOperation { source: CreateDidOperationError },
     #[from]
-    #[display("failed to update update-did-operation")]
+    #[display("error occurred in update-did-operation")]
     UpdateDidOperation { source: UpdateDidOperationError },
     #[from]
-    #[display("failed to deactivate deactivate-did-operation")]
+    #[display("error occurred in deactivate-did-operation")]
     DeactivateDidOperation { source: DeactivateDidOperationError },
     #[from]
-    #[display("failed to create create-storage-operation")]
+    #[display("error occurred in create-storage-operation")]
     CreateStorageOperation { source: CreateStorageOperationError },
     #[from]
-    #[display("failed to update update-storage-operation")]
+    #[display("error occurred in update-storage-operation")]
     UpdateStorageOperation { source: UpdateStorageOperationError },
     #[from]
-    #[display("failed to deactivate deactivate-storage-operation")]
+    #[display("error occurred in deactivate-storage-operation")]
     DeactivateStorageOperation { source: DeactivateStorageOperationError },
 }
 
@@ -50,7 +50,7 @@ pub enum DidSyntaxError {
         source: identus_apollo::base64::Error,
         encoded_state: String,
     },
-    #[display("did suffix {did} cannot be decoded into protobuf message")]
+    #[display("failed to decode did suffix {did} into protobuf message")]
     DidEncodedStateInvalidProto { source: protobuf::Error, did: String },
     #[display("unrecognized did pattern {did}")]
     DidSyntaxInvalid {
@@ -143,7 +143,7 @@ pub enum PublicKeyError {
         #[error(not(source))]
         id: PublicKeyId,
     },
-    #[display("unable to parse key data to a public key for id {id}")]
+    #[display("failed to parse key data into public key for id {id}")]
     InvalidKeyData {
         source: identus_apollo::crypto::Error,
         id: PublicKeyId,
