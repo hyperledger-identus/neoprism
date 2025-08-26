@@ -1,14 +1,15 @@
 [workspace]
 resolver = "3"
 members = [
+  "bin/neoprism-node",
   "lib/apollo",
   "lib/did-core",
   "lib/did-midnight",
+  "lib/did-midnight-sources",
   "lib/did-prism",
   "lib/did-prism-indexer",
   "lib/did-prism-submitter",
   "lib/node-storage",
-  "bin/neoprism-node",
 ]
 
 [workspace.package]
@@ -33,6 +34,7 @@ chrono             = { version = "0.4" }
 clap               = { version = "4" }
 derive_more        = { version = "2" }
 enum_dispatch      = { version = "0.3" }
+graphql_client     = { version = "0.14" }
 im-rc              = { version = "15" }
 lazybe             = { version = "0.2" }
 maud               = { version = "0.27" }

@@ -1,0 +1,19 @@
+[package]
+name    = "did-midnight-sources"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+identus-apollo       = { workspace = true, features = [ "hex" ] }
+identus-did-midnight = { workspace = true }
+tracing              = { workspace = true }
+serde                = { workspace = true, features = [ "derive" ] }
+serde_json           = { workspace = true, optional = true }
+graphql_client       = { workspace = true, optional = true }
+reqwest              = { workspace = true, optional = true, default-features = false, features = [ "rustls-tls" ] }
+
+[features]
+default     = [  ]
+serde-cli   = [  ]
+indexer-api = [ "dep:graphql_client", "dep:reqwest" ]

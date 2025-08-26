@@ -33,7 +33,13 @@ impl MidnightNetwork {
 #[derive(Clone, PartialEq, Eq, Hash, derive_more::Debug, derive_more::Display)]
 #[debug("{}", identus_apollo::hex::HexStr::from(_0))]
 #[display("{}", identus_apollo::hex::HexStr::from(_0))]
-pub struct MidnightContractAddress(pub [u8; 34]);
+pub struct MidnightContractAddress([u8; 34]);
+
+impl MidnightContractAddress {
+    pub fn as_slice(&self) -> &[u8; 34] {
+        &self.0
+    }
+}
 
 impl FromStr for MidnightContractAddress {
     type Err = Error;

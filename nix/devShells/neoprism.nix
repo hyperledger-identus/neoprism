@@ -39,20 +39,11 @@ let
       '';
     };
 
-    buildMidnightSerde = pkgs.writeShellApplication {
-      name = "buildMidnightSerde";
-      text = ''
-        cd "${rootDir}/bin/did-midnight-serde"
-        npm run build
-      '';
-    };
-
     build = pkgs.writeShellApplication {
       name = "build";
       text = ''
         cd "${rootDir}"
         ${buildAssets}/bin/buildAssets
-        ${buildMidnightSerde}/bin/buildMidnightSerde
         cargo build --all-features
       '';
     };

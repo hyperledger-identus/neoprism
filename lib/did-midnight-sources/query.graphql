@@ -1,0 +1,7 @@
+query ContractStateQuery($address: String) {
+  contractAction(address: $address) {
+    __typename
+    address
+    state
+  }
+}
