@@ -6,7 +6,7 @@ use crate::error::InvalidInputSizeError;
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[display("operation type provided when creating a long-form did-document is not create-did-operation")]
+    #[display("operation type provided when creating a long-form did is not create-did-operation")]
     LongFormDidNotFromCreateOperation,
     #[display("operation does not exist in prism-operation")]
     OperationMissingFromPrismOperation,
@@ -14,22 +14,22 @@ pub enum Error {
     #[display("did syntax is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
     #[from]
-    #[display("error occurred in create-did-operation")]
+    #[display("failed to create create-did-operation")]
     CreateDidOperation { source: CreateDidOperationError },
     #[from]
-    #[display("error occurred in update-did-operation")]
+    #[display("failed to update update-did-operation")]
     UpdateDidOperation { source: UpdateDidOperationError },
     #[from]
-    #[display("error occurred in deactivate-did-operation")]
+    #[display("failed to deactivate deactivate-did-operation")]
     DeactivateDidOperation { source: DeactivateDidOperationError },
     #[from]
-    #[display("error occurred in create-storage-operation")]
+    #[display("failed to create create-storage-operation")]
     CreateStorageOperation { source: CreateStorageOperationError },
     #[from]
-    #[display("error occurred in update-storage-operation")]
+    #[display("failed to update update-storage-operation")]
     UpdateStorageOperation { source: UpdateStorageOperationError },
     #[from]
-    #[display("error occurred in deactivate-storage-operation")]
+    #[display("failed to deactivate deactivate-storage-operation")]
     DeactivateStorageOperation { source: DeactivateStorageOperationError },
 }
 
@@ -111,10 +111,10 @@ pub enum UpdateDidOperationError {
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum DeactivateDidOperationError {
-    #[display("invalid previous operation hash in DeactivateDidOperation")]
+    #[display("invalid previous operation hash in deactivate-did-operation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
     #[from]
-    #[display("did provided in DeactivateDidOperation is invalid")]
+    #[display("did provided in deactivate-did-operation is invalid")]
     InvalidDidSyntax { source: DidSyntaxError },
 }
 
@@ -230,7 +230,7 @@ pub enum CreateStorageOperationError {
 pub enum UpdateStorageOperationError {
     #[display("invalid previous operation hash in update-storage-operation")]
     InvalidPreviousOperationHash { source: identus_apollo::hash::Error },
-    #[display("missing storage data in UpdateStorageOperation")]
+    #[display("missing storage data in update-storage-operation")]
     EmptyStorageData,
 }
 
