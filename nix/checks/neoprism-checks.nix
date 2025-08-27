@@ -5,6 +5,7 @@
   protobuf,
   sqlfluff,
   deadnix,
+  pkgsInternal,
 }:
 
 let
@@ -22,6 +23,7 @@ rustPlatform.buildRustPackage {
     protobuf
     sqlfluff
     deadnix
+    pkgsInternal.did-midnight-serde
   ];
   buildPhase = "cargo b --all-features --all-targets";
   checkPhase = ''
