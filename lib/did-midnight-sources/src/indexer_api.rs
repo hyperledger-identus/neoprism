@@ -13,10 +13,12 @@ pub enum IndexerApiError {
     JsonError { source: reqwest::Error, url: String },
     #[display("graphql error from {url}: {messages:?}")]
     GraphqlError { messages: Vec<String>, url: String },
-    #[display("indexer response from {url} for contract address {address} has no data")]
-    NoData { url: String, address: String },
-    #[display("contract action for address {address} not found in indexer response from {url}")]
-    NoContractAction { url: String, address: String },
+    #[display("missing data fields {fields:?} for contract address {address} in indexer response from {url}")]
+    MissingDataFields {
+        url: String,
+        address: String,
+        fields: Vec<&'static str>,
+    },
 }
 
 #[derive(GraphQLQuery)]
@@ -35,13 +37,15 @@ pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<Contract
     };
     let request_body = ContractStateQuery::build_query(variables);
     let response_body = execute_graphql_query::<contract_state_query::ResponseData>(url, &request_body).await?;
-    let data = response_body.data.ok_or(IndexerApiError::NoData {
+    let data = response_body.data.ok_or(IndexerApiError::MissingDataFields {
         url: url.to_string(),
         address: address.clone(),
+        fields: vec!["data"],
     })?;
-    let contract = data.contract_action.ok_or(IndexerApiError::NoContractAction {
+    let contract = data.contract_action.ok_or(IndexerApiError::MissingDataFields {
         url: url.to_string(),
         address,
+        fields: vec!["contract_action"],
     })?;
     Ok(contract.state.into())
 }

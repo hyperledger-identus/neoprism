@@ -2,7 +2,7 @@
 
 export type Did = string;
 
-export type DidDocument = { context: Array<string>, id: Did, verificationMethod: Array<VerificationMethod>, authentication: Array<VerificationMethodOrRef> | null, assertionMethod: Array<VerificationMethodOrRef> | null, keyAgreement: Array<VerificationMethodOrRef> | null, capabilityInvocation: Array<VerificationMethodOrRef> | null, capabilityDelegation: Array<VerificationMethodOrRef> | null, service: Array<Service> | null, };
+export type DidDocument = { "@context": Array<string>, id: Did, verificationMethod: Array<VerificationMethod>, authentication: Array<VerificationMethodOrRef> | null, assertionMethod: Array<VerificationMethodOrRef> | null, keyAgreement: Array<VerificationMethodOrRef> | null, capabilityInvocation: Array<VerificationMethodOrRef> | null, capabilityDelegation: Array<VerificationMethodOrRef> | null, service: Array<Service> | null, };
 
 export type Service = { id: string, type: ServiceType, serviceEndpoint: ServiceEndpoint, };
 

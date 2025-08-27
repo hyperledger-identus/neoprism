@@ -1754,10 +1754,12 @@ dependencies = [
  "derive_more",
  "graphql_client",
  "identus-apollo",
+ "identus-did-core",
  "identus-did-midnight",
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
  "tracing",
 ]
 

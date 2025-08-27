@@ -1,19 +1,12 @@
+use std::str::FromStr;
+
 use identus_apollo::hex::HexStr;
 use identus_did_core::DidDocument;
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Serialize,
-    Deserialize,
-    derive_more::Debug,
-    derive_more::Display,
-    derive_more::From,
-    derive_more::Into,
-)]
+use crate::did::MidnightDid;
+
+#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[display("{}", self.0)]
 #[debug("{}", self.0)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -26,6 +19,20 @@ impl ContractState {
     }
 }
 
+impl<B: Into<HexStr>> From<B> for ContractState {
+    fn from(value: B) -> Self {
+        Self(value.into())
+    }
+}
+
+impl FromStr for ContractState {
+    type Err = identus_apollo::hex::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self(HexStr::from_str(s)?))
+    }
+}
+
 pub trait ContractStateDecoder {
-    fn decode(&self, state: ContractState) -> DidDocument;
+    fn decode(&self, did: &MidnightDid, state: ContractState) -> Result<DidDocument, Box<dyn std::error::Error>>;
 }

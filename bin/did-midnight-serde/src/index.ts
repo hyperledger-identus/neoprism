@@ -16,7 +16,7 @@ export function decodeContractState(
   const state = ContractState.deserialize(buffer, networkId);
   const ledger = DidContract.ledger(state.data);
   const didDocument: DidDocument = {
-    context: [],
+    "@context": [],
     id: did,
     verificationMethod: mapVerificationMethods(did, ledger),
     authentication: mapRelation(ledger.authenticationRelation),

@@ -138,7 +138,7 @@ pkgs.mkShell {
       esbuild
       # internal
       pkgsInternal.compactc
-      # pkgsInternal.did-midnight-serde
+      pkgsInternal.did-midnight-serde
     ]
     ++ (builtins.attrValues scripts);
 

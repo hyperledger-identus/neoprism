@@ -12,7 +12,7 @@ use crate::Did;
 )]
 #[serde(rename_all = "camelCase")]
 pub struct DidDocument {
-    #[serde(rename(serialize = "@context", deserialize = "@context"))]
+    #[serde(rename = "@context")]
     pub context: Vec<String>,
     pub id: Did,
     pub verification_method: Vec<VerificationMethod>,

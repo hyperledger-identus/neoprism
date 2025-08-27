@@ -20,7 +20,7 @@ pub enum MidnightNetwork {
 }
 
 impl MidnightNetwork {
-    pub fn to_u8_repr(&self) -> u8 {
+    pub fn as_u8_repr(&self) -> u8 {
         match self {
             MidnightNetwork::Undeployed => 0,
             MidnightNetwork::Devnet => 1,
@@ -104,12 +104,7 @@ impl MidnightDid {
 
     pub fn global_contract_address(&self) -> [u8; 35] {
         let network_addr = self.contract_address.as_slice();
-        let network_byte: u8 = match self.network {
-            MidnightNetwork::Undeployed => 0,
-            MidnightNetwork::Devnet => 1,
-            MidnightNetwork::Testnet => 2,
-            MidnightNetwork::Mainnet => 3,
-        };
+        let network_byte: u8 = self.network().as_u8_repr();
         let mut global_addr = [0u8; 35];
         global_addr[0] = network_byte;
         global_addr[2..].copy_from_slice(network_addr);
