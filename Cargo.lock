@@ -1751,6 +1751,7 @@ dependencies = [
 name = "identus-did-midnight-sources"
 version = "0.1.0"
 dependencies = [
+ "derive_more",
  "graphql_client",
  "identus-apollo",
  "identus-did-midnight",

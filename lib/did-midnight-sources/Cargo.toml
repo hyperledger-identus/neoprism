@@ -7,11 +7,12 @@ publish = false
 [dependencies]
 identus-apollo       = { workspace = true, features = [ "hex" ] }
 identus-did-midnight = { workspace = true }
-tracing              = { workspace = true }
-serde                = { workspace = true, features = [ "derive" ] }
-serde_json           = { workspace = true, optional = true }
+derive_more          = { workspace = true }
 graphql_client       = { workspace = true, optional = true }
 reqwest              = { workspace = true, optional = true, default-features = false, features = [ "rustls-tls" ] }
+serde_json           = { workspace = true, optional = true }
+serde                = { workspace = true, features = [ "derive" ] }
+tracing              = { workspace = true }
 
 [features]
 default     = [  ]
