@@ -868,19 +868,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "did-midnight-sources"
-version = "0.1.0"
-dependencies = [
- "graphql_client",
- "identus-apollo",
- "identus-did-midnight",
- "reqwest",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
 name = "did_url_parser"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1758,6 +1745,19 @@ dependencies = [
  "serde_json",
  "strum 0.27.2",
  "utoipa",
+]
+
+[[package]]
+name = "identus-did-midnight-sources"
+version = "0.1.0"
+dependencies = [
+ "graphql_client",
+ "identus-apollo",
+ "identus-did-midnight",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
