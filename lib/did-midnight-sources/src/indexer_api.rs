@@ -6,8 +6,8 @@ type HexEncoded = HexStr;
 
 #[derive(GraphQLQuery)]
 #[graphql(
-    schema_path = "schema.graphql",
-    query_path = "query.graphql",
+    schema_path = "graphql/schema.gql",
+    query_path = "graphql/query.gql",
     response_derives = "Debug"
 )]
 struct ContractStateQuery;
