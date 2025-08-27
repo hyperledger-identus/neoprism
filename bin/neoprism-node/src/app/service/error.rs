@@ -22,13 +22,13 @@ pub enum ResolutionError {
 pub enum InvalidDid {
     #[from]
     #[display("failed to process did state from did")]
-    ProcessFail { source: protocol::error::ProcessError },
+    ProcessStateFailed { source: protocol::error::ProcessError },
     #[from]
     #[display("failed to parse prism did")]
-    PrismDidParsingFail { source: did::Error },
+    InvalidPrismDid { source: did::Error },
     #[from]
     #[display("failed to parse midnight did")]
-    MidnightDidParsingFail { source: identus_did_midnight::error::Error },
+    InvalidMidnightDid { source: identus_did_midnight::error::Error },
 }
 
 impl From<ResolutionError> for ResolutionResult {

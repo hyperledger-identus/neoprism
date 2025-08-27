@@ -33,7 +33,7 @@ impl PrismDidService {
         did: &str,
         debug_acc: &mut ResolutionDebug,
     ) -> Result<(PrismDid, DidState), ResolutionError> {
-        let did: PrismDid = did.parse().map_err(|e| InvalidDid::PrismDidParsingFail { source: e })?;
+        let did: PrismDid = did.parse().map_err(|e| InvalidDid::InvalidPrismDid { source: e })?;
         let canonical_did = did.clone().into_canonical();
 
         let operations = self
@@ -51,9 +51,9 @@ impl PrismDidService {
                 PrismDid::LongForm(long_form_did) => {
                     let operation = long_form_did
                         .operation()
-                        .map_err(|e| InvalidDid::PrismDidParsingFail { source: e })?;
+                        .map_err(|e| InvalidDid::InvalidPrismDid { source: e })?;
                     let did_state =
-                        resolve_unpublished(operation).map_err(|e| InvalidDid::ProcessFail { source: e })?;
+                        resolve_unpublished(operation).map_err(|e| InvalidDid::ProcessStateFailed { source: e })?;
                     Ok((did, did_state))
                 }
             }
