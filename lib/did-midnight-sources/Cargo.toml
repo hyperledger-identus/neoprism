@@ -9,7 +9,7 @@ identus-apollo       = { workspace = true, features = [ "hex" ] }
 identus-did-midnight = { workspace = true }
 derive_more          = { workspace = true }
 graphql_client       = { workspace = true, optional = true }
-reqwest              = { workspace = true, optional = true, default-features = false, features = [ "rustls-tls" ] }
+reqwest              = { workspace = true, optional = true, default-features = false, features = [ "rustls-tls", "json" ] }
 serde_json           = { workspace = true, optional = true }
 serde                = { workspace = true, features = [ "derive" ] }
 tracing              = { workspace = true }

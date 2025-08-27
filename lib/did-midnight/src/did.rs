@@ -80,8 +80,8 @@ impl<'de> Deserialize<'de> for MidnightContractAddress {
 #[display("did:midnight:{network}:{contract_address}")]
 #[debug("did:midnight:{network}:{contract_address}")]
 pub struct MidnightDid {
-    pub network: MidnightNetwork,
-    pub contract_address: MidnightContractAddress,
+    network: MidnightNetwork,
+    contract_address: MidnightContractAddress,
 }
 
 impl MidnightDid {
@@ -100,6 +100,20 @@ impl MidnightDid {
     pub fn to_did(&self) -> Did {
         let s = self.to_string();
         Did::from_str(&s).expect("MidnightDid does not construct a valid DID syntax")
+    }
+
+    pub fn global_contract_address(&self) -> [u8; 35] {
+        let network_addr = self.contract_address.as_slice();
+        let network_byte: u8 = match self.network {
+            MidnightNetwork::Undeployed => 0,
+            MidnightNetwork::Devnet => 1,
+            MidnightNetwork::Testnet => 2,
+            MidnightNetwork::Mainnet => 3,
+        };
+        let mut global_addr = [0u8; 35];
+        global_addr[0] = network_byte;
+        global_addr[2..].copy_from_slice(network_addr);
+        global_addr
     }
 }
 

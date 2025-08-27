@@ -28,51 +28,52 @@ pub enum IndexerApiError {
 struct ContractStateQuery;
 
 pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<ContractState, IndexerApiError> {
-    let address_bytes = {
-        let mut global_addr = [0u8; 35];
-        let network_addr = did.contract_address.as_slice();
-        global_addr[2..].copy_from_slice(network_addr);
-        global_addr
-    };
+    let address_bytes = did.global_contract_address();
     let address = HexStr::from(address_bytes).to_string();
     let variables = contract_state_query::Variables {
         address: Some(address.clone()),
     };
     let request_body = ContractStateQuery::build_query(variables);
-    let client = reqwest::Client::new();
-    let res = client
-        .post(url)
-        .json(&request_body)
-        .send()
-        .await
-        .map_err(|e| IndexerApiError::HttpError {
-            source: e,
-            url: url.to_string(),
-        })?;
-    let response_body: Response<contract_state_query::ResponseData> = res
-        .json::<Response<contract_state_query::ResponseData>>()
-        .await
-        .map_err(|e| IndexerApiError::JsonError {
-            source: e,
-            url: url.to_string(),
-        })?;
-    tracing::info!("indexer response: {:#?}", response_body);
-
-    if let Some(errors) = response_body.errors {
-        if !errors.is_empty() {
-            Err(IndexerApiError::GraphqlError {
-                messages: errors.into_iter().map(|i| i.to_string()).collect(),
-                url: url.to_string(),
-            })?
-        }
-    }
+    let response_body = execute_graphql_query::<contract_state_query::ResponseData>(url, &request_body).await?;
     let data = response_body.data.ok_or(IndexerApiError::NoData {
         url: url.to_string(),
         address: address.clone(),
     })?;
     let contract = data.contract_action.ok_or(IndexerApiError::NoContractAction {
         url: url.to_string(),
-        address: address,
+        address,
     })?;
     Ok(contract.state.into())
+}
+
+async fn execute_graphql_query<T: serde::de::DeserializeOwned>(
+    url: &str,
+    request_body: &impl serde::Serialize,
+) -> Result<Response<T>, IndexerApiError> {
+    let client = reqwest::Client::new();
+    let res = client
+        .post(url)
+        .json(request_body)
+        .send()
+        .await
+        .map_err(|e| IndexerApiError::HttpError {
+            source: e,
+            url: url.to_string(),
+        })?;
+    let response_body = res
+        .json::<Response<T>>()
+        .await
+        .map_err(|e| IndexerApiError::JsonError {
+            source: e,
+            url: url.to_string(),
+        })?;
+    if let Some(errors) = &response_body.errors {
+        if !errors.is_empty() {
+            return Err(IndexerApiError::GraphqlError {
+                messages: errors.iter().map(|i| i.to_string()).collect(),
+                url: url.to_string(),
+            });
+        }
+    }
+    Ok(response_body)
 }
