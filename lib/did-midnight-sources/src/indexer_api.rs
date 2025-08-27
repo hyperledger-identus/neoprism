@@ -1,6 +1,7 @@
 use graphql_client::{GraphQLQuery, Response};
 use identus_apollo::hex::HexStr;
 use identus_did_midnight::did::MidnightDid;
+use identus_did_midnight::dlt::ContractState;
 
 type HexEncoded = HexStr;
 
@@ -12,7 +13,7 @@ type HexEncoded = HexStr;
 )]
 struct ContractStateQuery;
 
-pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<ContractState, Box<dyn std::error::Error>> {
     let address_bytes = {
         let mut global_addr = [0u8; 35];
         let network_addr = did.contract_address.as_slice();
@@ -27,6 +28,17 @@ pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<(), Box<
     let response_body: Response<contract_state_query::ResponseData> = res.json().await?;
     tracing::info!("indexer response: {:#?}", response_body);
 
-    // TODO: return contract state
-    Ok(())
+    // Error handling and extraction
+    if let Some(errors) = response_body.errors {
+        if !errors.is_empty() {
+            return Err(format!("indexer graphql error: {}", errors[0].message).into());
+        }
+    }
+    let data = response_body
+        .data
+        .ok_or_else(|| Box::<dyn std::error::Error>::from("indexer response has no data"))?;
+    let contract = data
+        .contract_action
+        .ok_or_else(|| Box::<dyn std::error::Error>::from("contractAction is not found"))?;
+    Ok(contract.state.into())
 }
