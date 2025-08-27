@@ -10,19 +10,19 @@ pub enum ProcessError {
     DidOperationInvalid { source: DidError },
     #[display("did state initialization requires operation to be CreateOperation")]
     DidStateInitFromNonCreateOperation,
-    #[display("did state update cannot be performed by CreateOperation")]
+    #[display("failed to update did state: operation is create-operation")]
     DidStateUpdateFromCreateOperation,
-    #[display("operation is missing from SignedPrismOperation")]
+    #[display("operation is missing from signed-prism-operation")]
     SignedPrismOperationMissingOperation,
-    #[display("invalid signed_with key id in SignedPrismOperation")]
+    #[display("invalid signed_with key id in signed-prism-operation")]
     SignedPrismOperationInvalidSignedWith { source: PublicKeyIdError },
-    #[display("signed_with key id {id} not found")]
+    #[display("signed_with key id {id} not found in signed-prism-operation")]
     SignedPrismOperationSignedWithKeyNotFound { id: PublicKeyId },
-    #[display("signed_with key id {id} is revoked")]
+    #[display("signed_with key id {id} is revoked in signed-prism-operation")]
     SignedPrismOperationSignedWithRevokedKey { id: PublicKeyId },
-    #[display("signed_with key id {id} has usage of {usage:?} which is not expected key")]
+    #[display("signed_with key id {id} has usage of {usage:?} which is not expected key in signed-prism-operation")]
     SignedPrismOperationSignedWithInvalidKey { id: PublicKeyId, usage: KeyUsage },
-    #[display("signature verification failed for SignedPrismOperation")]
+    #[display("signature verification failed for signed-prism-operation")]
     SignedPrismOperationInvalidSignature,
     #[from]
     #[display("applied operation has conflict with the current did state")]
@@ -33,40 +33,40 @@ pub enum ProcessError {
 pub enum DidStateConflictError {
     #[display("applied operation does not have matching previous_operation_hash in the current did state")]
     UnmatchedPreviousOperationHash,
-    #[display("cannot add public key since key id {id} already exist in the did state")]
+    #[display("failed to add public key: key id {id} already exists in did state")]
     AddPublicKeyWithExistingId { id: PublicKeyId },
-    #[display("cannot revoke public key since key id {id} does not exist in the did state")]
+    #[display("failed to revoke public key: key id {id} does not exist in did state")]
     RevokePublicKeyNotExists { id: PublicKeyId },
-    #[display("cannot revoke public key since key id {id} is already revoked")]
+    #[display("failed to revoke public key: key id {id} is already revoked in did state")]
     RevokePublicKeyIsAlreadyRevoked { id: PublicKeyId },
-    #[display("cannot add service since service with id {id} already exist in the did state")]
+    #[display("failed to add service: service id {id} already exists in did state")]
     AddServiceWithExistingId { id: ServiceId },
-    #[display("cannot revoke service since service with id {id} does not exist in the did state")]
+    #[display("failed to revoke service: service id {id} does not exist in did state")]
     RevokeServiceNotExists { id: ServiceId },
-    #[display("cannot revoke service since service with id {id} is already revoked")]
+    #[display("failed to revoke service: service id {id} is already revoked in did state")]
     RevokeServiceIsAlreadyRevoked { id: ServiceId },
-    #[display("cannot update service since service with id {id} does not exist in the did state")]
+    #[display("failed to update service: service id {id} does not exist in did state")]
     UpdateServiceNotExists { id: ServiceId },
-    #[display("cannot update service since service with id {id} is already revoked")]
+    #[display("failed to update service: service id {id} is already revoked in did state")]
     UpdateServiceIsRevoked { id: ServiceId },
-    #[display("did state must have at least one master key after updated")]
+    #[display("did state must have at least one master key after update")]
     AfterUpdateMissingMasterKey,
-    #[display("did state have {actual} public keys which is greater than the limit {limit}")]
+    #[display("did state has {actual} public keys which exceed limit {limit}")]
     AfterUpdatePublicKeyExceedLimit { limit: usize, actual: usize },
-    #[display("did state have {actual} services which is greater than the limit {limit}")]
+    #[display("did state has {actual} services which exceed limit {limit}")]
     AfterUpdateServiceExceedLimit { limit: usize, actual: usize },
-    #[display("cannot add storage entry since entry with same hash already exist {initial_hash:?}")]
+    #[display("failed to add storage entry: entry with hash {initial_hash:?} already exists")]
     AddStorageEntryWithExistingHash { initial_hash: Sha256Digest },
-    #[display(
-        "cannot update storage entry since entry with hash {prev_operation_hash:?} does not exist in the did state"
-    )]
+    #[display("failed to update storage entry: entry with hash {prev_operation_hash:?} does not exist in did state")]
     UpdateStorageEntryNotExists { prev_operation_hash: Sha256Digest },
-    #[display("cannot update storage entry since entry with hash {prev_operation_hash:?} is already revoked")]
+    #[display(
+        "failed to update storage entry: entry with hash {prev_operation_hash:?} is already revoked in did state"
+    )]
     UpdateStorageEntryAlreadyRevoked { prev_operation_hash: Sha256Digest },
     #[display(
-        "cannot revoke storage entry since entry with hash {previous_operation_hash:?} does not exist in the did state"
+        "failed to revoke storage entry since entry with hash {previous_operation_hash:?} does not exist in the did state"
     )]
     RevokeStorageEntryNotExists { previous_operation_hash: Sha256Digest },
-    #[display("cannot revoke storage entry since entry with hash {previous_operation_hash:?} is already revoked")]
+    #[display("cannot revoke storage entry: entry with hash {previous_operation_hash:?} is already revoked")]
     RevokeStorageEntryAlreadyRevoked { previous_operation_hash: Sha256Digest },
 }

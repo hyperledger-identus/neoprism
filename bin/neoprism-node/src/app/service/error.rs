@@ -19,10 +19,10 @@ pub enum ResolutionError {
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum InvalidDid {
     #[from]
-    #[display("cannot parse the did")]
+    #[display("failed to parse did")]
     ParsingFail { source: did::Error },
     #[from]
-    #[display("cannot process did state from did")]
+    #[display("failed to process did state from did")]
     ProcessFail { source: protocol::error::ProcessError },
 }
 
