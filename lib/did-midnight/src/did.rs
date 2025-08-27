@@ -7,7 +7,7 @@ use strum::{Display, EnumString};
 
 use crate::error::Error;
 
-#[derive(Clone, PartialEq, Eq, Hash, Serialize, Deserialize, EnumString, Display, derive_more::Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, EnumString, Display, derive_more::Debug)]
 pub enum MidnightNetwork {
     #[strum(serialize = "undeployed")]
     Undeployed,
@@ -89,8 +89,8 @@ impl MidnightDid {
         "midnight"
     }
 
-    pub fn network(&self) -> &MidnightNetwork {
-        &self.network
+    pub fn network(&self) -> MidnightNetwork {
+        self.network
     }
 
     pub fn contract_address(&self) -> &MidnightContractAddress {

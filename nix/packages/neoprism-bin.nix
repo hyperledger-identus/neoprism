@@ -17,7 +17,7 @@ rustPlatform.buildRustPackage {
   name = "neoprism";
   src = lib.cleanSourceWith {
     filter = (
-      path: type:
+      path: _:
       let
         baseName = builtins.baseNameOf path;
       in
@@ -27,6 +27,7 @@ rustPlatform.buildRustPackage {
         || baseName == ".github"
         || baseName == "tests"
         || baseName == "README.md"
+        || baseName == "AGENTS.md"
       )
     );
     src = ./../..;

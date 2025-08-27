@@ -47,9 +47,9 @@ fn test_contract_address_invalid_case() {
 fn test_midnight_did_valid() {
     let did = "did:midnight:mainnet:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123";
     let parsed = MidnightDid::from_str(did).unwrap();
-    assert_eq!(parsed.network, MidnightNetwork::Mainnet);
+    assert_eq!(parsed.network(), MidnightNetwork::Mainnet);
     assert_eq!(
-        parsed.contract_address.to_string(),
+        parsed.contract_address().to_string(),
         "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123"
     );
     assert_eq!(parsed.to_string(), did);
