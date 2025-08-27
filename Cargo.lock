@@ -2319,6 +2319,8 @@ dependencies = [
  "derive_more",
  "identus-apollo",
  "identus-did-core",
+ "identus-did-midnight",
+ "identus-did-midnight-sources",
  "identus-did-prism",
  "identus-did-prism-indexer",
  "identus-did-prism-submitter",

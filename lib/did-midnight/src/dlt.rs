@@ -34,5 +34,9 @@ impl FromStr for ContractState {
 }
 
 pub trait ContractStateDecoder {
-    fn decode(&self, did: &MidnightDid, state: ContractState) -> Result<DidDocument, Box<dyn std::error::Error>>;
+    fn decode(
+        &self,
+        did: &MidnightDid,
+        state: ContractState,
+    ) -> Result<DidDocument, Box<dyn std::error::Error + Send + Sync>>;
 }

@@ -27,7 +27,11 @@ pub enum SerdeCliError {
 pub struct CliContractStateDecoder;
 
 impl ContractStateDecoder for CliContractStateDecoder {
-    fn decode(&self, did: &MidnightDid, state: ContractState) -> Result<DidDocument, Box<dyn std::error::Error>> {
+    fn decode(
+        &self,
+        did: &MidnightDid,
+        state: ContractState,
+    ) -> Result<DidDocument, Box<dyn std::error::Error + Send + Sync>> {
         let did_doc = decode_contract_state_via_cli(did, &state)?;
         Ok(did_doc)
     }

@@ -12,6 +12,19 @@ pub struct ResolutionResult {
     pub did_document_metadata: DidDocumentMetadata,
 }
 
+impl ResolutionResult {
+    pub fn success(did_doc: DidDocument) -> Self {
+        ResolutionResult {
+            did_document: Some(did_doc),
+            did_resolution_metadata: DidResolutionMetadata {
+                content_type: Some("application/did-resolution".to_string()),
+                ..Default::default()
+            },
+            did_document_metadata: Default::default(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "camelCase")]

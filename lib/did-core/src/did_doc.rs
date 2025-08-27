@@ -115,13 +115,6 @@ mod ts_export {
     use super::*;
     #[test]
     fn export_types() {
-        Did::export().unwrap();
-        DidDocument::export().unwrap();
-        VerificationMethod::export().unwrap();
-        VerificationMethodOrRef::export().unwrap();
-        Service::export().unwrap();
-        ServiceType::export().unwrap();
-        ServiceEndpoint::export().unwrap();
-        StringOrMap::export().unwrap();
+        DidDocument::export_all().unwrap();
     }
 }
