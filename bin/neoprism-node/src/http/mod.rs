@@ -32,13 +32,18 @@ pub fn router(assets_dir: &Path, mode: RunMode) -> Routers {
         .merge(ui_resolver::router());
 
     let home_router = match mode {
-        RunMode::Submitter | RunMode::Midnight => Router::new().route(
+        RunMode::Submitter => Router::new().route(
             urls::Home::AXUM_PATH,
             get(Redirect::temporary(&urls::Swagger::new_uri())),
         ),
         RunMode::Indexer | RunMode::Standalone => Router::new().route(
             urls::Home::AXUM_PATH,
             get(Redirect::temporary(&urls::Resolver::new_uri(None))),
+        ),
+        #[cfg(feature = "midnight")]
+        RunMode::Midnight => Router::new().route(
+            urls::Home::AXUM_PATH,
+            get(Redirect::temporary(&urls::Swagger::new_uri())),
         ),
     };
 

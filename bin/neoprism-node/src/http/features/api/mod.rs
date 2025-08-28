@@ -33,9 +33,11 @@ pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
     let submitter_oas = SubmitterOpenApiDoc::openapi();
 
     match mode {
-        RunMode::Indexer | RunMode::Midnight => base_oas.merge_from(indexer_oas),
+        RunMode::Indexer => base_oas.merge_from(indexer_oas),
         RunMode::Submitter => base_oas.merge_from(submitter_oas),
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
+        #[cfg(feature = "midnight")]
+        RunMode::Midnight => base_oas.merge_from(indexer_oas),
     }
 }
 

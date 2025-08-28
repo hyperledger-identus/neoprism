@@ -28,6 +28,7 @@ mod models {
         Indexer,
         Submitter,
         Standalone,
+        #[cfg(feature = "midnight")]
         Midnight,
     }
 
@@ -37,6 +38,7 @@ mod models {
                 RunMode::Indexer => Self::Indexer,
                 RunMode::Submitter => Self::Submitter,
                 RunMode::Standalone => Self::Standalone,
+                #[cfg(feature = "midnight")]
                 RunMode::Midnight => Self::Midnight,
             }
         }

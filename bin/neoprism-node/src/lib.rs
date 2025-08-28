@@ -32,13 +32,12 @@ enum RunMode {
     Indexer,
     Submitter,
     Standalone,
-    #[allow(unused)]
+    #[cfg(feature = "midnight")]
     Midnight,
 }
 
 #[derive(Clone)]
 struct AppState {
-    // TODO: deprecate this flag. looks like we dont need it
     run_mode: RunMode,
 }
 
