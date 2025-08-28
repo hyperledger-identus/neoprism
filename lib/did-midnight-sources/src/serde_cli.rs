@@ -1,4 +1,5 @@
 use std::io;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use derive_more::{Display, Error};
@@ -6,25 +7,30 @@ use identus_did_core::DidDocument;
 use identus_did_midnight::did::MidnightDid;
 use identus_did_midnight::dlt::{ContractState, ContractStateDecoder};
 
-const CLI_PATH: &str = "did-midnight-serde";
-
 #[derive(Debug, Display, Error)]
 pub enum SerdeCliError {
-    #[display("cli executable not found: {source}")]
-    CliNotFound { source: io::Error },
     #[display("cli returned non-zero exit code {code}")]
     NonZeroExit { code: i32 },
     #[display("cli output is empty")]
     EmptyOutput,
     #[display("cli output is not valid json: {source}")]
     InvalidJson { source: serde_json::Error },
-    #[display("argument conversion failed: {msg}")]
-    ArgumentConversion { msg: String },
     #[display("cli invocation failed: {source}")]
     InvocationFailed { source: io::Error },
 }
 
-pub struct CliContractStateDecoder;
+#[derive(Clone)]
+pub struct CliContractStateDecoder {
+    binary_path: PathBuf,
+}
+
+impl CliContractStateDecoder {
+    pub fn new<P: Into<PathBuf>>(binary_path: P) -> Self {
+        Self {
+            binary_path: binary_path.into(),
+        }
+    }
+}
 
 impl ContractStateDecoder for CliContractStateDecoder {
     fn decode(
@@ -32,12 +38,13 @@ impl ContractStateDecoder for CliContractStateDecoder {
         did: &MidnightDid,
         state: ContractState,
     ) -> Result<DidDocument, Box<dyn std::error::Error + Send + Sync>> {
-        let did_doc = decode_contract_state_via_cli(did, &state)?;
+        let did_doc = decode_contract_state_via_cli(&self.binary_path, did, &state)?;
         Ok(did_doc)
     }
 }
 
 fn decode_contract_state_via_cli(
+    binary_path: &Path,
     did: &MidnightDid,
     contract_state: &ContractState,
 ) -> Result<DidDocument, SerdeCliError> {
@@ -45,7 +52,7 @@ fn decode_contract_state_via_cli(
     let contract_state_hex = contract_state.inner().to_string();
     let args = [&did.to_string(), &network_id_num, &contract_state_hex];
 
-    let output = Command::new(CLI_PATH)
+    let output = Command::new(binary_path)
         .args(args)
         .output()
         .map_err(|e| SerdeCliError::InvocationFailed { source: e })?;

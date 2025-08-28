@@ -69,6 +69,9 @@ pub struct MidnightResolverArgs {
     /// URL for the Midnight Indexer API (e.g. http://localhost:8088/api/v1/graphql)
     #[arg(long, env = "NPRISM_MN_INDEXER_URL")]
     pub indexer_url: String,
+    /// Path to the did-midnight-serde CLI executable
+    #[arg(long, env = "NPRISM_MN_SERDE_CLI_PATH")]
+    pub serde_cli_path: PathBuf,
 }
 
 #[derive(Args)]

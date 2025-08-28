@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::str::FromStr;
 
 use identus_did_core::DidDocument;
@@ -11,12 +12,14 @@ use crate::app::service::error::ResolutionError;
 #[derive(Clone)]
 pub struct MidnightDidService {
     indexer_url: String,
+    decoder: CliContractStateDecoder,
 }
 
 impl MidnightDidService {
-    pub fn new(indexer_url: &str) -> Self {
+    pub fn new<P: Into<PathBuf>>(indexer_url: &str, cli_path: P) -> Self {
         Self {
             indexer_url: indexer_url.to_string(),
+            decoder: CliContractStateDecoder::new(cli_path.into()),
         }
     }
 
@@ -30,7 +33,7 @@ impl MidnightDidService {
             Err(IndexerApiError::MissingDataFields { .. }) => return Err(ResolutionError::NotFound),
             Err(e) => Err(ResolutionError::InternalError { source: e.into() })?,
         };
-        let did_doc = match CliContractStateDecoder.decode(&did, contract_state) {
+        let did_doc = match self.decoder.decode(&did, contract_state) {
             Ok(doc) => doc,
             Err(e) => Err(ResolutionError::InternalError {
                 source: anyhow::Error::from_boxed(e),

@@ -159,7 +159,7 @@ async fn run_midnight_command(args: MidnightResolverArgs) -> anyhow::Result<()> 
         run_mode: RunMode::Midnight,
     };
     let indexer_state = IndexerState {
-        midnight_did_service: Some(MidnightDidService::new(&args.indexer_url)),
+        midnight_did_service: Some(MidnightDidService::new(&args.indexer_url, &args.serde_cli_path)),
         prism_did_service: None,
     };
     run_server(app_state, None, Some(indexer_state), None, &args.server).await
