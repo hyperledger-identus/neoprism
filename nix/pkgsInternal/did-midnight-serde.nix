@@ -3,7 +3,7 @@
   esbuild,
   buildNpmPackage,
   importNpmLock,
-  nodejs_20,
+  nodejs_22,
   writeShellApplication,
   symlinkJoin,
 }:
@@ -48,7 +48,7 @@ let
   };
   wrapper = writeShellApplication {
     name = "did-midnight-serde";
-    runtimeInputs = [ nodejs_20 ];
+    runtimeInputs = [ nodejs_22 ];
     text = ''
       export NODE_PATH=${bundle}/node_modules
       node ${bundle}/dist/cli.js "$@"

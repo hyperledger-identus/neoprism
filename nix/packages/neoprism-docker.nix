@@ -5,6 +5,7 @@
   tagSuffix ? "",
   neoprism-ui-assets,
   version,
+  extraPackages ? [ ],
 }:
 
 dockerTools.buildLayeredImage {
@@ -14,7 +15,7 @@ dockerTools.buildLayeredImage {
     curl
     neoprism-bin
     neoprism-ui-assets
-  ];
+  ] ++ extraPackages;
   config = {
     Env = [
       "RUST_LOG=info,oura=warn"
