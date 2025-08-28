@@ -6,7 +6,7 @@ let
     targetSystem: path: overrides:
     pkgs.pkgsCross."${targetSystem}".callPackage path (
       {
-        rust = pkgs.rustUtils.mkRustCross {
+        rust = pkgs.rustTools.mkRustCross {
           pkgsCross = pkgs.pkgsCross."${targetSystem}";
           minimal = true;
         };
@@ -25,16 +25,16 @@ let
       # neoprism
       neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
         inherit buildFeatures;
-        rust = pkgs.rustUtils.rustMinimal;
-        cargoLock = pkgs.rustUtils.cargoLock;
+        rust = pkgs.rustTools.rustMinimal;
+        cargoLock = pkgs.rustTools.cargoLock;
       };
       neoprism-bin-x86_64-linux = callPackageRustCross "gnu64" ./neoprism-bin.nix {
         inherit buildFeatures;
-        cargoLock = pkgs.rustUtils.cargoLock;
+        cargoLock = pkgs.rustTools.cargoLock;
       };
       neoprism-bin-aarch64-linux = callPackageRustCross "aarch64-multiplatform" ./neoprism-bin.nix {
         inherit buildFeatures;
-        cargoLock = pkgs.rustUtils.cargoLock;
+        cargoLock = pkgs.rustTools.cargoLock;
       };
       neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
         inherit

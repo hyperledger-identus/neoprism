@@ -41,7 +41,7 @@
             (import rust-overlay)
             (_: prev: {
               mkSbtDerivation = sbt.mkSbtDerivation.${pkgs.system};
-              rustUtils = prev.callPackage ./nix/rustUtils.nix { inherit rust-overlay; };
+              rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
               cardano-cli = cardano-node.packages.${system}.cardano-cli;
               cardano-node = cardano-node.packages.${system}.cardano-node;
               cardano-testnet = cardano-node.packages.${system}.cardano-testnet;

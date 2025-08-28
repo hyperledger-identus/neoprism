@@ -2,7 +2,7 @@
 
 let
   rootDir = "$ROOT_DIR";
-  rust = pkgs.rustUtils.rust;
+  rust = pkgs.rustTools.rust;
   scripts = rec {
     inherit buildConfig;
 
