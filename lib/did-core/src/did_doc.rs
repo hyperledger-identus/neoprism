@@ -36,7 +36,7 @@ pub struct VerificationMethod {
     pub id: String,
     pub r#type: String,
     pub controller: String,
-    #[cfg_attr(feature = "ts-types", ts(type = "Record<string, any>"))]
+    #[cfg_attr(feature = "ts-types", ts(type = "Record<string, any> | null"))]
     pub public_key_jwk: Option<Jwk>,
 }
 

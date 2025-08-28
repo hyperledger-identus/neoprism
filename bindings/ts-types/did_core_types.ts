@@ -12,6 +12,6 @@ export type ServiceType = string | Array<string>;
 
 export type StringOrMap = string | Record<string, any>;
 
-export type VerificationMethod = { id: string, type: string, controller: string, publicKeyJwk: Record<string, any>, };
+export type VerificationMethod = { id: string, type: string, controller: string, publicKeyJwk: Record<string, any> | null, };
 
 export type VerificationMethodOrRef = VerificationMethod | string;

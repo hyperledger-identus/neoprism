@@ -26,21 +26,21 @@ fn test_contract_address_valid() {
 fn test_contract_address_invalid_length() {
     let hex = "0123456789abcdef";
     let err = MidnightContractAddress::from_str(hex).unwrap_err();
-    matches!(err, Error::InvalidAddressLength { .. });
+    assert!(matches!(err, Error::InvalidAddressLength { .. }));
 }
 
 #[test]
 fn test_contract_address_invalid_hex() {
     let hex = "g123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01";
     let err = MidnightContractAddress::from_str(hex).unwrap_err();
-    matches!(err, Error::InvalidAddressHex { .. });
+    assert!(matches!(err, Error::InvalidAddressHex { .. }));
 }
 
 #[test]
 fn test_contract_address_invalid_case() {
     let hex = "0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef01";
     let err = MidnightContractAddress::from_str(hex).unwrap_err();
-    matches!(err, Error::InvalidAddressCase);
+    assert!(matches!(err, Error::InvalidAddressCase));
 }
 
 #[test]
@@ -66,5 +66,5 @@ fn test_midnight_did_invalid_method() {
 fn test_midnight_did_invalid_segment_count() {
     let did = "did:midnight:mainnet";
     let err = MidnightDid::from_str(did).unwrap_err();
-    matches!(err, Error::InvalidSegmentCount { .. });
+    assert!(matches!(err, Error::InvalidSegmentCount { .. }));
 }
