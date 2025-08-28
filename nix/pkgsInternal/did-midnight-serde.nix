@@ -12,8 +12,8 @@ let
   bundle = buildNpmPackage {
     name = "did-midnight-serde";
     src = ../..;
-    npmRoot = "./bin/did-midnight-serde";
 
+    npmRoot = "./bin/did-midnight-serde";
     npmDeps = importNpmLock { npmRoot = ../../bin/did-midnight-serde; };
     npmConfigHook = importNpmLock.npmConfigHook;
 

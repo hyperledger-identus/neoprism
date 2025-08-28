@@ -1,4 +1,4 @@
-query ContractStateQuery($address: String) {
+query ContractStateQuery($address: HexEncoded) {
   contractAction(address: $address) {
     __typename
     address

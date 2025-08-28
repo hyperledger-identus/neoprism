@@ -16,7 +16,7 @@ pub enum IndexerApiError {
     #[display("missing data fields {fields:?} for contract address {address} in indexer response from {url}")]
     MissingDataFields {
         url: String,
-        address: String,
+        address: HexStr,
         fields: Vec<&'static str>,
     },
 }
@@ -31,7 +31,7 @@ struct ContractStateQuery;
 
 pub async fn get_contract_state(url: &str, did: &MidnightDid) -> Result<ContractState, IndexerApiError> {
     let address_bytes = did.global_contract_address();
-    let address = HexStr::from(address_bytes).to_string();
+    let address = HexStr::from(address_bytes);
     let variables = contract_state_query::Variables {
         address: Some(address.clone()),
     };
