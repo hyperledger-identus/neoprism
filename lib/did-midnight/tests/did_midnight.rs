@@ -59,7 +59,7 @@ fn test_midnight_did_valid() {
 fn test_midnight_did_invalid_method() {
     let did = "did:wrong:mainnet:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01";
     let err = MidnightDid::from_str(did).unwrap_err();
-    matches!(err, Error::InvalidMethod { .. });
+    assert!(matches!(err, Error::InvalidMethod { .. }));
 }
 
 #[test]
