@@ -100,7 +100,10 @@ pub async fn resolution_logic(
     {
         let (result, _) = service.resolve_did(&did).await;
         let (status, resolution_result) = match result {
-            Err(e) => (e.status_code(), e.into()),
+            Err(e) => {
+                e.log_internal_error();
+                (e.status_code(), e.into())
+            }
             Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
         };
         (status, resolution_result)
@@ -109,7 +112,10 @@ pub async fn resolution_logic(
     {
         let result = service.resolve_did(&did).await;
         let (status, resolution_result) = match result {
-            Err(e) => (e.status_code(), e.into()),
+            Err(e) => {
+                e.log_internal_error();
+                (e.status_code(), e.into())
+            }
             Ok(did_doc) => (StatusCode::OK, ResolutionResult::success(did_doc)),
         };
         (status, resolution_result)

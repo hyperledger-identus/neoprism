@@ -70,7 +70,7 @@ pub struct MidnightResolverArgs {
     #[arg(long, env = "NPRISM_MN_INDEXER_URL")]
     pub indexer_url: String,
     /// Path to the did-midnight-serde CLI executable
-    #[arg(long, env = "NPRISM_MN_SERDE_CLI_PATH")]
+    #[arg(long, env = "NPRISM_MN_SERDE_CLI_PATH", default_value = "did-midnight-serde")]
     pub serde_cli_path: PathBuf,
 }
 

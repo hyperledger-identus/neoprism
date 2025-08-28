@@ -18,6 +18,18 @@ pub enum ResolutionError {
     MethodNotSupported,
 }
 
+impl ResolutionError {
+    pub fn log_internal_error(&self) {
+        match self {
+            ResolutionError::InternalError { source } => {
+                let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
+                tracing::error!("{msg}");
+            }
+            _ => (),
+        }
+    }
+}
+
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum InvalidDid {
     #[from]
