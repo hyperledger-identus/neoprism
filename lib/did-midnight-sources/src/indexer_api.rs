@@ -71,13 +71,13 @@ async fn execute_graphql_query<T: serde::de::DeserializeOwned>(
             source: e,
             url: url.to_string(),
         })?;
-    if let Some(errors) = &response_body.errors {
-        if !errors.is_empty() {
-            return Err(IndexerApiError::GraphqlError {
-                messages: errors.iter().map(|i| i.to_string()).collect(),
-                url: url.to_string(),
-            });
-        }
+    if let Some(errors) = &response_body.errors
+        && !errors.is_empty()
+    {
+        return Err(IndexerApiError::GraphqlError {
+            messages: errors.iter().map(|i| i.to_string()).collect(),
+            url: url.to_string(),
+        });
     }
     Ok(response_body)
 }
