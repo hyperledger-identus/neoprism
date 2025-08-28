@@ -1,6 +1,6 @@
 {
   lib,
-  rustUtils,
+  rustTools,
   makeRustPlatform,
   protobuf,
   sqlfluff,
@@ -9,7 +9,7 @@
 }:
 
 let
-  rust = rustUtils.rust;
+  rust = rustTools.rust;
   rustPlatform = makeRustPlatform {
     cargo = rust;
     rustc = rust;
@@ -18,7 +18,7 @@ in
 rustPlatform.buildRustPackage {
   name = "neoprism-checks";
   src = lib.cleanSource ./../..;
-  cargoLock = rustUtils.cargoLock;
+  cargoLock = rustTools.cargoLock;
   nativeBuildInputs = [
     protobuf
     sqlfluff
