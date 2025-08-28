@@ -21,6 +21,7 @@ pub enum Command {
     Standalone(StandaloneArgs),
     /// Generate OpenAPI specification for the API.
     GenerateOpenapi(GenerateOpenApiArgs),
+    #[cfg(feature = "midnight")]
     /// Start the node in experimental Midnight resolver mode.
     Midnight(MidnightResolverArgs),
 }
@@ -62,6 +63,7 @@ pub struct GenerateOpenApiArgs {
     pub output: Option<PathBuf>,
 }
 
+#[cfg(feature = "midnight")]
 #[derive(Args)]
 pub struct MidnightResolverArgs {
     #[clap(flatten)]

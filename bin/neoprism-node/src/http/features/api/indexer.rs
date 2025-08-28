@@ -91,40 +91,6 @@ pub async fn universal_resolver_did(path: Path<String>, state: State<IndexerStat
     )
 }
 
-pub async fn resolution_logic(
-    Path(did): Path<String>,
-    State(state): State<IndexerState>,
-) -> (StatusCode, ResolutionResult) {
-    if let Some(service) = state.prism_did_service
-        && did.starts_with("did:prism")
-    {
-        let (result, _) = service.resolve_did(&did).await;
-        let (status, resolution_result) = match result {
-            Err(e) => {
-                e.log_internal_error();
-                (e.status_code(), e.into())
-            }
-            Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
-        };
-        (status, resolution_result)
-    } else if let Some(service) = state.midnight_did_service
-        && did.starts_with("did:midnight")
-    {
-        let result = service.resolve_did(&did).await;
-        let (status, resolution_result) = match result {
-            Err(e) => {
-                e.log_internal_error();
-                (e.status_code(), e.into())
-            }
-            Ok(did_doc) => (StatusCode::OK, ResolutionResult::success(did_doc)),
-        };
-        (status, resolution_result)
-    } else {
-        let e = ResolutionError::MethodNotSupported;
-        (e.status_code(), e.into())
-    }
-}
-
 #[utoipa::path(
     get,
     summary = "Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.",
@@ -188,4 +154,39 @@ pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<Ind
         }
     };
     Ok(Json(stats))
+}
+
+async fn resolution_logic(
+    Path(did): Path<String>,
+    State(state): State<IndexerState>,
+) -> (StatusCode, ResolutionResult) {
+    if did.starts_with("did:prism") {
+        if let Some(service) = state.prism_did_service {
+            let (result, _) = service.resolve_did(&did).await;
+            let (status, resolution_result) = match result {
+                Err(e) => {
+                    e.log_internal_error();
+                    (e.status_code(), e.into())
+                }
+                Ok((did, did_state)) => (StatusCode::OK, did_state.to_resolution_result(&did)),
+            };
+            return (status, resolution_result);
+        }
+    } else if did.starts_with("did:midnight") {
+        #[cfg(feature = "midnight")]
+        if let Some(service) = state.midnight_did_service {
+            let result = service.resolve_did(&did).await;
+            let (status, resolution_result) = match result {
+                Err(e) => {
+                    e.log_internal_error();
+                    (e.status_code(), e.into())
+                }
+                Ok(did_doc) => (StatusCode::OK, ResolutionResult::success(did_doc)),
+            };
+            return (status, resolution_result);
+        }
+    }
+
+    let e = ResolutionError::MethodNotSupported;
+    (e.status_code(), e.into())
 }

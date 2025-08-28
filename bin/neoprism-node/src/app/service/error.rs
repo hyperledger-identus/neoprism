@@ -20,12 +20,9 @@ pub enum ResolutionError {
 
 impl ResolutionError {
     pub fn log_internal_error(&self) {
-        match self {
-            ResolutionError::InternalError { source } => {
-                let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
-                tracing::error!("{msg}");
-            }
-            _ => (),
+        if let ResolutionError::InternalError { source } = self {
+            let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
+            tracing::error!("{msg}");
         }
     }
 }
@@ -38,6 +35,7 @@ pub enum InvalidDid {
     #[from]
     #[display("failed to parse prism did")]
     InvalidPrismDid { source: did::Error },
+    #[cfg(feature = "midnight")]
     #[from]
     #[display("failed to parse midnight did")]
     InvalidMidnightDid { source: identus_did_midnight::error::Error },

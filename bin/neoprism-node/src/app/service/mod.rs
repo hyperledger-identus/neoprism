@@ -1,6 +1,10 @@
 pub mod error;
-mod midnight;
 mod prism;
 
-pub use midnight::MidnightDidService;
 pub use prism::PrismDidService;
+
+#[cfg(feature = "midnight")]
+mod midnight;
+
+#[cfg(feature = "midnight")]
+pub use midnight::MidnightDidService;

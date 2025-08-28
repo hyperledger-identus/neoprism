@@ -18,11 +18,8 @@ use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
-use crate::app::service::MidnightDidService;
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{
-    DbArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, MidnightResolverArgs, ServerArgs, StandaloneArgs, SubmitterArgs,
-};
+use crate::cli::{DbArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -35,6 +32,7 @@ enum RunMode {
     Indexer,
     Submitter,
     Standalone,
+    #[allow(unused)]
     Midnight,
 }
 
@@ -47,7 +45,8 @@ struct AppState {
 #[derive(Clone)]
 struct IndexerState {
     prism_did_service: Option<PrismDidService>,
-    midnight_did_service: Option<MidnightDidService>,
+    #[cfg(feature = "midnight")]
+    midnight_did_service: Option<app::service::MidnightDidService>,
 }
 
 #[derive(Clone)]
@@ -76,6 +75,7 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::GenerateOpenapi(args) => {
             generate_openapi(args)?;
         }
+        #[cfg(feature = "midnight")]
         cli::Command::Midnight(args) => run_midnight_command(args).await?,
     };
     Ok(())
@@ -102,6 +102,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     };
     let indexer_state = IndexerState {
         prism_did_service: Some(PrismDidService::new(&db)),
+        #[cfg(feature = "midnight")]
         midnight_did_service: None,
     };
     let indexer_ui_state = IndexerUiState {
@@ -137,6 +138,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     };
     let indexer_state = IndexerState {
         prism_did_service: Some(PrismDidService::new(&db)),
+        #[cfg(feature = "midnight")]
         midnight_did_service: None,
     };
     let indexer_ui_state = IndexerUiState {
@@ -154,12 +156,16 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     .await
 }
 
-async fn run_midnight_command(args: MidnightResolverArgs) -> anyhow::Result<()> {
+#[cfg(feature = "midnight")]
+async fn run_midnight_command(args: cli::MidnightResolverArgs) -> anyhow::Result<()> {
     let app_state = AppState {
         run_mode: RunMode::Midnight,
     };
     let indexer_state = IndexerState {
-        midnight_did_service: Some(MidnightDidService::new(&args.indexer_url, &args.serde_cli_path)),
+        midnight_did_service: Some(app::service::MidnightDidService::new(
+            &args.indexer_url,
+            &args.serde_cli_path,
+        )),
         prism_did_service: None,
     };
     run_server(app_state, None, Some(indexer_state), None, &args.server).await
