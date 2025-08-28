@@ -99,7 +99,7 @@ impl MidnightDid {
 
     pub fn to_did(&self) -> Did {
         let s = self.to_string();
-        Did::from_str(&s).expect("MidnightDid does not construct a valid DID syntax")
+        Did::from_str(&s).expect("midnight did does not construct a valid did syntax")
     }
 
     pub fn global_contract_address(&self) -> [u8; 35] {
