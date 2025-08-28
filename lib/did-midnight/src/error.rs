@@ -1,6 +1,6 @@
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[display("invalid DID syntax: {input}")]
+    #[display("invalid did syntax: {input}")]
     InvalidDidSyntax { input: String },
     #[display("invalid method: {method}")]
     InvalidMethod { method: String },
