@@ -1,8 +1,7 @@
 [package]
-name    = "identus-did-midnight-sources"
+name              = "identus-did-midnight-sources"
 version.workspace = true
 edition.workspace = true
-publish = false
 
 [dependencies]
 identus-apollo       = { workspace = true, features = [ "hex" ] }
