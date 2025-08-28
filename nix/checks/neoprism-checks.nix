@@ -5,6 +5,7 @@
   protobuf,
   sqlfluff,
   deadnix,
+  pkgsInternal,
 }:
 
 let
@@ -22,14 +23,18 @@ rustPlatform.buildRustPackage {
     protobuf
     sqlfluff
     deadnix
+    pkgsInternal.did-midnight-serde
   ];
   buildPhase = "cargo b --all-features --all-targets";
   checkPhase = ''
     deadnix -f
     sqlfluff lint --dialect postgres ./lib/node-storage/migrations
     cargo fmt --check
-    cargo clippy --all-features --all-targets -- -D warnings
+    cargo test
+    cargo clippy --all-targets -- -D warnings
+
     cargo test --all-features
+    cargo clippy --all-targets --all-features -- -D warnings
 
     # check individual feature if properly gated
     echo "checking feature gate for identus-apollo"
@@ -45,6 +50,14 @@ rustPlatform.buildRustPackage {
 
     echo "checking feature gate for identus-did-core"
     cargo clippy -p identus-did-core --all-targets --features openapi -- -D warnings
+    cargo clippy -p identus-did-core --all-targets --features ts-types -- -D warnings
+
+    echo "checking feature gate for identus-did-midnight"
+    cargo clippy -p identus-did-midnight --all-targets --features openapi -- -D warnings
+
+    echo "checking feature gate for identus-did-midnight-sources"
+    cargo clippy -p identus-did-midnight-sources --all-targets --features serde-cli -- -D warnings
+    cargo clippy -p identus-did-midnight-sources --all-targets --features indexer-api -- -D warnings
 
     echo "checking feature gate for identus-did-prism"
     cargo clippy -p identus-did-prism --all-targets --features openapi -- -D warnings
@@ -55,6 +68,9 @@ rustPlatform.buildRustPackage {
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
+
+    echo "checking feature gate for neoprism-node"
+    cargo clippy -p neoprism-node --all-targets --features midnight -- -D warnings
   '';
   installPhase = "touch $out";
 

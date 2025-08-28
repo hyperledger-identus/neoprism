@@ -28,6 +28,8 @@ mod models {
         Indexer,
         Submitter,
         Standalone,
+        #[cfg(feature = "midnight")]
+        Midnight,
     }
 
     impl From<RunMode> for AppMetaRunMode {
@@ -36,6 +38,8 @@ mod models {
                 RunMode::Indexer => Self::Indexer,
                 RunMode::Submitter => Self::Submitter,
                 RunMode::Standalone => Self::Standalone,
+                #[cfg(feature = "midnight")]
+                RunMode::Midnight => Self::Midnight,
             }
         }
     }
@@ -59,6 +63,7 @@ pub async fn health() -> &'static str {
     tags = [tags::SYSTEM],
     responses(
         (status = OK, description = "Healthy", body = AppMeta),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving app metadata", body = AppMeta),
     )
 )]
 pub async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {

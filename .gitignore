@@ -1,5 +1,4 @@
-AGENTS.md
-/target
+target/
 .envrc
 *.db
 *.dump

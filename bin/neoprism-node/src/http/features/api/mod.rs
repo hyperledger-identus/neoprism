@@ -36,6 +36,8 @@ pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
         RunMode::Indexer => base_oas.merge_from(indexer_oas),
         RunMode::Submitter => base_oas.merge_from(submitter_oas),
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
+        #[cfg(feature = "midnight")]
+        RunMode::Midnight => base_oas.merge_from(indexer_oas),
     }
 }
 
@@ -63,6 +65,7 @@ pub fn router(mode: RunMode) -> Routers {
 
     Routers {
         app_router,
+        indexer_ui_router: Router::new(),
         indexer_router,
         submitter_router,
     }

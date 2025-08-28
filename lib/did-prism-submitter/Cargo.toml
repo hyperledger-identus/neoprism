@@ -2,7 +2,6 @@
 name              = "identus-did-prism-submitter"
 version.workspace = true
 edition.workspace = true
-license.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }

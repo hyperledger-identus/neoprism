@@ -4,7 +4,7 @@
 use std::fs;
 use std::sync::Arc;
 
-use app::service::DidService;
+use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
 use cli::Cli;
@@ -13,10 +13,7 @@ use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
-use lazybe::db::postgres::PostgresDbCtx;
-use lazybe::router::RouteConfig;
 use node_storage::PostgresDb;
-use sqlx::{PgPool, Postgres};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -35,6 +32,8 @@ enum RunMode {
     Indexer,
     Submitter,
     Standalone,
+    #[cfg(feature = "midnight")]
+    Midnight,
 }
 
 #[derive(Clone)]
@@ -44,8 +43,14 @@ struct AppState {
 
 #[derive(Clone)]
 struct IndexerState {
-    pg_pool: PgPool,
-    did_service: DidService,
+    prism_did_service: Option<PrismDidService>,
+    #[cfg(feature = "midnight")]
+    midnight_did_service: Option<app::service::MidnightDidService>,
+}
+
+#[derive(Clone)]
+struct IndexerUiState {
+    prism_did_service: PrismDidService,
     dlt_source: Option<DltSourceState>,
 }
 
@@ -60,15 +65,6 @@ struct DltSourceState {
     network: NetworkIdentifier,
 }
 
-impl RouteConfig for IndexerState {
-    type Ctx = PostgresDbCtx;
-    type Db = Postgres;
-
-    fn db_ctx(&self) -> (Self::Ctx, PgPool) {
-        (PostgresDbCtx, self.pg_pool.clone())
-    }
-}
-
 pub async fn run_command() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.command {
@@ -78,6 +74,8 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::GenerateOpenapi(args) => {
             generate_openapi(args)?;
         }
+        #[cfg(feature = "midnight")]
+        cli::Command::Midnight(args) => run_midnight_command(args).await?,
     };
     Ok(())
 }
@@ -102,11 +100,22 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
         run_mode: RunMode::Indexer,
     };
     let indexer_state = IndexerState {
-        pg_pool: db.pool.clone(),
-        did_service: DidService::new(&db),
+        prism_did_service: Some(PrismDidService::new(&db)),
+        #[cfg(feature = "midnight")]
+        midnight_did_service: None,
+    };
+    let indexer_ui_state = IndexerUiState {
+        prism_did_service: PrismDidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
-    run_server(app_state, Some(indexer_state), None, &args.server).await
+    run_server(
+        app_state,
+        Some(indexer_ui_state),
+        Some(indexer_state),
+        None,
+        &args.server,
+    )
+    .await
 }
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
@@ -115,7 +124,7 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
         run_mode: RunMode::Submitter,
     };
     let submitter_state = SubmitterState { dlt_sink };
-    run_server(app_state, None, Some(submitter_state), &args.server).await
+    run_server(app_state, None, None, Some(submitter_state), &args.server).await
 }
 
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
@@ -127,16 +136,43 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
         run_mode: RunMode::Standalone,
     };
     let indexer_state = IndexerState {
-        pg_pool: db.pool.clone(),
-        did_service: DidService::new(&db),
+        prism_did_service: Some(PrismDidService::new(&db)),
+        #[cfg(feature = "midnight")]
+        midnight_did_service: None,
+    };
+    let indexer_ui_state = IndexerUiState {
+        prism_did_service: PrismDidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
     let submitter_state = SubmitterState { dlt_sink };
-    run_server(app_state, Some(indexer_state), Some(submitter_state), &args.server).await
+    run_server(
+        app_state,
+        Some(indexer_ui_state),
+        Some(indexer_state),
+        Some(submitter_state),
+        &args.server,
+    )
+    .await
+}
+
+#[cfg(feature = "midnight")]
+async fn run_midnight_command(args: cli::MidnightResolverArgs) -> anyhow::Result<()> {
+    let app_state = AppState {
+        run_mode: RunMode::Midnight,
+    };
+    let indexer_state = IndexerState {
+        midnight_did_service: Some(app::service::MidnightDidService::new(
+            &args.indexer_url,
+            &args.serde_cli_path,
+        )),
+        prism_did_service: None,
+    };
+    run_server(app_state, None, Some(indexer_state), None, &args.server).await
 }
 
 async fn run_server(
     app_state: AppState,
+    indexer_ui_state: Option<IndexerUiState>,
     indexer_state: Option<IndexerState>,
     submitter_state: Option<SubmitterState>,
     server_args: &ServerArgs,
@@ -155,6 +191,11 @@ async fn run_server(
         .merge(
             submitter_state
                 .map(|s| routers.submitter_router.with_state(s))
+                .unwrap_or_default(),
+        )
+        .merge(
+            indexer_ui_state
+                .map(|s| routers.indexer_ui_router.with_state(s))
                 .unwrap_or_default(),
         )
         .layer(layer);

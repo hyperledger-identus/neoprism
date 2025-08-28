@@ -1,0 +1,18 @@
+[package]
+name              = "identus-did-midnight"
+version.workspace = true
+edition.workspace = true
+
+[features]
+default = [  ]
+openapi = [ "dep:utoipa" ]
+
+[dependencies]
+identus-did-core = { workspace = true }
+identus-apollo   = { workspace = true, features = [ "hex" ] }
+chrono           = { workspace = true }
+derive_more      = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
+serde            = { workspace = true, features = [ "derive" ] }
+serde_json       = { workspace = true }
+utoipa           = { workspace = true, optional = true }
+strum            = { workspace = true, features = [ "derive" ] }

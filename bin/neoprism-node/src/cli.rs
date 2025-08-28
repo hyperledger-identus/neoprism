@@ -21,6 +21,9 @@ pub enum Command {
     Standalone(StandaloneArgs),
     /// Generate OpenAPI specification for the API.
     GenerateOpenapi(GenerateOpenApiArgs),
+    #[cfg(feature = "midnight")]
+    /// Start the node in experimental Midnight resolver mode.
+    Midnight(MidnightResolverArgs),
 }
 
 #[derive(Args)]
@@ -54,6 +57,26 @@ pub struct StandaloneArgs {
 }
 
 #[derive(Args)]
+pub struct GenerateOpenApiArgs {
+    /// Output file for the OpenAPI spec (stdout if not provided)
+    #[arg(long)]
+    pub output: Option<PathBuf>,
+}
+
+#[cfg(feature = "midnight")]
+#[derive(Args)]
+pub struct MidnightResolverArgs {
+    #[clap(flatten)]
+    pub server: ServerArgs,
+    /// URL for the Midnight Indexer API (e.g. http://localhost:8088/api/v1/graphql)
+    #[arg(long, env = "NPRISM_MN_INDEXER_URL")]
+    pub indexer_url: String,
+    /// Path to the did-midnight-serde CLI executable
+    #[arg(long, env = "NPRISM_MN_SERDE_CLI_PATH", default_value = "did-midnight-serde")]
+    pub serde_cli_path: PathBuf,
+}
+
+#[derive(Args)]
 pub struct ServerArgs {
     /// Node HTTP server binding address
     #[arg(long, env = "NPRISM_ADDRESS", default_value = "0.0.0.0")]
@@ -67,13 +90,6 @@ pub struct ServerArgs {
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
     #[arg(long, env = "NPRISM_CORS_ENABLED")]
     pub cors_enabled: bool,
-}
-
-#[derive(Args)]
-pub struct GenerateOpenApiArgs {
-    /// Output file for the OpenAPI spec (stdout if not provided)
-    #[arg(long)]
-    pub output: Option<PathBuf>,
 }
 
 #[derive(Args)]

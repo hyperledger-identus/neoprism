@@ -14,16 +14,31 @@ pub enum ResolutionError {
     #[from]
     #[display("unexpected server error")]
     InternalError { source: anyhow::Error },
+    #[display("did resolution is not supported for this did method")]
+    MethodNotSupported,
+}
+
+impl ResolutionError {
+    pub fn log_internal_error(&self) {
+        if let ResolutionError::InternalError { source } = self {
+            let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
+            tracing::error!("{msg}");
+        }
+    }
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum InvalidDid {
     #[from]
-    #[display("failed to parse did")]
-    ParsingFail { source: did::Error },
-    #[from]
     #[display("failed to process did state from did")]
-    ProcessFail { source: protocol::error::ProcessError },
+    ProcessStateFailed { source: protocol::error::ProcessError },
+    #[from]
+    #[display("failed to parse prism did")]
+    InvalidPrismDid { source: did::Error },
+    #[cfg(feature = "midnight")]
+    #[from]
+    #[display("failed to parse midnight did")]
+    InvalidMidnightDid { source: identus_did_midnight::error::Error },
 }
 
 impl From<ResolutionError> for ResolutionResult {
@@ -44,6 +59,11 @@ impl From<ResolutionError> for ResolutionResult {
                 title: Some("Internal Error".to_string()),
                 detail: Some(err.to_string()),
             },
+            ResolutionError::MethodNotSupported => DidResolutionError {
+                r#type: DidResolutionErrorCode::MethodNotSupported,
+                title: None,
+                detail: None,
+            },
         };
 
         ResolutionResult {
@@ -63,6 +83,7 @@ impl ResolutionError {
             ResolutionError::InvalidDid { .. } => StatusCode::BAD_REQUEST,
             ResolutionError::NotFound => StatusCode::NOT_FOUND,
             ResolutionError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+            ResolutionError::MethodNotSupported => StatusCode::NOT_IMPLEMENTED,
         }
     }
 }

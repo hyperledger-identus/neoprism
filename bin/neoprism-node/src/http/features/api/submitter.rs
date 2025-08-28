@@ -37,7 +37,9 @@ mod models {
     tags = [tags::OP_SUBMIT],
     request_body = SignedOperationSubmissionRequest,
     responses(
-        (status = OK, description = "Operations submitted successfully", body = SignedOperationSubmissionResponse)
+        (status = OK, description = "Operations submitted successfully", body = SignedOperationSubmissionResponse),
+        (status = BAD_REQUEST, description = "Malformed request or invalid operations", body = SignedOperationSubmissionResponse),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during submission", body = SignedOperationSubmissionResponse),
     )
 )]
 pub async fn submit_signed_operations(

@@ -6,17 +6,22 @@ use serde::{Deserialize, Serialize};
 use crate::Error;
 
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
-#[display("{}", self.0.to_string())]
-#[debug("{}", self.0.to_string())]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(feature = "openapi", schema(value_type = String, example = "did:example:123456789abcdefghi"))]
-pub struct Did(identity_did::CoreDID);
+#[cfg_attr(
+    feature = "ts-types",
+    derive(ts_rs::TS),
+    ts(type = "string", export_to = "../../../bindings/ts-types/did_core_types.ts")
+)]
+#[debug("{}", self.0.to_string())]
+#[display("{}", self.0.to_string())]
+pub struct Did(#[cfg_attr(feature = "ts-types", ts(type = "string"))] identity_did::CoreDID);
 
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
-#[display("{}", self.0.to_string())]
-#[debug("{}", self.0.to_string())]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(feature = "openapi", schema(value_type = String, example = "did:example:123456789abcdefghi#key-1?service=abc"))]
+#[display("{}", self.0.to_string())]
+#[debug("{}", self.0.to_string())]
 pub struct DidUrl(identity_did::DIDUrl);
 
 impl Did {
