@@ -2,7 +2,7 @@
 
 let
   rootDir = "$ROOT_DIR";
-  rust = pkgs.rustTools.rust;
+  inherit (pkgs.rustTools) rust;
   localDb = {
     port = 5432;
     username = "postgres";

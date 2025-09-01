@@ -15,7 +15,7 @@ let
 
     npmRoot = "./bin/did-midnight-serde";
     npmDeps = importNpmLock { npmRoot = ../../bin/did-midnight-serde; };
-    npmConfigHook = importNpmLock.npmConfigHook;
+    inherit (importNpmLock) npmConfigHook;
 
     nativeBuildInputs = [
       compactc
