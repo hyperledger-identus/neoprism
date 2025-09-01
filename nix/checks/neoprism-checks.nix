@@ -9,7 +9,7 @@
 }:
 
 let
-  rust = rustTools.rust;
+  inherit (rustTools) rust;
   rustPlatform = makeRustPlatform {
     cargo = rust;
     rustc = rust;
@@ -18,7 +18,7 @@ in
 rustPlatform.buildRustPackage {
   name = "neoprism-checks";
   src = lib.cleanSource ./../..;
-  cargoLock = rustTools.cargoLock;
+  inherit (rustTools) cargoLock;
   nativeBuildInputs = [
     protobuf
     sqlfluff

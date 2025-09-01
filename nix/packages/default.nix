@@ -26,15 +26,15 @@ let
       neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
         inherit buildFeatures;
         rust = pkgs.rustTools.rustMinimal;
-        cargoLock = pkgs.rustTools.cargoLock;
+        inherit (pkgs.rustTools) cargoLock;
       };
       neoprism-bin-x86_64-linux = callPackageRustCross "gnu64" ./neoprism-bin.nix {
         inherit buildFeatures;
-        cargoLock = pkgs.rustTools.cargoLock;
+        inherit (pkgs.rustTools) cargoLock;
       };
       neoprism-bin-aarch64-linux = callPackageRustCross "aarch64-multiplatform" ./neoprism-bin.nix {
         inherit buildFeatures;
-        cargoLock = pkgs.rustTools.cargoLock;
+        inherit (pkgs.rustTools) cargoLock;
       };
       neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
         inherit
@@ -79,7 +79,7 @@ in
   # docs-site
   docs-site = pkgs.callPackage ./docs-site.nix {
     inherit version;
-    neoprism-bin = neoprismPackages.neoprism-bin;
+    inherit (neoprismPackages) neoprism-bin;
   };
 
   # cardano-testnet
@@ -95,7 +95,7 @@ in
 
   # misc
   scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
-  did-midnight-serde = pkgs.pkgsInternal.did-midnight-serde;
+  inherit (pkgs.pkgsInternal) did-midnight-serde;
 }
 // neoprismPackages
 // neoprismMidnightPackages

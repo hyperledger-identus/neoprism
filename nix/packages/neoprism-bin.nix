@@ -17,7 +17,7 @@ rustPlatform.buildRustPackage {
   inherit cargoLock buildFeatures;
   name = "neoprism";
   src = lib.cleanSourceWith {
-    filter = (
+    filter =
       path: _:
       let
         baseName = builtins.baseNameOf path;
@@ -29,8 +29,7 @@ rustPlatform.buildRustPackage {
         || baseName == "tests"
         || baseName == "README.md"
         || baseName == "AGENTS.md"
-      )
-    );
+      );
     src = ./../..;
   };
   nativeBuildInputs = with buildPackages; [ protobuf ];

@@ -4,16 +4,13 @@ let
   rootDir = "$ROOT_DIR";
 in
 pkgs.mkShell {
-  packages = (
-    with pkgs;
-    [
-      git
-      jdk
-      metals
-      ncurses
-      sbt
-    ]
-  );
+  packages = with pkgs; [
+    git
+    jdk
+    metals
+    ncurses
+    sbt
+  ];
 
   shellHook = ''
     export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
