@@ -66,6 +66,36 @@ let
       '';
     };
 
+    releaseMidnightImage = pkgs.writeShellApplication {
+      name = "releaseMidnightImage";
+      runtimeInputs = with pkgs; [
+        nix
+        docker
+      ];
+      text = ''
+        cd "${rootDir}"
+        TAG=$(date +"%Y%m%d-%H%M%S")
+        nix build .#neoprism-midnight-docker-linux-amd64 -o result-amd64
+        nix build .#neoprism-midnight-docker-linux-arm64 -o result-arm64
+        docker load < ./result-amd64
+        docker load < ./result-arm64
+        docker tag identus-neoprism:0.4.0-amd64 "patextreme/neoprism-midnight:$TAG-amd64"
+        docker tag identus-neoprism:0.4.0-arm64 "patextreme/neoprism-midnight:$TAG-arm64"
+
+        rm -rf ./result-amd64
+        rm -rf ./result-arm64
+
+        docker push "patextreme/neoprism-midnight:$TAG-amd64"
+        docker push "patextreme/neoprism-midnight:$TAG-arm64"
+
+        # create multi-arch image
+        docker manifest create  "patextreme/neoprism-midnight:$TAG" \
+          "patextreme/neoprism-midnight:$TAG-amd64" \
+          "patextreme/neoprism-midnight:$TAG-arm64"
+        docker manifest push "patextreme/neoprism-midnight:$TAG"
+      '';
+    };
+
     releasePrismNodeImage = pkgs.writeShellApplication {
       name = "releasePrismNodeImage";
       runtimeInputs = with pkgs; [
