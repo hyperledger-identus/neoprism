@@ -53,6 +53,7 @@ pub fn router(mode: RunMode) -> Routers {
         .route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did))
         .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data))
         .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats))
+        .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob))
         .route(
             urls::UniversalResolverDid::AXUM_PATH,
             get(indexer::universal_resolver_did),

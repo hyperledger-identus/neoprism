@@ -1,6 +1,7 @@
 use axum::Json;
+use axum::body::Bytes;
 use axum::extract::{Path, State};
-use axum::http::{StatusCode, header};
+use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::IntoResponse;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidDocument, ResolutionResult};
@@ -13,10 +14,10 @@ use crate::IndexerState;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, UniversalResolverDid};
+use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, ApiVdrBlob, UniversalResolverDid};
 
 #[derive(OpenApi)]
-#[openapi(paths(resolve_did, did_data, indexer_stats, universal_resolver_did))]
+#[openapi(paths(resolve_did, did_data, indexer_stats, universal_resolver_did, resolve_vdr_blob))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
@@ -28,6 +29,61 @@ mod models {
     pub struct IndexerStats {
         pub last_prism_slot_number: Option<SlotNo>,
         pub last_prism_block_number: Option<BlockNo>,
+    }
+}
+
+#[utoipa::path(
+    get,
+    summary = "Resolve a VDR entry and return its blob data.",
+    description = "Returns the raw blob data for a VDR entry, using PrismDidService::resolve_vdr. The response is application/octet-stream.",
+    path = ApiVdrBlob::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "Successfully resolved the VDR entry. Returns the blob data.", content_type = "application/octet-stream"),
+        (status = NOT_FOUND, description = "The VDR entry was not found."),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during VDR resolution."),
+    ),
+    params(
+        ("entry_hash" = String, Path, description = "The hex-encoded entry hash to resolve.")
+    ),
+)]
+pub async fn resolve_vdr_blob(
+    Path(entry_hash): Path<String>,
+    State(state): State<IndexerState>,
+) -> axum::response::Response {
+    let Some(service) = state.prism_did_service else {
+        return (
+            StatusCode::NOT_IMPLEMENTED,
+            [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
+            "PrismDidService not available",
+        )
+            .into_response();
+    };
+    match service.resolve_vdr(&entry_hash).await {
+        Ok(Some(blob)) => (
+            StatusCode::OK,
+            [(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("application/octet-stream"),
+            )],
+            Bytes::from(blob),
+        )
+            .into_response(),
+        Ok(None) => (
+            StatusCode::NOT_FOUND,
+            [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
+            "VDR entry not found",
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::error!("resolve_vdr error: {e}");
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
+                "Internal server error",
+            )
+                .into_response()
+        }
     }
 }
 

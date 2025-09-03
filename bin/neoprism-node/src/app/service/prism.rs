@@ -46,7 +46,7 @@ impl PrismDidService {
 
         match &*data {
             StorageData::Bytes(items) => Ok(Some(items.clone())),
-            _ => anyhow::bail!("vdr storage data type other than bytes is not yet supported"),
+            _ => anyhow::bail!("vdr storage data types other than bytes are not yet supported"),
         }
     }
 
