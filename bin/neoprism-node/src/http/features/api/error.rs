@@ -1,6 +1,7 @@
+use axum::Json;
 use axum::http::{StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use serde_json;
+use serde::{Deserialize, Serialize};
 
 use crate::app::service::error::ResolutionError;
 
@@ -16,6 +17,11 @@ pub enum ApiError {
     Internal { source: anyhow::Error },
 }
 
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+pub struct ApiErrorResponseBody {
+    message: String,
+}
+
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
         let status = match self {
@@ -24,12 +30,14 @@ impl IntoResponse for ApiError {
             ApiError::BadRequest { .. } => StatusCode::BAD_REQUEST,
             ApiError::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
         };
-        let body = serde_json::json!({ "error": self.to_string() });
+        let body = Json(ApiErrorResponseBody {
+            message: self.to_string(),
+        });
         if let ApiError::Internal { source } = self {
             let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
             tracing::error!("{msg}");
         }
-        (status, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
+        (status, [(header::CONTENT_TYPE, "application/json")], body).into_response()
     }
 }
 

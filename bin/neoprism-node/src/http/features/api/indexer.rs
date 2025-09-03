@@ -13,7 +13,7 @@ use utoipa::OpenApi;
 use crate::IndexerState;
 use crate::app::service::PrismDidService;
 use crate::app::service::error::ResolutionError;
-use crate::http::features::api::error::ApiError;
+use crate::http::features::api::error::{ApiError, ApiErrorResponseBody};
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
 use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, ApiVdrBlob, UniversalResolverDid};
@@ -46,8 +46,8 @@ fn get_prism_service(state: &IndexerState) -> Result<&PrismDidService, ApiError>
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully resolved the VDR entry. Returns the blob data.", content_type = "application/octet-stream"),
-        (status = NOT_FOUND, description = "The VDR entry was not found.", content_type = "application/json"),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during VDR resolution.", content_type = "application/json"),
+        (status = NOT_FOUND, description = "The VDR entry was not found.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during VDR resolution.", body = ApiErrorResponseBody, content_type = "application/json"),
     ),
     params(
         ("entry_hash" = String, Path, description = "The hex-encoded entry hash to resolve.")
@@ -133,10 +133,10 @@ pub async fn uni_driver_resolve_did(path: Path<String>, state: State<IndexerStat
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.", body = String),
-        (status = BAD_REQUEST, description = "The provided DID is invalid.", content_type = "application/json"),
-        (status = NOT_FOUND, description = "The DID does not exist in the index.", content_type = "application/json"),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData.", content_type = "application/json"),
-        (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", content_type = "application/json"),
+        (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = NOT_FOUND, description = "The DID does not exist in the index.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", body = ApiErrorResponseBody, content_type = "application/json"),
     ),
     params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message."))
 )]

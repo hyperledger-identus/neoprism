@@ -3,6 +3,7 @@ use axum::extract::State;
 use utoipa::OpenApi;
 
 use crate::http::features::api::system::models::AppMeta;
+use crate::http::features::api::error::ApiErrorResponseBody;
 use crate::http::features::api::tags;
 use crate::http::urls;
 use crate::{AppState, VERSION};
@@ -63,7 +64,7 @@ pub async fn health() -> &'static str {
     tags = [tags::SYSTEM],
     responses(
         (status = OK, description = "Healthy", body = AppMeta),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving app metadata", body = AppMeta),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving app metadata", body = ApiErrorResponseBody),
     )
 )]
 pub async fn app_meta(State(state): State<AppState>) -> Json<AppMeta> {
