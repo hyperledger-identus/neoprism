@@ -55,7 +55,7 @@ pub async fn resolve_vdr_blob(
         return (
             StatusCode::NOT_IMPLEMENTED,
             [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-            "PrismDidService not available",
+            "prism did service not available",
         )
             .into_response();
     };
@@ -72,7 +72,7 @@ pub async fn resolve_vdr_blob(
         Ok(None) => (
             StatusCode::NOT_FOUND,
             [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-            "VDR entry not found",
+            "vdr entry not found",
         )
             .into_response(),
         Err(e) => {
@@ -80,7 +80,7 @@ pub async fn resolve_vdr_blob(
             (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-                "Internal server error",
+                "internal server error",
             )
                 .into_response()
         }
