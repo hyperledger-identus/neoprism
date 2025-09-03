@@ -73,6 +73,11 @@ pub trait IndexerStateRepo {
     async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error>;
 
     async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
+
+    async fn get_did_by_vdr_entry(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<CanonicalPrismDid>, Self::Error>;
 }
 
 #[async_trait::async_trait]

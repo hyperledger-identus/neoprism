@@ -95,6 +95,26 @@ LIMIT 1
             total_items: did_page.total_records,
         })
     }
+
+    async fn get_did_by_vdr_entry(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<CanonicalPrismDid>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity::IndexedVdrOperation>(
+                &mut tx,
+                Filter::all([entity::IndexedVdrOperationFilter::init_operation_hash().eq(operation_hash.to_vec())]),
+                Sort::new([]),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?;
+        tx.commit().await?;
+
+        let did = result.data.into_iter().next().map(|i| i.did.try_into()).transpose()?;
+        Ok(did)
+    }
 }
 
 #[async_trait::async_trait]
