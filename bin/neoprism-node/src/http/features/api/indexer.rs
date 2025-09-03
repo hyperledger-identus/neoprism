@@ -1,8 +1,10 @@
 use axum::Json;
 use axum::body::Bytes;
 use axum::extract::{Path, State};
-use axum::http::{HeaderValue, StatusCode, header};
+use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
+// --- Unified error type for API endpoints ---
+use axum::response::Response;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidDocument, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
@@ -11,13 +13,56 @@ use serde_json;
 use utoipa::OpenApi;
 
 use crate::IndexerState;
+use crate::app::service::PrismDidService;
 use crate::app::service::error::ResolutionError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
 use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, ApiVdrBlob, UniversalResolverDid};
 
+#[derive(Debug, derive_more::Display, derive_more::Error)]
+pub enum ApiError {
+    #[display("service not available")]
+    NotImplemented,
+    #[display("not found")]
+    NotFound,
+    #[display("bad request: {message}")]
+    BadRequest { message: String },
+    #[display("internal server error")]
+    Internal { source: anyhow::Error },
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let status = match self {
+            ApiError::NotImplemented => StatusCode::NOT_IMPLEMENTED,
+            ApiError::NotFound => StatusCode::NOT_FOUND,
+            ApiError::BadRequest { .. } => StatusCode::BAD_REQUEST,
+            ApiError::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
+        };
+        let body = serde_json::json!({ "error": self.to_string() });
+        if let ApiError::Internal { source } = self {
+            let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
+            tracing::error!("{msg}");
+        }
+        (status, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
+    }
+}
+
+impl From<ResolutionError> for ApiError {
+    fn from(value: ResolutionError) -> Self {
+        match value {
+            ResolutionError::NotFound => ApiError::NotFound,
+            ResolutionError::MethodNotSupported => ApiError::NotImplemented,
+            ResolutionError::InternalError { source } => ApiError::Internal { source },
+            ResolutionError::InvalidDid { source } => ApiError::BadRequest {
+                message: source.to_string(),
+            },
+        }
+    }
+}
+
 #[derive(OpenApi)]
-#[openapi(paths(resolve_did, did_data, indexer_stats, universal_resolver_did, resolve_vdr_blob))]
+#[openapi(paths(resolve_did, did_data, indexer_stats, uni_driver_resolve_did, resolve_vdr_blob))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
@@ -32,6 +77,10 @@ mod models {
     }
 }
 
+fn get_prism_service(state: &IndexerState) -> Result<&PrismDidService, ApiError> {
+    state.prism_did_service.as_ref().ok_or(ApiError::NotImplemented)
+}
+
 #[utoipa::path(
     get,
     summary = "Resolve a VDR entry and return its blob data.",
@@ -40,8 +89,8 @@ mod models {
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully resolved the VDR entry. Returns the blob data.", content_type = "application/octet-stream"),
-        (status = NOT_FOUND, description = "The VDR entry was not found."),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during VDR resolution."),
+        (status = NOT_FOUND, description = "The VDR entry was not found.", content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during VDR resolution.", content_type = "application/json"),
     ),
     params(
         ("entry_hash" = String, Path, description = "The hex-encoded entry hash to resolve.")
@@ -50,40 +99,12 @@ mod models {
 pub async fn resolve_vdr_blob(
     Path(entry_hash): Path<String>,
     State(state): State<IndexerState>,
-) -> axum::response::Response {
-    let Some(service) = state.prism_did_service else {
-        return (
-            StatusCode::NOT_IMPLEMENTED,
-            [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-            "prism did service not available",
-        )
-            .into_response();
-    };
+) -> Result<Bytes, ApiError> {
+    let service = get_prism_service(&state)?;
     match service.resolve_vdr(&entry_hash).await {
-        Ok(Some(blob)) => (
-            StatusCode::OK,
-            [(
-                header::CONTENT_TYPE,
-                HeaderValue::from_static("application/octet-stream"),
-            )],
-            Bytes::from(blob),
-        )
-            .into_response(),
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-            "vdr entry not found",
-        )
-            .into_response(),
-        Err(e) => {
-            tracing::error!("resolve_vdr error: {e}");
-            (
-                StatusCode::INTERNAL_SERVER_ERROR,
-                [(header::CONTENT_TYPE, HeaderValue::from_static("text/plain"))],
-                "internal server error",
-            )
-                .into_response()
-        }
+        Ok(Some(blob)) => Ok(Bytes::from(blob)),
+        Ok(None) => Err(ApiError::NotFound)?,
+        Err(e) => Err(ApiError::Internal { source: e.into() })?,
     }
 }
 
@@ -106,7 +127,7 @@ pub async fn resolve_vdr_blob(
     ),
 )]
 pub async fn resolve_did(path: Path<String>, state: State<IndexerState>) -> impl IntoResponse {
-    let (status, result) = resolution_logic(path, state).await;
+    let (status, result) = resolution_http_binding(path, state).await;
     let body = serde_json::to_string(&result).expect("ResolutionResult should always be serializable");
     (status, [(header::CONTENT_TYPE, "application/did-resolution")], body)
 }
@@ -129,8 +150,8 @@ pub async fn resolve_did(path: Path<String>, state: State<IndexerState>) -> impl
         ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.")
     )
 )]
-pub async fn universal_resolver_did(path: Path<String>, state: State<IndexerState>) -> impl IntoResponse {
-    let (status, mut result) = resolution_logic(path, state).await;
+pub async fn uni_driver_resolve_did(path: Path<String>, state: State<IndexerState>) -> impl IntoResponse {
+    let (status, mut result) = resolution_http_binding(path, state).await;
     result.did_resolution_metadata.content_type = result
         .did_resolution_metadata
         .content_type
@@ -155,25 +176,22 @@ pub async fn universal_resolver_did(path: Path<String>, state: State<IndexerStat
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.", body = String),
-        (status = BAD_REQUEST, description = "The provided DID is invalid."),
-        (status = NOT_FOUND, description = "The DID does not exist in the index."),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData."),
-        (status = NOT_IMPLEMENTED, description = "A functionality is not implemented."),
+        (status = BAD_REQUEST, description = "The provided DID is invalid.", content_type = "application/json"),
+        (status = NOT_FOUND, description = "The DID does not exist in the index.", content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving DIDData.", content_type = "application/json"),
+        (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", content_type = "application/json"),
     ),
     params(("did" = Did, Path, description = "The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message."))
 )]
-pub async fn did_data(Path(did): Path<String>, State(state): State<IndexerState>) -> Result<String, StatusCode> {
-    let Some(service) = state.prism_did_service else {
-        Err(StatusCode::NOT_IMPLEMENTED)?
-    };
+pub async fn did_data(Path(did): Path<String>, State(state): State<IndexerState>) -> Result<String, ApiError> {
+    let service = get_prism_service(&state)?;
     let (result, _) = service.resolve_did(&did).await;
     match result {
-        Err(e) => Err(e.status_code()),
+        Err(e) => Err(e)?,
         Ok((_, did_state)) => {
             let dd: DIDData = did_state.into();
             let bytes = dd.encode_to_vec();
-            let hex_str = HexStr::from(bytes);
-            Ok(hex_str.to_string())
+            Ok(HexStr::from(bytes).to_string())
         }
     }
 }
@@ -185,14 +203,12 @@ pub async fn did_data(Path(did): Path<String>, State(state): State<IndexerState>
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully retrieved indexer statistics, including the latest processed slot and block numbers.", body = IndexerStats),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving indexer statistics."),
-        (status = NOT_IMPLEMENTED, description = "Indexer service is not available."),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred while retrieving indexer statistics.", content_type = "application/json"),
+        (status = NOT_IMPLEMENTED, description = "Indexer service is not available.", content_type = "application/json"),
     )
 )]
-pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<IndexerStats>, StatusCode> {
-    let Some(service) = state.prism_did_service else {
-        Err(StatusCode::NOT_IMPLEMENTED)?
-    };
+pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<IndexerStats>, ApiError> {
+    let service = get_prism_service(&state)?;
     let result = service.get_indexer_stats().await;
     let stats = match result {
         Ok(None) => IndexerStats {
@@ -203,16 +219,12 @@ pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<Ind
             last_prism_block_number: Some(block),
             last_prism_slot_number: Some(slot),
         },
-        Err(e) => {
-            // TODO: improve error handling
-            tracing::error!("{}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)?
-        }
+        Err(e) => Err(ApiError::Internal { source: e })?,
     };
     Ok(Json(stats))
 }
 
-async fn resolution_logic(
+async fn resolution_http_binding(
     Path(did): Path<String>,
     State(state): State<IndexerState>,
 ) -> (StatusCode, ResolutionResult) {

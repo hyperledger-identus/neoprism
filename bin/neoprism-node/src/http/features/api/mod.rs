@@ -56,7 +56,7 @@ pub fn router(mode: RunMode) -> Routers {
         .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob))
         .route(
             urls::UniversalResolverDid::AXUM_PATH,
-            get(indexer::universal_resolver_did),
+            get(indexer::uni_driver_resolve_did),
         );
 
     let submitter_router = Router::new().route(
