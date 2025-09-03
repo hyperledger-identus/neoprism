@@ -3,8 +3,6 @@ use axum::body::Bytes;
 use axum::extract::{Path, State};
 use axum::http::{StatusCode, header};
 use axum::response::IntoResponse;
-// --- Unified error type for API endpoints ---
-use axum::response::Response;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidDocument, ResolutionResult};
 use identus_did_prism::proto::MessageExt;
@@ -15,51 +13,10 @@ use utoipa::OpenApi;
 use crate::IndexerState;
 use crate::app::service::PrismDidService;
 use crate::app::service::error::ResolutionError;
+use crate::http::features::api::error::ApiError;
 use crate::http::features::api::indexer::models::IndexerStats;
 use crate::http::features::api::tags;
 use crate::http::urls::{ApiDid, ApiDidData, ApiIndexerStats, ApiVdrBlob, UniversalResolverDid};
-
-#[derive(Debug, derive_more::Display, derive_more::Error)]
-pub enum ApiError {
-    #[display("service not available")]
-    NotImplemented,
-    #[display("not found")]
-    NotFound,
-    #[display("bad request: {message}")]
-    BadRequest { message: String },
-    #[display("internal server error")]
-    Internal { source: anyhow::Error },
-}
-
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let status = match self {
-            ApiError::NotImplemented => StatusCode::NOT_IMPLEMENTED,
-            ApiError::NotFound => StatusCode::NOT_FOUND,
-            ApiError::BadRequest { .. } => StatusCode::BAD_REQUEST,
-            ApiError::Internal { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-        };
-        let body = serde_json::json!({ "error": self.to_string() });
-        if let ApiError::Internal { source } = self {
-            let msg = source.chain().map(|e| e.to_string()).collect::<Vec<_>>().join("\n");
-            tracing::error!("{msg}");
-        }
-        (status, [(header::CONTENT_TYPE, "application/json")], body.to_string()).into_response()
-    }
-}
-
-impl From<ResolutionError> for ApiError {
-    fn from(value: ResolutionError) -> Self {
-        match value {
-            ResolutionError::NotFound => ApiError::NotFound,
-            ResolutionError::MethodNotSupported => ApiError::NotImplemented,
-            ResolutionError::InternalError { source } => ApiError::Internal { source },
-            ResolutionError::InvalidDid { source } => ApiError::BadRequest {
-                message: source.to_string(),
-            },
-        }
-    }
-}
 
 #[derive(OpenApi)]
 #[openapi(paths(resolve_did, did_data, indexer_stats, uni_driver_resolve_did, resolve_vdr_blob))]

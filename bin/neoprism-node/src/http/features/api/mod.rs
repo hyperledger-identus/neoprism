@@ -9,6 +9,7 @@ use crate::http::features::api::submitter::SubmitterOpenApiDoc;
 use crate::http::features::api::system::SystemOpenApiDoc;
 use crate::http::{Routers, urls};
 
+mod error;
 mod indexer;
 mod submitter;
 mod system;
