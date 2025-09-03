@@ -36,12 +36,8 @@ impl IndexedOperation {
 }
 
 #[async_trait::async_trait]
-pub trait OperationRepo {
+pub trait RawOperationRepo {
     type Error: std::error::Error;
-
-    async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error>;
-
-    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 
     async fn get_raw_operations_unindexed(
         &self,
@@ -61,8 +57,22 @@ pub trait OperationRepo {
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error>;
+}
+
+#[async_trait::async_trait]
+pub trait IndexedOperationRepo {
+    type Error: std::error::Error;
 
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error>;
+}
+
+#[async_trait::async_trait]
+pub trait IndexerStateRepo {
+    type Error: std::error::Error;
+
+    async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error>;
+
+    async fn get_all_dids(&self, page: u32, page_size: u32) -> Result<Paginated<CanonicalPrismDid>, Self::Error>;
 }
 
 #[async_trait::async_trait]

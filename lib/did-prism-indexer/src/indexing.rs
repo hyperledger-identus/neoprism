@@ -6,7 +6,7 @@ use identus_did_prism::prelude::*;
 use identus_did_prism::proto::prism::prism_operation::Operation;
 
 use crate::DltSource;
-use crate::repo::{IndexedOperation, OperationRepo};
+use crate::repo::{IndexedOperation, IndexedOperationRepo, RawOperationRepo};
 
 enum IntermediateIndexedOperation {
     Ssi {
@@ -25,8 +25,9 @@ enum IntermediateIndexedOperation {
 /// Run indexer loop until no more operation to index
 pub async fn run_indexer_loop<Repo>(repo: &Repo) -> anyhow::Result<()>
 where
-    Repo: OperationRepo,
-    <Repo as OperationRepo>::Error: Send + Sync + 'static,
+    Repo: RawOperationRepo + IndexedOperationRepo,
+    <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
+    <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
     loop {
         let unindexed_operations = repo.get_raw_operations_unindexed().await?;
@@ -83,8 +84,9 @@ where
 pub async fn run_sync_loop<Repo, Src>(repo: &Repo, source: Src) -> anyhow::Result<()>
 where
     Src: DltSource,
-    Repo: OperationRepo + Send,
-    <Repo as OperationRepo>::Error: Send + Sync + 'static,
+    Repo: RawOperationRepo + IndexedOperationRepo + Send,
+    <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
+    <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
     let mut rx = source.into_stream().expect("Unable to create a DLT source");
 
@@ -128,8 +130,9 @@ async fn recursively_find_vdr_root<Repo>(
     prev_operation_hash: &[u8],
 ) -> anyhow::Result<Option<(CanonicalPrismDid, Vec<u8>)>>
 where
-    Repo: OperationRepo,
-    <Repo as OperationRepo>::Error: Send + Sync + 'static,
+    Repo: RawOperationRepo + IndexedOperationRepo,
+    <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
+    <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
     const SEARCH_MAX_DEPTH: usize = 200;
     let mut parent_hash = prev_operation_hash.to_vec();
