@@ -2,8 +2,8 @@ use axum::Json;
 use axum::extract::State;
 use utoipa::OpenApi;
 
-use crate::http::features::api::system::models::AppMeta;
 use crate::http::features::api::error::ApiErrorResponseBody;
+use crate::http::features::api::system::models::AppMeta;
 use crate::http::features::api::tags;
 use crate::http::urls;
 use crate::{AppState, VERSION};
