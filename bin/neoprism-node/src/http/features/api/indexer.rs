@@ -61,7 +61,7 @@ pub async fn resolve_vdr_blob(
     match service.resolve_vdr(&entry_hash).await {
         Ok(Some(blob)) => Ok(Bytes::from(blob)),
         Ok(None) => Err(ApiError::NotFound)?,
-        Err(e) => Err(ApiError::Internal { source: e.into() })?,
+        Err(e) => Err(ApiError::Internal { source: e })?,
     }
 }
 
