@@ -1,9 +1,9 @@
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
 use utoipa::OpenApi;
 
 use crate::SubmitterState;
+use crate::http::features::api::error::{ApiError, ApiErrorResponseBody};
 use crate::http::features::api::submitter::models::{
     SignedOperationSubmissionRequest, SignedOperationSubmissionResponse,
 };
@@ -38,23 +38,20 @@ mod models {
     request_body = SignedOperationSubmissionRequest,
     responses(
         (status = OK, description = "Operations submitted successfully", body = SignedOperationSubmissionResponse),
-        (status = BAD_REQUEST, description = "Malformed request or invalid operations", body = SignedOperationSubmissionResponse),
-        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during submission", body = SignedOperationSubmissionResponse),
+        (status = BAD_REQUEST, description = "Malformed request or invalid operations", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during submission", body = ApiErrorResponseBody, content_type = "application/json"),
     )
 )]
 pub async fn submit_signed_operations(
     State(state): State<SubmitterState>,
     Json(req): Json<SignedOperationSubmissionRequest>,
-) -> Result<Json<SignedOperationSubmissionResponse>, StatusCode> {
+) -> Result<Json<SignedOperationSubmissionResponse>, ApiError> {
     let ops = req.signed_operations.into_iter().map(|i| i.into()).collect();
     let result = state.dlt_sink.publish_operations(ops).await;
-
-    // TODO: improve error handling
     match result {
         Ok(tx_id) => Ok(Json(SignedOperationSubmissionResponse { tx_id })),
-        Err(e) => {
-            tracing::error!("{}", e);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
+        Err(e) => Err(ApiError::Internal {
+            source: anyhow::anyhow!(e),
+        }),
     }
 }

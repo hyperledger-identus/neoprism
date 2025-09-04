@@ -2,7 +2,9 @@ use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::dlt::{BlockMetadata, BlockNo, DltCursor, OperationMetadata, SlotNo};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
-use identus_did_prism_indexer::repo::{DltCursorRepo, IndexedOperation, OperationRepo, RawOperationId};
+use identus_did_prism_indexer::repo::{
+    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationId, RawOperationRepo,
+};
 use lazybe::db::DbOps;
 use lazybe::db::postgres::PostgresDbCtx;
 use lazybe::filter::Filter;
@@ -34,7 +36,7 @@ impl PostgresDb {
 }
 
 #[async_trait::async_trait]
-impl OperationRepo for PostgresDb {
+impl IndexerStateRepo for PostgresDb {
     type Error = Error;
 
     async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error> {
@@ -93,6 +95,31 @@ LIMIT 1
             total_items: did_page.total_records,
         })
     }
+
+    async fn get_did_by_vdr_entry(
+        &self,
+        operation_hash: &Sha256Digest,
+    ) -> Result<Option<CanonicalPrismDid>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity::IndexedVdrOperation>(
+                &mut tx,
+                Filter::all([entity::IndexedVdrOperationFilter::init_operation_hash().eq(operation_hash.to_vec())]),
+                Sort::new([]),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?;
+        tx.commit().await?;
+
+        let did = result.data.into_iter().next().map(|i| i.did.try_into()).transpose()?;
+        Ok(did)
+    }
+}
+
+#[async_trait::async_trait]
+impl RawOperationRepo for PostgresDb {
+    type Error = Error;
 
     async fn get_raw_operations_unindexed(
         &self,
@@ -208,6 +235,11 @@ LIMIT 1
         tx.commit().await?;
         Ok(())
     }
+}
+
+#[async_trait::async_trait]
+impl IndexedOperationRepo for PostgresDb {
+    type Error = Error;
 
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
