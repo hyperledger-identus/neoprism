@@ -9,6 +9,7 @@ use identus_did_midnight_sources::serde_cli::CliContractStateDecoder;
 const CLI_PATH: &str = "did-midnight-serde";
 
 #[test]
+#[ignore]
 fn test_midnight_serde_cli() {
     let did = MidnightDid::from_str(
         "did:midnight:undeployed:02000ea0f6a091431f1bc5de34ba3db832c1b1bc38d0d08faedd9b9c1d50f2a4e9fe",

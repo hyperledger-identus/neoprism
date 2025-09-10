@@ -56,7 +56,7 @@ struct IndexerUiState {
 
 #[derive(Clone)]
 struct SubmitterState {
-    dlt_sink: Arc<dyn DltSink>,
+    dlt_sink: Arc<dyn DltSink + Send + Sync>,
 }
 
 #[derive(Clone)]
@@ -270,7 +270,7 @@ async fn init_dlt_source(
     }
 }
 
-fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink> {
+fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
     Arc::new(CardanoWalletSink::new(
         dlt_args.cardano_wallet_base_url.to_string(),
         dlt_args.cardano_wallet_wallet_id.to_string(),
