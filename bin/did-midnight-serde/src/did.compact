@@ -17,6 +17,8 @@ pragma language_version 0.16;
 
 import CompactStandardLibrary;
 
+export ledger contractVersion: Uint<32>;
+export ledger controllerPublicKey: Bytes<32>;
 export ledger id: ContractAddress;
 export ledger version: Counter;
 export ledger createdAt: Uint<64>;
@@ -32,13 +34,11 @@ export ledger capabilityInvocationRelation: Set<Opaque<"string">>;
 export ledger capabilityDelegationRelation: Set<Opaque<"string">>;
 export ledger services: Map<Opaque<"string">, Service>;
 
-witness local_secret_key(): Bytes<32>;
-witness getEpoc(): Uint<64>;
+witness localSecretKey(): Bytes<32>;
 
 export enum VerificationMethodType {
   Undefined,
-  Ed25519VerificationKey2020,
-  JubJubVerificationKey2025
+  JsonWebKey
 }
 
 export enum VerificationMethodRelation {
@@ -55,7 +55,7 @@ export enum KeyType {
 }
 
 export enum CurveType {
-  Ed25519, Jubjub
+  ed25519, Jubjub
 }
 
 export struct PublicKeyJwk {
@@ -113,15 +113,11 @@ export struct RemoveVerificationMethodRelationOptions {
 }
 
 export struct AddServiceOptions {
-  id: Opaque<"string">,
-  type: Opaque<"string">,
-  serviceEndpoint: Vector<4, Opaque<"string">>,
+  service: Service,
 }
 
 export struct UpdateServiceOptions {
-  id: Opaque<"string">,
-  type: Opaque<"string">,
-  serviceEndpoint: Vector<4, Opaque<"string">>,
+  service: Service
 }
 
 export struct RemoveServiceOptions {
@@ -142,8 +138,10 @@ export struct DIDUpdateOperation {
 
 constructor() {
   //TODO: clarify with the Midnight team why `id` is not set correctly (did.api.test.ts)
+  contractVersion = 1;
   id = kernel.self();
   active = true;
+  controllerPublicKey = disclose(publicKey(localSecretKey()));
 
   //createdAt = disclose(getEpoc());
 }
@@ -156,7 +154,12 @@ constructor() {
 //   applyOperations(operations);
 // }
 
-export circuit applyOperations(operations: Vector<8, DIDUpdateOperation>): [] {
+export circuit publicKey(sk: Bytes<32>): Bytes<32> {
+    return persistentHash<Vector<2, Bytes<32>>>([pad(32, "did:controller:pk"), sk]);
+}
+
+export circuit applyOperations(operations: Vector<4, DIDUpdateOperation>): [] {
+  //assert(publicKey(localSecretKey()) == controllerPublicKey, "DID controller is allowed to update the DID only");
   assert(disclose(active), "Contract is not active");
 
   id = kernel.self();
@@ -210,7 +213,7 @@ circuit addVerificationMethod(verificationMethod: VerificationMethod): [] {
   assert(disclose(active), "Contract is not active");
   
   const disclosedVerificationMethod = disclose(verificationMethod);
-  //assert(!verificationMethods.member(disclosedVerificationMethod.id), "Verification method already exists");
+  assert(!verificationMethods.member(disclosedVerificationMethod.id), "Verification method already exists");
 
   verificationMethods.insert(disclosedVerificationMethod.id, disclosedVerificationMethod);
 }
@@ -241,22 +244,22 @@ circuit addVerificationMethodRelation(
 
   const relation = options.relation;
   const methodId = options.methodId;
-  //assert(verificationMethods.member(methodId), "Verification method does not exist");
+  assert(verificationMethods.member(methodId), "Verification method does not exist");
 
   if (relation == VerificationMethodRelation.Authentication) {
-    //assert(!authenticationRelation.member(methodId), "Method already in 'authentication' relation");
+    assert(!authenticationRelation.member(methodId), "Method already in 'authentication' relation");
     authenticationRelation.insert(methodId);
   } else if (relation == VerificationMethodRelation.AssertionMethod) {
-    //assert(!assertionMethodRelation.member(methodId), "Method already in 'assertion' method relation");
+    assert(!assertionMethodRelation.member(methodId), "Method already in 'assertion' method relation");
     assertionMethodRelation.insert(methodId);
   } else if (relation == VerificationMethodRelation.KeyAgreement) {
-    //assert(!keyAgreementRelation.member(methodId), "Method already in 'key agreement' relation");
+    assert(!keyAgreementRelation.member(methodId), "Method already in 'key agreement' relation");
     keyAgreementRelation.insert(methodId);
   } else if (relation == VerificationMethodRelation.CapabilityInvocation) {
-    //assert(!capabilityInvocationRelation.member(methodId), "Method already in 'capability invocation' relation");
+    assert(!capabilityInvocationRelation.member(methodId), "Method already in 'capability invocation' relation");
     capabilityInvocationRelation.insert(methodId);
   } else if (relation == VerificationMethodRelation.CapabilityDelegation) {
-    //assert(!capabilityDelegationRelation.member(methodId), "Method already in 'capability delegation' relation");
+    assert(!capabilityDelegationRelation.member(methodId), "Method already in 'capability delegation' relation");
     capabilityDelegationRelation.insert(methodId);
   }
 }
@@ -290,15 +293,25 @@ circuit removeVerificationMethodRelation(
 }
 
 circuit addService(options: AddServiceOptions): [] {
-
+  assert(active, "Contract is not active");
+  const id = options.service.id;
+  assert(!services.member(id), "Service with a given id already exists");
+  services.insert(id, options.service);
 }
 
 circuit updateService(options: UpdateServiceOptions): [] {
-
+  assert(active, "Contract is not active");
+  const id = options.service.id;
+  assert(services.member(id), "Service with a given id does not exist");
+  services.remove(id);
+  services.insert(id, options.service);
 }
 
 circuit removeService(options: RemoveServiceOptions): [] {
-
+  assert(active, "Contract is not active");
+  const id = options.id;
+  assert(services.member(id), "Service with a given id does not exist");
+  services.remove(id);
 }
 
 circuit deactivate(): [] {
