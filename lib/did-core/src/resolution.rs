@@ -6,6 +6,21 @@ use crate::{Did, DidDocument};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "camelCase")]
+pub struct ResolutionOptions {
+    pub accept: Option<String>,
+    pub expand_relative_urls: Option<bool>,
+    pub version_id: Option<String>,
+    pub version_time: Option<DateTime<Utc>>,
+}
+
+#[async_trait::async_trait]
+pub trait DidResolver {
+    async fn resolve(&self, did: &Did, options: &ResolutionOptions) -> ResolutionResult;
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct ResolutionResult {
     pub did_document: Option<DidDocument>,
     pub did_resolution_metadata: DidResolutionMetadata,

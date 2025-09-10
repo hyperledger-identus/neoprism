@@ -1726,6 +1726,7 @@ dependencies = [
 name = "identus-did-core"
 version = "0.5.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "derive_more",
  "identity_did",
