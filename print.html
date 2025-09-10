@@ -878,7 +878,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.4.0
+  version: 0.5.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -892,8 +892,8 @@ paths:
       tags:
         - Indexer API
       summary: Universal Resolver driver endpoint for resolving DIDs, designed for use behind a Universal Resolver proxy.
-      description: This endpoint implements the Universal Resolver driver interface. It is intended to be used as a backend for the Universal Resolver proxy, enabling DID resolution via the Universal Resolver ecosystem. The response format and behavior are compatible with Universal Resolver expectations.
-      operationId: universal_resolver_did
+      description: This endpoint implements the Universal Resolver driver interface. If the DID document is present, only the document is returned; otherwise, the full ResolutionResult is returned. The response format and behavior are compatible with Universal Resolver expectations.
+      operationId: uni_driver_resolve_did
       parameters:
         - name: did
           in: path
@@ -903,33 +903,39 @@ paths:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: Successfully resolved the DID. Returns the DID Resolution Result.
+          description: Successfully resolved the DID. Returns either the DID Document or the DID Resolution Result.
           content:
-            application/did-resolution:
+            application/did:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidDocument'
         "400":
           description: The provided DID is invalid.
           content:
-            application/did-resolution:
+            application/did:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "404":
           description: The DID does not exist in the index.
           content:
-            application/did-resolution:
+            application/did:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "410":
           description: The DID has been deactivated.
           content:
-            application/did-resolution:
+            application/did:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "500":
           description: An unexpected error occurred during resolution.
           content:
-            application/did-resolution:
+            application/did:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
+        "501":
+          description: A functionality is not implemented.
+          content:
+            application/did:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
   /api/_system/health:
@@ -957,6 +963,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AppMeta'
+        "500":
+          description: An unexpected error occurred while retrieving app metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
   /api/did-data/{did}:
     get:
       tags:
@@ -980,10 +992,28 @@ paths:
                 type: string
         "400":
           description: The provided DID is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
         "404":
           description: The DID does not exist in the index.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
         "500":
           description: An unexpected error occurred while retrieving DIDData.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "501":
+          description: A functionality is not implemented.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
   /api/dids/{did}:
     get:
       tags:
@@ -1029,6 +1059,12 @@ paths:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
+        "501":
+          description: A functionality is not implemented.
+          content:
+            application/did-resolution:
+              schema:
+                $ref: '#/components/schemas/ResolutionResult'
   /api/indexer-stats:
     get:
       tags:
@@ -1042,6 +1078,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IndexerStats'
+        "500":
+          description: An unexpected error occurred while retrieving indexer statistics.
+          content:
+            application/json: {}
+        "501":
+          description: Indexer service is not available.
+          content:
+            application/json: {}
   /api/signed-operation-submissions:
     post:
       tags:
@@ -1060,8 +1104,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignedOperationSubmissionResponse'
+        "400":
+          description: Malformed request or invalid operations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred during submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+  /api/vdr-data/{entry_hash}:
+    get:
+      tags:
+        - Indexer API
+      summary: Resolve a VDR entry and return its blob data.
+      description: Returns the raw blob data for a VDR entry, using PrismDidService::resolve_vdr. The response is application/octet-stream.
+      operationId: resolve_vdr_blob
+      parameters:
+        - name: entry_hash
+          in: path
+          description: The hex-encoded entry hash to resolve.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully resolved the VDR entry. Returns the blob data.
+          content:
+            application/octet-stream: {}
+        "404":
+          description: The VDR entry was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred during VDR resolution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
 components:
   schemas:
+    ApiErrorResponseBody:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
     AppMeta:
       type: object
       required:
@@ -1100,10 +1194,14 @@ components:
     DidDocument:
       type: object
       required:
-        - context
+        - '@context'
         - id
         - verificationMethod
       properties:
+        '@context':
+          type: array
+          items:
+            type: string
         assertionMethod:
           type:
             - array
@@ -1128,10 +1226,6 @@ components:
             - "null"
           items:
             $ref: '#/components/schemas/VerificationMethodOrRef'
-        context:
-          type: array
-          items:
-            type: string
         id:
           $ref: '#/components/schemas/Did'
         keyAgreement:
