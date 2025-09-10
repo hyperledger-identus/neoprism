@@ -2,7 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.4.0] - 2025-08-19
+## [0.5.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.5.0) - 2025-09-10
+
+### 🚀 Features
+
+- Experimental did midnight resolver ([#117](https://github.com/hyperledger-identus/neoprism/pull/117))
+- Add endpoint to resolve VDR data ([#120](https://github.com/hyperledger-identus/neoprism/pull/120))
+
+### 🚜 Refactor
+
+- Split AppState and unify HTTP router struct ([#115](https://github.com/hyperledger-identus/neoprism/pull/115))
+
+### 📚 Documentation
+
+- Fix broken link in documentation site and add linkcheck config ([#105](https://github.com/hyperledger-identus/neoprism/pull/105))
+- Refactor error messages for consistency ([#116](https://github.com/hyperledger-identus/neoprism/pull/116))
+
+### 🎨 Styling
+
+- Align and format TOML files; add taplo config for formatting [skip ci] ([#107](https://github.com/hyperledger-identus/neoprism/pull/107))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update grpc-netty-shaded from 1.74.0 to 1.75.0 ([#112](https://github.com/hyperledger-identus/neoprism/pull/112))
+- Update compilerplugin, scalapb-runtime, ... from 0.11.19 to 0.11.20 ([#113](https://github.com/hyperledger-identus/neoprism/pull/113))
+- Update sbt, scripted-plugin from 1.11.4 to 1.11.5 ([#114](https://github.com/hyperledger-identus/neoprism/pull/114))
+- Update dependency versions ([#118](https://github.com/hyperledger-identus/neoprism/pull/118))
+- Use statix to lint nix expressions ([#119](https://github.com/hyperledger-identus/neoprism/pull/119))
+- Update zio-http from 3.4.0 to 3.4.1 ([#121](https://github.com/hyperledger-identus/neoprism/pull/121))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.20 to 2.1.21 ([#122](https://github.com/hyperledger-identus/neoprism/pull/122))
+- Update zio-http from 3.4.1 to 3.5.0 ([#123](https://github.com/hyperledger-identus/neoprism/pull/123))
+- Update sbt, scripted-plugin from 1.11.5 to 1.11.6 ([#124](https://github.com/hyperledger-identus/neoprism/pull/124))
+
+## [0.4.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.4.0) - 2025-08-19
 
 ### 🚀 Features
 
@@ -36,7 +68,7 @@ All notable changes to this project will be documented in this file.
 - Update sbt, scripted-plugin to 1.11.4 in main ([#101](https://github.com/hyperledger-identus/neoprism/pull/101))
 - Update zio-http to 3.4.0 in main ([#100](https://github.com/hyperledger-identus/neoprism/pull/100))
 
-## [0.3.1] - 2025-08-07
+## [0.3.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.3.1) - 2025-08-07
 
 ### 🐛 Bug Fixes
 
@@ -47,7 +79,7 @@ All notable changes to this project will be documented in this file.
 
 - Make docker setup use published image ([#81](https://github.com/hyperledger-identus/neoprism/pull/81))
 
-## [0.3.0] - 2025-07-31
+## [0.3.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.3.0) - 2025-07-31
 
 ### 🚀 Features
 
@@ -70,7 +102,7 @@ All notable changes to this project will be documented in this file.
 
 - Update healthcheck for docker setup ([#76](https://github.com/hyperledger-identus/neoprism/pull/76))
 
-## [0.2.0] - 2025-07-19
+## [0.2.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.2.0) - 2025-07-19
 
 ### 🚀 Features
 
@@ -86,7 +118,7 @@ All notable changes to this project will be documented in this file.
 
 - Add local testnet infrastructure ([#66](https://github.com/hyperledger-identus/neoprism/pull/66))
 
-## [0.1.1] - 2025-07-15
+## [0.1.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.1.1) - 2025-07-15
 
 ### 🐛 Bug Fixes
 
@@ -100,7 +132,7 @@ All notable changes to this project will be documented in this file.
 
 - Update version in docker compose
 
-## [0.1.0] - 2025-07-10
+## [0.1.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.1.0) - 2025-07-10
 
 ### ⚙️ Miscellaneous Tasks
 
