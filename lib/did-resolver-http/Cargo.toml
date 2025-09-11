@@ -8,3 +8,7 @@ identus-did-core = { workspace = true }
 axum             = { workspace = true }
 derive_more      = { workspace = true, features = [ "from" ] }
 utoipa           = { workspace = true, optional = true, features = [ "chrono" ] }
+
+[features]
+default = [  ]
+openapi = [ "dep:utoipa", "identus-did-core/openapi" ]
