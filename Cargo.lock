@@ -2337,6 +2337,7 @@ name = "neoprism-node"
 version = "0.5.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "chrono",
  "clap 4.5.46",

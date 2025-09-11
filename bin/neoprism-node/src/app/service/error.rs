@@ -75,6 +75,7 @@ impl From<ResolutionError> for ResolutionResult {
     }
 }
 
+// TODO: remove
 impl ResolutionError {
     pub fn status_code(&self) -> StatusCode {
         match self {

@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use identus_did_core::DidDocument;
+use identus_did_core::{Did, DidDocument, DidResolver, ResolutionOptions, ResolutionResult};
 use identus_did_midnight::did::MidnightDid;
 use identus_did_midnight::dlt::ContractStateDecoder;
 use identus_did_midnight_sources::indexer_api::{IndexerApiError, get_contract_state};
@@ -40,5 +40,16 @@ impl MidnightDidService {
             })?,
         };
         Ok(did_doc)
+    }
+}
+
+#[async_trait::async_trait]
+impl DidResolver for MidnightDidService {
+    async fn resolve(&self, did: &Did, _options: &ResolutionOptions) -> ResolutionResult {
+        let did_str = did.to_string();
+        match self.resolve_did(&did_str).await {
+            Ok(did_doc) => ResolutionResult::success(did_doc),
+            Err(e) => e.into(),
+        }
     }
 }

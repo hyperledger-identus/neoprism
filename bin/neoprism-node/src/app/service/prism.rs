@@ -1,5 +1,6 @@
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
+use identus_did_core::{Did, DidResolver, ResolutionOptions, ResolutionResult};
 use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
 use identus_did_prism::dlt::{BlockNo, SlotNo};
@@ -51,9 +52,9 @@ impl PrismDidService {
     }
 
     pub async fn resolve_did(&self, did: &str) -> (Result<(PrismDid, DidState), ResolutionError>, ResolutionDebug) {
-        let mut debug = vec![];
-        let result = self.resolve_did_logic(did, &mut debug).await;
-        (result, debug)
+        let mut debug_acc = vec![];
+        let result = self.resolve_did_logic(did, &mut debug_acc).await;
+        (result, debug_acc)
     }
 
     async fn resolve_did_logic(
@@ -99,5 +100,17 @@ impl PrismDidService {
         let page = page.unwrap_or(0);
         let dids = self.db.get_all_dids(page, 100).await?;
         Ok(dids)
+    }
+}
+
+#[async_trait::async_trait]
+impl DidResolver for PrismDidService {
+    async fn resolve(&self, did: &Did, _options: &ResolutionOptions) -> ResolutionResult {
+        let did_str = did.to_string();
+        let mut debug_acc = vec![];
+        match self.resolve_did_logic(&did_str, &mut debug_acc).await {
+            Ok((prism_did, state)) => state.to_resolution_result(&prism_did),
+            Err(e) => e.into(),
+        }
     }
 }
