@@ -80,32 +80,30 @@ pub async fn did_resolver(Path(did): Path<String>, state: State<DidResolverState
         Ok(did) => did,
         Err(e) => {
             let result = ResolutionResult::invalid_did(e);
-            return HttpBindingResponse::<ResolutionResult>::from(result).into_response();
+            return respond_with_application_did_resolution(result).into_response();
         }
     };
-    let options = Default::default(); // TODO: support resolution options
+
+    // TODO: support resolution options
+    let options = Default::default();
     let result = resolver.resolve(&parsed_did, &options).await;
 
     match accept {
-        Some("application/did") => HttpBindingResponse::<DidDocument>::from(result).into_response(),
-        Some("application/did-resolution") => HttpBindingResponse::<ResolutionResult>::from(result).into_response(),
-        _ => HttpBindingResponse::<ResolutionResult>::from(result).into_response(),
+        Some("application/did") => respond_with_application_did(result).into_response(),
+        Some("application/did-resolution") => respond_with_application_did_resolution(result).into_response(),
+        _ => respond_with_application_did_resolution(result).into_response(),
     }
+}
+
+fn respond_with_application_did_resolution(result: ResolutionResult) -> Response {
+    HttpBindingResponse(result, PhantomData::<ResolutionResult>).into_response()
+}
+
+fn respond_with_application_did(result: ResolutionResult) -> Response {
+    HttpBindingResponse(result, PhantomData::<DidDocument>).into_response()
 }
 
 struct HttpBindingResponse<Format>(ResolutionResult, PhantomData<Format>);
-
-impl From<ResolutionResult> for HttpBindingResponse<ResolutionResult> {
-    fn from(value: ResolutionResult) -> Self {
-        Self(value, PhantomData)
-    }
-}
-
-impl From<ResolutionResult> for HttpBindingResponse<DidDocument> {
-    fn from(value: ResolutionResult) -> Self {
-        Self(value, PhantomData)
-    }
-}
 
 impl IntoResponse for HttpBindingResponse<ResolutionResult> {
     fn into_response(self) -> Response {
