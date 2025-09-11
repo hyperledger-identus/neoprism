@@ -26,15 +26,13 @@ tower-http         = { workspace = true, features = [ "fs", "trace", "cors" ] }
 utoipa            = { workspace = true, features = [ "chrono" ] }
 utoipa-swagger-ui = { version = "9", features = [ "axum", "vendored" ] }
 
-identus-apollo               = { workspace = true, features = [ "hex", "jwk" ] }
-identus-did-core             = { workspace = true, features = [ "openapi" ] }
-identus-did-prism            = { workspace = true, features = [ "openapi" ] }
-identus-did-prism-indexer    = { workspace = true, features = [ "oura", "dbsync" ] }
-identus-did-prism-submitter  = { workspace = true, features = [ "cardano-wallet" ] }
-identus-did-midnight         = { workspace = true, optional = true }
-identus-did-midnight-sources = { workspace = true, optional = true, features = [ "serde-cli", "indexer-api" ] }
-node-storage                 = { workspace = true }
+identus-apollo              = { workspace = true, features = [ "hex", "jwk" ] }
+identus-did-core            = { workspace = true, features = [ "openapi" ] }
+identus-did-prism           = { workspace = true, features = [ "openapi" ] }
+identus-did-prism-indexer   = { workspace = true, features = [ "oura", "dbsync" ] }
+identus-did-prism-submitter = { workspace = true, features = [ "cardano-wallet" ] }
+identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
+node-storage                = { workspace = true }
 
 [features]
-default  = [  ]
-midnight = [ "dep:identus-did-midnight", "dep:identus-did-midnight-sources" ]
+default = [  ]

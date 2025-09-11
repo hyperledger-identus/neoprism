@@ -1,4 +1,3 @@
-use axum::http::StatusCode;
 use identus_did_core::{DidResolutionError, DidResolutionErrorCode, DidResolutionMetadata, ResolutionResult};
 use identus_did_prism::{did, protocol};
 
@@ -33,10 +32,6 @@ pub enum InvalidDid {
     #[from]
     #[display("failed to parse prism did")]
     InvalidPrismDid { source: did::Error },
-    #[cfg(feature = "midnight")]
-    #[from]
-    #[display("failed to parse midnight did")]
-    InvalidMidnightDid { source: identus_did_midnight::error::Error },
 }
 
 impl From<ResolutionError> for ResolutionResult {
@@ -71,18 +66,6 @@ impl From<ResolutionError> for ResolutionResult {
             },
             did_document_metadata: Default::default(),
             did_document: Default::default(),
-        }
-    }
-}
-
-// TODO: remove
-impl ResolutionError {
-    pub fn status_code(&self) -> StatusCode {
-        match self {
-            ResolutionError::InvalidDid { .. } => StatusCode::BAD_REQUEST,
-            ResolutionError::NotFound => StatusCode::NOT_FOUND,
-            ResolutionError::InternalError { .. } => StatusCode::INTERNAL_SERVER_ERROR,
-            ResolutionError::MethodNotSupported => StatusCode::NOT_IMPLEMENTED,
         }
     }
 }

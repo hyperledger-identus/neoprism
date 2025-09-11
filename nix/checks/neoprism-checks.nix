@@ -71,9 +71,6 @@ rustPlatform.buildRustPackage {
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
-
-    echo "checking feature gate for neoprism-node"
-    cargo clippy -p neoprism-node --all-targets --features midnight -- -D warnings
   '';
   installPhase = "touch $out";
 

@@ -1,5 +1,6 @@
 use axum::Router;
 use axum::routing::{get, post};
+use identus_did_resolver_http::{HttpBindingOptions, did_resolver_http_binding};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -29,16 +30,21 @@ mod tags {
 }
 
 pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
+    let did_resolver_oas = did_resolver_http_binding(
+        urls::ApiDid::AXUM_PATH,
+        HttpBindingOptions {
+            openapi_tags: Some(vec![tags::OP_INDEX.to_string()]),
+        },
+    )
+    .openapi;
     let base_oas = BaseOpenApiDoc::openapi().merge_from(SystemOpenApiDoc::openapi());
-    let indexer_oas = IndexerOpenApiDoc::openapi();
+    let indexer_oas = IndexerOpenApiDoc::openapi().merge_from(did_resolver_oas);
     let submitter_oas = SubmitterOpenApiDoc::openapi();
 
     match mode {
         RunMode::Indexer => base_oas.merge_from(indexer_oas),
         RunMode::Submitter => base_oas.merge_from(submitter_oas),
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
-        #[cfg(feature = "midnight")]
-        RunMode::Midnight => base_oas.merge_from(indexer_oas),
     }
 }
 
@@ -51,24 +57,22 @@ pub fn router(mode: RunMode) -> Routers {
         .route(urls::ApiAppMeta::AXUM_PATH, get(system::app_meta));
 
     let indexer_router = Router::new()
-        .route(urls::ApiDid::AXUM_PATH, get(indexer::resolve_did))
         .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data))
         .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats))
-        .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob))
-        .route(
-            urls::UniversalResolverDid::AXUM_PATH,
-            get(indexer::uni_driver_resolve_did),
-        );
+        .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob));
 
     let submitter_router = Router::new().route(
         urls::ApiSignedOpSubmissions::AXUM_PATH,
         post(submitter::submit_signed_operations),
     );
 
+    let did_resolver_router = did_resolver_http_binding(urls::ApiDid::AXUM_PATH, Default::default()).router;
+
     Routers {
         app_router,
-        indexer_ui_router: Router::new(),
         indexer_router,
         submitter_router,
+        did_resolver_router,
+        ..Default::default()
     }
 }

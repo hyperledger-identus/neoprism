@@ -20,10 +20,15 @@ pub struct DidResolverHttpBinding {
 
 #[derive(Clone)]
 pub struct DidResolverStateDyn {
-    resolver: Arc<dyn DidResolver + Send + Sync>,
+    pub resolver: Arc<dyn DidResolver + Send + Sync>,
 }
 
-pub fn did_resolver_http_binding(path: &str) -> DidResolverHttpBinding {
+#[derive(Default)]
+pub struct HttpBindingOptions {
+    pub openapi_tags: Option<Vec<String>>,
+}
+
+pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> DidResolverHttpBinding {
     let router = Router::new().route(path, get(did_resolver));
 
     #[cfg(feature = "openapi")]
@@ -33,9 +38,13 @@ pub fn did_resolver_http_binding(path: &str) -> DidResolverHttpBinding {
         struct OpenApiDoc;
 
         let mut openapi = <OpenApiDoc as utoipa::OpenApi>::openapi();
-        // Replace the placeholder path with the user-provided path.
-        // This approach allows us to use the concise macro API, which cannot dynamically accept user input for paths.
-        if let Some(path_item) = openapi.paths.get_path_item(PLACEHOLDER_RESOLVER_PATH).cloned() {
+        // Replace the placeholder path with the user-provided options.
+        // This approach allows us to use the concise macro API, which cannot dynamically accept user inputs.
+        if let Some(mut path_item) = openapi.paths.get_path_item(PLACEHOLDER_RESOLVER_PATH).cloned() {
+            match path_item.get.as_mut() {
+                Some(operation) => operation.tags = options.openapi_tags,
+                None => {}
+            };
             openapi.paths.paths.insert(path.to_string(), path_item);
             openapi.paths.paths.remove(PLACEHOLDER_RESOLVER_PATH);
         }

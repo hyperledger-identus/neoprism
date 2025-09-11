@@ -13,6 +13,7 @@ use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
+use identus_did_resolver_http::DidResolverStateDyn;
 use node_storage::PostgresDb;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -32,8 +33,6 @@ enum RunMode {
     Indexer,
     Submitter,
     Standalone,
-    #[cfg(feature = "midnight")]
-    Midnight,
 }
 
 #[derive(Clone)]
@@ -43,9 +42,15 @@ struct AppState {
 
 #[derive(Clone)]
 struct IndexerState {
-    prism_did_service: Option<PrismDidService>,
-    #[cfg(feature = "midnight")]
-    midnight_did_service: Option<app::service::MidnightDidService>,
+    prism_did_service: PrismDidService,
+}
+
+impl IndexerState {
+    fn to_did_resolver_state_dyn(&self) -> DidResolverStateDyn {
+        DidResolverStateDyn {
+            resolver: Arc::new(self.prism_did_service.clone()),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -71,11 +76,7 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
-        cli::Command::GenerateOpenapi(args) => {
-            generate_openapi(args)?;
-        }
-        #[cfg(feature = "midnight")]
-        cli::Command::Midnight(args) => run_midnight_command(args).await?,
+        cli::Command::GenerateOpenapi(args) => generate_openapi(args)?,
     };
     Ok(())
 }
@@ -100,9 +101,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
         run_mode: RunMode::Indexer,
     };
     let indexer_state = IndexerState {
-        prism_did_service: Some(PrismDidService::new(&db)),
-        #[cfg(feature = "midnight")]
-        midnight_did_service: None,
+        prism_did_service: PrismDidService::new(&db),
     };
     let indexer_ui_state = IndexerUiState {
         prism_did_service: PrismDidService::new(&db),
@@ -136,9 +135,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
         run_mode: RunMode::Standalone,
     };
     let indexer_state = IndexerState {
-        prism_did_service: Some(PrismDidService::new(&db)),
-        #[cfg(feature = "midnight")]
-        midnight_did_service: None,
+        prism_did_service: PrismDidService::new(&db),
     };
     let indexer_ui_state = IndexerUiState {
         prism_did_service: PrismDidService::new(&db),
@@ -155,21 +152,6 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     .await
 }
 
-#[cfg(feature = "midnight")]
-async fn run_midnight_command(args: cli::MidnightResolverArgs) -> anyhow::Result<()> {
-    let app_state = AppState {
-        run_mode: RunMode::Midnight,
-    };
-    let indexer_state = IndexerState {
-        midnight_did_service: Some(app::service::MidnightDidService::new(
-            &args.indexer_url,
-            &args.serde_cli_path,
-        )),
-        prism_did_service: None,
-    };
-    run_server(app_state, None, Some(indexer_state), None, &args.server).await
-}
-
 async fn run_server(
     app_state: AppState,
     indexer_ui_state: Option<IndexerUiState>,
@@ -183,6 +165,12 @@ async fn run_server(
     let routers = http::router(&server_args.assets_path, app_state.run_mode);
     let router = Router::new()
         .merge(routers.app_router.with_state(app_state))
+        .merge(
+            indexer_state
+                .as_ref()
+                .map(|s| routers.did_resolver_router.with_state(s.to_did_resolver_state_dyn()))
+                .unwrap_or_default(),
+        )
         .merge(
             indexer_state
                 .map(|s| routers.indexer_router.with_state(s))

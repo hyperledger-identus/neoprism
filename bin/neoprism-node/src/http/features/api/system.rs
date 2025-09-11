@@ -29,8 +29,6 @@ mod models {
         Indexer,
         Submitter,
         Standalone,
-        #[cfg(feature = "midnight")]
-        Midnight,
     }
 
     impl From<RunMode> for AppMetaRunMode {
@@ -39,8 +37,6 @@ mod models {
                 RunMode::Indexer => Self::Indexer,
                 RunMode::Submitter => Self::Submitter,
                 RunMode::Standalone => Self::Standalone,
-                #[cfg(feature = "midnight")]
-                RunMode::Midnight => Self::Midnight,
             }
         }
     }
