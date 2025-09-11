@@ -41,10 +41,9 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
         // Replace the placeholder path with the user-provided options.
         // This approach allows us to use the concise macro API, which cannot dynamically accept user inputs.
         if let Some(mut path_item) = openapi.paths.get_path_item(PLACEHOLDER_RESOLVER_PATH).cloned() {
-            match path_item.get.as_mut() {
-                Some(operation) => operation.tags = options.openapi_tags,
-                None => {}
-            };
+            if let Some(operation) = path_item.get.as_mut() {
+                operation.tags = options.openapi_tags;
+            }
             openapi.paths.paths.insert(path.to_string(), path_item);
             openapi.paths.paths.remove(PLACEHOLDER_RESOLVER_PATH);
         }
@@ -149,11 +148,7 @@ impl IntoResponse for ResolverResponse<ApplicationDid> {
 
 impl IntoResponse for ResolverResponse<ApplicationJson> {
     fn into_response(self) -> Response {
-        (
-            status_code_from_resolution_result(&self.0),
-            Json(self.0.did_document),
-        )
-            .into_response()
+        (status_code_from_resolution_result(&self.0), Json(self.0.did_document)).into_response()
     }
 }
 
