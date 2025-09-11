@@ -32,7 +32,7 @@ impl ResolutionResult {
         ResolutionResult {
             did_document: Some(did_doc),
             did_resolution_metadata: DidResolutionMetadata {
-                content_type: Some("application/did-resolution".to_string()),
+                content_type: Some("application/did".to_string()),
                 ..Default::default()
             },
             did_document_metadata: Default::default(),
@@ -48,7 +48,7 @@ impl ResolutionResult {
 
         ResolutionResult {
             did_resolution_metadata: DidResolutionMetadata {
-                content_type: Some("application/did-resolution".to_string()),
+                content_type: None,
                 error: Some(error),
             },
             did_document_metadata: Default::default(),
