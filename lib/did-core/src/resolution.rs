@@ -38,6 +38,23 @@ impl ResolutionResult {
             did_document_metadata: Default::default(),
         }
     }
+
+    pub fn invalid_did(error: super::InvalidDid) -> Self {
+        let error = DidResolutionError {
+            r#type: DidResolutionErrorCode::InvalidDid,
+            title: Some("Invalid DID".to_string()),
+            detail: Some(error.to_string()),
+        };
+
+        ResolutionResult {
+            did_resolution_metadata: DidResolutionMetadata {
+                content_type: Some("application/did-resolution".to_string()),
+                error: Some(error),
+            },
+            did_document_metadata: Default::default(),
+            did_document: Default::default(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
