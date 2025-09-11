@@ -66,7 +66,13 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
         description = "This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.\n\nOptional resolution options may be provided as query parameters, but are not yet supported in this implementation.",
         path = PLACEHOLDER_RESOLVER_PATH,
         responses(
-            (status = OK, description = "Successfully resolved the DID. Returns the DID Resolution Result.", body = ResolutionResult, content_type = "application/did-resolution"),
+            (status = OK, description = "Successfully resolved the DID.",
+                content(
+                    (ResolutionResult = "application/did-resolution"),
+                    (DidDocument = "application/did"),
+                    (DidDocument = "application/json")
+                )
+            ),
             (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = NOT_FOUND, description = "The DID does not exist or not found.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = GONE, description = "The DID has been deactivated.", body = ResolutionResult, content_type = "application/did-resolution"),
@@ -78,7 +84,7 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
         ),
     )
 )]
-pub async fn did_resolver(Path(did): Path<String>, state: State<DidResolverStateDyn>, headers: HeaderMap) -> Response {
+pub async fn did_resolver(state: State<DidResolverStateDyn>, Path(did): Path<String>, headers: HeaderMap) -> Response {
     let resolver = &state.resolver;
     let accept = headers
         .get(header::ACCEPT)
@@ -89,7 +95,7 @@ pub async fn did_resolver(Path(did): Path<String>, state: State<DidResolverState
         Ok(did) => did,
         Err(e) => {
             let result = ResolutionResult::invalid_did(e);
-            return respond_with_application_did_resolution(result).into_response();
+            return ResolverResponse::<ApplicationDidResolution>::from(result).into_response();
         }
     };
 
@@ -98,23 +104,28 @@ pub async fn did_resolver(Path(did): Path<String>, state: State<DidResolverState
     let result = resolver.resolve(&parsed_did, &options).await;
 
     match accept {
-        Some("application/did") => respond_with_application_did(result).into_response(),
-        Some("application/did-resolution") => respond_with_application_did_resolution(result).into_response(),
-        _ => respond_with_application_did_resolution(result).into_response(),
+        Some("application/json") => ResolverResponse::<ApplicationJson>::from(result).into_response(),
+        Some("application/did") => ResolverResponse::<ApplicationDid>::from(result).into_response(),
+        Some("application/did-resolution") => {
+            ResolverResponse::<ApplicationDidResolution>::from(result).into_response()
+        }
+        _ => ResolverResponse::<ApplicationDidResolution>::from(result).into_response(),
     }
 }
 
-fn respond_with_application_did_resolution(result: ResolutionResult) -> Response {
-    HttpBindingResponse(result, PhantomData::<ResolutionResult>).into_response()
+struct ResolverResponse<Format>(ResolutionResult, PhantomData<Format>);
+
+struct ApplicationDidResolution;
+struct ApplicationDid;
+struct ApplicationJson;
+
+impl<T> From<ResolutionResult> for ResolverResponse<T> {
+    fn from(value: ResolutionResult) -> Self {
+        Self(value, PhantomData)
+    }
 }
 
-fn respond_with_application_did(result: ResolutionResult) -> Response {
-    HttpBindingResponse(result, PhantomData::<DidDocument>).into_response()
-}
-
-struct HttpBindingResponse<Format>(ResolutionResult, PhantomData<Format>);
-
-impl IntoResponse for HttpBindingResponse<ResolutionResult> {
+impl IntoResponse for ResolverResponse<ApplicationDidResolution> {
     fn into_response(self) -> Response {
         (
             status_code_from_resolution_result(&self.0),
@@ -125,11 +136,21 @@ impl IntoResponse for HttpBindingResponse<ResolutionResult> {
     }
 }
 
-impl IntoResponse for HttpBindingResponse<DidDocument> {
+impl IntoResponse for ResolverResponse<ApplicationDid> {
     fn into_response(self) -> Response {
         (
             status_code_from_resolution_result(&self.0),
             [(header::CONTENT_TYPE, "application/did")],
+            Json(self.0.did_document),
+        )
+            .into_response()
+    }
+}
+
+impl IntoResponse for ResolverResponse<ApplicationJson> {
+    fn into_response(self) -> Response {
+        (
+            status_code_from_resolution_result(&self.0),
             Json(self.0.did_document),
         )
             .into_response()
