@@ -1726,6 +1726,7 @@ dependencies = [
 name = "identus-did-core"
 version = "0.5.0"
 dependencies = [
+ "async-trait",
  "chrono",
  "derive_more",
  "identity_did",
@@ -1819,6 +1820,16 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "identus-did-resolver-http"
+version = "0.5.0"
+dependencies = [
+ "axum",
+ "derive_more",
+ "identus-did-core",
+ "utoipa",
 ]
 
 [[package]]
@@ -2326,17 +2337,17 @@ name = "neoprism-node"
 version = "0.5.0"
 dependencies = [
  "anyhow",
+ "async-trait",
  "axum",
  "chrono",
  "clap 4.5.46",
  "derive_more",
  "identus-apollo",
  "identus-did-core",
- "identus-did-midnight",
- "identus-did-midnight-sources",
  "identus-did-prism",
  "identus-did-prism-indexer",
  "identus-did-prism-submitter",
+ "identus-did-resolver-http",
  "lazybe",
  "maud",
  "node-storage",

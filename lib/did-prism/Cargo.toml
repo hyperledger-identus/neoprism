@@ -6,7 +6,6 @@ edition.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-# general
 chrono        = { workspace = true }
 derive_more   = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
 enum_dispatch = { workspace = true }

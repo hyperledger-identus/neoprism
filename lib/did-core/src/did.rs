@@ -3,7 +3,7 @@ use std::str::FromStr;
 use identity_did::DID;
 use serde::{Deserialize, Serialize};
 
-use crate::Error;
+use crate::InvalidDid;
 
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -41,7 +41,7 @@ impl DidUrl {
 }
 
 impl FromStr for Did {
-    type Err = Error;
+    type Err = InvalidDid;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let did_url = DidUrl::from_str(s)?;
         if did_url.path().is_some() {
@@ -58,7 +58,7 @@ impl FromStr for Did {
 }
 
 impl FromStr for DidUrl {
-    type Err = Error;
+    type Err = InvalidDid;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(identity_did::DIDUrl::parse(s)?))
     }

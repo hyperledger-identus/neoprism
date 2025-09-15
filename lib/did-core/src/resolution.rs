@@ -6,6 +6,21 @@ use crate::{Did, DidDocument};
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[serde(rename_all = "camelCase")]
+pub struct ResolutionOptions {
+    pub accept: Option<String>,
+    pub expand_relative_urls: Option<bool>,
+    pub version_id: Option<String>,
+    pub version_time: Option<DateTime<Utc>>,
+}
+
+#[async_trait::async_trait]
+pub trait DidResolver {
+    async fn resolve(&self, did: &Did, options: &ResolutionOptions) -> ResolutionResult;
+}
+
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[serde(rename_all = "camelCase")]
 pub struct ResolutionResult {
     pub did_document: Option<DidDocument>,
     pub did_resolution_metadata: DidResolutionMetadata,
@@ -17,10 +32,27 @@ impl ResolutionResult {
         ResolutionResult {
             did_document: Some(did_doc),
             did_resolution_metadata: DidResolutionMetadata {
-                content_type: Some("application/did-resolution".to_string()),
+                content_type: Some("application/did".to_string()),
                 ..Default::default()
             },
             did_document_metadata: Default::default(),
+        }
+    }
+
+    pub fn invalid_did(error: super::InvalidDid) -> Self {
+        let error = DidResolutionError {
+            r#type: DidResolutionErrorCode::InvalidDid,
+            title: Some("Invalid DID".to_string()),
+            detail: Some(error.to_string()),
+        };
+
+        ResolutionResult {
+            did_resolution_metadata: DidResolutionMetadata {
+                content_type: None,
+                error: Some(error),
+            },
+            did_document_metadata: Default::default(),
+            did_document: Default::default(),
         }
     }
 }

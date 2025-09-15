@@ -4,9 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
+identus-apollo = { workspace = true, features = [ "base64", "serde", "jwk" ] }
+async-trait    = { workspace = true }
 chrono         = { workspace = true, features = [ "serde" ] }
 derive_more    = { workspace = true, features = [ "from", "display", "error" ] }
-identus-apollo = { workspace = true, features = [ "base64", "serde", "jwk" ] }
 serde          = { workspace = true, features = [ "derive" ] }
 serde_json     = { workspace = true }
 ts-rs          = { workspace = true, optional = true }

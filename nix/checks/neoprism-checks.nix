@@ -52,6 +52,9 @@ rustPlatform.buildRustPackage {
     cargo clippy -p identus-did-core --all-targets --features openapi -- -D warnings
     cargo clippy -p identus-did-core --all-targets --features ts-types -- -D warnings
 
+    echo "checking feature gate for identus-did-resolver-http"
+    cargo clippy -p identus-did-resolver-http --all-targets --features openapi -- -D warnings
+
     echo "checking feature gate for identus-did-midnight"
     cargo clippy -p identus-did-midnight --all-targets --features openapi -- -D warnings
 
@@ -68,9 +71,6 @@ rustPlatform.buildRustPackage {
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
-
-    echo "checking feature gate for neoprism-node"
-    cargo clippy -p neoprism-node --all-targets --features midnight -- -D warnings
   '';
   installPhase = "touch $out";
 
