@@ -58,22 +58,7 @@ let
           };
     };
   neoprismPackages = mkNeoprismPackages { };
-  neoprismMidnightPackages =
-    let
-      outputs = mkNeoprismPackages {
-        buildFeatures = [ "midnight" ];
-        extraPackages = [ pkgs.pkgsInternal.did-midnight-serde ];
-      };
-      renameOutputs = name: value: {
-        inherit value;
-        name =
-          builtins.replaceStrings
-            [ "neoprism-bin" "neoprism-docker" ]
-            [ "neoprism-midnight-bin" "neoprism-midnight-docker" ]
-            name;
-      };
-    in
-    pkgs.lib.attrsets.mapAttrs' renameOutputs outputs;
+
 in
 {
   # docs-site
@@ -98,4 +83,3 @@ in
 
 }
 // neoprismPackages
-// neoprismMidnightPackages

@@ -136,9 +136,6 @@ pkgs.mkShell {
       tailwindcss_4
       typescript-language-server
       esbuild
-      # midnight - uncomment for midnight packages, only available for x86_64-linux
-      # pkgsInternal.compactc
-      # pkgsInternal.did-midnight-serde
     ]
     ++ (builtins.attrValues scripts);
 
