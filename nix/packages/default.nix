@@ -95,7 +95,7 @@ in
 
   # misc
   scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
-  inherit (pkgs.pkgsInternal) did-midnight-serde;
+
 }
 // neoprismPackages
 // neoprismMidnightPackages

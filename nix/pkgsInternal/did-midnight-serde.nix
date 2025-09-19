@@ -23,7 +23,7 @@ let
     ];
 
     buildPhase = ''
-      cd ./bin/did-midnight-serde
+
 
       # run typecheck
       npm run build

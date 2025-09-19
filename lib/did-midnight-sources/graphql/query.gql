@@ -1,7 +1,0 @@
-query ContractStateQuery($address: HexEncoded) {
-  contractAction(address: $address) {
-    __typename
-    address
-    state
-  }
-}
