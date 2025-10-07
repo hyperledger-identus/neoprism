@@ -5,7 +5,6 @@
   protobuf,
   sqlfluff,
   deadnix,
-  pkgsInternal,
 }:
 
 let
