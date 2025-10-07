@@ -878,7 +878,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -887,57 +887,6 @@ servers:
   - url: https://neoprism-preprod.patlo.dev
     description: Public - preprod
 paths:
-  /1.0/identifiers/{did}:
-    get:
-      tags:
-        - Indexer API
-      summary: Universal Resolver driver endpoint for resolving DIDs, designed for use behind a Universal Resolver proxy.
-      description: This endpoint implements the Universal Resolver driver interface. If the DID document is present, only the document is returned; otherwise, the full ResolutionResult is returned. The response format and behavior are compatible with Universal Resolver expectations.
-      operationId: uni_driver_resolve_did
-      parameters:
-        - name: did
-          in: path
-          description: The Decentralized Identifier (DID) to resolve using the Universal Resolver driver.
-          required: true
-          schema:
-            $ref: '#/components/schemas/Did'
-      responses:
-        "200":
-          description: Successfully resolved the DID. Returns either the DID Document or the DID Resolution Result.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/DidDocument'
-        "400":
-          description: The provided DID is invalid.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/ResolutionResult'
-        "404":
-          description: The DID does not exist in the index.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/ResolutionResult'
-        "410":
-          description: The DID has been deactivated.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/ResolutionResult'
-        "500":
-          description: An unexpected error occurred during resolution.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/ResolutionResult'
-        "501":
-          description: A functionality is not implemented.
-          content:
-            application/did:
-              schema:
-                $ref: '#/components/schemas/ResolutionResult'
   /api/_system/health:
     get:
       tags:
@@ -1019,8 +968,11 @@ paths:
       tags:
         - Indexer API
       summary: Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.
-      description: This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
-      operationId: resolve_did
+      description: |-
+        This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
+
+        Optional resolution options may be provided as query parameters, but are not yet supported in this implementation.
+      operationId: did_resolver
       parameters:
         - name: did
           in: path
@@ -1030,11 +982,17 @@ paths:
             $ref: '#/components/schemas/Did'
       responses:
         "200":
-          description: Successfully resolved the DID. Returns the DID Resolution Result.
+          description: Successfully resolved the DID.
           content:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
+            application/did:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
         "400":
           description: The provided DID is invalid.
           content:
@@ -1042,7 +1000,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
         "404":
-          description: The DID does not exist in the index.
+          description: The DID does not exist or not found.
           content:
             application/did-resolution:
               schema:
@@ -1202,6 +1160,12 @@ components:
           type: array
           items:
             type: string
+        alsoKnownAs:
+          type:
+            - array
+            - "null"
+          items:
+            $ref: '#/components/schemas/Uri'
         assertionMethod:
           type:
             - array
@@ -1418,6 +1382,9 @@ components:
     TxId:
       type: string
       example: 5ab0cf7e4c7cd4b63ba84a4fe299409be12ba85607cb6d1a149e80bc2eac070d
+    Uri:
+      type: string
+      example: http://example.com
     VerificationMethod:
       type: object
       required:
