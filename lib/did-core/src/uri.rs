@@ -15,7 +15,6 @@ static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
 /// assert_eq!(is_uri("ftps://example.com/help?q=example"), true);
 /// assert_eq!(is_uri("urn:resource"), true);
 /// assert_eq!(is_uri("did:web:example.com"), true);
-/// assert_eq!(is_uri("urn:resource"), true);
 /// assert_eq!(is_uri(""), false);
 /// assert_eq!(is_uri("  "), false);
 /// assert_eq!(is_uri("foo"), false);
