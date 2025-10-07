@@ -3,7 +3,7 @@ use std::str::FromStr;
 use identity_did::DID;
 use serde::{Deserialize, Serialize};
 
-use crate::InvalidDid;
+use crate::{Error, InvalidDid};
 
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
@@ -41,26 +41,30 @@ impl DidUrl {
 }
 
 impl FromStr for Did {
-    type Err = InvalidDid;
+    type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let did_url = DidUrl::from_str(s)?;
         if did_url.path().is_some() {
-            Err(identity_did::Error::Other("DID cannot contain path segment(s)"))?;
+            Err(InvalidDid::from(identity_did::Error::Other(
+                "DID cannot contain path segment(s)",
+            )))?;
         }
         if did_url.query().is_some() {
-            Err(identity_did::Error::Other("DID cannot contain query"))?;
+            Err(InvalidDid::from(identity_did::Error::Other("DID cannot contain query")))?;
         }
         if did_url.fragment().is_some() {
-            Err(identity_did::Error::Other("DID cannot contain fragment"))?;
+            Err(InvalidDid::from(identity_did::Error::Other(
+                "DID cannot contain fragment",
+            )))?;
         }
         Ok(did_url.to_did())
     }
 }
 
 impl FromStr for DidUrl {
-    type Err = InvalidDid;
+    type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(identity_did::DIDUrl::parse(s)?))
+        Ok(Self(identity_did::DIDUrl::parse(s).map_err(InvalidDid::from)?))
     }
 }
 

@@ -60,6 +60,7 @@ impl DidState {
         DidDocument {
             context,
             id: did.clone(),
+            also_known_as: None,
             verification_method,
             authentication: Some(get_relationship(KeyUsage::AuthenticationKey)),
             assertion_method: Some(get_relationship(KeyUsage::IssuingKey)),

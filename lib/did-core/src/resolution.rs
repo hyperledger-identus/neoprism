@@ -39,7 +39,7 @@ impl ResolutionResult {
         }
     }
 
-    pub fn invalid_did(error: super::InvalidDid) -> Self {
+    pub fn invalid_did(error: super::Error) -> Self {
         let error = DidResolutionError {
             r#type: DidResolutionErrorCode::InvalidDid,
             title: Some("Invalid DID".to_string()),
