@@ -9,7 +9,7 @@
 }:
 
 stdenv.mkDerivation rec {
-  pname = "midnight-compactc";
+
   version = "0.24.0";
   src = fetchurl {
     url = "https://d3fazakqrumx6p.cloudfront.net/artifacts/compiler/compactc_${version}/compactc_v${version}_x86_64-unknown-linux-musl.zip";

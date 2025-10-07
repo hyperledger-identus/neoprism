@@ -58,22 +58,7 @@ let
           };
     };
   neoprismPackages = mkNeoprismPackages { };
-  neoprismMidnightPackages =
-    let
-      outputs = mkNeoprismPackages {
-        buildFeatures = [ "midnight" ];
-        extraPackages = [ pkgs.pkgsInternal.did-midnight-serde ];
-      };
-      renameOutputs = name: value: {
-        inherit value;
-        name =
-          builtins.replaceStrings
-            [ "neoprism-bin" "neoprism-docker" ]
-            [ "neoprism-midnight-bin" "neoprism-midnight-docker" ]
-            name;
-      };
-    in
-    pkgs.lib.attrsets.mapAttrs' renameOutputs outputs;
+
 in
 {
   # docs-site
@@ -95,7 +80,6 @@ in
 
   # misc
   scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
-  inherit (pkgs.pkgsInternal) did-midnight-serde;
+
 }
 // neoprismPackages
-// neoprismMidnightPackages

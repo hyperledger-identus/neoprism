@@ -4,8 +4,7 @@ members = [
   "bin/neoprism-node",
   "lib/apollo",
   "lib/did-core",
-  "lib/did-midnight",
-  "lib/did-midnight-sources",
+
   "lib/did-prism",
   "lib/did-prism-indexer",
   "lib/did-prism-submitter",
@@ -20,15 +19,14 @@ license = "Apache-2.0"
 
 [workspace.dependencies]
 # internal
-identus-apollo               = { path = "lib/apollo" }
-identus-did-core             = { path = "lib/did-core" }
-identus-did-midnight         = { path = "lib/did-midnight" }
-identus-did-midnight-sources = { path = "lib/did-midnight-sources" }
-identus-did-prism            = { path = "lib/did-prism" }
-identus-did-prism-indexer    = { path = "lib/did-prism-indexer" }
-identus-did-prism-submitter  = { path = "lib/did-prism-submitter" }
-identus-did-resolver-http    = { path = "lib/did-resolver-http" }
-node-storage                 = { path = "lib/node-storage" }
+identus-apollo   = { path = "lib/apollo" }
+identus-did-core = { path = "lib/did-core" }
+
+identus-did-prism           = { path = "lib/did-prism" }
+identus-did-prism-indexer   = { path = "lib/did-prism-indexer" }
+identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
+identus-did-resolver-http   = { path = "lib/did-resolver-http" }
+node-storage                = { path = "lib/node-storage" }
 # general
 anyhow             = { version = "1" }
 async-trait        = { version = "0.1" }

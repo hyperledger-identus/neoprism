@@ -12,6 +12,8 @@ serde          = { workspace = true, features = [ "derive" ] }
 serde_json     = { workspace = true }
 ts-rs          = { workspace = true, optional = true }
 utoipa         = { workspace = true, optional = true, features = [ "chrono" ] }
+regex          = { workspace = true }
+uriparse       = { workspace = true }
 
 identity_did = { version = "1.5" }
 
