@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.0) - 2025-10-07
+
+### 🚀 Features
+
+- Remove midnight resolver and provide reusable did resolver http binding ([#127](https://github.com/hyperledger-identus/neoprism/pull/127))
+- Add alsoKnownAs did document properties ([#132](https://github.com/hyperledger-identus/neoprism/pull/132))
+
+### 🐛 Bug Fixes
+
+- Remove midnight-did related crates ([#131](https://github.com/hyperledger-identus/neoprism/pull/131))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update zio-http from 3.5.0 to 3.5.1 ([#126](https://github.com/hyperledger-identus/neoprism/pull/126))
+- Update sbt, scripted-plugin from 1.11.6 to 1.11.7 ([#129](https://github.com/hyperledger-identus/neoprism/pull/129))
+
 ## [0.5.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.5.0) - 2025-09-10
 
 ### 🚀 Features
@@ -33,6 +49,7 @@ All notable changes to this project will be documented in this file.
 - Update zio, zio-test, zio-test-magnolia, ... from 2.1.20 to 2.1.21 ([#122](https://github.com/hyperledger-identus/neoprism/pull/122))
 - Update zio-http from 3.4.1 to 3.5.0 ([#123](https://github.com/hyperledger-identus/neoprism/pull/123))
 - Update sbt, scripted-plugin from 1.11.5 to 1.11.6 ([#124](https://github.com/hyperledger-identus/neoprism/pull/124))
+- *(release)* Prepare the next release ([#125](https://github.com/hyperledger-identus/neoprism/pull/125))
 
 ## [0.4.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.4.0) - 2025-08-19
 
