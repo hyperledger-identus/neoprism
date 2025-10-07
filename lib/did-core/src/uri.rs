@@ -10,7 +10,7 @@ static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
 ///
 /// # Example
 /// ```
-/// use identus_did_core::utils::uri::is_uri;
+/// use identus_did_core::uri::is_uri;
 /// assert_eq!(is_uri("http://example.com"), true);
 /// assert_eq!(is_uri("ftps://example.com/help?q=example"), true);
 /// assert_eq!(is_uri("urn:resource"), true);
@@ -30,7 +30,7 @@ pub fn is_uri(s: &str) -> bool {
 ///
 /// # Example
 /// ```
-/// use identus_did_core::utils::uri::is_uri_fragment;
+/// use identus_did_core::uri::is_uri_fragment;
 /// assert_eq!(is_uri_fragment("hello"), true);
 /// assert_eq!(is_uri_fragment("hello%20world"), true);
 /// assert_eq!(is_uri_fragment("@123"), true);

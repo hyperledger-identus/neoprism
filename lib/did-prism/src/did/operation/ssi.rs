@@ -8,7 +8,7 @@ use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::x25519::X25519PublicKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
-use identus_did_core::utils::uri::{is_uri, is_uri_fragment};
+use identus_did_core::uri::{is_uri, is_uri_fragment};
 use regex::Regex;
 
 use crate::did::CanonicalPrismDid;
