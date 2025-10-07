@@ -1669,9 +1669,11 @@ dependencies = [
  "derive_more",
  "identity_did",
  "identus-apollo",
+ "regex",
  "serde",
  "serde_json",
  "ts-rs",
+ "uriparse",
  "utoipa",
 ]
 
@@ -1692,7 +1694,6 @@ dependencies = [
  "serde_json",
  "strum 0.27.2",
  "tracing",
- "uriparse",
  "utoipa",
 ]
 

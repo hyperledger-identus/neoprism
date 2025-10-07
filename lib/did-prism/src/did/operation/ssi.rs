@@ -8,6 +8,7 @@ use identus_apollo::crypto::secp256k1::Secp256k1PublicKey;
 use identus_apollo::crypto::x25519::X25519PublicKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::jwk::EncodeJwk;
+use identus_did_core::utils::uri::{is_uri, is_uri_fragment};
 use regex::Regex;
 
 use crate::did::CanonicalPrismDid;
@@ -20,7 +21,7 @@ use crate::error::InvalidInputSizeError;
 use crate::proto::prism_ssi::public_key::Key_data;
 use crate::proto::prism_ssi::update_didaction::Action;
 use crate::proto::prism_ssi::{ProtoCreateDID, ProtoDeactivateDID, ProtoUpdateDID, UpdateDIDAction};
-use crate::utils::{is_slice_unique, is_uri, is_uri_fragment};
+use crate::utils::is_slice_unique;
 use crate::{location, proto};
 
 static SERVICE_TYPE_NAME_RE: LazyLock<Regex> =
