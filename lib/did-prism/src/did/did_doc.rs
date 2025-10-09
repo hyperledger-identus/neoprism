@@ -67,7 +67,7 @@ impl DidState {
             key_agreement: Some(get_relationship(KeyUsage::KeyAgreementKey)),
             capability_invocation: Some(get_relationship(KeyUsage::CapabilityInvocationKey)),
             capability_delegation: Some(get_relationship(KeyUsage::CapabilityDelegationKey)),
-            service: Some(self.services.iter().map(transform_service).collect()),
+            service: Some(self.services.iter().map(|s| transform_service(did, s)).collect()),
         }
     }
 }
@@ -88,7 +88,7 @@ fn transform_key_jwk(did: &Did, key: &operation::PublicKey) -> Option<Verificati
     }
 }
 
-fn transform_service(service: &operation::Service) -> Service {
+fn transform_service(did: &Did, service: &operation::Service) -> Service {
     let r#type = match &service.r#type {
         operation::ServiceType::Value(name) => ServiceType::Str(name.to_string()),
         operation::ServiceType::List(names) => ServiceType::List(names.iter().map(|i| i.to_string()).collect()),
@@ -106,7 +106,7 @@ fn transform_service(service: &operation::Service) -> Service {
         }
     };
     Service {
-        id: service.id.to_string(),
+        id: format!("{}#{}", did, service.id),
         r#type,
         service_endpoint,
     }
