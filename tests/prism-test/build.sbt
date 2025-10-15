@@ -1,4 +1,4 @@
-val scala3Version = "3.3.6"
+val scala3Version = "3.3.7"
 
 val V = new {
   val zio = "2.1.21"
