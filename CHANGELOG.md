@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.1) - 2025-10-20
+
+### 🐛 Bug Fixes
+
+- Add DID prefix to service IDs in DID documents ([#135](https://github.com/hyperledger-identus/neoprism/pull/135))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update grpc-netty-shaded from 1.75.0 to 1.76.0 ([#134](https://github.com/hyperledger-identus/neoprism/pull/134))
+- Update scala3-library from 3.3.6 to 3.3.7 ([#137](https://github.com/hyperledger-identus/neoprism/pull/137))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.21 to 2.1.22 ([#138](https://github.com/hyperledger-identus/neoprism/pull/138))
+- Add version bump workflow automation ([#139](https://github.com/hyperledger-identus/neoprism/pull/139))
+
 ## [0.6.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.0) - 2025-10-07
 
 ### 🚀 Features
