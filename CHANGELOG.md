@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.2](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.2) - 2025-10-27
+
+### 🐛 Bug Fixes
+
+- Correct service id display and improve page layout with footer ([#142](https://github.com/hyperledger-identus/neoprism/pull/142))
+
 ## [0.6.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.1) - 2025-10-20
 
 ### 🐛 Bug Fixes
