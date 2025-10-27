@@ -24,10 +24,10 @@ pub struct Routers {
     pub submitter_router: Router<SubmitterState>,
 }
 
-pub fn router(assets_dir: &Path, mode: RunMode) -> Routers {
+pub fn router(assets_dir: &Path, mode: RunMode, port: u16) -> Routers {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
-    let api_router = api::router(mode);
+    let api_router = api::router(mode, port);
 
     let ui_router = Router::new()
         .nest_service(urls::AssetBase::AXUM_PATH, ServeDir::new(assets_dir))

@@ -17,7 +17,6 @@ mod system;
 
 #[derive(OpenApi)]
 #[openapi(servers(
-    (url = "http://localhost:8080", description = "Local"),
     (url = "https://neoprism.patlo.dev", description = "Public - mainnet"),
     (url = "https://neoprism-preprod.patlo.dev", description = "Public - preprod")
 ))]
@@ -29,7 +28,7 @@ mod tags {
     pub const OP_SUBMIT: &str = "Submitter API";
 }
 
-pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
+pub fn open_api(mode: &RunMode, port: u16) -> utoipa::openapi::OpenApi {
     let did_resolver_oas = did_resolver_http_binding(
         urls::ApiDid::AXUM_PATH,
         HttpBindingOptions {
@@ -41,15 +40,27 @@ pub fn open_api(mode: &RunMode) -> utoipa::openapi::OpenApi {
     let indexer_oas = IndexerOpenApiDoc::openapi().merge_from(did_resolver_oas);
     let submitter_oas = SubmitterOpenApiDoc::openapi();
 
-    match mode {
+    let mut merged_oas = match mode {
         RunMode::Indexer => base_oas.merge_from(indexer_oas),
         RunMode::Submitter => base_oas.merge_from(submitter_oas),
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
+    };
+
+    let local_server = utoipa::openapi::ServerBuilder::new()
+        .url(format!("http://localhost:{}", port))
+        .description(Some("Local"))
+        .build();
+
+    let mut servers = vec![local_server];
+    if let Some(existing_servers) = merged_oas.servers {
+        servers.extend(existing_servers);
     }
+    merged_oas.servers = Some(servers);
+    merged_oas
 }
 
-pub fn router(mode: RunMode) -> Routers {
-    let oas = open_api(&mode);
+pub fn router(mode: RunMode, port: u16) -> Routers {
+    let oas = open_api(&mode, port);
 
     let app_router = Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))
