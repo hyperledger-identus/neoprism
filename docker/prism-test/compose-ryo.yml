@@ -1,4 +1,27 @@
 services:
+  bf-ryo:
+    depends_on:
+      bootstrap-testnet:
+        condition: service_completed_successfully
+      db-dbsync:
+        condition: service_healthy
+    environment:
+      BLOCKFROST_CONFIG_DBSYNC_DATABASE: postgres
+      BLOCKFROST_CONFIG_DBSYNC_HOST: db-dbsync
+      BLOCKFROST_CONFIG_DBSYNC_PASSWORD: postgres
+      BLOCKFROST_CONFIG_DBSYNC_PORT: '5432'
+      BLOCKFROST_CONFIG_DBSYNC_USER: postgres
+      BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER: /node/testnet
+      BLOCKFROST_CONFIG_NETWORK: custom
+      BLOCKFROST_MITHRIL_ENABLED: 'false'
+      NODE_ENV: development
+    image: blockfrost/backend-ryo:v4.3.0
+    ports:
+      - "3000:3000"
+    restart: always
+    volumes:
+      - node-testnet:/node/testnet
+      - "./ryo.yaml:/app/config/development.yaml"
   bootstrap-testnet:
     command:
       - bash

@@ -16,7 +16,12 @@ let prismNode = ../services/prism-node.dhall
 
 let scalaDid = ../services/scala-did.dhall
 
-let Options = { Type = { ci : Bool }, default = {=} }
+let ryo = ../services/ryo.dhall
+
+let Options =
+      { Type = { ci : Bool, ryo : Bool }
+      , default = { ci = False, ryo = False }
+      }
 
 let mkStack =
       \(options : Options.Type) ->
@@ -63,6 +68,27 @@ let mkStack =
                     , cardanoNodeHost
                     , hostPort = Some 8090
                     }
+              , bf-ryo =
+                  let ryoService =
+                        ryo.mkService
+                          ryo.Options::{
+                          , hostPort = Some 3000
+                          , dbsyncDb = ryo.DbSyncDbArgs::{
+                            , host = "db-dbsync"
+                            , port = 5432
+                            , dbName = "postgres"
+                            , username = "postgres"
+                            , password = "postgres"
+                            }
+                          , network = "custom"
+                          , testnetVolume
+                          , configFile = "./ryo.yaml"
+                          , bootstrapTestnetHost = "bootstrap-testnet"
+                          }
+
+                  in  if    options.ryo
+                      then  Some ryoService
+                      else  None docker.Service.Type
               , neoprism-standalone =
                   neoprism.mkService
                     neoprism.Options::{

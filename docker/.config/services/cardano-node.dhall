@@ -54,6 +54,10 @@ let mkBootstrapService =
           , ''
             transactGenesis
             hurl ./init-wallet.hurl
+
+            # blockfrost-ryo expects a different location
+            cp testnet/conway-genesis.json testnet/genesis.json
+            cp testnet/byron-genesis.json testnet/byron_genesis.json
             ''
           ]
         , environment = Some
