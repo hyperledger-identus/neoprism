@@ -47,7 +47,7 @@ pub fn open_api(mode: &RunMode, port: u16) -> utoipa::openapi::OpenApi {
     };
 
     let local_server = utoipa::openapi::ServerBuilder::new()
-        .url(format!("http://localhost:{}", port))
+        .url(format!("http://localhost:{port}"))
         .description(Some("Local"))
         .build();
 
