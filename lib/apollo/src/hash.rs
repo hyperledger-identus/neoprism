@@ -2,7 +2,7 @@ use ring::digest;
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[display("hash operation encounter invalid input size")]
+    #[display("hash operation encountered invalid input size")]
     InvalidByteSize {
         type_name: &'static str,
         expected: usize,
