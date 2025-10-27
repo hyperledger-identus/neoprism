@@ -28,7 +28,34 @@ mod tags {
     pub const OP_SUBMIT: &str = "Submitter API";
 }
 
-pub fn open_api(mode: &RunMode, port: u16) -> utoipa::openapi::OpenApi {
+fn build_openapi_servers(
+    port: u16,
+    external_url: Option<&str>,
+    existing_servers: Option<Vec<utoipa::openapi::Server>>,
+) -> Vec<utoipa::openapi::Server> {
+    let local_server = utoipa::openapi::ServerBuilder::new()
+        .url(format!("http://localhost:{port}"))
+        .description(Some("Local"))
+        .build();
+
+    let mut servers = vec![local_server];
+
+    if let Some(url) = external_url {
+        let external_server = utoipa::openapi::ServerBuilder::new()
+            .url(url)
+            .description(Some("External"))
+            .build();
+        servers.push(external_server);
+    }
+
+    if let Some(existing) = existing_servers {
+        servers.extend(existing);
+    }
+
+    servers
+}
+
+pub fn build_openapi(mode: &RunMode, port: u16, external_url: Option<&str>) -> utoipa::openapi::OpenApi {
     let did_resolver_oas = did_resolver_http_binding(
         urls::ApiDid::AXUM_PATH,
         HttpBindingOptions {
@@ -46,21 +73,13 @@ pub fn open_api(mode: &RunMode, port: u16) -> utoipa::openapi::OpenApi {
         RunMode::Standalone => base_oas.merge_from(indexer_oas).merge_from(submitter_oas),
     };
 
-    let local_server = utoipa::openapi::ServerBuilder::new()
-        .url(format!("http://localhost:{port}"))
-        .description(Some("Local"))
-        .build();
-
-    let mut servers = vec![local_server];
-    if let Some(existing_servers) = merged_oas.servers {
-        servers.extend(existing_servers);
-    }
+    let servers = build_openapi_servers(port, external_url, merged_oas.servers.take());
     merged_oas.servers = Some(servers);
     merged_oas
 }
 
-pub fn router(mode: RunMode, port: u16) -> Routers {
-    let oas = open_api(&mode, port);
+pub fn router(mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
+    let oas = build_openapi(&mode, port, external_url);
 
     let app_router = Router::new()
         .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))

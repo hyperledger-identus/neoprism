@@ -74,6 +74,9 @@ pub struct ServerArgs {
     /// Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive)
     #[arg(long, env = "NPRISM_CORS_ENABLED")]
     pub cors_enabled: bool,
+    /// External URL for Swagger server list (e.g. https://example.com)
+    #[arg(long, env = "NPRISM_EXTERNAL_URL")]
+    pub external_url: Option<String>,
 }
 
 #[derive(Args)]
