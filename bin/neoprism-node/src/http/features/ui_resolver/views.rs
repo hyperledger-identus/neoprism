@@ -2,8 +2,8 @@ use std::error::Report;
 
 use identus_apollo::hex::HexStr;
 use identus_apollo::jwk::EncodeJwk;
-use identus_did_core::{Did, DidDocument};
-use identus_did_prism::did::operation::{self, PublicKey};
+use identus_did_core::Did;
+use identus_did_prism::did::operation::{self, PublicKey, Service};
 use identus_did_prism::did::{DidState, PrismDid, PrismDidOps, StorageState};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
@@ -85,9 +85,9 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
 }
 
 fn did_document_body(did: &Did, state: &DidState) -> Markup {
-    let did_doc = state.to_did_document(did);
     let contexts = state.context.as_slice();
     let public_keys = state.public_keys.as_slice();
+    let services = state.services.as_slice();
     let did_doc_url = urls::ApiDid::new_uri(did.to_string());
     let storages = &state.storage;
     html! {
@@ -97,7 +97,7 @@ fn did_document_body(did: &Did, state: &DidState) -> Markup {
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
-                (service_card(&did_doc))
+                (service_card(&services))
                 (storage_card(&storages))
             }
         }
@@ -170,16 +170,13 @@ fn public_key_card(public_keys: &[PublicKey]) -> Markup {
     }
 }
 
-fn service_card(did_doc: &DidDocument) -> Markup {
-    let mut services = did_doc.service.clone().unwrap_or_default();
-    services.sort_by_key(|i| i.id.to_string());
-
+fn service_card(services: &[Service]) -> Markup {
     let svc_elems = services
         .iter()
         .map(|svc| {
             let svc_id = &svc.id;
-            let svc_ty = serde_json::to_string_pretty(&svc.r#type).unwrap_or_default();
-            let svc_ep = serde_json::to_string_pretty(&svc.service_endpoint).unwrap_or_default();
+            let svc_ty = format!("{:?}", svc.r#type);
+            let svc_ep = format!("{:?}", svc.service_endpoint);
             html! {
                 li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
                     strong { "ID: " } (svc_id)

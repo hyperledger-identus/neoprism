@@ -90,8 +90,8 @@ fn transform_key_jwk(did: &Did, key: &operation::PublicKey) -> Option<Verificati
 
 fn transform_service(did: &Did, service: &operation::Service) -> Service {
     let r#type = match &service.r#type {
-        operation::ServiceType::Value(name) => ServiceType::Str(name.to_string()),
-        operation::ServiceType::List(names) => ServiceType::List(names.iter().map(|i| i.to_string()).collect()),
+        operation::ServiceType::One(name) => ServiceType::Str(name.to_string()),
+        operation::ServiceType::Many(names) => ServiceType::List(names.iter().map(|i| i.to_string()).collect()),
     };
     let transform_endpoint_value = |uri: &operation::ServiceEndpointValue| -> StringOrMap {
         match &uri {
@@ -100,8 +100,8 @@ fn transform_service(did: &Did, service: &operation::Service) -> Service {
         }
     };
     let service_endpoint = match &service.service_endpoint {
-        operation::ServiceEndpoint::Value(endpoint) => ServiceEndpoint::StrOrMap(transform_endpoint_value(endpoint)),
-        operation::ServiceEndpoint::List(endpoints) => {
+        operation::ServiceEndpoint::One(endpoint) => ServiceEndpoint::StrOrMap(transform_endpoint_value(endpoint)),
+        operation::ServiceEndpoint::Many(endpoints) => {
             ServiceEndpoint::List(endpoints.iter().map(transform_endpoint_value).collect())
         }
     };

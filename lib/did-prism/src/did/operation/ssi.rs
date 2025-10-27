@@ -549,8 +549,8 @@ impl Service {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceType {
-    Value(ServiceTypeName),
-    List(Vec<ServiceTypeName>),
+    One(ServiceTypeValue),
+    Many(Vec<ServiceTypeValue>),
 }
 
 impl ServiceType {
@@ -572,21 +572,20 @@ impl ServiceType {
                 Err(ServiceTypeError::InvalidSyntax)?
             }
 
-            let names: Result<Vec<ServiceTypeName>, _> = list.iter().map(|i| ServiceTypeName::from_str(i)).collect();
-
-            return Ok(Self::List(names?));
+            let values: Result<Vec<ServiceTypeValue>, _> = list.iter().map(|i| ServiceTypeValue::from_str(i)).collect();
+            return Ok(Self::Many(values?));
         }
 
         // try parse as single string
-        let name = ServiceTypeName::from_str(service_type)?;
-        Ok(Self::Value(name))
+        let value = ServiceTypeValue::from_str(service_type)?;
+        Ok(Self::One(value))
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, derive_more::Display)]
-pub struct ServiceTypeName(String);
+pub struct ServiceTypeValue(String);
 
-impl FromStr for ServiceTypeName {
+impl FromStr for ServiceTypeValue {
     type Err = ServiceTypeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -600,8 +599,8 @@ impl FromStr for ServiceTypeName {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ServiceEndpoint {
-    Value(ServiceEndpointValue),
-    List(Vec<ServiceEndpointValue>),
+    One(ServiceEndpointValue),
+    Many(Vec<ServiceEndpointValue>),
 }
 
 impl ServiceEndpoint {
@@ -615,7 +614,7 @@ impl ServiceEndpoint {
         // try parse as json object
         let parsed_map = serde_json::from_str(service_endpoint);
         if let Ok(json) = parsed_map {
-            return Ok(Self::Value(ServiceEndpointValue::Json(json)));
+            return Ok(Self::One(ServiceEndpointValue::Json(json)));
         }
 
         // try parse as json array
@@ -627,11 +626,11 @@ impl ServiceEndpoint {
 
             let endpoints: Result<Vec<ServiceEndpointValue>, _> =
                 list.into_iter().map(ServiceEndpointValue::try_from).collect();
-            return Ok(Self::List(endpoints?));
+            return Ok(Self::Many(endpoints?));
         }
 
         // try parse as single string
-        Ok(Self::Value(ServiceEndpointValue::from_str(service_endpoint)?))
+        Ok(Self::One(ServiceEndpointValue::from_str(service_endpoint)?))
     }
 }
 
