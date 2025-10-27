@@ -13,7 +13,7 @@ mod components;
 mod features;
 mod urls;
 
-pub use features::api::open_api;
+pub use features::api::build_openapi;
 
 #[derive(Default)]
 pub struct Routers {
@@ -24,10 +24,10 @@ pub struct Routers {
     pub submitter_router: Router<SubmitterState>,
 }
 
-pub fn router(assets_dir: &Path, mode: RunMode) -> Routers {
+pub fn router(assets_dir: &Path, mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
     tracing::info!("Serving static asset from {:?}", assets_dir);
 
-    let api_router = api::router(mode);
+    let api_router = api::router(mode, port, external_url);
 
     let ui_router = Router::new()
         .nest_service(urls::AssetBase::AXUM_PATH, ServeDir::new(assets_dir))

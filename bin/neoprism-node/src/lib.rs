@@ -82,7 +82,7 @@ pub async fn run_command() -> anyhow::Result<()> {
 }
 
 fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()> {
-    let oas = crate::http::open_api(&RunMode::Standalone);
+    let oas = crate::http::build_openapi(&RunMode::Standalone, 8080, None);
     let openapi_json = oas.to_pretty_json()?;
 
     if let Some(path) = args.output {
@@ -162,7 +162,12 @@ async fn run_server(
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
         .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
-    let routers = http::router(&server_args.assets_path, app_state.run_mode);
+    let routers = http::router(
+        &server_args.assets_path,
+        app_state.run_mode,
+        server_args.port,
+        server_args.external_url.as_deref(),
+    );
     let router = Router::new()
         .merge(routers.app_router.with_state(app_state))
         .merge(
