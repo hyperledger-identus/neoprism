@@ -1,4 +1,11 @@
 services:
+  bf-proxy:
+    image: caddy:2.10.2
+    ports:
+      - "18082:3000"
+    restart: always
+    volumes:
+      - "./Caddyfile-blockfrost:/etc/caddy/Caddyfile"
   bf-ryo:
     depends_on:
       bootstrap-testnet:
@@ -16,8 +23,6 @@ services:
       BLOCKFROST_MITHRIL_ENABLED: 'false'
       NODE_ENV: development
     image: blockfrost/backend-ryo:v4.3.0
-    ports:
-      - "18082:3000"
     restart: always
     volumes:
       - node-testnet:/node/testnet
