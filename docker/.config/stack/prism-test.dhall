@@ -19,8 +19,8 @@ let scalaDid = ../services/scala-did.dhall
 let ryo = ../services/ryo.dhall
 
 let Options =
-      { Type = { ci : Bool, ryo : Bool }
-      , default = { ci = False, ryo = False }
+      { Type = { ci : Bool, blockfrost : Bool }
+      , default = { ci = False, blockfrost = False }
       }
 
 let mkStack =
@@ -87,7 +87,7 @@ let mkStack =
                           , bootstrapTestnetHost = "bootstrap-testnet"
                           }
 
-                  in  if    options.ryo
+                  in  if    options.blockfrost
                       then  Some ryoService
                       else  None docker.Service.Type
               , neoprism-standalone =
