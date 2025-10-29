@@ -28,7 +28,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
     val neoprismSpec = suite("NeoPRISM suite")(allSpecs)
       .provide(
         Client.default,
-        NodeClient.neoprism("localhost", 10080)("localhost", 10081),
+        NodeClient.neoprism("localhost", 18080)("localhost", 18081),
         NodeName.layer("neoprism")
       )
 

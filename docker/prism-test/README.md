@@ -15,9 +15,9 @@ The following services will be available:
 
 | Service                | URL                    | Remark                    |
 |------------------------|------------------------|---------------------------|
-| **NeoPRISM HTTP API**  | http://localhost:10080 |                           |
-| **Cardano Wallet API** | http://localhost:10081 |                           |
-| **Blockfrost RYO API** | http://localhost:10082 | only in `compose-ryo.yml` |
+| **NeoPRISM HTTP API**  | http://localhost:18080 |                           |
+| **Cardano Wallet API** | http://localhost:18081 |                           |
+| **Blockfrost RYO API** | http://localhost:18082 | only in `compose-ryo.yml` |
 | **PRISM Node gRPC**    | localhost:50053        |                           |
 
 Stop the environment:

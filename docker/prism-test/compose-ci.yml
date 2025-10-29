@@ -87,7 +87,7 @@ services:
       timeout: "5s"
     image: cardanofoundation/cardano-wallet:2025.3.31
     ports:
-      - "10081:8090"
+      - "18081:8090"
     restart: always
     volumes:
       - node-testnet:/node/testnet
@@ -170,7 +170,7 @@ services:
       timeout: "5s"
     image: identus-neoprism:0.6.2
     ports:
-      - "10080:8080"
+      - "18080:8080"
     restart: always
   prism-node:
     depends_on:
