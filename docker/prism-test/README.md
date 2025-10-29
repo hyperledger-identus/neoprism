@@ -17,7 +17,7 @@ The following services will be available:
 |------------------------|------------------------|---------------------------|
 | **NeoPRISM HTTP API**  | http://localhost:18080 |                           |
 | **Cardano Wallet API** | http://localhost:18081 |                           |
-| **Blockfrost RYO API** | http://localhost:18082 | only in `compose-ryo.yml` |
+| **Blockfrost API**     | http://localhost:18082 |                           |
 | **PRISM Node gRPC**    | localhost:50053        |                           |
 
 Stop the environment:
@@ -40,7 +40,6 @@ sbt test
 
 - **compose.yml**: Standard environment
 - **compose-ci.yml**: CI environment (use CI locally built image)
-- **compose-ryo.yml**: Blockfrost RYO support
 
 ## Pre-configured Wallet
 
