@@ -18,10 +18,7 @@ let scalaDid = ../services/scala-did.dhall
 
 let ryo = ../services/ryo.dhall
 
-let Options =
-      { Type = { ci : Bool, blockfrost : Bool }
-      , default = { ci = False, blockfrost = False }
-      }
+let Options = { Type = { ci : Bool }, default.ci = False }
 
 let mkStack =
       \(options : Options.Type) ->
@@ -38,7 +35,26 @@ let mkStack =
         let walletPaymentAddress =
               "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
 
-        in  { services =
+        let bfServices =
+              { bf-ryo =
+                  ryo.mkService
+                    ryo.Options::{
+                    , hostPort = Some 18082
+                    , dbsyncDb = ryo.DbSyncDbArgs::{
+                      , host = "db-dbsync"
+                      , port = 5432
+                      , dbName = "postgres"
+                      , username = "postgres"
+                      , password = "postgres"
+                      }
+                    , network = "custom"
+                    , testnetVolume
+                    , configFile = "./ryo.yaml"
+                    , bootstrapTestnetHost = "bootstrap-testnet"
+                    }
+              }
+
+        let cardanoServices =
               { cardano-node =
                   cardanoNode.mkNodeService
                     cardanoNode.NodeOptions::{ networkMagic, testnetVolume }
@@ -69,28 +85,10 @@ let mkStack =
                     , cardanoNodeHost
                     , hostPort = Some 18081
                     }
-              , bf-ryo =
-                  let ryoService =
-                        ryo.mkService
-                          ryo.Options::{
-                          , hostPort = Some 18082
-                          , dbsyncDb = ryo.DbSyncDbArgs::{
-                            , host = "db-dbsync"
-                            , port = 5432
-                            , dbName = "postgres"
-                            , username = "postgres"
-                            , password = "postgres"
-                            }
-                          , network = "custom"
-                          , testnetVolume
-                          , configFile = "./ryo.yaml"
-                          , bootstrapTestnetHost = "bootstrap-testnet"
-                          }
+              }
 
-                  in  if    options.blockfrost
-                      then  Some ryoService
-                      else  None docker.Service.Type
-              , neoprism-standalone =
+        let prismServices =
+              { neoprism-standalone =
                   neoprism.mkService
                     neoprism.Options::{
                     , imageOverride =
@@ -133,6 +131,8 @@ let mkStack =
               , db-dbsync = db.mkService db.Options::{=}
               , db-prism-node = db.mkService db.Options::{=}
               }
+
+        in  { services = prismServices /\ cardanoServices /\ bfServices
             , volumes = toMap { node-testnet = {=} }
             }
 
