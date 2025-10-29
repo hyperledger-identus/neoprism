@@ -35,6 +35,7 @@ let BootstrapOptions =
           , walletPassphrase : Text
           , walletPaymentAddress : Text
           , initWalletHurlFile : Text
+          , initDidHurlFile : Text
           }
       , default = {=}
       }
@@ -47,6 +48,7 @@ let mkBootstrapService =
         , volumes = Some
           [ "${options.testnetVolume}:/node/testnet"
           , "${options.initWalletHurlFile}:/node/init-wallet.hurl"
+          , "${options.initDidHurlFile}:/node/init-did.hurl"
           ]
         , command = Some
           [ "bash"
@@ -54,6 +56,7 @@ let mkBootstrapService =
           , ''
             transactGenesis
             hurl ./init-wallet.hurl
+            hurl ./init-did.hurl
 
             # blockfrost-ryo expects a different location
             cp testnet/conway-genesis.json testnet/genesis.json

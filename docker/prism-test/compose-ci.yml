@@ -6,6 +6,7 @@ services:
       - |
         transactGenesis
         hurl ./init-wallet.hurl
+        hurl ./init-did.hurl
         
         # blockfrost-ryo expects a different location
         cp testnet/conway-genesis.json testnet/genesis.json
@@ -23,6 +24,7 @@ services:
     volumes:
       - node-testnet:/node/testnet
       - "./init-wallet.hurl:/node/init-wallet.hurl"
+      - "./init-did.hurl:/node/init-did.hurl"
   cardano-dbsync:
     command:
       - "--config"

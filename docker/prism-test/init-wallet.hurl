@@ -1,4 +1,4 @@
-# wait until wallet is up
+# Wait until wallet is up
 GET {{ WALLET_BASE_URL }}/wallets
 [Options]
 delay: 5

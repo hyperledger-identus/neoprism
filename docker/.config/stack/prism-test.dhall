@@ -52,6 +52,7 @@ let mkStack =
                     , walletPassphrase
                     , walletPaymentAddress
                     , initWalletHurlFile = "./init-wallet.hurl"
+                    , initDidHurlFile = "./init-did.hurl"
                     }
               , cardano-dbsync =
                   dbSync.mkService

@@ -7,6 +7,8 @@ import org.hyperledger.identus.prismtest.suite.DeactivateStorageOperationSuite
 import org.hyperledger.identus.prismtest.suite.UpdateDidOperationSuite
 import org.hyperledger.identus.prismtest.suite.UpdateStorageOperationSuite
 import org.hyperledger.identus.prismtest.utils.TestUtils
+import proto.prism.PrismBlock
+import proto.prism.PrismObject
 import proto.prism_ssi.KeyUsage
 import zio.*
 import zio.http.Client
@@ -60,15 +62,15 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       .build
       .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
 
-    val spoHex = spo.toByteArray.toHexString
     val did = spo.getDid.get
     val (_, vdrHdKey) = makeVdrKey(seed)
     val vdrPrivateKeyHex = vdrHdKey.getKMMSecp256k1PrivateKey().getEncoded().toHexString
+    val prismObjectHex = PrismObject(blockContent = Some(PrismBlock(operations = Seq(spo)))).toByteArray.toHexString
 
     for
       _ <- ZIO.debug(s"DID                : $did")
       _ <- ZIO.debug(s"VDR key name       : $vdrKeyName")
       _ <- ZIO.debug(s"VDR privateKey hex : $vdrPrivateKeyHex")
-      _ <- ZIO.debug(s"SignOperation hex  : $spoHex")
+      _ <- ZIO.debug(s"PrismObject hex    : $prismObjectHex")
     yield assertCompletes
   } @@ TestAspect.tag("fixture") @@ TestAspect.ignore
