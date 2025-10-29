@@ -67,13 +67,13 @@ let mkStack =
                     cardanoWallet.Options::{
                     , testnetVolume
                     , cardanoNodeHost
-                    , hostPort = Some 8090
+                    , hostPort = Some 10081
                     }
               , bf-ryo =
                   let ryoService =
                         ryo.mkService
                           ryo.Options::{
-                          , hostPort = Some 3000
+                          , hostPort = Some 10082
                           , dbsyncDb = ryo.DbSyncDbArgs::{
                             , host = "db-dbsync"
                             , port = 5432
@@ -97,7 +97,7 @@ let mkStack =
                         if    options.ci
                         then  Some "identus-neoprism:${neoprismVersion}"
                         else  None Text
-                    , hostPort = Some 8080
+                    , hostPort = Some 10080
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
                     , indexInterval = Some 1

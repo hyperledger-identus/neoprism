@@ -13,12 +13,12 @@ docker compose up
 
 The following services will be available:
 
-| Service                | URL                   | Remark                    |
-|------------------------|-----------------------|---------------------------|
-| **NeoPRISM HTTP API**  | http://localhost:8080 |                           |
-| **Cardano Wallet API** | http://localhost:8090 |                           |
-| **Blockfrost RYO API** | http://localhost:3000 | only in `compose-ryo.yml` |
-| **PRISM Node gRPC**    | localhost:50053       |                           |
+| Service                | URL                    | Remark                    |
+|------------------------|------------------------|---------------------------|
+| **NeoPRISM HTTP API**  | http://localhost:10080 |                           |
+| **Cardano Wallet API** | http://localhost:10081 |                           |
+| **Blockfrost RYO API** | http://localhost:10082 | only in `compose-ryo.yml` |
+| **PRISM Node gRPC**    | localhost:50053        |                           |
 
 Stop the environment:
 
@@ -39,8 +39,8 @@ sbt test
 ## Variants
 
 - **compose.yml**: Standard environment
-- **compose-ci.yml**: CI-optimized
-- **compose-ryo.yml**: Blockfrost RYO support (adds RYO on port 3000)
+- **compose-ci.yml**: CI environment (use CI locally built image)
+- **compose-ryo.yml**: Blockfrost RYO support
 
 ## Pre-configured Wallet
 
@@ -58,14 +58,12 @@ faint resist faculty soup demand window dignity capital bullet purity practice f
 
 ## Generating Test Fixtures
 
-Remove `@@ TestAspect.ignore` from the `generateDidFixtureSpec` in `tests/prism-test/src/test/scala/org/hyperledger/identus/prismtest/MainSpec.scala`, then run:
+Remove `TestAspect.ignore` from the `generateDidFixtureSpec` in `tests/prism-test/src/test/scala/org/hyperledger/identus/prismtest/MainSpec.scala`, then run:
 
 ```sh
 cd tests/prism-test
 sbt "testOnly -- -tags fixture"
 ```
-
-Outputs: DID, VDR key name, VDR private key (hex), PrismObject (hex)
 
 ### Initial DID
 
