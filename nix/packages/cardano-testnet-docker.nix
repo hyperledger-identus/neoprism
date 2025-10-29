@@ -1,16 +1,16 @@
 {
-  tagSuffix ? "",
-  dockerTools,
-  writeShellApplication,
   bash,
+  cardano-cli,
+  cardano-node,
+  cardano-testnet,
   coreutils,
+  dockerTools,
   gawk,
   gnugrep,
   hurl,
   jq,
-  cardano-node,
-  cardano-cli,
-  cardano-testnet,
+  tagSuffix ? "",
+  writeShellApplication,
 }:
 
 let
@@ -61,8 +61,8 @@ let
     jq
   ];
   cardanoPackages = [
-    cardano-node
     cardano-cli
+    cardano-node
     cardano-testnet
   ];
 in

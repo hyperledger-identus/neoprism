@@ -92,6 +92,24 @@ services:
     image: patextreme/cardano-testnet:20250730-211809
     volumes:
       - node-testnet:/node/testnet
+  cardano-submit-api:
+    command:
+      - "--config"
+      - /config.yaml
+      - "--socket-path"
+      - /node/testnet/socket/node1/sock
+      - "--testnet-magic"
+      - '42'
+      - "--listen-address"
+      - '0.0.0.0'
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+    image: ghcr.io/intersectmbo/cardano-submit-api:10.4.1
+    restart: always
+    volumes:
+      - node-testnet:/node/testnet
+      - "./cardano-submit-api.yaml:/config.yaml"
   cardano-wallet:
     command:
       - bash

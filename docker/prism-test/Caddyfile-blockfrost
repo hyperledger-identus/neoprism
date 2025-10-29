@@ -1,9 +1,7 @@
 :3000 {
-    handle /tx/submit* {
-        rewrite * /v2/proxy/transactions
-        reverse_proxy cardano-wallet:8090 {
-            header_up Content-Type application/octet-stream
-        }
+    handle /tx/submit {
+        rewrite * /api/submit/tx
+        reverse_proxy cardano-submit-api:8090
     }
 
     handle {

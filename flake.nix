@@ -42,7 +42,12 @@
             (_: prev: {
               mkSbtDerivation = sbt.mkSbtDerivation.${pkgs.system};
               rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
-              inherit (cardano-node.packages.${system}) cardano-cli cardano-node cardano-testnet;
+              inherit (cardano-node.packages.${system})
+                cardano-cli
+                cardano-node
+                cardano-testnet
+                cardano-submit-api
+                ;
               inherit (cardano-wallet.packages.${system}) cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}.default;
             })

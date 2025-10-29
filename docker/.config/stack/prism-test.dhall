@@ -12,6 +12,8 @@ let cardanoNode = ../services/cardano-node.dhall
 
 let cardanoWallet = ../services/cardano-wallet.dhall
 
+let cardanoSubmitApi = ../services/cardano-submit-api.dhall
+
 let prismNode = ../services/prism-node.dhall
 
 let scalaDid = ../services/scala-did.dhall
@@ -89,6 +91,13 @@ let mkStack =
                     , testnetVolume
                     , cardanoNodeHost
                     , hostPort = Some 18081
+                    }
+              , cardano-submit-api =
+                  cardanoSubmitApi.mkService
+                    cardanoSubmitApi.Options::{
+                    , testnetVolume
+                    , cardanoNodeHost
+                    , networkMagic
                     }
               }
 
