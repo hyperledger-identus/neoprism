@@ -777,6 +777,8 @@ Options:
           The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;
+          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
       --db-url &lt;DB_URL&gt;
           Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
       --skip-migration
@@ -810,6 +812,8 @@ Options:
           The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;
+          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
           Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
@@ -835,6 +839,8 @@ Options:
           The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled
           Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;
+          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
       --db-url &lt;DB_URL&gt;
           Database URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_DB_URL=]
       --skip-migration
@@ -878,7 +884,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.6.2
+  version: 0.7.0
 servers:
   - url: http://localhost:8080
     description: Local
