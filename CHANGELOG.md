@@ -2,11 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.7.0) - 2025-10-30
+
+### 🚀 Features
+
+- Add dynamic port and external URL for OpenAPI server ([#145](https://github.com/hyperledger-identus/neoprism/pull/145))
+
+### 🐛 Bug Fixes
+
+- Correct typo in error message and remove unused files ([#144](https://github.com/hyperledger-identus/neoprism/pull/144))
+
+### 🧪 Testing
+
+- Integrate blockfrost ryo backend for prism-test environment ([#148](https://github.com/hyperledger-identus/neoprism/pull/148))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update scalafmt-core from 3.9.6 to 3.9.10 ([#146](https://github.com/hyperledger-identus/neoprism/pull/146))
+- Update scalafmt-core from 3.9.10 to 3.10.1 ([#147](https://github.com/hyperledger-identus/neoprism/pull/147))
+
 ## [0.6.2](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.2) - 2025-10-27
 
 ### 🐛 Bug Fixes
 
 - Correct service id display and improve page layout with footer ([#142](https://github.com/hyperledger-identus/neoprism/pull/142))
+
+### ⚙️ Miscellaneous Tasks
+
+- *(release)* Prepare the next release ([#143](https://github.com/hyperledger-identus/neoprism/pull/143))
 
 ## [0.6.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.1) - 2025-10-20
 
