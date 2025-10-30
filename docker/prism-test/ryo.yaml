@@ -1,0 +1,16 @@
+server:
+  listenAddress: "0.0.0.0"
+  port: 3000
+  debug: true
+dbSync:
+  host: "db-sync"
+  port: 5432
+  user: "postgres"
+  database: "postgres"
+  maxConnections: 4
+network: "custom"
+genesisDataFolder: "/node/testnet"
+tokenRegistryUrl: "https://tokens.cardano.org"
+mithril:
+  enabled: false
+  aggregator: "https://aggregator.release-mainnet.api.mithril.network/aggregator"

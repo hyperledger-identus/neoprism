@@ -13,6 +13,7 @@ pkgs.mkShell {
     cardano-wallet
     cardano-testnet
     cardano-db-sync
+    cardano-submit-api
     pkgsInternal.scala-did
   ];
 

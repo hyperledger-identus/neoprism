@@ -5,8 +5,8 @@ let docker = ../docker.dhall
 let Options =
       { Type = { image : Text, hostPort : Natural, prismDriverUrl : Text }
       , default =
-        { image = "universalresolver/uni-resolver-web:0.43.0-362c5ca"
-        , prismDriverUrl = "http://neoprism-indexer:8080"
+        { image = "universalresolver/uni-resolver-web:0.44.0-4922fcc"
+        , prismDriverUrl = "http://neoprism-indexer:8080/api"
         }
       }
 

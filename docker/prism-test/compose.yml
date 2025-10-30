@@ -1,4 +1,32 @@
 services:
+  bf-proxy:
+    image: caddy:2.10.2
+    ports:
+      - "18082:3000"
+    restart: always
+    volumes:
+      - "./Caddyfile-blockfrost:/etc/caddy/Caddyfile"
+  bf-ryo:
+    depends_on:
+      bootstrap-testnet:
+        condition: service_completed_successfully
+      db-dbsync:
+        condition: service_healthy
+    environment:
+      BLOCKFROST_CONFIG_DBSYNC_DATABASE: postgres
+      BLOCKFROST_CONFIG_DBSYNC_HOST: db-dbsync
+      BLOCKFROST_CONFIG_DBSYNC_PASSWORD: postgres
+      BLOCKFROST_CONFIG_DBSYNC_PORT: '5432'
+      BLOCKFROST_CONFIG_DBSYNC_USER: postgres
+      BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER: /node/testnet
+      BLOCKFROST_CONFIG_NETWORK: custom
+      BLOCKFROST_MITHRIL_ENABLED: 'false'
+      NODE_ENV: development
+    image: blockfrost/backend-ryo:v4.3.0
+    restart: always
+    volumes:
+      - node-testnet:/node/testnet
+      - "./ryo.yaml:/app/config/development.yaml"
   bootstrap-testnet:
     command:
       - bash
@@ -6,6 +34,11 @@ services:
       - |
         transactGenesis
         hurl ./init-wallet.hurl
+        hurl ./init-did.hurl
+        
+        # blockfrost-ryo expects a different location
+        cp testnet/conway-genesis.json testnet/genesis.json
+        cp testnet/byron-genesis.json testnet/byron_genesis.json
     depends_on:
       cardano-node:
         condition: service_healthy
@@ -19,6 +52,7 @@ services:
     volumes:
       - node-testnet:/node/testnet
       - "./init-wallet.hurl:/node/init-wallet.hurl"
+      - "./init-did.hurl:/node/init-did.hurl"
   cardano-dbsync:
     command:
       - "--config"
@@ -58,6 +92,24 @@ services:
     image: patextreme/cardano-testnet:20250730-211809
     volumes:
       - node-testnet:/node/testnet
+  cardano-submit-api:
+    command:
+      - "--config"
+      - /config.yaml
+      - "--socket-path"
+      - /node/testnet/socket/node1/sock
+      - "--testnet-magic"
+      - '42'
+      - "--listen-address"
+      - '0.0.0.0'
+    depends_on:
+      cardano-node:
+        condition: service_healthy
+    image: ghcr.io/intersectmbo/cardano-submit-api:10.4.1
+    restart: always
+    volumes:
+      - node-testnet:/node/testnet
+      - "./cardano-submit-api.yaml:/config.yaml"
   cardano-wallet:
     command:
       - bash
@@ -81,7 +133,7 @@ services:
       timeout: "5s"
     image: cardanofoundation/cardano-wallet:2025.3.31
     ports:
-      - "8090:8090"
+      - "18081:8090"
     restart: always
     volumes:
       - node-testnet:/node/testnet
@@ -164,7 +216,7 @@ services:
       timeout: "5s"
     image: hyperledgeridentus/identus-neoprism:0.6.2
     ports:
-      - "8080:8080"
+      - "18080:8080"
     restart: always
   prism-node:
     depends_on:

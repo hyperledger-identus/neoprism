@@ -93,7 +93,7 @@ object UpdateDidOperationSuite extends TestUtils:
           .addKey("master-2")(KeyUsage.MASTER_KEY secp256k1 "m/0'/1'/2'")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        _ <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0", "master-1")))
     }

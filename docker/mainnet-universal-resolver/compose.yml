@@ -43,8 +43,8 @@ services:
     restart: always
   uni-resolver-web:
     environment:
-      uniresolver_web_driver_url_did_prism: http://neoprism-indexer:8080
-    image: universalresolver/uni-resolver-web:0.43.0-362c5ca
+      uniresolver_web_driver_url_did_prism: http://neoprism-indexer:8080/api
+    image: universalresolver/uni-resolver-web:0.44.0-4922fcc
     ports:
       - "8080:8080"
     restart: always

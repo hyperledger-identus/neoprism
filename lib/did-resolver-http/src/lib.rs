@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::marker::PhantomData;
 use std::str::FromStr;
 use std::sync::Arc;
@@ -88,7 +89,8 @@ pub async fn did_resolver(state: State<DidResolverStateDyn>, Path(did): Path<Str
     let accept = headers
         .get(header::ACCEPT)
         .and_then(|i| i.to_str().ok())
-        .map(|i| i.trim());
+        .map(|i| i.trim())
+        .map(|i| i.split(',').collect::<HashSet<_>>());
 
     let parsed_did = match Did::from_str(&did) {
         Ok(did) => did,
@@ -103,9 +105,9 @@ pub async fn did_resolver(state: State<DidResolverStateDyn>, Path(did): Path<Str
     let result = resolver.resolve(&parsed_did, &options).await;
 
     match accept {
-        Some("application/json") => ResolverResponse::<ApplicationJson>::from(result).into_response(),
-        Some("application/did") => ResolverResponse::<ApplicationDid>::from(result).into_response(),
-        Some("application/did-resolution") => {
+        Some(c) if c.contains("application/json") => ResolverResponse::<ApplicationJson>::from(result).into_response(),
+        Some(c) if c.contains("application/did") => ResolverResponse::<ApplicationDid>::from(result).into_response(),
+        Some(c) if c.contains("application/did-resolution") => {
             ResolverResponse::<ApplicationDidResolution>::from(result).into_response()
         }
         _ => ResolverResponse::<ApplicationDidResolution>::from(result).into_response(),

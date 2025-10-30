@@ -14,7 +14,7 @@ let
   jars = mkSbtDerivation rec {
     pname = "scala-did";
     version = "v0.1.0-M28";
-    depsSha256 = "sha256-kyvjdyQyNG35D0UwM5XMqhRHjjdF3ocU5H81frYlx1s=";
+    depsSha256 = "sha256-E5APuu4m5U3dyfvvBi/xrIgQBwmhGoD1CgYzyXp4tuw=";
     src = fetchFromGitHub {
       owner = "FabioPinheiro";
       repo = "scala-did";

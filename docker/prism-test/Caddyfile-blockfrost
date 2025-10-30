@@ -1,0 +1,10 @@
+:3000 {
+    handle /tx/submit {
+        rewrite * /api/submit/tx
+        reverse_proxy cardano-submit-api:8090
+    }
+
+    handle {
+        reverse_proxy bf-ryo:3000
+    }
+}

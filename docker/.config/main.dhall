@@ -45,7 +45,7 @@ in  { mainnet-dbsync.services
                   "preprod-node.play.dev.cardano.org:3001"
             }
       }
-    , prism-test = prismTest.mkStack prismTest.Options::{ ci = False }
+    , prism-test = prismTest.mkStack prismTest.Options::{=}
     , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
     , mainnet-universal-resolver = uniResolver.mkStack {=}
     }

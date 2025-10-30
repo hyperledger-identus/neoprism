@@ -68,7 +68,7 @@ object DeactivateDidOperationSuite extends TestUtils:
         spo3 = builder(seed)
           .deactivateDid(spo1.getOperationHash.get, did)
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
-        _ <- scheduleOperations(Seq(spo1, spo2))
+        _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         didData <- getDidDocument(did).map(_.get)
       yield assert(didData.publicKeys)(hasSize(equalTo(2)))
     }

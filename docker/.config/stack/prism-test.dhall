@@ -12,11 +12,15 @@ let cardanoNode = ../services/cardano-node.dhall
 
 let cardanoWallet = ../services/cardano-wallet.dhall
 
+let cardanoSubmitApi = ../services/cardano-submit-api.dhall
+
 let prismNode = ../services/prism-node.dhall
 
 let scalaDid = ../services/scala-did.dhall
 
-let Options = { Type = { ci : Bool }, default = {=} }
+let ryo = ../services/ryo.dhall
+
+let Options = { Type = { ci : Bool }, default.ci = False }
 
 let mkStack =
       \(options : Options.Type) ->
@@ -33,7 +37,31 @@ let mkStack =
         let walletPaymentAddress =
               "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
 
-        in  { services =
+        let bfServices =
+              { bf-proxy = docker.Service::{
+                , image = "caddy:2.10.2"
+                , ports = Some [ "18082:3000" ]
+                , volumes = Some
+                  [ "./Caddyfile-blockfrost:/etc/caddy/Caddyfile" ]
+                }
+              , bf-ryo =
+                  ryo.mkService
+                    ryo.Options::{
+                    , dbsyncDb = ryo.DbSyncDbArgs::{
+                      , host = "db-dbsync"
+                      , port = 5432
+                      , dbName = "postgres"
+                      , username = "postgres"
+                      , password = "postgres"
+                      }
+                    , network = "custom"
+                    , testnetVolume
+                    , configFile = "./ryo.yaml"
+                    , bootstrapTestnetHost = "bootstrap-testnet"
+                    }
+              }
+
+        let cardanoServices =
               { cardano-node =
                   cardanoNode.mkNodeService
                     cardanoNode.NodeOptions::{ networkMagic, testnetVolume }
@@ -47,6 +75,7 @@ let mkStack =
                     , walletPassphrase
                     , walletPaymentAddress
                     , initWalletHurlFile = "./init-wallet.hurl"
+                    , initDidHurlFile = "./init-did.hurl"
                     }
               , cardano-dbsync =
                   dbSync.mkService
@@ -61,16 +90,26 @@ let mkStack =
                     cardanoWallet.Options::{
                     , testnetVolume
                     , cardanoNodeHost
-                    , hostPort = Some 8090
+                    , hostPort = Some 18081
                     }
-              , neoprism-standalone =
+              , cardano-submit-api =
+                  cardanoSubmitApi.mkService
+                    cardanoSubmitApi.Options::{
+                    , testnetVolume
+                    , cardanoNodeHost
+                    , networkMagic
+                    }
+              }
+
+        let prismServices =
+              { neoprism-standalone =
                   neoprism.mkService
                     neoprism.Options::{
                     , imageOverride =
                         if    options.ci
                         then  Some "identus-neoprism:${neoprismVersion}"
                         else  None Text
-                    , hostPort = Some 8080
+                    , hostPort = Some 18080
                     , dbHost = "db-neoprism"
                     , confirmationBlocks = Some 0
                     , indexInterval = Some 1
@@ -106,6 +145,8 @@ let mkStack =
               , db-dbsync = db.mkService db.Options::{=}
               , db-prism-node = db.mkService db.Options::{=}
               }
+
+        in  { services = prismServices /\ cardanoServices /\ bfServices
             , volumes = toMap { node-testnet = {=} }
             }
 

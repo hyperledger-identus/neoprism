@@ -134,7 +134,7 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
       didData <- resp.status match
         case Status.NotFound => ZIO.none
         case Status.Ok       => ZIO.some(DIDData.parseFrom(body.decodeHex))
-        case s               => ZIO.dieMessage("Could not get DIDData")
+        case _               => ZIO.dieMessage("Could not get DIDData")
     yield didData
 
 private object NeoprismNodeClient:
