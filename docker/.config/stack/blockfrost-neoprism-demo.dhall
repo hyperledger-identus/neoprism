@@ -39,6 +39,7 @@ let mkStack =
                     neoprism.Options::{
                     , dbHost = "db-neoprism"
                     , network = options.network
+                    , hostPort = Some 8080
                     , dltSource =
                         neoprism.DltSource.DbSync
                           neoprism.DbSyncDltSourceArgs::{
@@ -67,7 +68,7 @@ let mkStack =
               , caddy =
                   caddy.mkService
                     caddy.Options::{
-                    , hostPort = Some 18082
+                    , hostPort = Some 3000
                     , targetPort = 3000
                     , caddyfile = "./Caddyfile-blockfrost"
                     }

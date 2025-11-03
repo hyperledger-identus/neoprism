@@ -1,3 +1,14 @@
 :3000 {
-    reverse_proxy bf-ryo:3000
+    handle /tx/submit {
+        reverse_proxy neoprism:8080
+    }
+
+    handle /dids/* {
+        rewrite * /api{uri}
+        reverse_proxy neoprism:8080
+    }
+
+    handle {
+        reverse_proxy bf-ryo:3000
+    }
 }

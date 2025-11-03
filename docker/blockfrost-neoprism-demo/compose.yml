@@ -17,7 +17,7 @@ services:
   caddy:
     image: caddy:2.10.2
     ports:
-      - "18082:3000"
+      - "3000:3000"
     restart: always
     volumes:
       - "./Caddyfile-blockfrost:/etc/caddy/Caddyfile"
@@ -59,6 +59,8 @@ services:
         - http://localhost:8080/api/_system/health
       timeout: "5s"
     image: hyperledgeridentus/identus-neoprism:0.7.0
+    ports:
+      - "8080:8080"
     restart: always
 volumes:
   node-testnet: {}
