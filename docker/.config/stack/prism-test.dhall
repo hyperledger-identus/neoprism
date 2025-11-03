@@ -52,7 +52,7 @@ let mkStack =
                     ryo.Options::{
                     , dbsyncDb = ryo.DbSyncDbArgs::{
                       , host = "db-dbsync"
-                      , port = 5432
+                      , port = "5432"
                       , dbName = "postgres"
                       , username = "postgres"
                       , password = "postgres"

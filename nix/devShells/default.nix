@@ -13,6 +13,7 @@ let
       dhall-to-yaml <<< "(./main.dhall).prism-test" > "${rootDir}/docker/prism-test/compose.yml"
       dhall-to-yaml <<< "(./main.dhall).prism-test-ci" > "${rootDir}/docker/prism-test/compose-ci.yml"
       dhall-to-yaml <<< "(./main.dhall).mainnet-universal-resolver" > "${rootDir}/docker/mainnet-universal-resolver/compose.yml"
+      dhall-to-yaml <<< "(./main.dhall).blockfrost-neoprism-demo" > "${rootDir}/docker/blockfrost-neoprism-demo/compose.yml"
     '';
   };
 in

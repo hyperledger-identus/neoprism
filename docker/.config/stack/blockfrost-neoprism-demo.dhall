@@ -14,7 +14,7 @@ let Options =
       { Type =
           { dbsyncUrl : Text
           , dbsyncHost : Text
-          , dbsyncPort : Natural
+          , dbsyncPort : Text
           , dbsyncDb : Text
           , dbsyncUser : Text
           , dbsyncPassword : Text
@@ -22,14 +22,14 @@ let Options =
           , testnetVolume : Text
           }
       , default =
-        { dbsyncUrl = "<REMOTE_DBSYNC_URL>"
-        , dbsyncHost = "<REMOTE_DBSYNC_HOST>"
-        , dbsyncPort = 5432
-        , dbsyncDb = "postgres"
-        , dbsyncUser = "postgres"
-        , dbsyncPassword = "<REMOTE_DBSYNC_PASSWORD>"
-        , network = "mainnet"
-        , testnetVolume = "node-testnet"
+        { dbsyncUrl = "\${DBSYNC_URL}"
+        , dbsyncHost = "\${DBSYNC_HOST}"
+        , dbsyncPort = "\${DBSYNC_PORT:-5432}"
+        , dbsyncDb = "\${DBSYNC_DB:-postgres}"
+        , dbsyncUser = "\${DBSYNC_USER:-postgres}"
+        , dbsyncPassword = "\${DBSYNC_PASSWORD}"
+        , network = "\${NETWORK:-mainnet}"
+        , testnetVolume = "\${TESTNET_VOLUME:-node-testnet}"
         }
       }
 
@@ -63,6 +63,7 @@ let mkStack =
                     , testnetVolume = options.testnetVolume
                     , configFile = "./ryo.yaml"
                     , bootstrapTestnetHost = None Text
+                    , waitForDbSync = False
                     }
               , caddy =
                   caddy.mkService

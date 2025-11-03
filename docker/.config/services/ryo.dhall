@@ -7,7 +7,7 @@ let image = "blockfrost/backend-ryo:v4.3.0"
 let DbSyncDbArgs =
       { Type =
           { host : Text
-          , port : Natural
+          , port : Text
           , dbName : Text
           , username : Text
           , password : Text
@@ -23,11 +23,13 @@ let Options =
           , testnetVolume : Text
           , configFile : Text
           , bootstrapTestnetHost : Optional Text
+          , waitForDbSync : Bool
           }
       , default =
         { hostPort = None Natural
         , network = "mainnet"
         , bootstrapTestnetHost = None Text
+        , waitForDbSync = True
         }
       }
 
@@ -44,8 +46,7 @@ let mkService =
         , environment = Some
             ( toMap
                 { BLOCKFROST_CONFIG_DBSYNC_HOST = options.dbsyncDb.host
-                , BLOCKFROST_CONFIG_DBSYNC_PORT =
-                    Prelude.Natural.show options.dbsyncDb.port
+                , BLOCKFROST_CONFIG_DBSYNC_PORT = options.dbsyncDb.port
                 , BLOCKFROST_CONFIG_DBSYNC_DATABASE = options.dbsyncDb.dbName
                 , BLOCKFROST_CONFIG_DBSYNC_USER = options.dbsyncDb.username
                 , BLOCKFROST_CONFIG_DBSYNC_PASSWORD = options.dbsyncDb.password
@@ -59,16 +60,23 @@ let mkService =
           [ "${options.testnetVolume}:/node/testnet"
           , "${options.configFile}:/app/config/development.yaml"
           ]
-        , depends_on = Some
-            (   [ docker.ServiceCondition.healthy options.dbsyncDb.host ]
-              # merge
-                  { None = [] : List docker.ServiceCondition.Type
-                  , Some =
-                      \(host : Text) ->
-                        [ docker.ServiceCondition.completed host ]
-                  }
-                  options.bootstrapTestnetHost
-            )
+        , depends_on =
+            let dbSyncCondition =
+                  if    options.waitForDbSync
+                  then  [ docker.ServiceCondition.healthy options.dbsyncDb.host
+                        ]
+                  else  [] : List docker.ServiceCondition.Type
+
+            let testnetCondition =
+                  merge
+                    { None = [] : List docker.ServiceCondition.Type
+                    , Some =
+                        \(host : Text) ->
+                          [ docker.ServiceCondition.completed host ]
+                    }
+                    options.bootstrapTestnetHost
+
+            in  Some (dbSyncCondition # testnetCondition)
         }
 
 in  { mkService, Options, DbSyncDbArgs }
