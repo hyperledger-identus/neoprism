@@ -62,6 +62,7 @@ let mkStack =
                     , configFile = "./ryo.yaml"
                     , bootstrapTestnetHost = None Text
                     , waitForDbSync = False
+                    , genesisDataFolder = None Text
                     }
               , caddy =
                   caddy.mkService

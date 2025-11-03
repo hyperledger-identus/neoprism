@@ -24,6 +24,7 @@ let Options =
           , configFile : Text
           , bootstrapTestnetHost : Optional Text
           , waitForDbSync : Bool
+          , genesisDataFolder : Optional Text
           }
       , default =
         { hostPort = None Natural
@@ -31,6 +32,7 @@ let Options =
         , testnetVolume = None Text
         , bootstrapTestnetHost = None Text
         , waitForDbSync = True
+        , genesisDataFolder = Some "/node/testnet"
         }
       }
 
@@ -48,6 +50,27 @@ let mkService =
 
         let allVolumes = testnetVolumeMount # configVolume
 
+        let baseEnv =
+              toMap
+                { BLOCKFROST_CONFIG_DBSYNC_HOST = options.dbsyncDb.host
+                , BLOCKFROST_CONFIG_DBSYNC_PORT = options.dbsyncDb.port
+                , BLOCKFROST_CONFIG_DBSYNC_DATABASE = options.dbsyncDb.dbName
+                , BLOCKFROST_CONFIG_DBSYNC_USER = options.dbsyncDb.username
+                , BLOCKFROST_CONFIG_DBSYNC_PASSWORD = options.dbsyncDb.password
+                , BLOCKFROST_CONFIG_NETWORK = options.network
+                , BLOCKFROST_MITHRIL_ENABLED = "false"
+                , NODE_ENV = "development"
+                }
+
+        let genesisEnv =
+              merge
+                { None = [] : List { mapKey : Text, mapValue : Text }
+                , Some =
+                    \(folder : Text) ->
+                      toMap { BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER = folder }
+                }
+                options.genesisDataFolder
+
         in  docker.Service::{
             , image
             , ports =
@@ -56,21 +79,7 @@ let mkService =
                   (List Text)
                   (\(p : Natural) -> [ "${Prelude.Natural.show p}:3000" ])
                   options.hostPort
-            , environment = Some
-                ( toMap
-                    { BLOCKFROST_CONFIG_DBSYNC_HOST = options.dbsyncDb.host
-                    , BLOCKFROST_CONFIG_DBSYNC_PORT = options.dbsyncDb.port
-                    , BLOCKFROST_CONFIG_DBSYNC_DATABASE =
-                        options.dbsyncDb.dbName
-                    , BLOCKFROST_CONFIG_DBSYNC_USER = options.dbsyncDb.username
-                    , BLOCKFROST_CONFIG_DBSYNC_PASSWORD =
-                        options.dbsyncDb.password
-                    , BLOCKFROST_CONFIG_NETWORK = options.network
-                    , BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER = "/node/testnet"
-                    , BLOCKFROST_MITHRIL_ENABLED = "false"
-                    , NODE_ENV = "development"
-                    }
-                )
+            , environment = Some (baseEnv # genesisEnv)
             , volumes = Some allVolumes
             , depends_on =
                 let dbSyncCondition =
