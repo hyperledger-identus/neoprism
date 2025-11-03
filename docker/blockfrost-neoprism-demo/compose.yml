@@ -1,0 +1,72 @@
+services:
+  bf-ryo:
+    depends_on:
+      "<REMOTE_DBSYNC_HOST>":
+        condition: service_healthy
+    environment:
+      BLOCKFROST_CONFIG_DBSYNC_DATABASE: postgres
+      BLOCKFROST_CONFIG_DBSYNC_HOST: "<REMOTE_DBSYNC_HOST>"
+      BLOCKFROST_CONFIG_DBSYNC_PASSWORD: "<REMOTE_DBSYNC_PASSWORD>"
+      BLOCKFROST_CONFIG_DBSYNC_PORT: '5432'
+      BLOCKFROST_CONFIG_DBSYNC_USER: postgres
+      BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER: /node/testnet
+      BLOCKFROST_CONFIG_NETWORK: mainnet
+      BLOCKFROST_MITHRIL_ENABLED: 'false'
+      NODE_ENV: development
+    image: blockfrost/backend-ryo:v4.3.0
+    restart: always
+    volumes:
+      - node-testnet:/node/testnet
+      - "./ryo.yaml:/app/config/development.yaml"
+  caddy:
+    image: caddy:2.10.2
+    ports:
+      - "18082:3000"
+    restart: always
+    volumes:
+      - "./Caddyfile-blockfrost:/etc/caddy/Caddyfile"
+  db-neoprism:
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+        - "-U"
+        - postgres
+      timeout: "5s"
+    image: postgres:16
+    restart: always
+  neoprism:
+    command:
+      - indexer
+    depends_on:
+      db-neoprism:
+        condition: service_healthy
+    environment:
+      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: '10'
+      NPRISM_CARDANO_DBSYNC_URL: "<REMOTE_DBSYNC_URL>"
+      NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CONFIRMATION_BLOCKS: '0'
+      NPRISM_DB_URL: "postgres://postgres:postgres@db-neoprism:5432/postgres"
+      NPRISM_INDEX_INTERVAL: '10'
+      RUST_LOG: "oura=warn,tracing::span=warn,info"
+    healthcheck:
+      interval: "2s"
+      retries: 30
+      test:
+        - CMD
+        - curl
+        - "-f"
+        - http://localhost:8080/api/_system/health
+      timeout: "5s"
+    image: hyperledgeridentus/identus-neoprism:0.7.0
+    ports:
+      - "18080:8080"
+    restart: always
+volumes:
+  node-testnet: {}

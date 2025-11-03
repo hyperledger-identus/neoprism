@@ -22,9 +22,13 @@ let Options =
           , network : Text
           , testnetVolume : Text
           , configFile : Text
-          , bootstrapTestnetHost : Text
+          , bootstrapTestnetHost : Optional Text
           }
-      , default = { hostPort = None Natural, network = "mainnet" }
+      , default =
+        { hostPort = None Natural
+        , network = "mainnet"
+        , bootstrapTestnetHost = None Text
+        }
       }
 
 let mkService =
@@ -56,9 +60,15 @@ let mkService =
           , "${options.configFile}:/app/config/development.yaml"
           ]
         , depends_on = Some
-          [ docker.ServiceCondition.healthy options.dbsyncDb.host
-          , docker.ServiceCondition.completed options.bootstrapTestnetHost
-          ]
+            (   [ docker.ServiceCondition.healthy options.dbsyncDb.host ]
+              # merge
+                  { None = [] : List docker.ServiceCondition.Type
+                  , Some =
+                      \(host : Text) ->
+                        [ docker.ServiceCondition.completed host ]
+                  }
+                  options.bootstrapTestnetHost
+            )
         }
 
 in  { mkService, Options, DbSyncDbArgs }

@@ -60,7 +60,7 @@ let mkStack =
                     , network = "custom"
                     , testnetVolume
                     , configFile = "./ryo.yaml"
-                    , bootstrapTestnetHost = "bootstrap-testnet"
+                    , bootstrapTestnetHost = Some "bootstrap-testnet"
                     }
               }
 
