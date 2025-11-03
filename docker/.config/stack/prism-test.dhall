@@ -58,7 +58,7 @@ let mkStack =
                       , password = "postgres"
                       }
                     , network = "custom"
-                    , testnetVolume
+                    , testnetVolume = Some testnetVolume
                     , configFile = "./ryo.yaml"
                     , bootstrapTestnetHost = Some "bootstrap-testnet"
                     }

@@ -2,11 +2,11 @@ services:
   bf-ryo:
     depends_on: {}
     environment:
-      BLOCKFROST_CONFIG_DBSYNC_DATABASE: "${DBSYNC_DB:-postgres}"
+      BLOCKFROST_CONFIG_DBSYNC_DATABASE: "${DBSYNC_DB}"
       BLOCKFROST_CONFIG_DBSYNC_HOST: "${DBSYNC_HOST}"
       BLOCKFROST_CONFIG_DBSYNC_PASSWORD: "${DBSYNC_PASSWORD}"
       BLOCKFROST_CONFIG_DBSYNC_PORT: "${DBSYNC_PORT:-5432}"
-      BLOCKFROST_CONFIG_DBSYNC_USER: "${DBSYNC_USER:-postgres}"
+      BLOCKFROST_CONFIG_DBSYNC_USER: "${DBSYNC_USER}"
       BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER: /node/testnet
       BLOCKFROST_CONFIG_NETWORK: "${NETWORK:-mainnet}"
       BLOCKFROST_MITHRIL_ENABLED: 'false'
@@ -14,7 +14,6 @@ services:
     image: blockfrost/backend-ryo:v4.3.0
     restart: always
     volumes:
-      - "${TESTNET_VOLUME:-node-testnet}:/node/testnet"
       - "./ryo.yaml:/app/config/development.yaml"
   caddy:
     image: caddy:2.10.2

@@ -19,17 +19,15 @@ let Options =
           , dbsyncUser : Text
           , dbsyncPassword : Text
           , network : Text
-          , testnetVolume : Text
           }
       , default =
         { dbsyncUrl = "\${DBSYNC_URL}"
         , dbsyncHost = "\${DBSYNC_HOST}"
         , dbsyncPort = "\${DBSYNC_PORT:-5432}"
-        , dbsyncDb = "\${DBSYNC_DB:-postgres}"
-        , dbsyncUser = "\${DBSYNC_USER:-postgres}"
+        , dbsyncDb = "\${DBSYNC_DB}"
+        , dbsyncUser = "\${DBSYNC_USER}"
         , dbsyncPassword = "\${DBSYNC_PASSWORD}"
         , network = "\${NETWORK:-mainnet}"
-        , testnetVolume = "\${TESTNET_VOLUME:-node-testnet}"
         }
       }
 
@@ -60,7 +58,7 @@ let mkStack =
                       , password = options.dbsyncPassword
                       }
                     , network = options.network
-                    , testnetVolume = options.testnetVolume
+                    , testnetVolume = None Text
                     , configFile = "./ryo.yaml"
                     , bootstrapTestnetHost = None Text
                     , waitForDbSync = False

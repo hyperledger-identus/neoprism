@@ -20,7 +20,7 @@ let Options =
           { hostPort : Optional Natural
           , dbsyncDb : DbSyncDbArgs.Type
           , network : Text
-          , testnetVolume : Text
+          , testnetVolume : Optional Text
           , configFile : Text
           , bootstrapTestnetHost : Optional Text
           , waitForDbSync : Bool
@@ -28,6 +28,7 @@ let Options =
       , default =
         { hostPort = None Natural
         , network = "mainnet"
+        , testnetVolume = None Text
         , bootstrapTestnetHost = None Text
         , waitForDbSync = True
         }
@@ -35,48 +36,60 @@ let Options =
 
 let mkService =
       \(options : Options.Type) ->
-        docker.Service::{
-        , image
-        , ports =
-            Prelude.Optional.map
-              Natural
-              (List Text)
-              (\(p : Natural) -> [ "${Prelude.Natural.show p}:3000" ])
-              options.hostPort
-        , environment = Some
-            ( toMap
-                { BLOCKFROST_CONFIG_DBSYNC_HOST = options.dbsyncDb.host
-                , BLOCKFROST_CONFIG_DBSYNC_PORT = options.dbsyncDb.port
-                , BLOCKFROST_CONFIG_DBSYNC_DATABASE = options.dbsyncDb.dbName
-                , BLOCKFROST_CONFIG_DBSYNC_USER = options.dbsyncDb.username
-                , BLOCKFROST_CONFIG_DBSYNC_PASSWORD = options.dbsyncDb.password
-                , BLOCKFROST_CONFIG_NETWORK = options.network
-                , BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER = "/node/testnet"
-                , BLOCKFROST_MITHRIL_ENABLED = "false"
-                , NODE_ENV = "development"
+        let testnetVolumeMount =
+              merge
+                { None = [] : List Text
+                , Some = \(vol : Text) -> [ "${vol}:/node/testnet" ]
                 }
-            )
-        , volumes = Some
-          [ "${options.testnetVolume}:/node/testnet"
-          , "${options.configFile}:/app/config/development.yaml"
-          ]
-        , depends_on =
-            let dbSyncCondition =
-                  if    options.waitForDbSync
-                  then  [ docker.ServiceCondition.healthy options.dbsyncDb.host
-                        ]
-                  else  [] : List docker.ServiceCondition.Type
+                options.testnetVolume
 
-            let testnetCondition =
-                  merge
-                    { None = [] : List docker.ServiceCondition.Type
-                    , Some =
-                        \(host : Text) ->
-                          [ docker.ServiceCondition.completed host ]
+        let configVolume =
+              [ "${options.configFile}:/app/config/development.yaml" ]
+
+        let allVolumes = testnetVolumeMount # configVolume
+
+        in  docker.Service::{
+            , image
+            , ports =
+                Prelude.Optional.map
+                  Natural
+                  (List Text)
+                  (\(p : Natural) -> [ "${Prelude.Natural.show p}:3000" ])
+                  options.hostPort
+            , environment = Some
+                ( toMap
+                    { BLOCKFROST_CONFIG_DBSYNC_HOST = options.dbsyncDb.host
+                    , BLOCKFROST_CONFIG_DBSYNC_PORT = options.dbsyncDb.port
+                    , BLOCKFROST_CONFIG_DBSYNC_DATABASE =
+                        options.dbsyncDb.dbName
+                    , BLOCKFROST_CONFIG_DBSYNC_USER = options.dbsyncDb.username
+                    , BLOCKFROST_CONFIG_DBSYNC_PASSWORD =
+                        options.dbsyncDb.password
+                    , BLOCKFROST_CONFIG_NETWORK = options.network
+                    , BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER = "/node/testnet"
+                    , BLOCKFROST_MITHRIL_ENABLED = "false"
+                    , NODE_ENV = "development"
                     }
-                    options.bootstrapTestnetHost
+                )
+            , volumes = Some allVolumes
+            , depends_on =
+                let dbSyncCondition =
+                      if    options.waitForDbSync
+                      then  [ docker.ServiceCondition.healthy
+                                options.dbsyncDb.host
+                            ]
+                      else  [] : List docker.ServiceCondition.Type
 
-            in  Some (dbSyncCondition # testnetCondition)
-        }
+                let testnetCondition =
+                      merge
+                        { None = [] : List docker.ServiceCondition.Type
+                        , Some =
+                            \(host : Text) ->
+                              [ docker.ServiceCondition.completed host ]
+                        }
+                        options.bootstrapTestnetHost
+
+                in  Some (dbSyncCondition # testnetCondition)
+            }
 
 in  { mkService, Options, DbSyncDbArgs }

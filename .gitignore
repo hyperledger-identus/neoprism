@@ -1,5 +1,6 @@
 target/
 .envrc
+.env
 *.db
 *.dump
 node_modules/
