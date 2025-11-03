@@ -20,6 +20,8 @@ let scalaDid = ../services/scala-did.dhall
 
 let ryo = ../services/ryo.dhall
 
+let caddy = ../services/caddy.dhall
+
 let Options = { Type = { ci : Bool }, default.ci = False }
 
 let mkStack =
@@ -38,12 +40,13 @@ let mkStack =
               "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
 
         let bfServices =
-              { bf-proxy = docker.Service::{
-                , image = "caddy:2.10.2"
-                , ports = Some [ "18082:3000" ]
-                , volumes = Some
-                  [ "./Caddyfile-blockfrost:/etc/caddy/Caddyfile" ]
-                }
+              { bf-proxy =
+                  caddy.mkService
+                    caddy.Options::{
+                    , hostPort = Some 18082
+                    , targetPort = 3000
+                    , caddyfile = "./Caddyfile-blockfrost"
+                    }
               , bf-ryo =
                   ryo.mkService
                     ryo.Options::{
