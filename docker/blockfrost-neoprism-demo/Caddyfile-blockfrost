@@ -1,6 +1,6 @@
 :3000 {
     handle /tx/submit {
-        reverse_proxy neoprism:8080
+        reverse_proxy cardano-submit-api:8090
     }
 
     handle /dids/* {
