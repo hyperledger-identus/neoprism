@@ -49,8 +49,7 @@ Services will be available at:
 Check service health:
 
 ```sh
-# Via unified gateway
-curl http://localhost:3000/dids/_system/health
+curl http://localhost:8080/api/_system/health
 ```
 
 ## Usage Examples
