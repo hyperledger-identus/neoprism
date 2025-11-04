@@ -163,6 +163,7 @@ graph TB
 
 ### Environment Variables
 
+- `NETWORK`: Cardano network identifier (e.g., `mainnet`, `preprod`, `preview`)
 - `DBSYNC_HOST`: DBSync PostgreSQL hostname
 - `DBSYNC_PORT`: DBSync PostgreSQL port (default: 5432)
 - `DBSYNC_DB`: DBSync database name
