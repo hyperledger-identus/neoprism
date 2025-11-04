@@ -92,38 +92,30 @@ The web interface provides a convenient way to explore all DIDs that have been i
 ```mermaid
 graph TB
     Client[API Client]
-    
+
     subgraph "Unified Gateway :3000"
         Caddy[Caddy Reverse Proxy]
     end
-    
+
     subgraph "Identity Layer"
         NeoprismIndexer[NeoPRISM Indexer :8080]
         NeoprismDB[(NeoPRISM DB<br/>PostgreSQL)]
     end
-    
+
     subgraph "Blockchain Query Layer"
         Ryo[Blockfrost Ryo :3000]
     end
-    
+
     subgraph "Data Source"
         DBSync[(Cardano DBSync<br/>PostgreSQL<br/>External)]
     end
-    
+
     Client -->|All Requests| Caddy
-    
     Caddy -->|/dids/*| NeoprismIndexer
     Caddy -->|/*| Ryo
-    
     NeoprismIndexer -->|Index DIDs| NeoprismDB
     NeoprismIndexer -->|Poll DID Ops| DBSync
-    
     Ryo -->|Query Blockchain| DBSync
-    
-    style Caddy fill:#f9f,stroke:#333,stroke-width:2px
-    style NeoprismIndexer fill:#bbf,stroke:#333,stroke-width:2px
-    style Ryo fill:#bfb,stroke:#333,stroke-width:2px
-    style DBSync fill:#fbb,stroke:#333,stroke-width:2px
 ```
 
 ### Components
