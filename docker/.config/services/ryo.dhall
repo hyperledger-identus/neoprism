@@ -64,7 +64,7 @@ let mkService =
 
         let genesisEnv =
               merge
-                { None = [] : List { mapKey : Text, mapValue : Text }
+                { None = [] : Prelude.Map.Type Text Text
                 , Some =
                     \(folder : Text) ->
                       toMap { BLOCKFROST_CONFIG_GENESIS_DATA_FOLDER = folder }
