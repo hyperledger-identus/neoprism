@@ -11,6 +11,11 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 default:
     @just --list
 
+# Install npm dependencies
+[group: 'neoprism']
+init:
+    npm install
+
 # Build the entire project (assets + cargo)
 [group: 'neoprism']
 build: build-assets
