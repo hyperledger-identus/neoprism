@@ -4,10 +4,12 @@
 
 ### Build, Lint, and Test Commands
 - Enter dev shell: `nix develop`
-- Build Rust workspace: `nix develop -c build --all-features`
-- Build a single Rust test: `nix develop -c cargo test -p <crate> <test_name>` (or use `nix develop -c cargo test --package <crate> <test_name>`)
-- Run all Rust tests: `nix develop -c cargo test --all-features`
-- Format Rust sources: `nix develop -c format` (runs `cargo fmt`)
+- Build Rust workspace: `just build` (or `cargo build --all-features` inside dev shell)
+- Run all Rust tests: `just test` (or `cargo test --all-features` inside dev shell)
+- Run a single Rust test: `cargo test -p <crate> <test_name>` (or `cargo test --package <crate> <test_name>`)
+- Format all sources: `just format` (formats Rust, Nix, TOML, Dhall, SQL)
+- Start local database: `just db-up`
+- Stop local database: `just db-down`
 
 ### Code Style Guidelines
 - Imports: group by standard, external, then local; remove unused imports.
@@ -44,7 +46,8 @@ Lint suggestions
 ## Scala Guidelines
 
 ### Build, Lint, and Test Commands
-- Format Scala sources: `nix develop -c format` (runs `scalafmt`)
+- Format Scala sources: `just prism-test-build`
+- Build and run conformance tests: `just prism-test-run`
 - Build docs site: `nix build .#docs-site`
 
 ### Code Style Guidelines
@@ -64,8 +67,6 @@ Lint suggestions
 - Respect any Cursor rules under `.cursor/rules/` or `.cursorrules`.
 
 ### Quick verification
-- Before PR: run `nix develop -c format` and `nix develop -c cargo test --all-features`.
+- Before PR: run `just format` and `just test`.
 
 (Keep this guide short — agents should follow existing repo docs for deeper tasks.)
-
-
