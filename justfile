@@ -181,23 +181,3 @@ release-testnet:
     
     echo "✓ Released: patextreme/cardano-testnet:$TAG"
 
-# Build and release NeoPRISM Docker image
-[group: 'release']
-release-node:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    TAG=$(date +"%Y%m%d-%H%M%S")
-    
-    echo "Building prism-node image..."
-    nix build .#prism-node-docker -o result
-    
-    echo "Loading image into Docker..."
-    docker load < ./result
-    rm -rf ./result
-    
-    echo "Tagging and pushing..."
-    docker tag prism-node-fastsync:latest "patextreme/prism-node-fastsync:$TAG"
-    docker push "patextreme/prism-node-fastsync:$TAG"
-    
-    echo "✓ Released: patextreme/prism-node-fastsync:$TAG"
-
