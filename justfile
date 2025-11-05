@@ -4,6 +4,9 @@ db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
 
+# Use bash with strict error handling for all recipes
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
 # Show available commands
 default:
     @just --list
@@ -34,7 +37,6 @@ build-config:
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
 run *ARGS: build-assets
-    #!/usr/bin/env bash
     export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"
     cargo run --bin neoprism-node -- {{ARGS}}
 
@@ -51,8 +53,6 @@ clean:
 # Format all source files (Nix, TOML, Dhall, Rust, SQL)
 [group: 'neoprism']
 format:
-    set -euo pipefail
-    
     echo "Formatting Nix files..."
     find . -name '*.nix' -type f -exec sh -c 'echo "  → {}" && nixfmt {}' \;
     
@@ -89,7 +89,6 @@ db-down:
 # Dump local database to postgres.dump file
 [group: 'neoprism']
 db-dump:
-    #!/usr/bin/env bash
     export PGPASSWORD={{db_pass}}
     pg_dump -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} -Fc > postgres.dump
     echo "Database dumped to postgres.dump"
@@ -97,7 +96,6 @@ db-dump:
 # Restore local database from postgres.dump file
 [group: 'neoprism']
 db-restore:
-    #!/usr/bin/env bash
     export PGPASSWORD={{db_pass}}
     pg_restore -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} postgres.dump
     echo "Database restored from postgres.dump"
@@ -131,16 +129,12 @@ prism-test-build:
 # Automatically bump version using git-cliff
 [group: 'release']
 release-bump:
-    #!/usr/bin/env bash
-    set -euo pipefail
     NEW_VERSION=$(git-cliff --bump --context | jq -r .[0].version | sed s/^v//)
     just release-set "$NEW_VERSION"
 
 # Set project version manually
 [group: 'release']
 release-set VERSION:
-    #!/usr/bin/env bash
-    set -euo pipefail
     echo "Setting new version to {{VERSION}}"
     echo "{{VERSION}}" > version
     cargo set-version "{{VERSION}}"
@@ -150,8 +144,6 @@ release-set VERSION:
 # Build and release multi-arch cardano-testnet Docker image
 [group: 'release']
 release-testnet:
-    #!/usr/bin/env bash
-    set -euo pipefail
     TAG=$(date +"%Y%m%d-%H%M%S")
     
     echo "Building amd64 image..."
