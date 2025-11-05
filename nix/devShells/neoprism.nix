@@ -8,6 +8,8 @@ pkgs.mkShell {
   packages = with pkgs; [
     # base
     docker
+    docker
+    docker-compose
     git
     git-cliff
     just
@@ -34,6 +36,10 @@ pkgs.mkShell {
     tailwindcss_4
     typescript-language-server
     esbuild
+    # scala
+    jdk
+    metals
+    sbt
   ];
 
   shellHook = ''
@@ -44,4 +50,9 @@ pkgs.mkShell {
 
   # envs
   RUST_LOG = "info,oura=warn,tower_http::trace=debug";
+
+  JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
+  SBT_OPTS = "-Xmx4G";
+  SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+  LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/"; # required by scalapb
 }

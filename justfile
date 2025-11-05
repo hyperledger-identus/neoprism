@@ -8,30 +8,6 @@ db_name := "postgres"
 default:
     @just --list
 
-# Build Tailwind CSS assets
-[working-directory: 'bin/neoprism-node']
-build-assets:
-    tailwindcss -i tailwind.css -o ./assets/styles.css
-
-# Build dhall configurations
-[working-directory: 'docker/.config']
-build-config:
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-dbsync" > "../mainnet-dbsync/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-relay" > "../mainnet-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).preprod-relay" > "../preprod-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test" > "../prism-test/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test-ci" > "../prism-test/compose-ci.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-universal-resolver" > "../mainnet-universal-resolver/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).blockfrost-neoprism-demo" > "../blockfrost-neoprism-demo/compose.yml"
-
-# Build the entire project (assets + cargo)
-build: build-assets
-    cargo build --all-features
-
-# Clean workspace
-clean:
-    cargo clean
-
 # Format all source files (nix, toml, dhall, rust, sql)
 format:
     set -euo pipefail
@@ -52,6 +28,40 @@ format:
     cd lib/node-storage/migrations
     sqlfluff fix .
     sqlfluff lint .
+
+# Build Tailwind CSS assets
+[working-directory: 'bin/neoprism-node']
+_build-assets:
+    tailwindcss -i tailwind.css -o ./assets/styles.css
+
+# Build dhall configurations
+[working-directory: 'docker/.config']
+build-config:
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-dbsync" > "../mainnet-dbsync/compose.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-relay" > "../mainnet-relay/compose.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).preprod-relay" > "../preprod-relay/compose.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test" > "../prism-test/compose.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test-ci" > "../prism-test/compose-ci.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-universal-resolver" > "../mainnet-universal-resolver/compose.yml"
+  dhall-to-yaml --generated-comment <<< "(./main.dhall).blockfrost-neoprism-demo" > "../blockfrost-neoprism-demo/compose.yml"
+
+# Build the entire project (assets + cargo)
+build: _build-assets
+    cargo build --all-features
+
+# Clean workspace
+clean:
+    cargo clean
+
+# Run neoprism-node with database connection (pass arguments after --)
+run *ARGS: _build-assets
+    #!/usr/bin/env bash
+    export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"
+    cargo run --bin neoprism-node -- {{ARGS}}
+
+# Run all tests with all features
+test:
+    cargo test --all-features
 
 # Start local PostgreSQL database
 db-up:
@@ -81,12 +91,27 @@ db-restore:
     pg_restore -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} postgres.dump
     echo "Database restored from postgres.dump"
 
-# Run neoprism-node with database connection (pass arguments after --)
-run *ARGS: build-assets
-    #!/usr/bin/env bash
-    export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"
-    cargo run --bin neoprism-node -- {{ARGS}}
+#------------ prism-test ------------
 
-# Run all tests with all features
-test:
-    cargo test --all-features
+# Start PRISM test environment
+[working-directory: 'docker/prism-test']
+prism-test-up:
+    docker-compose up -d
+
+# Stop PRISM test environment and remove volumes
+[working-directory: 'docker/prism-test']
+prism-test-down:
+    docker-compose down --volumes
+
+# Run PRISM conformance test
+[working-directory: 'tests/prism-test']
+prism-test: prism-test-build
+    just _prism-test-up
+    sbt test
+    just _prism-test-down
+
+# Compile PRISM conformance test
+[working-directory: 'tests/prism-test']
+prism-test-build:
+    sbt clean scalafmtAll
+

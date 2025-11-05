@@ -1,11 +1,9 @@
-{ pkgs, buildConfig }:
+{ pkgs  }:
 
 let
   rootDir = "$ROOT_DIR";
   inherit (pkgs.rustTools) rust;
   scripts = rec {
-    inherit buildConfig;
-
     bumpVersion = pkgs.writeShellApplication {
       name = "bumpVersion";
       runtimeInputs = with pkgs; [
@@ -31,7 +29,6 @@ let
         echo "Setting new version to $NEW_VERSION"
         echo "$NEW_VERSION" > version
         cargo set-version "$NEW_VERSION"
-        ${buildConfig}/bin/buildConfig
         git-cliff -t "$NEW_VERSION" > CHANGELOG.md
       '';
     };
