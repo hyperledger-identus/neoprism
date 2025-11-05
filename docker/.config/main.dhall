@@ -8,6 +8,8 @@ let uniResolver = ./stack/universal-resolver.dhall
 
 let prismTest = ./stack/prism-test.dhall
 
+let blockfrostDemo = ./stack/blockfrost-neoprism-demo.dhall
+
 in  { mainnet-dbsync.services
       =
       { db = db.mkService db.Options::{ hostPort = Some 5432 }
@@ -47,5 +49,7 @@ in  { mainnet-dbsync.services
       }
     , prism-test = prismTest.mkStack prismTest.Options::{=}
     , prism-test-ci = prismTest.mkStack prismTest.Options::{ ci = True }
+    , blockfrost-neoprism-demo =
+        blockfrostDemo.mkStack blockfrostDemo.Options::{=}
     , mainnet-universal-resolver = uniResolver.mkStack {=}
     }

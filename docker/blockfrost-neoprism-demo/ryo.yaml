@@ -8,8 +8,7 @@ dbSync:
   user: postgres
   database: postgres
   maxConnections: 4
-network: custom
-genesisDataFolder: /node/testnet
+network: mainnet
 tokenRegistryUrl: https://tokens.cardano.org
 mithril:
   enabled: false
