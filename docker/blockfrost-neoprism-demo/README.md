@@ -6,12 +6,6 @@ Proof-of-concept demonstrating how to extend [Blockfrost API](https://blockfrost
 
 This deployment demonstrates the integration pattern between Cardano infrastructure providers and decentralized identity services. Rather than running a full Cardano node and DBSync indexer, this setup leverages an existing DBSync database to provide both blockchain query capabilities (via Blockfrost Ryo) and DID resolution services (via NeoPRISM) through a single endpoint.
 
-**Key characteristics:**
-- **Unified API Gateway**: Single entry point for both Blockfrost and DID resolution APIs
-- **Shared Data Layer**: Both Ryo and NeoPRISM connect to the same DBSync database
-- **Minimal Infrastructure**: No Cardano node required; leverages existing DBSync instance
-- **Production-Ready Pattern**: Demonstrates how identity services integrate with blockchain infrastructure
-
 ## Quick Start
 
 ### Prerequisites
