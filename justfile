@@ -144,6 +144,7 @@ release-set VERSION:
     echo "Setting new version to {{VERSION}}"
     echo "{{VERSION}}" > version
     cargo set-version "{{VERSION}}"
+    just build-config
     git-cliff -t "{{VERSION}}" > CHANGELOG.md
 
 # Build and release multi-arch cardano-testnet Docker image
