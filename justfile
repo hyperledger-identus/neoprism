@@ -28,7 +28,7 @@ build-config:
 build: build-assets
     cargo build --all-features
 
-# Clean cargo workspace
+# Clean workspace
 clean:
     cargo clean
 
@@ -81,48 +81,12 @@ db-restore:
     pg_restore -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} postgres.dump
     echo "Database restored from postgres.dump"
 
-# === Run & Test ===
-
 # Run neoprism-node with database connection (pass arguments after --)
 run *ARGS: build-assets
     #!/usr/bin/env bash
     export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"
     cargo run --bin neoprism-node -- {{ARGS}}
 
-# Alias for backwards compatibility with 'runNode'
-run-node *ARGS: (run ARGS)
-
 # Run all tests with all features
 test:
     cargo test --all-features
-
-# Run a specific test
-test-one TEST:
-    cargo test {{TEST}}
-
-# === Docker ===
-
-# Build neoprism docker image using nix
-docker-build:
-    nix build .#neoprism-docker
-
-# Build and load neoprism docker image
-docker-load:
-    nix build .#neoprism-docker && docker load < ./result
-
-# === Docs ===
-
-# Build documentation site
-docs-build:
-    nix build .#docs-site
-
-# === Quick Workflows ===
-
-# Full development setup: start db and run node
-dev: db-up run
-
-# Full cleanup: stop db and clean build
-clean-all: db-down clean
-
-# Pre-commit checks: format and test
-check: format test
