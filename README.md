@@ -154,15 +154,15 @@ To set up and run NeoPRISM for development, follow these steps:
    ```
 2. **Install web UI dependencies** (only required the first time):
    ```bash
-   npm install
+   just init
    ```
 3. **Start the local PostgreSQL database** (required for NeoPRISM to store data):
    ```bash
-   dbUp
+   just db-up
    ```
 4. **Run the NeoPRISM node** (this will automatically generate all required assets):
    ```bash
-   runNode
+   just run
    ```
 5. **Access the Web UI and API** at [http://localhost:8080](http://localhost:8080).
 
@@ -170,13 +170,13 @@ To set up and run NeoPRISM for development, follow these steps:
 
 - To stop and remove the local database:
   ```bash
-  dbDown
+  just db-down
   ```
 
 **Notes**
 - Default port used is `8080`.
-- No need to run `buildAssets` manually; `runNode` handles asset generation automatically.
-- You can run `buildAssets` separately if you only want to generate web UI assets without starting the node.
+- No need to run `just build-assets` manually; `just run` handles asset generation automatically.
+- You can run `just build-assets` separately if you only want to generate web UI assets without starting the node.
 
 ## Frequently used commands
 
@@ -191,24 +191,24 @@ Assuming you are in the development shell, here are some frequently used command
 
 | command                          | description                                    |
 |----------------------------------|------------------------------------------------|
-| `npm install`                    | Install the npm dependencies (first time only) |
+| `just init`                      | Install the npm dependencies (first time only) |
 | `cargo build`                    | Build the cargo workspace                      |
 | `cargo clean`                    | Clean the cargo workspace                      |
 | `cargo r -p neoprism-node -- -h` | See `neoprism-node` service CLI options        |
 | `cargo test --all-features`      | Run tests that enable all crate features       |
 
-The following scripts are provided by the shell to automate the local development workflow:
+The following justfile commands are available to automate the local development workflow:
 
-| command                                 | description                                                        |
-|-----------------------------------------|--------------------------------------------------------------------|
-| `format`                                | Run the formatter on everything                                    |
-| `build`                                 | Build the whole project                                            |
-| `buildAssets`                           | Build the Web UI assets (CSS, JavaScript, static assets)           |
-| `buildConfig`                           | Build the generated config                                         |
-| `dbUp`                                  | Spin up the local database                                         |
-| `dbDown`                                | Tear down the local database                                       |
-| `pgDump`                                | Dump the local database to the `postgres.dump` file                |
-| `pgRestore`                             | Restore the local database from the `postgres.dump` file           |
-| `runNode indexer`                       | Run the indexer node, connecting to the local database             |
-| `runNode indexer --cardano-addr <ADDR>` | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
-| `runNode indexer --dbsync-url <URL>`    | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
+| command                                     | description                                                        |
+|---------------------------------------------|--------------------------------------------------------------------|
+| `just format`                               | Run the formatter on everything                                    |
+| `just build`                                | Build the whole project                                            |
+| `just build-assets`                         | Build the Web UI assets (CSS, JavaScript, static assets)           |
+| `just build-config`                         | Build the generated config                                         |
+| `just db-up`                                | Spin up the local database                                         |
+| `just db-down`                              | Tear down the local database                                       |
+| `just db-dump`                              | Dump the local database to the `postgres.dump` file                |
+| `just db-restore`                           | Restore the local database from the `postgres.dump` file           |
+| `just run indexer`                          | Run the indexer node, connecting to the local database             |
+| `just run indexer --cardano-addr <ADDR>`    | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
+| `just run indexer --dbsync-url <URL>`       | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
