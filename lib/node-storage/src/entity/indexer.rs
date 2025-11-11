@@ -4,7 +4,7 @@ use lazybe::uuid::Uuid;
 
 use crate::entity::DidSuffix;
 
-#[derive(Entity)]
+#[derive(Entity, sqlx::FromRow)]
 #[lazybe(table = "dlt_cursor")]
 pub struct DltCursor {
     #[lazybe(primary_key)]
@@ -28,7 +28,7 @@ pub struct RawOperation {
     pub is_indexed: bool,
 }
 
-#[derive(Entity)]
+#[derive(Entity, sqlx::FromRow)]
 #[lazybe(table = "indexed_ssi_operation")]
 #[allow(unused)]
 pub struct IndexedSsiOperation {
@@ -40,7 +40,7 @@ pub struct IndexedSsiOperation {
     pub indexed_at: DateTime<Utc>,
 }
 
-#[derive(Entity)]
+#[derive(Entity, sqlx::FromRow)]
 #[lazybe(table = "indexed_vdr_operation")]
 #[allow(unused)]
 pub struct IndexedVdrOperation {

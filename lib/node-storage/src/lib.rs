@@ -4,6 +4,7 @@ use identus_did_prism_indexer::repo::{DltCursorRepo, IndexedOperationRepo, Index
 
 pub mod backend;
 mod entity;
+pub mod snapshot;
 
 pub use backend::postgres::PostgresDb;
 #[cfg(feature = "sqlite-storage")]

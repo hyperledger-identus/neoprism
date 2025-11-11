@@ -121,6 +121,26 @@ db-clean-sqlite:
     rm -f {{sqlite_db_path}}
     echo "Removed SQLite database at {{sqlite_db_path}}"
 
+# Export a database snapshot (backend arg: postgres|sqlite)
+[group: 'neoprism']
+db-backup backend output:
+    if [ "{{backend}}" = "postgres" ]; then \
+        DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"; \
+    else \
+        DB_URL="{{sqlite_db_url}}"; \
+    fi; \
+    cargo run --bin neoprism-node -- db backup --db-backend {{backend}} --db-url "$DB_URL" --output "{{output}}"
+
+# Restore a database snapshot (backend arg: postgres|sqlite)
+[group: 'neoprism']
+db-restore-snapshot backend input:
+    if [ "{{backend}}" = "postgres" ]; then \
+        DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"; \
+    else \
+        DB_URL="{{sqlite_db_url}}"; \
+    fi; \
+    cargo run --bin neoprism-node -- db restore --db-backend {{backend}} --db-url "$DB_URL" --input "{{input}}"
+
 # Start PRISM conformance test environment
 [group: 'prism-test']
 [working-directory: 'docker/prism-test']
