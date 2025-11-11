@@ -25,5 +25,6 @@ identus-apollo   = { workspace = true, features = [ "hash", "hex", "secp256k1", 
 protobuf-codegen = { workspace = true }
 
 [features]
-default = [  ]
-openapi = [ "dep:utoipa" ]
+default              = [  ]
+openapi              = [ "dep:utoipa" ]
+in-memory-blockchain = [  ]
