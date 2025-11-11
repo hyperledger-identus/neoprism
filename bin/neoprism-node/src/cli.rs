@@ -19,7 +19,7 @@ pub enum Command {
     Submitter(SubmitterArgs),
     /// Start the node in standalone mode.
     Standalone(StandaloneArgs),
-    /// Start the development server with an in-memory blockchain.
+    /// Start the node in standalone mode with an in-memory blockchain for development.
     Dev(DevArgs),
     /// Generate OpenAPI specification for the API.
     GenerateOpenapi(GenerateOpenApiArgs),
@@ -109,7 +109,7 @@ pub struct DltSourceArgs {
     /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
     #[arg(long, env = "NPRISM_CARDANO_RELAY_ADDR", group = "dlt-source")]
     pub cardano_relay_addr: Option<String>,
-    /// DB-Sync url.
+    /// DB-Sync URL.
     /// If provided, the node will sync events from DB Sync.
     /// (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
@@ -127,7 +127,7 @@ pub struct DltSourceArgs {
 
 #[derive(Args)]
 pub struct DltSinkArgs {
-    /// Base url of cardano wallet
+    /// Base URL of the Cardano wallet
     #[arg(long, env = "NPRISM_CARDANO_WALLET_BASE_URL")]
     pub cardano_wallet_base_url: String,
     /// Wallet ID to use for making transactions.
