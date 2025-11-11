@@ -14,7 +14,7 @@ use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use identus_did_resolver_http::DidResolverStateDyn;
-use node_storage::PostgresDb;
+use node_storage::{PostgresDb, StorageBackend};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -34,6 +34,8 @@ enum RunMode {
     Submitter,
     Standalone,
 }
+
+type SharedStorage = Arc<dyn StorageBackend>;
 
 #[derive(Clone)]
 struct AppState {
@@ -96,15 +98,15 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let app_state = AppState {
         run_mode: RunMode::Indexer,
     };
     let indexer_state = IndexerState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
     };
     let indexer_ui_state = IndexerUiState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
     run_server(
@@ -129,16 +131,16 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
     let indexer_state = IndexerState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
     };
     let indexer_ui_state = IndexerUiState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
     let submitter_state = SubmitterState { dlt_sink };
@@ -199,7 +201,7 @@ async fn run_server(
     Ok(())
 }
 
-async fn init_database(db_args: &DbArgs) -> PostgresDb {
+async fn init_database(db_args: &DbArgs) -> SharedStorage {
     let db = PostgresDb::connect(&db_args.db_url)
         .await
         .expect("Unable to connect to database");
@@ -212,13 +214,13 @@ async fn init_database(db_args: &DbArgs) -> PostgresDb {
         tracing::info!("Applied database migrations successfully");
     }
 
-    db
+    Arc::new(db)
 }
 
 async fn init_dlt_source(
     dlt_args: &DltSourceArgs,
     network: &NetworkIdentifier,
-    db: &PostgresDb,
+    db: SharedStorage,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
     if let Some(address) = &dlt_args.cardano_relay_addr {
         tracing::info!(

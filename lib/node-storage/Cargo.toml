@@ -3,6 +3,14 @@ name              = "node-storage"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = [  ]
+sqlite-storage = [
+  "lazybe/sqlite",
+  "sea-query/backend-sqlite",
+  "sqlx/sqlite",
+]
+
 [dependencies]
 async-trait    = { workspace = true }
 chrono         = { workspace = true, features = [ "serde" ] }
