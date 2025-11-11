@@ -16,6 +16,7 @@ pkgs.mkShell {
     less
     ncurses
     nixfmt-rfc-style
+    pkg-config
     protobuf
     taplo
     which
@@ -25,6 +26,7 @@ pkgs.mkShell {
     # db
     sqlfluff
     sqlx-cli
+    sqlite
     # rust
     cargo-edit
     cargo-expand

@@ -178,6 +178,36 @@ To set up and run NeoPRISM for development, follow these steps:
 - No need to run `just build-assets` manually; `just run` handles asset generation automatically.
 - You can run `just build-assets` separately if you only want to generate web UI assets without starting the node.
 
+### SQLx schema checks
+
+The development shell now bundles `sqlx-cli`, `sqlite`, and all required headers. Whenever you change migrations or entity definitions, run both backends to ensure they stay valid:
+
+```bash
+# Postgres schema (point to your local instance)
+nix develop -c 'DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres sqlx migrate run'
+
+# Embedded SQLite schema (creates a throwaway file)
+nix develop -c 'DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite sqlx migrate run'
+```
+
+Remove the temporary SQLite file afterwards if you do not need it anymore.
+
+#### Offline sqlx metadata (optional)
+
+If you rely on `cargo sqlx prepare` for offline builds, regenerate metadata for each backend:
+
+```bash
+# Postgres metadata
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
+  cargo sqlx prepare --bin neoprism-node
+
+# SQLite metadata (enable the sqlite-backend feature)
+DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite \
+  cargo sqlx prepare --bin neoprism-node --features sqlite-backend
+```
+
+The generated `sqlx-data.json` reflects the currently enabled features, so keep both variants in sync if you commit the file.
+
 ## Frequently used commands
 
 These are commands you can run outside the development shell:
