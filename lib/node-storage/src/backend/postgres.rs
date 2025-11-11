@@ -1,5 +1,5 @@
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockMetadata, BlockNo, DltCursor, OperationMetadata, SlotNo};
+use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{
@@ -12,6 +12,7 @@ use lazybe::page::PaginationInput;
 use lazybe::sort::Sort;
 use sqlx::PgPool;
 
+use super::shared::parse_raw_operation;
 use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
@@ -341,28 +342,4 @@ impl DltCursorRepo for PostgresDb {
         tx.commit().await?;
         Ok(())
     }
-}
-
-fn parse_raw_operation(
-    value: entity::RawOperation,
-) -> Result<(RawOperationId, OperationMetadata, SignedPrismOperation), Error> {
-    let metadata = OperationMetadata {
-        block_metadata: BlockMetadata {
-            slot_number: u64::try_from(value.slot)
-                .expect("slot value does not fit in u64")
-                .into(),
-            block_number: u64::try_from(value.block_number)
-                .expect("block_number value does not fit in u64")
-                .into(),
-            cbt: value.cbt,
-            absn: value.absn.try_into().expect("absn value does not fit in u32"),
-        },
-        osn: value.osn.try_into().expect("osn value does not fit in u32"),
-    };
-    SignedPrismOperation::decode(value.signed_operation_data.as_slice())
-        .map(|op| (value.id.into(), metadata, op))
-        .map_err(|e| Error::ProtobufDecode {
-            source: e,
-            target_type: std::any::type_name::<SignedPrismOperation>(),
-        })
 }

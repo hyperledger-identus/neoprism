@@ -66,6 +66,12 @@ mod tests {
         assert_backend::<PostgresDb>();
     }
 
+    #[cfg(feature = "sqlite-storage")]
+    #[test]
+    fn sqlite_backend_implements_storage_backend() {
+        assert_backend::<SqliteDb>();
+    }
+
     #[test]
     fn sqlite_and_postgres_migrations_are_in_sync() {
         fn collect(dir: &str) -> Vec<String> {

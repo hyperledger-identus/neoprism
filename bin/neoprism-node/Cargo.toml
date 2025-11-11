@@ -12,6 +12,7 @@ axum               = { workspace = true }
 clap               = { workspace = true, features = [ "derive", "env" ] }
 chrono             = { workspace = true }
 derive_more        = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
+dirs               = { workspace = true }
 lazybe             = { workspace = true, features = [ "openapi" ] }
 maud               = { workspace = true, features = [ "axum" ] }
 serde_json         = { workspace = true }

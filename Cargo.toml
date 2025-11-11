@@ -56,6 +56,7 @@ uuid               = { version = "1" }
 # db
 sqlx      = { version = "0.8" }
 sea-query = { version = "0.32" }
+dirs      = { version = "5" }
 # cardano
 oura              = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
 pallas-primitives = { version = "0.30" }
