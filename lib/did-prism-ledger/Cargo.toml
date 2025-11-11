@@ -9,7 +9,7 @@ chrono      = { workspace = true }
 tokio       = { workspace = true, features = [ "sync", "time", "rt" ] }
 tracing     = { workspace = true }
 
-identus-apollo              = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
+identus-apollo              = { workspace = true, features = [ "hash" ] }
 identus-did-prism           = { workspace = true }
 identus-did-prism-indexer   = { workspace = true }
 identus-did-prism-submitter = { workspace = true }
