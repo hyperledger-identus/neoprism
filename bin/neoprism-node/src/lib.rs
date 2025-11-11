@@ -8,11 +8,15 @@ use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
 use cli::Cli;
+use identus_did_prism::dlt::in_memory::InMemoryBlockchain;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
+use identus_did_prism_indexer::DltSource;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
+use identus_did_prism_indexer::dlt::in_memory::InMemoryDltSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
+use identus_did_prism_submitter::dlt::in_memory::InMemoryDltSink;
 use identus_did_resolver_http::DidResolverStateDyn;
 use node_storage::PostgresDb;
 use tower::ServiceBuilder;
@@ -20,7 +24,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
+use crate::cli::{DbArgs, DevArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -76,6 +80,7 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
+        cli::Command::Dev(args) => run_dev_command(args).await?,
         cli::Command::GenerateOpenapi(args) => generate_openapi(args)?,
     };
     Ok(())
@@ -140,6 +145,36 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let indexer_ui_state = IndexerUiState {
         prism_did_service: PrismDidService::new(&db),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
+    };
+    let submitter_state = SubmitterState { dlt_sink };
+    run_server(
+        app_state,
+        Some(indexer_ui_state),
+        Some(indexer_state),
+        Some(submitter_state),
+        &args.server,
+    )
+    .await
+}
+
+async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
+    let db = init_database(&args.db).await;
+    let (rx, tx) = InMemoryBlockchain::new_tx_rx();
+    let dlt_sink = Arc::new(InMemoryDltSink::new(tx));
+    let dlt_source = InMemoryDltSource::new(rx);
+    let cursor_rx = dlt_source.sync_cursor();
+    let app_state = AppState {
+        run_mode: RunMode::Standalone,
+    };
+    let indexer_state = IndexerState {
+        prism_did_service: PrismDidService::new(&db),
+    };
+    let indexer_ui_state = IndexerUiState {
+        prism_did_service: PrismDidService::new(&db),
+        dlt_source: Some(DltSourceState {
+            cursor_rx,
+            network: NetworkIdentifier::Custom,
+        }),
     };
     let submitter_state = SubmitterState { dlt_sink };
     run_server(

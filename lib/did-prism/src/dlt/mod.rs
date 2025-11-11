@@ -26,7 +26,7 @@ pub struct BlockMetadata {
     pub block_number: BlockNo,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
-    /// PrismBlock seqeuence number
+    /// PrismBlock sequence number
     ///
     /// This is used to order PrismBlock within the same Cardano block
     pub absn: u32,
@@ -153,6 +153,8 @@ pub enum NetworkIdentifier {
     Preprod,
     #[strum(serialize = "preview")]
     Preview,
+    #[strum(serialize = "custom")]
+    Custom,
 }
 
 impl NetworkIdentifier {

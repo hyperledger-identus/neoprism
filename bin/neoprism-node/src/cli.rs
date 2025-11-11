@@ -19,6 +19,8 @@ pub enum Command {
     Submitter(SubmitterArgs),
     /// Start the node in standalone mode.
     Standalone(StandaloneArgs),
+    /// Start the development server with an in-memory blockchain.
+    Dev(DevArgs),
     /// Generate OpenAPI specification for the API.
     GenerateOpenapi(GenerateOpenApiArgs),
 }
@@ -51,6 +53,14 @@ pub struct StandaloneArgs {
     pub dlt_source: DltSourceArgs,
     #[clap(flatten)]
     pub dlt_sink: DltSinkArgs,
+}
+
+#[derive(Args)]
+pub struct DevArgs {
+    #[clap(flatten)]
+    pub server: ServerArgs,
+    #[clap(flatten)]
+    pub db: DbArgs,
 }
 
 #[derive(Args)]
