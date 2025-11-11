@@ -9,6 +9,7 @@ derive_more = { workspace = true, features = [ "from", "debug", "display" ] }
 serde       = { workspace = true, features = [ "derive" ] }
 serde_json  = { workspace = true }
 reqwest     = { workspace = true, optional = true, features = [ "rustls-tls", "json" ] }
+tokio       = { workspace = true, optional = true, features = [ "sync" ] }
 
 identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 identus-did-prism = { workspace = true }
@@ -16,4 +17,4 @@ identus-did-prism = { workspace = true }
 [features]
 default              = [  ]
 cardano-wallet       = [ "dep:reqwest" ]
-in-memory-blockchain = [ "identus-did-prism/in-memory-blockchain" ]
+in-memory-blockchain = [ "dep:tokio", "identus-did-prism/in-memory-blockchain" ]

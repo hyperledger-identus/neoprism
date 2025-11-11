@@ -1,19 +1,18 @@
-use identus_did_prism::dlt::in_memory::InMemoryBlockchain;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use tokio::sync::{mpsc, watch};
 
 use crate::DltSource;
 
 pub struct InMemoryDltSource {
-    blockchain: InMemoryBlockchain,
+    block_rx: mpsc::Receiver<PublishedPrismObject>,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
 }
 
 impl InMemoryDltSource {
-    pub fn new(blockchain: InMemoryBlockchain) -> Self {
+    pub fn new(block_rx: mpsc::Receiver<PublishedPrismObject>) -> Self {
         let (sync_cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
-            blockchain,
+            block_rx,
             sync_cursor_tx,
         }
     }
@@ -29,13 +28,19 @@ impl DltSource for InMemoryDltSource {
         let sync_cursor_tx = self.sync_cursor_tx;
 
         tokio::spawn(async move {
-            let mut block_rx = self.blockchain.into_block_receiver().await;
+            let mut block_rx = self.block_rx;
 
             while let Some(published_object) = block_rx.recv().await {
                 // Update cursor based on the block metadata
                 let cursor = DltCursor {
                     slot: published_object.block_metadata.slot_number.into(),
-                    block_hash: [0u8; 32].to_vec(),
+                    // Dummy block_hash bytes from block_no
+                    block_hash: published_object
+                        .block_metadata
+                        .block_number
+                        .inner()
+                        .to_le_bytes()
+                        .to_vec(),
                     cbt: Some(published_object.block_metadata.cbt),
                 };
                 let _ = sync_cursor_tx.send(Some(cursor));

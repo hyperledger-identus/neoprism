@@ -1,17 +1,24 @@
+use std::sync::atomic::AtomicU64;
+
+use identus_apollo::hash::sha256;
 use identus_did_prism::dlt::TxId;
-use identus_did_prism::dlt::in_memory::InMemoryBlockchain;
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
+use tokio::sync::mpsc;
 
 use crate::DltSink;
 
 pub struct InMemoryDltSink {
-    blockchain: InMemoryBlockchain,
+    block_tx: mpsc::Sender<PrismObject>,
+    count: AtomicU64,
 }
 
 impl InMemoryDltSink {
-    pub fn new(blockchain: InMemoryBlockchain) -> Self {
-        Self { blockchain }
+    pub fn new(block_tx: mpsc::Sender<PrismObject>) -> Self {
+        Self {
+            block_tx,
+            count: AtomicU64::new(0),
+        }
     }
 }
 
@@ -27,6 +34,12 @@ impl DltSink for InMemoryDltSink {
             special_fields: Default::default(),
         };
 
-        self.blockchain.add_block(prism_object).await
+        let count = self.count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let tx_id = TxId::from(sha256(count.to_le_bytes()));
+        self.block_tx
+            .send(prism_object)
+            .await
+            .map_err(|e| e.to_string())
+            .map(|_| tx_id)
     }
 }
