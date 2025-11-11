@@ -33,7 +33,7 @@ pub fn create_ledger() -> (InMemoryDltSource, Arc<dyn DltSink + Send + Sync>) {
                 prism_object,
             };
             if let Err(e) = block_tx.send(published_prism_object).await {
-                tracing::error!("{:?}", e);
+                tracing::error!(error = ?e, "failed to send published object to block receiver");
                 break;
             }
             block_count += 1;

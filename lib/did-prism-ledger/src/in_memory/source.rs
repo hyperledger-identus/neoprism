@@ -33,7 +33,7 @@ impl DltSource for InMemoryDltSource {
                 // Update cursor based on the block metadata
                 let cursor = DltCursor {
                     slot: published_object.block_metadata.slot_number.into(),
-                    // Dummy block_hash bytes from block_no
+                    // Generate synthetic block_hash from block_number for in-memory ledger
                     block_hash: published_object
                         .block_metadata
                         .block_number

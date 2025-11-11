@@ -133,7 +133,7 @@ fn chain_wellknown_info(network: &NetworkIdentifier) -> ChainWellKnownInfo {
         NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
         NetworkIdentifier::Preprod => ChainWellKnownInfo::preprod(),
         NetworkIdentifier::Preview => ChainWellKnownInfo::preview(),
-        NetworkIdentifier::Custom => panic!("custom network is not supported"),
+        NetworkIdentifier::Custom => panic!("custom network cannot be used with oura source"),
     }
 }
 
