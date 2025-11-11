@@ -97,8 +97,8 @@ fn did_document_body(did: &Did, state: &DidState) -> Markup {
                 a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
                 (context_card(contexts))
                 (public_key_card(public_keys))
-                (service_card(&services))
-                (storage_card(&storages))
+                (service_card(services))
+                (storage_card(storages))
             }
         }
     }

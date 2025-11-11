@@ -14,9 +14,9 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-utils.url = "github:numtide/flake-utils";
-    cardano-node.url = "github:IntersectMBO/cardano-node?ref=10.4.1";
-    cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync?ref=13.6.0.5";
-    cardano-wallet.url = "github:cardano-foundation/cardano-wallet?ref=v2025-03-31";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.5.1";
+    cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync/13.6.0.5";
+    cardano-wallet.url = "github:cardano-foundation/cardano-wallet/v2025-03-31";
   };
 
   outputs =
