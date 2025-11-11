@@ -8,3 +8,6 @@ pub mod oura;
 
 #[cfg(feature = "dbsync")]
 pub mod dbsync;
+
+#[cfg(feature = "in-memory-blockchain")]
+pub mod in_memory;
