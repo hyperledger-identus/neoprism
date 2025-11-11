@@ -9,7 +9,6 @@ use axum::Router;
 use clap::Parser;
 use cli::Cli;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
-use identus_did_prism_indexer::DltSource;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
@@ -156,8 +155,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
 
 async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
-    let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
-    let cursor_rx = dlt_source.sync_cursor();
+    let (cursor_rx, dlt_sink) = init_memory_ledger(&db);
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
@@ -243,6 +241,21 @@ async fn init_database(db_args: &DbArgs) -> PostgresDb {
     }
 
     db
+}
+
+fn init_memory_ledger(
+    db: &PostgresDb,
+) -> (
+    tokio::sync::watch::Receiver<Option<DltCursor>>,
+    Arc<dyn DltSink + Send + Sync + 'static>,
+) {
+    let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
+    let sync_worker = DltSyncWorker::new(db.clone(), dlt_source);
+    let index_worker = DltIndexWorker::new(db.clone(), 1);
+    let cursor_rx = sync_worker.sync_cursor();
+    tokio::spawn(sync_worker.run());
+    tokio::spawn(index_worker.run());
+    (cursor_rx, dlt_sink)
 }
 
 async fn init_dlt_source(
