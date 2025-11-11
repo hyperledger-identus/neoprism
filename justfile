@@ -121,9 +121,7 @@ prism-test-down:
 [group: 'prism-test']
 [working-directory: 'tests/prism-test']
 prism-test-run: prism-test-build
-    just _prism-test-up
     sbt test
-    just _prism-test-down
 
 # Build PRISM conformance test suite
 [group: 'prism-test']
