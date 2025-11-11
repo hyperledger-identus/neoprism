@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use identus_apollo::hash::sha256;
 use protobuf::Message;
 
-use super::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
+use super::{BlockNo, SlotNo, TxId};
 use crate::proto::prism::PrismObject;
 
 #[derive(Clone)]
@@ -36,7 +36,7 @@ struct InMemoryTransaction {
 
 impl InMemoryBlockchain {
     pub fn new() -> Self {
-        let genesis_time = Utc::now();
+        let genesis_time = DateTime::UNIX_EPOCH;
         let slot_duration_secs = 1;
         Self {
             inner: Arc::new(RwLock::new(InMemoryBlockchainInner {
