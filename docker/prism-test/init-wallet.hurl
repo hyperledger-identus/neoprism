@@ -1,7 +1,7 @@
 # Wait until wallet is up
 GET {{ WALLET_BASE_URL }}/wallets
 [Options]
-delay: 5
+delay: 5s
 retry: 10
 HTTP 200
 

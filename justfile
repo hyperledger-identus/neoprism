@@ -67,6 +67,9 @@ format:
     echo "Formatting Rust files..."
     cargo fmt
     
+    echo "Formatting Hurl files..."
+    find . -name '*.hurl' -type f -exec sh -c 'echo "  → {}" && hurlfmt --in-place {}' \;
+    
     echo "Formatting SQL files..."
     cd lib/node-storage/migrations && \
         sqlfluff fix . && \

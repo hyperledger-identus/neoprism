@@ -8,10 +8,10 @@ pkgs.mkShell {
   packages = with pkgs; [
     # base
     docker
-    docker
     docker-compose
     git
     git-cliff
+    hurl
     just
     less
     ncurses
