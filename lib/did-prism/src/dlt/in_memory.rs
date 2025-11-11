@@ -1,98 +1,57 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-use chrono::{DateTime, Duration, Utc};
+use chrono::Utc;
 use identus_apollo::hash::sha256;
 use protobuf::Message;
+use tokio::sync::mpsc;
 
-use super::{BlockNo, SlotNo, TxId};
+use super::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
 use crate::proto::prism::PrismObject;
 
-#[derive(Clone)]
 pub struct InMemoryBlockchain {
-    inner: Arc<RwLock<InMemoryBlockchainInner>>,
-}
-
-struct InMemoryBlockchainInner {
-    /// Blocks stored in chronological order
-    blocks: Vec<InMemoryBlock>,
-    /// Genesis timestamp for calculating block times
-    genesis_time: DateTime<Utc>,
-    /// Duration of each slot in seconds
-    slot_duration_secs: u64,
-}
-
-#[derive(Debug, Clone)]
-struct InMemoryBlock {
-    slot_no: SlotNo,
-    block_no: BlockNo,
-    timestamp: DateTime<Utc>,
-    transactions: Vec<InMemoryTransaction>,
-}
-
-#[derive(Debug, Clone)]
-struct InMemoryTransaction {
-    prism_object: PrismObject,
+    block_tx: mpsc::Sender<PublishedPrismObject>,
+    block_rx: mpsc::Receiver<PublishedPrismObject>,
+    block_counter: Arc<AtomicU64>,
 }
 
 impl InMemoryBlockchain {
     pub fn new() -> Self {
-        let genesis_time = DateTime::UNIX_EPOCH;
-        let slot_duration_secs = 1;
+        let (block_tx, block_rx) = mpsc::channel::<PublishedPrismObject>(1024);
+
         Self {
-            inner: Arc::new(RwLock::new(InMemoryBlockchainInner {
-                blocks: Vec::new(),
-                genesis_time,
-                slot_duration_secs,
-            })),
+            block_tx,
+            block_rx: block_rx,
+            block_counter: Arc::new(AtomicU64::new(0)),
         }
     }
 
-    /// Adds a new block containing the given PRISM object and returns its transaction ID.
-    pub fn add_block(&self, prism_object: PrismObject) -> Result<TxId, String> {
-        let mut inner = self
-            .inner
-            .write()
-            .map_err(|e| format!("failed to acquire write lock: {e}"))?;
+    pub async fn add_block(&self, prism_object: PrismObject) -> Result<TxId, String> {
+        let slot = self.block_counter.fetch_add(1, Ordering::SeqCst);
+        let block_number = slot; // For in-memory blockchain, use slot as block number
 
-        let slot_no = SlotNo::from(inner.blocks.len() as u64);
-        let block_no = BlockNo::from(inner.blocks.len() as u64);
-        let timestamp = inner.calculate_timestamp(inner.blocks.len() as u64);
+        let tx_id = Self::generate_tx_id(&prism_object, slot, 0);
 
-        let tx_id = Self::generate_tx_id(&prism_object, inner.blocks.len() as u64, 0);
-        let transaction = InMemoryTransaction { prism_object };
-        let block = InMemoryBlock {
-            slot_no,
-            block_no,
-            timestamp,
-            transactions: vec![transaction],
+        let published_prism_object = PublishedPrismObject {
+            block_metadata: BlockMetadata {
+                slot_number: SlotNo::from(slot),
+                block_number: BlockNo::from(block_number),
+                cbt: Utc::now(),
+                absn: 0, // In-memory blocks contain a single PrismObject per block
+            },
+            prism_object,
         };
 
-        inner.blocks.push(block);
+        self.block_tx
+            .send(published_prism_object)
+            .await
+            .map_err(|e| format!("failed to send block to channel: {e}"))?;
 
         Ok(tx_id)
     }
 
-    /// Advance to the next slot without adding a block (empty slot)
-    pub fn advance_slot(&self) -> Result<(), String> {
-        let mut inner = self
-            .inner
-            .write()
-            .map_err(|e| format!("failed to acquire write lock: {e}"))?;
-
-        let slot_no = SlotNo::from(inner.blocks.len() as u64);
-        let block_no = BlockNo::from(inner.blocks.len() as u64);
-        let timestamp = inner.calculate_timestamp(inner.blocks.len() as u64);
-
-        let block = InMemoryBlock {
-            slot_no,
-            block_no,
-            timestamp,
-            transactions: Vec::new(),
-        };
-
-        inner.blocks.push(block);
-
-        Ok(())
+    pub async fn into_block_receiver(self) -> mpsc::Receiver<PublishedPrismObject> {
+        self.block_rx
     }
 
     fn generate_tx_id(prism_object: &PrismObject, slot: u64, tx_idx: u32) -> TxId {
@@ -105,12 +64,6 @@ impl InMemoryBlockchain {
 
         let hash = sha256(&bytes);
         TxId::from(hash)
-    }
-}
-
-impl InMemoryBlockchainInner {
-    fn calculate_timestamp(&self, slot: u64) -> DateTime<Utc> {
-        self.genesis_time + Duration::seconds((slot * self.slot_duration_secs) as i64)
     }
 }
 

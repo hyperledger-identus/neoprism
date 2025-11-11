@@ -27,6 +27,6 @@ impl DltSink for InMemoryDltSink {
             special_fields: Default::default(),
         };
 
-        self.blockchain.add_block(prism_object)
+        self.blockchain.add_block(prism_object).await
     }
 }
