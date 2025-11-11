@@ -22,7 +22,6 @@ identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1",
 identus-did-prism = { workspace = true }
 
 [features]
-default   = [  ]
-oura      = [ "dep:oura", "dep:pallas-primitives" ]
-dbsync    = [ "dep:sqlx", "dep:serde_json" ]
-in-memory = [ "identus-did-prism/in-memory-blockchain" ]
+default = [  ]
+oura    = [ "dep:oura", "dep:pallas-primitives" ]
+dbsync  = [ "dep:sqlx", "dep:serde_json" ]

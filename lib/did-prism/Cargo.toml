@@ -15,7 +15,6 @@ regex         = { workspace = true }
 serde         = { workspace = true, features = [ "derive" ] }
 serde_json    = { workspace = true }
 strum         = { workspace = true, features = [ "derive" ] }
-tokio         = { workspace = true, features = [ "sync", "rt" ], optional = true }
 tracing       = { workspace = true }
 utoipa        = { workspace = true, optional = true }
 
@@ -26,6 +25,5 @@ identus-apollo   = { workspace = true, features = [ "hash", "hex", "secp256k1", 
 protobuf-codegen = { workspace = true }
 
 [features]
-default              = [  ]
-openapi              = [ "dep:utoipa" ]
-in-memory-blockchain = [ "dep:tokio" ]
+default = [  ]
+openapi = [ "dep:utoipa" ]

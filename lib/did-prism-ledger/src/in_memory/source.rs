@@ -1,7 +1,6 @@
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism_indexer::DltSource;
 use tokio::sync::{mpsc, watch};
-
-use crate::DltSource;
 
 pub struct InMemoryDltSource {
     block_rx: mpsc::Receiver<PublishedPrismObject>,

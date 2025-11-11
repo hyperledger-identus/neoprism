@@ -8,15 +8,12 @@ use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
 use cli::Cli;
-use identus_did_prism::dlt::in_memory::InMemoryBlockchain;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use identus_did_prism_indexer::DltSource;
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
-use identus_did_prism_indexer::dlt::in_memory::InMemoryDltSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
-use identus_did_prism_submitter::dlt::in_memory::InMemoryDltSink;
 use identus_did_resolver_http::DidResolverStateDyn;
 use node_storage::PostgresDb;
 use tower::ServiceBuilder;
@@ -159,9 +156,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
 
 async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db).await;
-    let (rx, tx) = InMemoryBlockchain::new_tx_rx();
-    let dlt_sink = Arc::new(InMemoryDltSink::new(tx));
-    let dlt_source = InMemoryDltSource::new(rx);
+    let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
     let cursor_rx = dlt_source.sync_cursor();
     let app_state = AppState {
         run_mode: RunMode::Standalone,

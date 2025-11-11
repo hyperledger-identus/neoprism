@@ -4,9 +4,8 @@ use identus_apollo::hash::sha256;
 use identus_did_prism::dlt::TxId;
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
+use identus_did_prism_submitter::DltSink;
 use tokio::sync::mpsc;
-
-use crate::DltSink;
 
 pub struct InMemoryDltSink {
     block_tx: mpsc::Sender<PrismObject>,

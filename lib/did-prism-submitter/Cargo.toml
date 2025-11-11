@@ -17,4 +17,3 @@ identus-did-prism = { workspace = true }
 [features]
 default        = [  ]
 cardano-wallet = [ "dep:reqwest" ]
-in-memory      = [ "dep:tokio", "identus-did-prism/in-memory-blockchain" ]

@@ -29,8 +29,9 @@ utoipa-swagger-ui = { version = "9", features = [ "axum", "vendored" ] }
 identus-apollo              = { workspace = true, features = [ "hex", "jwk" ] }
 identus-did-core            = { workspace = true, features = [ "openapi" ] }
 identus-did-prism           = { workspace = true, features = [ "openapi" ] }
-identus-did-prism-indexer   = { workspace = true, features = [ "oura", "dbsync", "in-memory" ] }
-identus-did-prism-submitter = { workspace = true, features = [ "cardano-wallet", "in-memory" ] }
+identus-did-prism-indexer   = { workspace = true, features = [ "oura", "dbsync" ] }
+identus-did-prism-ledger    = { workspace = true, features = [ "in-memory" ] }
+identus-did-prism-submitter = { workspace = true, features = [ "cardano-wallet" ] }
 identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true }
 

@@ -8,9 +8,6 @@ use strum::VariantArray;
 
 use crate::proto::prism::PrismObject;
 
-#[cfg(feature = "in-memory-blockchain")]
-pub mod in_memory;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DltCursor {
     pub slot: u64,
