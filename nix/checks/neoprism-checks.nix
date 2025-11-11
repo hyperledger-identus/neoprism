@@ -53,17 +53,18 @@ rustPlatform.buildRustPackage {
     echo "checking feature gate for identus-did-resolver-http"
     cargo clippy -p identus-did-resolver-http --all-targets --features openapi -- -D warnings
 
-
-
     echo "checking feature gate for identus-did-prism"
     cargo clippy -p identus-did-prism --all-targets --features openapi -- -D warnings
+    cargo clippy -p identus-did-prism --all-targets --features in-memory-blockchain -- -D warnings
 
     echo "checking feature gate for identus-did-prism-indexer"
     cargo clippy -p identus-did-prism-indexer --all-targets --features oura -- -D warnings
     cargo clippy -p identus-did-prism-indexer --all-targets --features dbsync -- -D warnings
+    cargo clippy -p identus-did-prism-indexer --all-targets --features in-memory-blockchain -- -D warnings
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
+    cargo clippy -p identus-did-prism-submitter --all-targets --features in-memory-blockchain -- -D warnings
   '';
   installPhase = "touch $out";
 

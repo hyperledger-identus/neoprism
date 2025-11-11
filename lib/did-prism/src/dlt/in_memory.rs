@@ -21,7 +21,7 @@ impl InMemoryBlockchain {
 
         Self {
             block_tx,
-            block_rx: block_rx,
+            block_rx,
             block_counter: Arc::new(AtomicU64::new(0)),
         }
     }
