@@ -241,10 +241,14 @@ The following justfile commands are available to automate the local development 
 | `just build`                                | Build the whole project                                            |
 | `just build-assets`                         | Build the Web UI assets (CSS, JavaScript, static assets)           |
 | `just build-config`                         | Build the generated config                                         |
-| `just db-up`                                | Spin up the local database                                         |
-| `just db-down`                              | Tear down the local database                                       |
-| `just db-dump`                              | Dump the local database to the `postgres.dump` file                |
-| `just db-restore`                           | Restore the local database from the `postgres.dump` file           |
+| `just db-up`                                | Spin up the local PostgreSQL database (Docker)                     |
+| `just db-down`                              | Tear down the local PostgreSQL database                            |
+| `just db-dump`                              | Dump the local PostgreSQL database to the `postgres.dump` file     |
+| `just db-restore`                           | Restore the local PostgreSQL database from the `postgres.dump` file|
+| `just db-init-sqlite`                       | Create or migrate the embedded SQLite database (default path)      |
+| `just db-clean-sqlite`                      | Delete the embedded SQLite database file                           |
 | `just run indexer`                          | Run the indexer node, connecting to the local database             |
 | `just run indexer --cardano-addr <ADDR>`    | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
 | `just run indexer --dbsync-url <URL>`       | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
+
+> **Note:** `db-up`, `db-down`, `db-dump`, and `db-restore` manage the Dockerized PostgreSQL instance only. Use `db-init-sqlite` / `db-clean-sqlite` when working with the embedded SQLite backend.
