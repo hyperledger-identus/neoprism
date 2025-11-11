@@ -1,0 +1,1 @@
+-- no-op for sqlite: schema introduced in the initial migration already matches this version.

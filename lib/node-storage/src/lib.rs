@@ -54,6 +54,9 @@ pub enum Error {
 
 #[cfg(test)]
 mod tests {
+    use std::fs;
+    use std::path::Path;
+
     use super::*;
 
     fn assert_backend<T: StorageBackend>() {}
@@ -61,5 +64,32 @@ mod tests {
     #[test]
     fn postgres_backend_implements_storage_backend() {
         assert_backend::<PostgresDb>();
+    }
+
+    #[test]
+    fn sqlite_and_postgres_migrations_are_in_sync() {
+        fn collect(dir: &str) -> Vec<String> {
+            let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR")).join(dir);
+            let mut names = fs::read_dir(&manifest_dir)
+                .unwrap_or_else(|_| panic!("failed to read {}", manifest_dir.display()))
+                .filter_map(|entry| {
+                    entry.ok().and_then(|e| {
+                        let file_name = e.file_name();
+                        let name = file_name.to_string_lossy().to_string();
+                        if name.ends_with(".sql") { Some(name) } else { None }
+                    })
+                })
+                .collect::<Vec<_>>();
+            names.sort();
+            names
+        }
+
+        let postgres = collect("migrations/postgres");
+        let sqlite = collect("migrations/sqlite");
+        assert_eq!(
+            postgres, sqlite,
+            "Postgres and SQLite migrations differ: {:?} vs {:?}",
+            postgres, sqlite
+        );
     }
 }

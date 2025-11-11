@@ -30,7 +30,7 @@ impl PostgresDb {
     }
 
     pub async fn migrate(&self) -> Result<(), Error> {
-        sqlx::migrate!("./migrations").run(&self.pool).await?;
+        sqlx::migrate!("./migrations/postgres").run(&self.pool).await?;
         Ok(())
     }
 }

@@ -71,9 +71,7 @@ format:
     cargo fmt
     
     echo "Formatting SQL files..."
-    cd lib/node-storage/migrations
-    sqlfluff fix .
-    sqlfluff lint .
+    (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
 # Start local PostgreSQL database in Docker
 [group: 'neoprism']
@@ -178,4 +176,3 @@ release-testnet:
     docker manifest push "patextreme/cardano-testnet:$TAG"
     
     echo "✓ Released: patextreme/cardano-testnet:$TAG"
-
