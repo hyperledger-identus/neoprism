@@ -15,6 +15,7 @@ pkgs.mkShell {
     just
     less
     ncurses
+    nix
     nixfmt-rfc-style
     protobuf
     taplo
