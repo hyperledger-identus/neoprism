@@ -14,5 +14,6 @@ identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1",
 identus-did-prism = { workspace = true }
 
 [features]
-default        = [  ]
-cardano-wallet = [ "dep:reqwest" ]
+default              = [  ]
+cardano-wallet       = [ "dep:reqwest" ]
+in-memory-blockchain = [ "identus-did-prism/in-memory-blockchain" ]
