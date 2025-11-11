@@ -40,7 +40,7 @@
           overlays = [
             (import rust-overlay)
             (_: prev: {
-              mkSbtDerivation = sbt.mkSbtDerivation.${pkgs.system};
+              mkSbtDerivation = sbt.mkSbtDerivation.${system};
               rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
               inherit (cardano-node.packages.${system})
                 cardano-cli
