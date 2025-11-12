@@ -2,9 +2,14 @@
 target-version = "py313"
 
 [tool.ruff.lint]
-# Enable import sorting
-select = [ "I" ]
-
-[tool.ruff.lint.isort]
-# Group imports: standard library, third-party, local
-known-first-party = [ "docker" ]
+# Enable common, opinionated rules
+select = [
+  "E",   # pycodestyle errors
+  "W",   # pycodestyle warnings
+  "F",   # pyflakes
+  "I",   # isort (import sorting)
+  "UP",  # pyupgrade (modernize Python syntax)
+  "B",   # flake8-bugbear (common bugs)
+  "C4",  # flake8-comprehensions
+  "SIM", # flake8-simplify
+]

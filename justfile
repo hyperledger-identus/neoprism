@@ -26,9 +26,8 @@ build-assets:
 
 # Build Docker Compose configurations from Dhall sources
 [group: 'neoprism']
-[working-directory: 'docker/config']
 build-config:
-  python main.py
+  python -m docker.config.main
 
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
