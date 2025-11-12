@@ -8,7 +8,6 @@ from . import (
     neoprism,
     prism_node,
     ryo,
-    scala_did,
     uni_resolver_web,
 )
 
@@ -22,6 +21,5 @@ __all__ = [
     "neoprism",
     "prism_node",
     "ryo",
-    "scala_did",
     "uni_resolver_web",
 ]

@@ -38,12 +38,6 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("prism-node")
       )
 
-    // val scalaDidSpec = suite("scala-did node suite")(allSpecs)
-    //   .provide(
-    //     NodeClient.grpc("localhost", 8980),
-    //     NodeName.layer("scala-did")
-    //   )
-
     (neoprismSpec + prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment

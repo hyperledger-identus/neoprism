@@ -12,7 +12,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
     signatureSpec,
     deactivatedSpec,
     nonceSpec
-  ) @@ NodeName.skipIf("prism-node", "scala-did")
+  ) @@ NodeName.skipIf("prism-node")
 
   private def deactivatedSpec = suite("Deactivated DID")(
     test("should reject storage creation by deactivated DID") {

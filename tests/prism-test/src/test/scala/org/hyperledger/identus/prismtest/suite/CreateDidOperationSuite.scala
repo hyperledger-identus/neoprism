@@ -144,7 +144,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should accept maximum key ID length (50 chars)") {
       for
         seed <- newSeed
@@ -166,7 +166,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject invalid key ID format") {
       for
         seed <- newSeed
@@ -177,7 +177,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject empty key ID") {
       for
         seed <- newSeed
@@ -229,7 +229,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should accept maximum service ID length (50 chars)") {
       for
         seed <- newSeed
@@ -253,7 +253,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject invalid service ID format") {
       for
         seed <- newSeed
@@ -265,7 +265,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject empty service ID") {
       for
         seed <- newSeed
@@ -314,7 +314,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject invalid service type format") {
       for
         seed <- newSeed
@@ -339,7 +339,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(spos)
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should accept maximum service endpoint length (300 chars)") {
       for
         seed <- newSeed
@@ -365,7 +365,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("scala-did"),
+    },
     test("should reject invalid service endpoint format") {
       for
         seed <- newSeed
@@ -389,7 +389,7 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(spos)
         didDataList <- ZIO.foreach(spos) { spo => getDidDocument(spo.getDid.get) }
       yield assert(didDataList)(forall(isNone))
-    } @@ NodeName.skipIf("scala-did")
+    }
   )
 
   private def vdrSpec = suite("VDR")(
@@ -404,5 +404,5 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("prism-node", "scala-did")
+    } @@ NodeName.skipIf("prism-node")
   )
