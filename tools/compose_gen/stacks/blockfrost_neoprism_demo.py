@@ -16,7 +16,7 @@ class Options(BaseModel):
     network: str = "${NETWORK:-mainnet}"
 
 
-def mk_stack(options: Options, version: str) -> ComposeConfig:
+def mk_stack(options: Options) -> ComposeConfig:
     """Build blockfrost-neoprism-demo stack configuration."""
     services = {
         "neoprism": neoprism.mk_service(
@@ -31,7 +31,6 @@ def mk_stack(options: Options, version: str) -> ComposeConfig:
                     ),
                 ),
             ),
-            version,
         ),
         "db-neoprism": db.mk_service(db.Options()),
         "bf-ryo": ryo.mk_service(

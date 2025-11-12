@@ -2,6 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from ..metadata import VERSION
 from ..models import Healthcheck, Service, ServiceDependency
 
 
@@ -53,9 +54,9 @@ class Options(BaseModel):
     extra_depends_on: list[str] = []
 
 
-def mk_service(options: Options, version: str) -> Service:
+def mk_service(options: Options) -> Service:
     """Build NeoPRISM service configuration."""
-    image = options.image_override or f"hyperledgeridentus/identus-neoprism:{version}"
+    image = options.image_override or f"hyperledgeridentus/identus-neoprism:{VERSION}"
 
     # Build environment variables
     environment = {

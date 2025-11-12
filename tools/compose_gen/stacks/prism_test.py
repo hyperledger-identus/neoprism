@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 
+from ..metadata import VERSION
 from ..models import ComposeConfig
 from ..services import (
     caddy,
@@ -20,7 +21,7 @@ class Options(BaseModel):
     ci: bool = False
 
 
-def mk_stack(options: Options, version: str) -> ComposeConfig:
+def mk_stack(options: Options) -> ComposeConfig:
     """Build prism-test stack configuration."""
     network_magic = 42
     testnet_volume = "node-testnet"
@@ -100,7 +101,7 @@ def mk_stack(options: Options, version: str) -> ComposeConfig:
     prism_services = {
         "neoprism-standalone": neoprism.mk_service(
             neoprism.Options(
-                image_override=f"identus-neoprism:{version}" if options.ci else None,
+                image_override=f"identus-neoprism:{VERSION}" if options.ci else None,
                 host_port=18080,
                 db_host="db-neoprism",
                 confirmation_blocks=0,
@@ -120,7 +121,6 @@ def mk_stack(options: Options, version: str) -> ComposeConfig:
                     wallet_payment_address=wallet_payment_address,
                 ),
             ),
-            version,
         ),
         "prism-node": prism_node.mk_service(
             prism_node.Options(

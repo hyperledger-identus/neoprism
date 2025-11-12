@@ -9,12 +9,6 @@ from compose_gen.models import ComposeConfig
 from . import services, stacks
 
 
-def read_version() -> str:
-    """Read version from root version file."""
-    version_file = Path(__file__).parent.parent.parent / "version"
-    return version_file.read_text().strip()
-
-
 def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
     """Write configuration to YAML file with header."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -26,7 +20,6 @@ def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
 
 def main() -> None:
     """Generate all Docker Compose configurations."""
-    version = read_version()
     docker_dir = Path(__file__).parent.parent.parent / "docker"
 
     # Define all configurations
@@ -44,7 +37,6 @@ def main() -> None:
                             ),
                         ),
                     ),
-                    version,
                 ),
             }
         ),
@@ -59,7 +51,6 @@ def main() -> None:
                             address="backbone.mainnet.cardanofoundation.org:3001",
                         ),
                     ),
-                    version,
                 ),
             }
         ),
@@ -75,22 +66,19 @@ def main() -> None:
                             address="preprod-node.play.dev.cardano.org:3001",
                         ),
                     ),
-                    version,
                 ),
             }
         ),
         "prism-test/compose": stacks.prism_test.mk_stack(
-            stacks.prism_test.Options(ci=False), version
+            stacks.prism_test.Options(ci=False)
         ),
         "prism-test/compose-ci": stacks.prism_test.mk_stack(
-            stacks.prism_test.Options(ci=True), version
+            stacks.prism_test.Options(ci=True)
         ),
         "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(
-            stacks.blockfrost_neoprism_demo.Options(), version
+            stacks.blockfrost_neoprism_demo.Options()
         ),
-        "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(
-            version
-        ),
+        "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
     }
 
     # Generate all compose files

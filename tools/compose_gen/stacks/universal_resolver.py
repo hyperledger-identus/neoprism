@@ -2,7 +2,7 @@ from ..models import ComposeConfig
 from ..services import db, neoprism, uni_resolver_web
 
 
-def mk_stack(version: str) -> ComposeConfig:
+def mk_stack() -> ComposeConfig:
     """Build universal-resolver stack configuration."""
     services = {
         "db": db.mk_service(db.Options(host_port=5432)),
@@ -16,7 +16,6 @@ def mk_stack(version: str) -> ComposeConfig:
                     address="backbone.mainnet.cardanofoundation.org:3001",
                 ),
             ),
-            version,
         ),
         "uni-resolver-web": uni_resolver_web.mk_service(
             uni_resolver_web.Options(host_port=8080)
