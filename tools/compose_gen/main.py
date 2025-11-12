@@ -3,7 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import yaml
-from tools.compose_gen.models import ComposeConfig
+
+from compose_gen.models import ComposeConfig
 
 from . import services, stacks
 

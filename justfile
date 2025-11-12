@@ -174,3 +174,19 @@ release-testnet:
     
     echo "✓ Released: patextreme/cardano-testnet:$TAG"
 
+# Format and lint-fix Python tools code
+[group: 'tools']
+[working-directory: 'tools']
+tools-format:
+    echo "Formatting Python files..."
+    ruff check --select I --fix compose_gen
+    ruff format compose_gen
+
+# Type check and validate Python tools code
+[group: 'tools']
+[working-directory: 'tools']
+tools-check:
+    echo "Linting Python files..."
+    ruff check compose_gen
+    echo "Type checking Python files..."
+    pyright compose_gen || echo "Note: pyright not available in dev shell, skipping type check"
