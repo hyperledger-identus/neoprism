@@ -24,10 +24,10 @@ build: build-assets
 build-assets:
     tailwindcss -i tailwind.css -o ./assets/styles.css
 
-# Build Docker Compose configurations from Dhall sources
+# Build Docker Compose configurations from Python sources
 [group: 'neoprism']
 build-config:
-  python -m docker.config.main
+  python -m tools.compose_gen.main
 
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
@@ -55,7 +55,7 @@ format:
     find . -name '*.toml' -type f -exec sh -c 'echo "  → {}" && taplo format {}' \;
     
     echo "Formatting Python files..."
-    find docker/config -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
+    find tools/compose_gen -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
     
     echo "Formatting Rust files..."
     cargo fmt

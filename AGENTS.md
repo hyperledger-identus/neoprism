@@ -25,8 +25,8 @@
 ### Python Guidelines
 
 #### Docker Configuration Generation
-- Location: `docker/config/` contains Python-based Docker Compose configuration generation
-- Run generation: `just build-config` or `python3 -m docker.config.main`
+- Location: `tools/compose_gen/` contains Python-based Docker Compose configuration generation
+- Run generation: `just build-config` or `python3 -m tools.compose_gen.main`
 - Structure:
   - `models.py`: Pydantic models for type-safe Docker Compose schema
   - `services/`: Service builder modules (one per service)

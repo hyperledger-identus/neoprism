@@ -28,7 +28,7 @@ def write_compose_file(config: dict[str, Any], output_path: Path) -> None:
 def main() -> None:
     """Generate all Docker Compose configurations."""
     version = read_version()
-    docker_dir = Path(__file__).parent.parent
+    docker_dir = Path(__file__).parent.parent.parent / "docker"
 
     # Define all configurations
     configs: dict[str, dict[str, Any]] = {
