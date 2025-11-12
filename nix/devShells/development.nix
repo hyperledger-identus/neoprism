@@ -3,12 +3,7 @@
 let
   rootDir = "$ROOT_DIR";
   inherit (pkgs.rustTools) rust;
-  pythonEnv = pkgs.python313.withPackages (
-    ps: with ps; [
-      pydantic
-      pyyaml
-    ]
-  );
+  inherit (pkgs.pythonTools) pythonEnv;
 in
 pkgs.mkShell {
   packages = with pkgs; [

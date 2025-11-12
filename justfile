@@ -41,6 +41,13 @@ run *ARGS: build-assets
 test:
     cargo test --all-features
 
+# Run comprehensive Nix checks (format, lint, test, clippy)
+[group: 'neoprism']
+check:
+    #!/usr/bin/env bash
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.default"
+
 # Clean all build artifacts
 [group: 'neoprism']
 clean:
@@ -54,9 +61,6 @@ format:
     
     echo "Formatting TOML files..."
     find . -name '*.toml' -type f -exec sh -c 'echo "  → {}" && taplo format {}' \;
-    
-    echo "Formatting Python files..."
-    cd tools && find compose_gen -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
     
     echo "Formatting Rust files..."
     cargo fmt
@@ -185,9 +189,7 @@ tools-format:
 
 # Type check and validate Python tools code
 [group: 'tools']
-[working-directory: 'tools']
 tools-check:
-    echo "Linting Python files..."
-    ruff check compose_gen
-    echo "Type checking Python files..."
-    pyright compose_gen || echo "Note: pyright not available in dev shell, skipping type check"
+    #!/usr/bin/env bash
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.python-tools"
