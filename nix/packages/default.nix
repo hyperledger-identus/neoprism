@@ -77,9 +77,5 @@ in
       {
         tagSuffix = "-arm64";
       };
-
-  # misc
-  scala-did-docker = pkgs.callPackage ./scala-did-docker.nix { };
-
 }
 // neoprismPackages

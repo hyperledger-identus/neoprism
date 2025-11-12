@@ -14,7 +14,6 @@ pkgs.mkShell {
     cardano-testnet
     cardano-db-sync
     cardano-submit-api
-    pkgsInternal.scala-did
   ];
 
   shellHook = ''

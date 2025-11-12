@@ -125,7 +125,7 @@ prism-test-run: prism-test-build
 [group: 'prism-test']
 [working-directory: 'tests/prism-test']
 prism-test-build:
-    sbt clean scalafmtAll
+    sbt clean scalafmtAll compile Test/compile
 
 # Automatically bump version using git-cliff
 [group: 'release']

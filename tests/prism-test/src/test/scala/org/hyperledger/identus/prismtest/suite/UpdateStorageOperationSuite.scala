@@ -13,7 +13,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
   def allSpecs = suite("UpdateStorageOperation")(
     signatureSpec,
     prevOperationHashSpec
-  ) @@ NodeName.skipIf("prism-node", "scala-did")
+  ) @@ NodeName.skipIf("prism-node")
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
     test("should accept update storage with valid operation hash") {
