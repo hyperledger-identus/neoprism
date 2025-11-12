@@ -55,7 +55,7 @@ format:
     find . -name '*.toml' -type f -exec sh -c 'echo "  → {}" && taplo format {}' \;
     
     echo "Formatting Python files..."
-    find tools/compose_gen -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
+    cd tools && find compose_gen -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
     
     echo "Formatting Rust files..."
     cargo fmt
