@@ -3,6 +3,12 @@
 let
   rootDir = "$ROOT_DIR";
   inherit (pkgs.rustTools) rust;
+  pythonEnv = pkgs.python313.withPackages (
+    ps: with ps; [
+      pydantic
+      pyyaml
+    ]
+  );
 in
 pkgs.mkShell {
   packages = with pkgs; [
@@ -23,6 +29,10 @@ pkgs.mkShell {
     # config
     dhall
     dhall-json
+    # python
+    pythonEnv
+    pyright
+    ruff
     # db
     sqlfluff
     sqlx-cli
