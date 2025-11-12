@@ -26,15 +26,9 @@ build-assets:
 
 # Build Docker Compose configurations from Dhall sources
 [group: 'neoprism']
-[working-directory: 'docker/.config']
+[working-directory: 'docker/config']
 build-config:
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-dbsync" > "../mainnet-dbsync/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-relay" > "../mainnet-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).preprod-relay" > "../preprod-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test" > "../prism-test/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test-ci" > "../prism-test/compose-ci.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-universal-resolver" > "../mainnet-universal-resolver/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).blockfrost-neoprism-demo" > "../blockfrost-neoprism-demo/compose.yml"
+  python main.py
 
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
@@ -52,7 +46,7 @@ test:
 clean:
     cargo clean
 
-# Format all source files (Nix, TOML, Dhall, Rust, SQL)
+# Format all source files (Nix, TOML, Rust, Python, SQL)
 [group: 'neoprism']
 format:
     echo "Formatting Nix files..."
@@ -61,8 +55,8 @@ format:
     echo "Formatting TOML files..."
     find . -name '*.toml' -type f -exec sh -c 'echo "  → {}" && taplo format {}' \;
     
-    echo "Formatting Dhall files..."
-    find . -name '*.dhall' -type f -exec sh -c 'echo "  → {}" && dhall format {}' \;
+    echo "Formatting Python files..."
+    find docker/config -name '*.py' -type f -exec sh -c 'echo "  → {}" && ruff check --select I --fix {} && ruff format {}' \;
     
     echo "Formatting Rust files..."
     cargo fmt

@@ -26,9 +26,6 @@ pkgs.mkShell {
     protobuf
     taplo
     which
-    # config
-    dhall
-    dhall-json
     # python
     pythonEnv
     pyright

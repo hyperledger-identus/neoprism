@@ -1,0 +1,10 @@
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+# Enable import sorting
+select = [ "I" ]
+
+[tool.ruff.lint.isort]
+# Group imports: standard library, third-party, local
+known-first-party = [ "docker" ]
