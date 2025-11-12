@@ -27,7 +27,7 @@ def mk_stack(options: Options, version: str) -> ComposeConfig:
     cardano_node_host = "cardano-node"
     wallet_id = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
     wallet_passphrase = "super_secret"
-    wallet_payment_address = "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"
+    wallet_payment_address = "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"  # noqa: E501
 
     # Blockfrost services
     bf_services = {
