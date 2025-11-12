@@ -23,19 +23,8 @@ mod models {
     use identus_did_prism::prelude::*;
     use identus_did_prism::proto::prism::PrismObject;
     use oura::model::{EventContext, MetadataRecord};
-    use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataContext {
-        pub block_hash: String,
-        pub block_number: u64,
-        pub slot: u64,
-        pub timestamp: i64,
-        pub tx_hash: String,
-        pub tx_idx: u32,
-    }
 
     pub fn parse_oura_timestamp(context: &EventContext) -> Result<DateTime<Utc>, MetadataReadError> {
         let block_hash = &context.block_hash;
@@ -144,6 +133,7 @@ fn chain_wellknown_info(network: &NetworkIdentifier) -> ChainWellKnownInfo {
         NetworkIdentifier::Mainnet => ChainWellKnownInfo::mainnet(),
         NetworkIdentifier::Preprod => ChainWellKnownInfo::preprod(),
         NetworkIdentifier::Preview => ChainWellKnownInfo::preview(),
+        NetworkIdentifier::Custom => panic!("custom network cannot be used with oura source"),
     }
 }
 

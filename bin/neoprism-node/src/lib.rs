@@ -20,7 +20,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
+use crate::cli::{DbArgs, DevArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -76,6 +76,7 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Indexer(args) => run_indexer_command(args).await?,
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
+        cli::Command::Dev(args) => run_dev_command(args).await?,
         cli::Command::GenerateOpenapi(args) => generate_openapi(args)?,
     };
     Ok(())
@@ -152,6 +153,33 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     .await
 }
 
+async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
+    let db = init_database(&args.db).await;
+    let (cursor_rx, dlt_sink) = init_memory_ledger(&db);
+    let app_state = AppState {
+        run_mode: RunMode::Standalone,
+    };
+    let indexer_state = IndexerState {
+        prism_did_service: PrismDidService::new(&db),
+    };
+    let indexer_ui_state = IndexerUiState {
+        prism_did_service: PrismDidService::new(&db),
+        dlt_source: Some(DltSourceState {
+            cursor_rx,
+            network: NetworkIdentifier::Custom,
+        }),
+    };
+    let submitter_state = SubmitterState { dlt_sink };
+    run_server(
+        app_state,
+        Some(indexer_ui_state),
+        Some(indexer_state),
+        Some(submitter_state),
+        &args.server,
+    )
+    .await
+}
+
 async fn run_server(
     app_state: AppState,
     indexer_ui_state: Option<IndexerUiState>,
@@ -213,6 +241,21 @@ async fn init_database(db_args: &DbArgs) -> PostgresDb {
     }
 
     db
+}
+
+fn init_memory_ledger(
+    db: &PostgresDb,
+) -> (
+    tokio::sync::watch::Receiver<Option<DltCursor>>,
+    Arc<dyn DltSink + Send + Sync + 'static>,
+) {
+    let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
+    let sync_worker = DltSyncWorker::new(db.clone(), dlt_source);
+    let index_worker = DltIndexWorker::new(db.clone(), 1);
+    let cursor_rx = sync_worker.sync_cursor();
+    tokio::spawn(sync_worker.run());
+    tokio::spawn(index_worker.run());
+    (cursor_rx, dlt_sink)
 }
 
 async fn init_dlt_source(

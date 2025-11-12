@@ -7,6 +7,7 @@ members = [
 
   "lib/did-prism",
   "lib/did-prism-indexer",
+  "lib/did-prism-ledger",
   "lib/did-prism-submitter",
   "lib/did-resolver-http",
   "lib/node-storage",
@@ -24,6 +25,7 @@ identus-did-core = { path = "lib/did-core" }
 
 identus-did-prism           = { path = "lib/did-prism" }
 identus-did-prism-indexer   = { path = "lib/did-prism-indexer" }
+identus-did-prism-ledger    = { path = "lib/did-prism-ledger" }
 identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
 identus-did-resolver-http   = { path = "lib/did-resolver-http" }
 node-storage                = { path = "lib/node-storage" }

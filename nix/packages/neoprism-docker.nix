@@ -15,7 +15,8 @@ dockerTools.buildLayeredImage {
     curl
     neoprism-bin
     neoprism-ui-assets
-  ] ++ extraPackages;
+  ]
+  ++ extraPackages;
   config = {
     Env = [
       "RUST_LOG=info,oura=warn"

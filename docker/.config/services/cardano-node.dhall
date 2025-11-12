@@ -2,7 +2,7 @@ let Prelude = (../prelude.dhall).Prelude
 
 let docker = ../docker.dhall
 
-let image = "patextreme/cardano-testnet:20250730-211809"
+let image = "patextreme/cardano-testnet:20251111-145358"
 
 let NodeOptions =
       { Type = { networkMagic : Natural, testnetVolume : Text }, default = {=} }

@@ -8,13 +8,14 @@ pkgs.mkShell {
   packages = with pkgs; [
     # base
     docker
-    docker
     docker-compose
     git
     git-cliff
+    hurl
     just
     less
     ncurses
+    nix
     nixfmt-rfc-style
     protobuf
     taplo

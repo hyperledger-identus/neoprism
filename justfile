@@ -4,9 +4,6 @@ db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
 
-# Use bash with strict error handling for all recipes
-set shell := ["bash", "-euo", "pipefail", "-c"]
-
 # Show available commands
 default:
     @just --list
@@ -42,8 +39,8 @@ build-config:
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
 run *ARGS: build-assets
-    export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}"
-    cargo run --bin neoprism-node -- {{ARGS}}
+    export NPRISM_DB_URL="postgres://{{db_user}}:{{db_pass}}@localhost:{{db_port}}/{{db_name}}" && \
+        cargo run --bin neoprism-node -- {{ARGS}}
 
 # Run all tests with all features enabled
 [group: 'neoprism']
@@ -70,10 +67,13 @@ format:
     echo "Formatting Rust files..."
     cargo fmt
     
+    echo "Formatting Hurl files..."
+    find . -name '*.hurl' -type f -exec sh -c 'echo "  → {}" && hurlfmt --in-place {}' \;
+    
     echo "Formatting SQL files..."
-    cd lib/node-storage/migrations
-    sqlfluff fix .
-    sqlfluff lint .
+    cd lib/node-storage/migrations && \
+        sqlfluff fix . && \
+        sqlfluff lint .
 
 # Start local PostgreSQL database in Docker
 [group: 'neoprism']
@@ -94,16 +94,16 @@ db-down:
 # Dump local database to postgres.dump file
 [group: 'neoprism']
 db-dump:
-    export PGPASSWORD={{db_pass}}
-    pg_dump -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} -Fc > postgres.dump
-    echo "Database dumped to postgres.dump"
+    export PGPASSWORD={{db_pass}} && \
+        pg_dump -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} -Fc > postgres.dump && \
+        echo "Database dumped to postgres.dump"
 
 # Restore local database from postgres.dump file
 [group: 'neoprism']
 db-restore:
-    export PGPASSWORD={{db_pass}}
-    pg_restore -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} postgres.dump
-    echo "Database restored from postgres.dump"
+    export PGPASSWORD={{db_pass}} && \
+        pg_restore -h localhost -p {{db_port}} -U {{db_user}} -w -d {{db_name}} postgres.dump && \
+        echo "Database restored from postgres.dump"
 
 # Start PRISM conformance test environment
 [group: 'prism-test']
@@ -121,9 +121,7 @@ prism-test-down:
 [group: 'prism-test']
 [working-directory: 'tests/prism-test']
 prism-test-run: prism-test-build
-    just _prism-test-up
     sbt test
-    just _prism-test-down
 
 # Build PRISM conformance test suite
 [group: 'prism-test']
@@ -134,6 +132,8 @@ prism-test-build:
 # Automatically bump version using git-cliff
 [group: 'release']
 release-bump:
+    #!/usr/bin/env bash
+    set -euxo pipefail
     NEW_VERSION=$(git-cliff --bump --context | jq -r .[0].version | sed s/^v//)
     just release-set "$NEW_VERSION"
 
@@ -149,6 +149,8 @@ release-set VERSION:
 # Build and release multi-arch cardano-testnet Docker image
 [group: 'release']
 release-testnet:
+    #!/usr/bin/env bash
+    set -euxo pipefail
     TAG=$(date +"%Y%m%d-%H%M%S")
     
     echo "Building amd64 image..."
