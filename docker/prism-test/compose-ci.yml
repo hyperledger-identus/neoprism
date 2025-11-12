@@ -112,7 +112,7 @@ services:
     depends_on:
       cardano-node:
         condition: service_healthy
-    image: ghcr.io/intersectmbo/cardano-submit-api:10.4.1
+    image: ghcr.io/intersectmbo/cardano-submit-api:10.5.1
     restart: always
     volumes:
     - node-testnet:/node/testnet
