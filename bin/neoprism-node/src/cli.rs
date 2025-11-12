@@ -21,9 +21,6 @@ pub enum Command {
     Standalone(StandaloneArgs),
     /// Generate OpenAPI specification for the API.
     GenerateOpenapi(GenerateOpenApiArgs),
-    /// Database maintenance commands.
-    #[command(subcommand)]
-    Db(DbCommand),
 }
 
 #[derive(Args)]
@@ -61,32 +58,6 @@ pub struct GenerateOpenApiArgs {
     /// Output file for the OpenAPI spec (stdout if not provided)
     #[arg(long)]
     pub output: Option<PathBuf>,
-}
-
-#[derive(Subcommand)]
-pub enum DbCommand {
-    /// Export the database to a JSON snapshot.
-    Backup(DbBackupArgs),
-    /// Restore the database from a JSON snapshot.
-    Restore(DbRestoreArgs),
-}
-
-#[derive(Args)]
-pub struct DbBackupArgs {
-    #[clap(flatten)]
-    pub db: DbArgs,
-    /// Output snapshot file.
-    #[arg(long, short)]
-    pub output: PathBuf,
-}
-
-#[derive(Args)]
-pub struct DbRestoreArgs {
-    #[clap(flatten)]
-    pub db: DbArgs,
-    /// Input snapshot file.
-    #[arg(long, short)]
-    pub input: PathBuf,
 }
 
 #[derive(Args)]

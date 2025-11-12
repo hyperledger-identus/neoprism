@@ -18,7 +18,6 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, S
 
 use super::shared::parse_raw_operation;
 use crate::entity::DidSuffix;
-use crate::snapshot::{DltCursorRecord, IndexedSsiRecord, IndexedVdrRecord, RawOperationRecord, StorageSnapshot};
 use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
@@ -45,128 +44,6 @@ impl SqliteDb {
 
     pub async fn migrate(&self) -> Result<(), Error> {
         sqlx::migrate!("./migrations/sqlite").run(&self.pool).await?;
-        Ok(())
-    }
-
-    pub async fn export_snapshot(&self) -> Result<StorageSnapshot, Error> {
-        let raw_operations = sqlx::query_as::<_, entity::RawOperation>(
-            r#"SELECT * FROM raw_operation ORDER BY block_number, absn, osn"#,
-        )
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(RawOperationRecord::from)
-        .collect();
-
-        let indexed_ssi_operations = sqlx::query_as::<_, entity::IndexedSsiOperation>(
-            r#"SELECT * FROM indexed_ssi_operation ORDER BY indexed_at"#,
-        )
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(IndexedSsiRecord::from)
-        .collect();
-
-        let indexed_vdr_operations = sqlx::query_as::<_, entity::IndexedVdrOperation>(
-            r#"SELECT * FROM indexed_vdr_operation ORDER BY indexed_at"#,
-        )
-        .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(IndexedVdrRecord::from)
-        .collect();
-
-        let dlt_cursor = sqlx::query_as::<_, entity::DltCursor>(r#"SELECT * FROM dlt_cursor LIMIT 1"#)
-            .fetch_optional(&self.pool)
-            .await?
-            .map(DltCursorRecord::from);
-
-        Ok(StorageSnapshot {
-            raw_operations,
-            indexed_ssi_operations,
-            indexed_vdr_operations,
-            dlt_cursor,
-        })
-    }
-
-    pub async fn import_snapshot(&self, snapshot: &StorageSnapshot) -> Result<(), Error> {
-        let mut tx = self.pool.begin().await?;
-
-        sqlx::query("DELETE FROM indexed_vdr_operation")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM indexed_ssi_operation")
-            .execute(&mut *tx)
-            .await?;
-        sqlx::query("DELETE FROM raw_operation").execute(&mut *tx).await?;
-        sqlx::query("DELETE FROM dlt_cursor").execute(&mut *tx).await?;
-
-        for op in &snapshot.raw_operations {
-            sqlx::query(
-                r#"
-INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, is_indexed)
-VALUES (?1,?2,?3,?4,?5,?6,?7,?8)
-                "#,
-            )
-            .bind(op.id)
-            .bind(&op.signed_operation_data)
-            .bind(op.slot)
-            .bind(op.block_number)
-            .bind(op.cbt)
-            .bind(op.absn)
-            .bind(op.osn)
-            .bind(op.is_indexed)
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        for entry in &snapshot.indexed_ssi_operations {
-            sqlx::query(
-                r#"
-INSERT INTO indexed_ssi_operation (id, raw_operation_id, did, indexed_at)
-VALUES (?1,?2,?3,?4)
-                "#,
-            )
-            .bind(entry.id)
-            .bind(entry.raw_operation_id)
-            .bind(&entry.did)
-            .bind(entry.indexed_at)
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        for entry in &snapshot.indexed_vdr_operations {
-            sqlx::query(
-                r#"
-INSERT INTO indexed_vdr_operation (id, raw_operation_id, operation_hash, init_operation_hash, prev_operation_hash, did, indexed_at)
-VALUES (?1,?2,?3,?4,?5,?6,?7)
-                "#,
-            )
-            .bind(entry.id)
-            .bind(entry.raw_operation_id)
-            .bind(&entry.operation_hash)
-            .bind(&entry.init_operation_hash)
-            .bind(&entry.prev_operation_hash)
-            .bind(&entry.did)
-            .bind(entry.indexed_at)
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        if let Some(cursor) = &snapshot.dlt_cursor {
-            sqlx::query(
-                r#"
-INSERT INTO dlt_cursor (slot, block_hash)
-VALUES (?1,?2)
-                "#,
-            )
-            .bind(cursor.slot)
-            .bind(&cursor.block_hash)
-            .execute(&mut *tx)
-            .await?;
-        }
-
-        tx.commit().await?;
         Ok(())
     }
 }

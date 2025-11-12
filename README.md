@@ -220,8 +220,6 @@ SQLite is great for local development, demos, and CI smoke tests, but remember:
 - WAL mode is enforced automatically to keep reads non-blocking.
 - Long running readers can delay checkpointing and grow the file; run `VACUUM` occasionally if you prune data manually.
 
-Use `neoprism-node db backup --help` / `db restore --help` for engine-agnostic JSON snapshotting. The Docker/Dhall bundles continue to use PostgreSQL; switch to SQLite only for local workflows.
-
 ## Frequently used commands
 
 These are commands you can run outside the development shell:
@@ -255,8 +253,6 @@ The following justfile commands are available to automate the local development 
 | `just db-restore`                           | Restore the local PostgreSQL database from the `postgres.dump` file|
 | `just db-init-sqlite`                       | Create or migrate the embedded SQLite database (default path)      |
 | `just db-clean-sqlite`                      | Delete the embedded SQLite database file                           |
-| `just db-backup <backend> <file>`           | Export a JSON snapshot for the given backend (`postgres` or `sqlite`) |
-| `just db-restore-snapshot <backend> <file>` | Restore a JSON snapshot into the selected backend                  |
 | `just run indexer`                          | Run the indexer node, connecting to the local database             |
 | `just run indexer --cardano-addr <ADDR>`    | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
 | `just run indexer --dbsync-url <URL>`       | Run the indexer node, connecting to the DB Sync instance at `<URL>`|

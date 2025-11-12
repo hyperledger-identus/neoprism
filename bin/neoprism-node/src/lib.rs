@@ -4,9 +4,8 @@
 use std::fs;
 #[cfg(all(unix, feature = "sqlite-backend"))]
 use std::os::unix::fs::PermissionsExt;
-use std::path::Path;
 #[cfg(feature = "sqlite-backend")]
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use app::service::PrismDidService;
@@ -23,7 +22,6 @@ use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use identus_did_resolver_http::DidResolverStateDyn;
 #[cfg(feature = "sqlite-backend")]
 use node_storage::SqliteDb;
-use node_storage::snapshot::StorageSnapshot;
 use node_storage::{PostgresDb, StorageBackend};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
@@ -31,8 +29,7 @@ use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
 use crate::cli::{
-    DbArgs, DbBackend, DbBackupArgs, DbCommand, DbRestoreArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs,
-    StandaloneArgs, SubmitterArgs,
+    DbArgs, DbBackend, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs,
 };
 
 mod app;
@@ -92,7 +89,6 @@ pub async fn run_command() -> anyhow::Result<()> {
         cli::Command::Submitter(args) => run_submitter_command(args).await?,
         cli::Command::Standalone(args) => run_standalone_command(args).await?,
         cli::Command::GenerateOpenapi(args) => generate_openapi(args)?,
-        cli::Command::Db(db_command) => run_db_command(db_command).await?,
     };
     Ok(())
 }
@@ -107,13 +103,6 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
         println!("{openapi_json}");
     }
     Ok(())
-}
-
-async fn run_db_command(command: DbCommand) -> anyhow::Result<()> {
-    match command {
-        DbCommand::Backup(args) => run_db_backup(args).await,
-        DbCommand::Restore(args) => run_db_restore(args).await,
-    }
 }
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
@@ -313,79 +302,6 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
         dlt_args.cardano_wallet_passphrase.to_string(),
         dlt_args.cardano_wallet_payment_addr.to_string(),
     ))
-}
-
-async fn run_db_backup(args: DbBackupArgs) -> anyhow::Result<()> {
-    match args.db.db_backend {
-        DbBackend::Postgres => {
-            let db_url = args
-                .db
-                .db_url
-                .as_deref()
-                .expect("NPRISM_DB_URL must be set when using the postgres backend");
-            let db = PostgresDb::connect(db_url).await?;
-            let snapshot = db.export_snapshot().await?;
-            write_snapshot(&args.output, &snapshot)?;
-        }
-        DbBackend::Sqlite => {
-            #[cfg(feature = "sqlite-backend")]
-            {
-                let db_url = args.db.db_url.clone().unwrap_or_else(|| default_sqlite_url(None));
-                prepare_sqlite_destination(&db_url).expect("Failed to prepare sqlite database path");
-                let db = SqliteDb::connect(&db_url).await?;
-                let snapshot = db.export_snapshot().await?;
-                write_snapshot(&args.output, &snapshot)?;
-            }
-            #[cfg(not(feature = "sqlite-backend"))]
-            panic!("sqlite backend selected, but binary was built without the `sqlite-backend` feature");
-        }
-    }
-    Ok(())
-}
-
-async fn run_db_restore(args: DbRestoreArgs) -> anyhow::Result<()> {
-    let snapshot = read_snapshot(&args.input)?;
-    match args.db.db_backend {
-        DbBackend::Postgres => {
-            let db_url = args
-                .db
-                .db_url
-                .as_deref()
-                .expect("NPRISM_DB_URL must be set when using the postgres backend");
-            let db = PostgresDb::connect(db_url).await?;
-            db.import_snapshot(&snapshot).await?;
-        }
-        DbBackend::Sqlite => {
-            #[cfg(feature = "sqlite-backend")]
-            {
-                let db_url = args.db.db_url.clone().unwrap_or_else(|| default_sqlite_url(None));
-                prepare_sqlite_destination(&db_url).expect("Failed to prepare sqlite database path");
-                let db = SqliteDb::connect(&db_url).await?;
-                db.import_snapshot(&snapshot).await?;
-            }
-            #[cfg(not(feature = "sqlite-backend"))]
-            panic!("sqlite backend selected, but binary was built without the `sqlite-backend` feature");
-        }
-    }
-    Ok(())
-}
-
-fn write_snapshot(path: &Path, snapshot: &StorageSnapshot) -> anyhow::Result<()> {
-    if let Some(parent) = path.parent() {
-        if !parent.as_os_str().is_empty() {
-            fs::create_dir_all(parent)?;
-        }
-    }
-    let data = serde_json::to_vec_pretty(snapshot)?;
-    fs::write(path, data)?;
-    tracing::info!("Snapshot written to {}", path.display());
-    Ok(())
-}
-
-fn read_snapshot(path: &Path) -> anyhow::Result<StorageSnapshot> {
-    let data = fs::read(path)?;
-    let snapshot = serde_json::from_slice::<StorageSnapshot>(&data)?;
-    Ok(snapshot)
 }
 
 #[cfg(feature = "sqlite-backend")]

@@ -38,11 +38,7 @@
 3. Update Docker/Dhall configs to keep using Postgres but mention the embedded option for local/dev scenarios.
 
 ## Phase 6 — Validation, Backup & Restore
-1. Implement backend-agnostic backup/export APIs (serialize DID operations + cursor state), plus matching import logic; wire them into new `just db-backup` / `db-restore` recipes.
-2. Add integration tests that:
-   - run migrations + smoke tests against temporary Postgres (test container) and SQLite (temp file)
-   - verify that exported data from one backend can be imported into the other.
-3. Ensure `just test` (or a new CI lane) exercises both backends, at least for the critical repository tests.
+*(Phase dropped)* — we decided to rely on the native tooling for each backend (Postgres dumps, SQLite `.backup`/file copies) instead of maintaining snapshot export/import paths inside NeoPRISM.
 
 ## Open Questions / Follow-Ups
 - How do we want to distribute/pre-seed SQLite databases in release artifacts (empty file vs. migrate on first run)?
