@@ -26,8 +26,9 @@ build-assets:
 
 # Build Docker Compose configurations from Python sources
 [group: 'neoprism']
+[working-directory: 'tools']
 build-config:
-  python -m tools.compose_gen.main
+  python -m compose_gen.main
 
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
