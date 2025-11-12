@@ -24,17 +24,11 @@ build: build-assets
 build-assets:
     tailwindcss -i tailwind.css -o ./assets/styles.css
 
-# Build Docker Compose configurations from Dhall sources
+# Build Docker Compose configurations from Python sources
 [group: 'neoprism']
-[working-directory: 'docker/.config']
+[working-directory: 'tools']
 build-config:
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-dbsync" > "../mainnet-dbsync/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-relay" > "../mainnet-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).preprod-relay" > "../preprod-relay/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test" > "../prism-test/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).prism-test-ci" > "../prism-test/compose-ci.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).mainnet-universal-resolver" > "../mainnet-universal-resolver/compose.yml"
-  dhall-to-yaml --generated-comment <<< "(./main.dhall).blockfrost-neoprism-demo" > "../blockfrost-neoprism-demo/compose.yml"
+  python -m compose_gen.main
 
 # Run neoprism-node with local database connection (pass arguments after --)
 [group: 'neoprism']
@@ -47,12 +41,19 @@ run *ARGS: build-assets
 test:
     cargo test --all-features
 
+# Run comprehensive Nix checks (format, lint, test, clippy)
+[group: 'neoprism']
+check:
+    #!/usr/bin/env bash
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.default"
+
 # Clean all build artifacts
 [group: 'neoprism']
 clean:
     cargo clean
 
-# Format all source files (Nix, TOML, Dhall, Rust, SQL)
+# Format all source files (Nix, TOML, Rust, Python, SQL)
 [group: 'neoprism']
 format:
     echo "Formatting Nix files..."
@@ -60,9 +61,6 @@ format:
     
     echo "Formatting TOML files..."
     find . -name '*.toml' -type f -exec sh -c 'echo "  → {}" && taplo format {}' \;
-    
-    echo "Formatting Dhall files..."
-    find . -name '*.dhall' -type f -exec sh -c 'echo "  → {}" && dhall format {}' \;
     
     echo "Formatting Rust files..."
     cargo fmt
@@ -181,3 +179,17 @@ release-testnet:
     
     echo "✓ Released: patextreme/cardano-testnet:$TAG"
 
+# Format and lint-fix Python tools code
+[group: 'tools']
+[working-directory: 'tools']
+tools-format:
+    echo "Formatting Python files..."
+    ruff check --select I --fix compose_gen
+    ruff format compose_gen
+
+# Type check and validate Python tools code
+[group: 'tools']
+tools-check:
+    #!/usr/bin/env bash
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.tools"

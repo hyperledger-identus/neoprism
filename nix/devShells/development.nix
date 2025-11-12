@@ -3,6 +3,7 @@
 let
   rootDir = "$ROOT_DIR";
   inherit (pkgs.rustTools) rust;
+  inherit (pkgs.pythonTools) pythonEnv;
 in
 pkgs.mkShell {
   packages = with pkgs; [
@@ -20,9 +21,10 @@ pkgs.mkShell {
     protobuf
     taplo
     which
-    # config
-    dhall
-    dhall-json
+    # python
+    pythonEnv
+    pyright
+    ruff
     # db
     sqlfluff
     sqlx-cli

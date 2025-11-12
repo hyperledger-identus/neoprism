@@ -5,5 +5,4 @@ target/
 *.dump
 node_modules/
 result
-.cardano-prism-config.json
-.aider*
+__pycache__

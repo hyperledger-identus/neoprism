@@ -27,6 +27,7 @@ rustPlatform.buildRustPackage {
         || baseName == "docker"
         || baseName == ".github"
         || baseName == "tests"
+        || baseName == "tools"
         || baseName == "README.md"
         || baseName == "AGENTS.md"
       );
