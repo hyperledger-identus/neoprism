@@ -192,4 +192,4 @@ tools-format:
 tools-check:
     #!/usr/bin/env bash
     SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-    nix build ".#checks.$SYSTEM.python-tools"
+    nix build ".#checks.$SYSTEM.tools"

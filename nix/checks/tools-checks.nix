@@ -10,7 +10,7 @@ let
   inherit (pythonTools) pythonEnv;
 in
 stdenv.mkDerivation {
-  name = "python-tools-checks";
+  name = "tools-checks";
   src = lib.cleanSource ./../../tools;
 
   nativeBuildInputs = [

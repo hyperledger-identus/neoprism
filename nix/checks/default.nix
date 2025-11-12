@@ -2,5 +2,5 @@
 
 {
   default = pkgs.callPackage ./neoprism-checks.nix { };
-  python-tools = pkgs.callPackage ./python-tools-checks.nix { };
+  tools = pkgs.callPackage ./tools-checks.nix { };
 }

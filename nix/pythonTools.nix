@@ -11,10 +11,4 @@ rec {
   python = python313;
 
   pythonEnv = python.withPackages commonPackages;
-
-  mkPythonEnv =
-    {
-      packages ? commonPackages,
-    }:
-    python.withPackages packages;
 }
