@@ -49,6 +49,13 @@ def mk_stack(options: Options) -> ComposeConfig:
                 bootstrap_testnet_host="bootstrap-testnet",
             )
         ),
+        "cardano-submit-api": cardano_submit_api.mk_service(
+            cardano_submit_api.Options(
+                testnet_volume=testnet_volume,
+                cardano_node_host=cardano_node_host,
+                network_magic=network_magic,
+            )
+        ),
     }
 
     # Cardano services
@@ -85,17 +92,11 @@ def mk_stack(options: Options) -> ComposeConfig:
                 host_port=18081,
             )
         ),
-        "cardano-submit-api": cardano_submit_api.mk_service(
-            cardano_submit_api.Options(
-                testnet_volume=testnet_volume,
-                cardano_node_host=cardano_node_host,
-                network_magic=network_magic,
-            )
-        ),
+        "db-dbsync": db.mk_service(db.Options()),
     }
 
-    # PRISM services
-    prism_services = {
+    # NeoPRISM services
+    neoprism_services = {
         "neoprism-standalone": neoprism.mk_service(
             neoprism.Options(
                 image_override=options.neoprism_image_override,
@@ -119,6 +120,11 @@ def mk_stack(options: Options) -> ComposeConfig:
                 ),
             ),
         ),
+        "db-neoprism": db.mk_service(db.Options()),
+    }
+
+    # PRISM services
+    prism_services = {
         "prism-node": prism_node.mk_service(
             prism_node.Options(
                 node_db_host="db-prism-node",
@@ -132,12 +138,15 @@ def mk_stack(options: Options) -> ComposeConfig:
                 confirmation_blocks=0,
             )
         ),
-        "db-neoprism": db.mk_service(db.Options()),
-        "db-dbsync": db.mk_service(db.Options()),
         "db-prism-node": db.mk_service(db.Options()),
     }
 
     # Combine all services
-    all_services = {**prism_services, **cardano_services, **bf_services}
+    all_services = {
+        **prism_services,
+        **cardano_services,
+        **bf_services,
+        **neoprism_services,
+    }
 
     return ComposeConfig(services=all_services, volumes={"node-testnet": {}})
