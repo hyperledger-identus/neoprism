@@ -27,6 +27,7 @@ services:
     environment:
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
+      NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info
     healthcheck:
       interval: 2s
@@ -39,5 +40,5 @@ services:
       timeout: 5s
     image: identus-neoprism:latest
     ports:
-    - 8080:8080
+    - 18080:8080
     restart: always

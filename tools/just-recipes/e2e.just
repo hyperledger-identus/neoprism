@@ -1,13 +1,5 @@
 set working-directory := '../..'
 
-# Start PRISM conformance test environment
-up NAME:
-    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml up -d
-
-# Stop PRISM conformance test environment and remove volumes
-down NAME:
-    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes
-
 # Build PRISM conformance test suite
 [working-directory('./tests/prism-test')]
 build:
@@ -18,17 +10,26 @@ build:
 clean:
     sbt clean
 
+# Start PRISM conformance test environment
+up NAME:
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml up -d
+
+# Stop PRISM conformance test environment and remove volumes
+down NAME:
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes
+
 # Run all PRISM conformance test suites
 [working-directory('./tests/prism-test')]
-run-all: docker-publish-local
-    just run dev
+run: docker-publish-local
+    cowsay "Testing dev configuration"
+    just e2e::up dev
+    SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test
+    just e2e::down dev
 
-# Run PRISM conformance tests against specific configuration
-[working-directory('./tests/prism-test')]
-run NAME:
-    just e2e::up {{ NAME }}
+    cowsay "Testing ci configuration"
+    just e2e::up ci
     sbt test
-    just e2e::down {{ NAME }}
+    just e2e::down ci
 
 # Build and load Docker images for local testing
 [working-directory('./tests/prism-test')]

@@ -46,13 +46,13 @@ object NodeClient:
   def neoprism(
       neoprismHost: String,
       neoprismPort: Int
-  )(cardanoWalletHost: String, cardanoWalletPort: Int): RLayer[Client, NodeClient] =
+  )(cardanoWalletHost: String, cardanoWalletPort: Int)(skipCheckMillis: Option[Int]): RLayer[Client, NodeClient] =
     ZLayer
       .fromZIO {
         for
           neoprismClient <- ZIO.serviceWith[Client](_.url(url"http://$neoprismHost:$neoprismPort"))
           cardanoWalletClient <- ZIO.serviceWith[Client](_.url(url"http://$cardanoWalletHost:$cardanoWalletPort"))
-        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient)
+        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient, skipCheckMillis)
       }
 
 private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, CryptoUtils, ProtoUtils:
@@ -96,7 +96,9 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
         )
       )
 
-private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client) extends NodeClient, CryptoUtils:
+private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client, skipCheckMillis: Option[Int])
+    extends NodeClient,
+      CryptoUtils:
 
   import NeoprismNodeClient.*
 
@@ -109,23 +111,26 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
       .orDie
 
   override def isOperationConfirmed(ref: OperationRef): UIO[Boolean] =
-    for
-      wallets <- cardanoWalletClient.batched
-        .get("/v2/wallets")
-        .flatMap(_.body.to[List[Wallet]])
-        .orDie
-      wallet <- ZIO.succeed(wallets.headOption).someOrFailException.orDie
-      txSlotNo <- cardanoWalletClient.batched
-        .get(url"/v2/wallets/${wallet.id}/transactions/$ref".toString)
-        .flatMap(_.body.to[TransactionResponse])
-        .map(_.inserted_at.map(_.absolute_slot_number))
-        .orDie
-      indexerSlotNo <- neoprismClient.batched
-        .get(url"/api/indexer-stats".toString)
-        .flatMap(_.body.to[IndexerStatsResponse])
-        .map(_.last_prism_slot_number)
-        .orDie
-    yield indexerSlotNo.exists(indexerSlot => txSlotNo.exists(txSlot => indexerSlot >= txSlot))
+    skipCheckMillis match
+      case Some(delay) => ZIO.succeed(true).delay(delay.millis)
+      case None =>
+        for
+          wallets <- cardanoWalletClient.batched
+            .get("/v2/wallets")
+            .flatMap(_.body.to[List[Wallet]])
+            .orDie
+          wallet <- ZIO.succeed(wallets.headOption).someOrFailException.orDie
+          txSlotNo <- cardanoWalletClient.batched
+            .get(url"/v2/wallets/${wallet.id}/transactions/$ref".toString)
+            .flatMap(_.body.to[TransactionResponse])
+            .map(_.inserted_at.map(_.absolute_slot_number))
+            .orDie
+          indexerSlotNo <- neoprismClient.batched
+            .get(url"/api/indexer-stats".toString)
+            .flatMap(_.body.to[IndexerStatsResponse])
+            .map(_.last_prism_slot_number)
+            .orDie
+        yield indexerSlotNo.exists(indexerSlot => txSlotNo.exists(txSlot => indexerSlot >= txSlot))
 
   override def getDidDocument(did: String): UIO[Option[DIDData]] =
     for

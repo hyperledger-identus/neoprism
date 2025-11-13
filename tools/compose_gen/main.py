@@ -86,7 +86,8 @@ def build_test_configs() -> dict[str, ComposeConfig]:
                 "neoprism-indexer": services.neoprism.mk_service(
                     services.neoprism.Options(
                         image_override=f"identus-neoprism:latest",
-                        host_port=8080,
+                        host_port=18080,
+                        index_interval=1,
                         command=services.neoprism.DevCommand(),
                     ),
                 ),
