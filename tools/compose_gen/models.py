@@ -6,8 +6,6 @@ from pydantic import BaseModel
 
 
 class Healthcheck(BaseModel):
-    """Docker healthcheck configuration."""
-
     test: list[str]
     interval: str = "2s"
     timeout: str = "5s"
@@ -20,14 +18,10 @@ ServiceCondition = Literal[
 
 
 class ServiceDependency(BaseModel):
-    """Service dependency configuration."""
-
     condition: ServiceCondition
 
 
 class Service(BaseModel):
-    """Docker Compose service configuration."""
-
     image: str
     restart: str | None = "always"
     ports: list[str] | None = None
@@ -42,8 +36,6 @@ class Service(BaseModel):
 
 
 class ComposeConfig(BaseModel):
-    """Docker Compose configuration."""
-
     services: dict[str, Service]
     volumes: dict[str, dict[str, Any]] | None = None
 

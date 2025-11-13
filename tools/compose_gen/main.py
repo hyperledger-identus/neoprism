@@ -10,7 +10,6 @@ from . import services, stacks
 
 
 def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
-    """Write configuration to YAML file with header."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     with open(output_path, "w") as f:
@@ -19,7 +18,6 @@ def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
 
 
 def main() -> None:
-    """Generate all Docker Compose configurations."""
     docker_dir = Path(__file__).parent.parent.parent / "docker"
 
     # Define all configurations

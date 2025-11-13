@@ -6,8 +6,6 @@ IMAGE = "ghcr.io/input-output-hk/prism-node:2.6.1"
 
 
 class Options(BaseModel):
-    """Prism Node service options."""
-
     image_override: str | None = None
     node_db_host: str
     db_sync_db_host: str
@@ -22,7 +20,6 @@ class Options(BaseModel):
 
 
 def mk_service(options: Options) -> Service:
-    """Build Prism Node service configuration."""
     image = options.image_override or IMAGE
     ports = [f"{options.host_port}:50053"] if options.host_port else None
 

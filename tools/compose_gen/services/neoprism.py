@@ -7,22 +7,16 @@ from ..models import Healthcheck, Service, ServiceDependency
 
 
 class DbSyncDltSourceArgs(BaseModel):
-    """DbSync DLT source configuration."""
-
     url: str
     poll_interval: int = 10
 
 
 class RelayDltSource(BaseModel):
-    """Relay DLT source configuration."""
-
     type: Literal["relay"]
     address: str
 
 
 class DbSyncDltSource(BaseModel):
-    """DbSync DLT source configuration."""
-
     type: Literal["dbsync"]
     args: DbSyncDltSourceArgs
 
@@ -31,8 +25,6 @@ DltSource = RelayDltSource | DbSyncDltSource
 
 
 class DltSink(BaseModel):
-    """DLT sink configuration for publishing operations."""
-
     wallet_host: str
     wallet_port: int
     wallet_id: str
@@ -41,8 +33,6 @@ class DltSink(BaseModel):
 
 
 class Options(BaseModel):
-    """NeoPRISM service options."""
-
     image_override: str | None = None
     host_port: int | None = None
     db_host: str = "db"
@@ -55,7 +45,6 @@ class Options(BaseModel):
 
 
 def mk_service(options: Options) -> Service:
-    """Build NeoPRISM service configuration."""
     image = options.image_override or f"hyperledgeridentus/identus-neoprism:{VERSION}"
 
     # Build environment variables

@@ -16,13 +16,10 @@ from ..services import (
 
 
 class Options(BaseModel):
-    """Prism test stack options."""
-
     ci: bool = False
 
 
 def mk_stack(options: Options) -> ComposeConfig:
-    """Build prism-test stack configuration."""
     network_magic = 42
     testnet_volume = "node-testnet"
     cardano_node_host = "cardano-node"

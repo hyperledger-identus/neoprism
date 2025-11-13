@@ -6,15 +6,11 @@ IMAGE = "patextreme/cardano-testnet:20251111-145358"
 
 
 class NodeOptions(BaseModel):
-    """Cardano node service options."""
-
     network_magic: int
     testnet_volume: str
 
 
 class BootstrapOptions(BaseModel):
-    """Cardano bootstrap service options."""
-
     network_magic: int
     testnet_volume: str
     cardano_node_host: str
@@ -26,7 +22,6 @@ class BootstrapOptions(BaseModel):
 
 
 def mk_node_service(options: NodeOptions) -> Service:
-    """Build Cardano node service configuration."""
     return Service(
         image=IMAGE,
         restart=None,
@@ -41,7 +36,6 @@ def mk_node_service(options: NodeOptions) -> Service:
 
 
 def mk_bootstrap_service(options: BootstrapOptions) -> Service:
-    """Build Cardano bootstrap service configuration."""
     return Service(
         image=IMAGE,
         restart=None,

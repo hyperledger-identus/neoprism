@@ -3,7 +3,6 @@ from ..services import db, neoprism, uni_resolver_web
 
 
 def mk_stack() -> ComposeConfig:
-    """Build universal-resolver stack configuration."""
     services = {
         "db": db.mk_service(db.Options(host_port=5432)),
         "neoprism-indexer": neoprism.mk_service(

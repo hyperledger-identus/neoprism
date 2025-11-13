@@ -5,8 +5,6 @@ from ..services import caddy, db, neoprism, ryo
 
 
 class Options(BaseModel):
-    """Blockfrost NeoPRISM demo stack options."""
-
     dbsync_url: str = "${DBSYNC_URL}"
     dbsync_host: str = "${DBSYNC_HOST}"
     dbsync_port: str = "${DBSYNC_PORT:-5432}"
@@ -17,7 +15,6 @@ class Options(BaseModel):
 
 
 def mk_stack(options: Options) -> ComposeConfig:
-    """Build blockfrost-neoprism-demo stack configuration."""
     services = {
         "neoprism": neoprism.mk_service(
             neoprism.Options(

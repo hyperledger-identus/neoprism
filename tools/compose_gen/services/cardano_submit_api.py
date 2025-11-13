@@ -6,8 +6,6 @@ IMAGE = "ghcr.io/intersectmbo/cardano-submit-api:10.5.1"
 
 
 class Options(BaseModel):
-    """Cardano Submit API service options."""
-
     host_port: int | None = None
     testnet_volume: str
     cardano_node_host: str
@@ -15,7 +13,6 @@ class Options(BaseModel):
 
 
 def mk_service(options: Options) -> Service:
-    """Build Cardano Submit API service configuration."""
     ports = [f"{options.host_port}:8090"] if options.host_port else None
 
     return Service(

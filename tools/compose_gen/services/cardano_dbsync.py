@@ -6,8 +6,6 @@ IMAGE = "ghcr.io/intersectmbo/cardano-db-sync:13.6.0.5"
 
 
 class Options(BaseModel):
-    """Cardano DB Sync service options."""
-
     testnet_volume: str
     cardano_node_host: str
     config_file: str
@@ -15,7 +13,6 @@ class Options(BaseModel):
 
 
 def mk_service(options: Options) -> Service:
-    """Build Cardano DB Sync service configuration."""
     return Service(
         image=IMAGE,
         environment={
