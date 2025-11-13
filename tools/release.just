@@ -1,5 +1,6 @@
+set working-directory := '..'
+
 # Automatically bump version using git-cliff
-[working-directory('..')]
 bump-version:
     #!/usr/bin/env bash
     set -euxo pipefail
@@ -7,7 +8,6 @@ bump-version:
     just release set-version "$NEW_VERSION"
 
 # Set project version manually
-[working-directory('..')]
 set-version VERSION:
     echo "Setting new version to {{ VERSION }}"
     echo "{{ VERSION }}" > version
@@ -16,7 +16,6 @@ set-version VERSION:
     git-cliff -t "{{ VERSION }}" > CHANGELOG.md
 
 # Build and release multi-arch cardano-testnet Docker image
-[working-directory('..')]
 publish-testnet-image:
     #!/usr/bin/env bash
     set -euxo pipefail
