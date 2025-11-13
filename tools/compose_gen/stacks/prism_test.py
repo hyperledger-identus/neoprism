@@ -106,19 +106,18 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
                 db_host="db-neoprism",
                 confirmation_blocks=0,
                 index_interval=1,
-                dlt_source=neoprism.DbSyncDltSource(
-                    type="dbsync",
-                    args=neoprism.DbSyncDltSourceArgs(
+                command=neoprism.StandaloneCommand(
+                    dlt_source=neoprism.DbSyncDltSource(
                         url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
                         poll_interval=1,
                     ),
-                ),
-                dlt_sink=neoprism.DltSink(
-                    wallet_host="cardano-wallet",
-                    wallet_port=8090,
-                    wallet_id=wallet_id,
-                    wallet_passphrase=wallet_passphrase,
-                    wallet_payment_address=wallet_payment_address,
+                    dlt_sink=neoprism.DltSink(
+                        wallet_host="cardano-wallet",
+                        wallet_port=8090,
+                        wallet_id=wallet_id,
+                        wallet_passphrase=wallet_passphrase,
+                        wallet_payment_address=wallet_payment_address,
+                    ),
                 ),
             ),
         ),

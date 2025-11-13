@@ -21,9 +21,8 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
                 db_host="db-neoprism",
                 network=options.network,
                 host_port=8080,
-                dlt_source=neoprism.DbSyncDltSource(
-                    type="dbsync",
-                    args=neoprism.DbSyncDltSourceArgs(
+                command=neoprism.IndexerCommand(
+                    dlt_source=neoprism.DbSyncDltSource(
                         url=options.dbsync_url, poll_interval=10
                     ),
                 ),

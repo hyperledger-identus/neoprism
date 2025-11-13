@@ -28,9 +28,8 @@ def main() -> None:
                 "neoprism-indexer": services.neoprism.mk_service(
                     services.neoprism.Options(
                         host_port=8080,
-                        dlt_source=services.neoprism.DbSyncDltSource(
-                            type="dbsync",
-                            args=services.neoprism.DbSyncDltSourceArgs(
+                        command=services.neoprism.IndexerCommand(
+                            dlt_source=services.neoprism.DbSyncDltSource(
                                 url="${DBSYNC_URL}"
                             ),
                         ),
@@ -44,9 +43,10 @@ def main() -> None:
                 "neoprism-indexer": services.neoprism.mk_service(
                     services.neoprism.Options(
                         host_port=8080,
-                        dlt_source=services.neoprism.RelayDltSource(
-                            type="relay",
-                            address="backbone.mainnet.cardanofoundation.org:3001",
+                        command=services.neoprism.IndexerCommand(
+                            dlt_source=services.neoprism.OuraDltSource(
+                                address="backbone.mainnet.cardanofoundation.org:3001",
+                            ),
                         ),
                     ),
                 ),
@@ -59,9 +59,10 @@ def main() -> None:
                     services.neoprism.Options(
                         host_port=8080,
                         network="preprod",
-                        dlt_source=services.neoprism.RelayDltSource(
-                            type="relay",
-                            address="preprod-node.play.dev.cardano.org:3001",
+                        command=services.neoprism.IndexerCommand(
+                            dlt_source=services.neoprism.OuraDltSource(
+                                address="preprod-node.play.dev.cardano.org:3001",
+                            ),
                         ),
                     ),
                 ),
