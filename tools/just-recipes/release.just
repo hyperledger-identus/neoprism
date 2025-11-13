@@ -1,4 +1,4 @@
-set working-directory := '..'
+set working-directory := '../..'
 
 # Automatically bump version using git-cliff
 bump-version:

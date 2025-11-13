@@ -1,6 +1,6 @@
-mod e2e 'tools/e2e.just'
-mod tools 'tools/tools.just'
-mod release 'tools/release.just'
+mod e2e 'tools/just-recipes/e2e.just'
+mod tools 'tools/just-recipes/tools.just'
+mod release 'tools/just-recipes/release.just'
 
 # PostgreSQL configuration
 

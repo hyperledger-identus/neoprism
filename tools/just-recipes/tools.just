@@ -1,4 +1,4 @@
-set working-directory := '..'
+set working-directory := '../..'
 
 # Format and lint-fix tools sources and justfile
 format:
