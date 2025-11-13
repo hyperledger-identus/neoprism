@@ -36,6 +36,10 @@ class StandaloneCommand(BaseModel):
     dlt_sink: DltSink
 
 
+class DevCommand(BaseModel):
+    command: Literal["dev"] = "dev"
+
+
 class Options(BaseModel):
     image_override: str | None = None
     host_port: int | None = None
@@ -43,7 +47,7 @@ class Options(BaseModel):
     network: str = "mainnet"
     confirmation_blocks: int | None = None
     index_interval: int | None = None
-    command: IndexerCommand | StandaloneCommand
+    command: IndexerCommand | StandaloneCommand | DevCommand
 
 
 def mk_service(options: Options) -> Service:

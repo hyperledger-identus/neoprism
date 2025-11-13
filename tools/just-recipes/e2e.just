@@ -1,22 +1,12 @@
 set working-directory := '../..'
 
 # Start PRISM conformance test environment
-up ARG:
-    docker-compose -f docker/prism-test/compose-{{ ARG }}.yml up -d
+up NAME:
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml up -d
 
 # Stop PRISM conformance test environment and remove volumes
-down ARG:
-    docker-compose -f docker/prism-test/compose-{{ ARG }}.yml down --volumes
-
-# Run PRISM conformance tests
-[working-directory('./tests/prism-test')]
-run:
-    nix build .#neoprism-docker-latest && docker load < ./result
-    nix build .#cardano-testnet-docker && docker load < ./result
-
-    just e2e::up ci
-    sbt test
-    just e2e::down ci
+down NAME:
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes
 
 # Build PRISM conformance test suite
 [working-directory('./tests/prism-test')]
@@ -27,3 +17,21 @@ build:
 [working-directory('./tests/prism-test')]
 clean:
     sbt clean
+
+# Run all PRISM conformance test suites
+[working-directory('./tests/prism-test')]
+run-all: docker-publish-local
+    just run dev
+
+# Run PRISM conformance tests against specific configuration
+[working-directory('./tests/prism-test')]
+run NAME:
+    just e2e::up {{ NAME }}
+    sbt test
+    just e2e::down {{ NAME }}
+
+# Build and load Docker images for local testing
+[working-directory('./tests/prism-test')]
+docker-publish-local:
+    nix build .#neoprism-docker-latest && docker load < ./result
+    nix build .#cardano-testnet-docker && docker load < ./result

@@ -126,22 +126,6 @@ services:
       timeout: 5s
     image: postgres:16
     restart: always
-  db-prism-node:
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_USER: postgres
-    healthcheck:
-      interval: 2s
-      retries: 30
-      test:
-      - CMD
-      - pg_isready
-      - -U
-      - postgres
-      timeout: 5s
-    image: postgres:16
-    restart: always
   neoprism-standalone:
     command:
     - standalone
@@ -174,41 +158,6 @@ services:
     image: identus-neoprism:latest
     ports:
     - 18080:8080
-    restart: always
-  prism-node:
-    depends_on:
-      bootstrap-testnet:
-        condition: service_completed_successfully
-      cardano-wallet:
-        condition: service_healthy
-      db-dbsync:
-        condition: service_healthy
-      db-prism-node:
-        condition: service_healthy
-    environment:
-      NODE_CARDANO_CONFIRMATION_BLOCKS: '0'
-      NODE_CARDANO_DB_SYNC_DATABASE: postgres
-      NODE_CARDANO_DB_SYNC_HOST: db-dbsync:5432
-      NODE_CARDANO_DB_SYNC_PASSWORD: postgres
-      NODE_CARDANO_DB_SYNC_USERNAME: postgres
-      NODE_CARDANO_NETWORK: testnet
-      NODE_CARDANO_PAYMENT_ADDRESS: addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3
-      NODE_CARDANO_PRISM_GENESIS_BLOCK: '0'
-      NODE_CARDANO_WALLET_API_HOST: cardano-wallet
-      NODE_CARDANO_WALLET_API_PORT: '8090'
-      NODE_CARDANO_WALLET_ID: 9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d
-      NODE_CARDANO_WALLET_PASSPHRASE: super_secret
-      NODE_LEDGER: cardano
-      NODE_MOVE_SCHEDULED_TO_PENDING_PERIOD: 1s
-      NODE_PSQL_DATABASE: postgres
-      NODE_PSQL_HOST: db-prism-node:5432
-      NODE_PSQL_PASSWORD: postgres
-      NODE_PSQL_USERNAME: postgres
-      NODE_REFRESH_AND_SUBMIT_PERIOD: 1s
-      NODE_SCHEDULE_SYNC_PERIOD: 1s
-    image: ghcr.io/input-output-hk/prism-node:2.6.1
-    ports:
-    - 50053:50053
     restart: always
 volumes:
   node-testnet: {}

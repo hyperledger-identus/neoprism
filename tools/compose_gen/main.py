@@ -17,11 +17,8 @@ def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
         yaml.dump(config.model_dump(exclude_none=True), f, allow_unicode=True)
 
 
-def main() -> None:
-    docker_dir = Path(__file__).parent.parent.parent / "docker"
-
-    # Define all configurations
-    configs: dict[str, ComposeConfig] = {
+def build_example_configs() -> dict[str, ComposeConfig]:
+    return {
         "mainnet-dbsync/compose": ComposeConfig(
             services={
                 "db": services.db.mk_service(services.db.Options(host_port=5432)),
@@ -70,18 +67,40 @@ def main() -> None:
         ),
         "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(),
         "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
+    }
+
+
+def build_test_configs() -> dict[str, ComposeConfig]:
+    return {
         "prism-test/compose": stacks.prism_test.mk_stack(
-            stacks.prism_test.Options(
-                enable_blockfrost=True,
-                enable_prism_node=True,
-            )
+            stacks.prism_test.Options(enable_blockfrost=True, enable_prism_node=True)
         ),
         "prism-test/compose-ci": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(
                 neoprism_image_override=f"identus-neoprism:latest",
-                enable_prism_node=True,
             )
         ),
+        "prism-test/compose-dev": ComposeConfig(
+            services={
+                "db": services.db.mk_service(services.db.Options(host_port=5432)),
+                "neoprism-indexer": services.neoprism.mk_service(
+                    services.neoprism.Options(
+                        image_override=f"identus-neoprism:latest",
+                        host_port=8080,
+                        command=services.neoprism.DevCommand(),
+                    ),
+                ),
+            }
+        ),
+    }
+
+
+def main() -> None:
+    docker_dir = Path(__file__).parent.parent.parent / "docker"
+
+    configs = {
+        **build_example_configs(),
+        **build_test_configs(),
     }
 
     # Generate all compose files
