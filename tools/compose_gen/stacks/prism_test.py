@@ -17,9 +17,11 @@ from ..services import (
 
 class Options(BaseModel):
     neoprism_image_override: str | None = None
+    enable_prism_node: bool = False
+    enable_blockfrost: bool = False
 
 
-def mk_stack(options: Options) -> ComposeConfig:
+def mk_stack(options: Options = Options()) -> ComposeConfig:
     network_magic = 42
     testnet_volume = "node-testnet"
     cardano_node_host = "cardano-node"
@@ -143,10 +145,10 @@ def mk_stack(options: Options) -> ComposeConfig:
 
     # Combine all services
     all_services = {
-        **prism_services,
         **cardano_services,
-        **bf_services,
         **neoprism_services,
+        **(prism_services if options.enable_prism_node else {}),
+        **(bf_services if options.enable_blockfrost else {}),
     }
 
     return ComposeConfig(services=all_services, volumes={"node-testnet": {}})

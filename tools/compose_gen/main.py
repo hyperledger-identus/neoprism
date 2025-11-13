@@ -32,7 +32,7 @@ def main() -> None:
                         dlt_source=services.neoprism.DbSyncDltSource(
                             type="dbsync",
                             args=services.neoprism.DbSyncDltSourceArgs(
-                                url="<DBSYNC_URL>"
+                                url="${DBSYNC_URL}"
                             ),
                         ),
                     ),
@@ -68,16 +68,20 @@ def main() -> None:
                 ),
             }
         ),
-        "prism-test/compose": stacks.prism_test.mk_stack(stacks.prism_test.Options()),
-        "prism-test/compose-ci": stacks.prism_test.mk_stack(
+        "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(),
+        "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
+        "prism-test/compose": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(
-                neoprism_image_override=f"identus-neoprism:latest"
+                enable_blockfrost=True,
+                enable_prism_node=True,
             )
         ),
-        "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(
-            stacks.blockfrost_neoprism_demo.Options()
+        "prism-test/compose-ci": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override=f"identus-neoprism:latest",
+                enable_prism_node=True,
+            )
         ),
-        "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
     }
 
     # Generate all compose files

@@ -14,7 +14,7 @@ class Options(BaseModel):
     network: str = "${NETWORK:-mainnet}"
 
 
-def mk_stack(options: Options) -> ComposeConfig:
+def mk_stack(options: Options = Options()) -> ComposeConfig:
     services = {
         "neoprism": neoprism.mk_service(
             neoprism.Options(
