@@ -146,6 +146,7 @@ pub enum NetworkIdentifierCliOption {
     Mainnet,
     Preprod,
     Preview,
+    Custom,
 }
 
 impl From<NetworkIdentifierCliOption> for NetworkIdentifier {
@@ -154,6 +155,7 @@ impl From<NetworkIdentifierCliOption> for NetworkIdentifier {
             NetworkIdentifierCliOption::Mainnet => NetworkIdentifier::Mainnet,
             NetworkIdentifierCliOption::Preprod => NetworkIdentifier::Preprod,
             NetworkIdentifierCliOption::Preview => NetworkIdentifier::Preview,
+            NetworkIdentifierCliOption::Custom => NetworkIdentifier::Custom,
         }
     }
 }

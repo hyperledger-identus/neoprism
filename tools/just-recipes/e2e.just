@@ -13,7 +13,9 @@ down ARG:
 run:
     nix build .#neoprism-docker-latest && docker load < ./result
     nix build .#cardano-testnet-docker && docker load < ./result
+
     just e2e::up ci
+    sbt test
     just e2e::down ci
 
 # Build PRISM conformance test suite

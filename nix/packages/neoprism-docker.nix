@@ -1,4 +1,5 @@
 {
+  bash,
   curl,
   dockerTools,
   neoprism-bin,
@@ -12,6 +13,7 @@ dockerTools.buildLayeredImage {
   name = "identus-neoprism";
   tag = "${version}${tagSuffix}";
   contents = [
+    bash
     curl
     neoprism-bin
     neoprism-ui-assets

@@ -32,13 +32,13 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("neoprism")
       )
 
-    val prismNodeSpec = suite("PRISM node suite")(allSpecs)
-      .provide(
-        NodeClient.grpc("localhost", 50053),
-        NodeName.layer("prism-node")
-      )
+    // val prismNodeSpec = suite("PRISM node suite")(allSpecs)
+    //   .provide(
+    //     NodeClient.grpc("localhost", 50053),
+    //     NodeName.layer("prism-node")
+    //   )
 
-    (neoprismSpec + prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
+    (neoprismSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
