@@ -7,7 +7,6 @@ import yaml
 from compose_gen.models import ComposeConfig
 
 from . import services, stacks
-from .metadata import VERSION
 
 
 def write_compose_file(config: ComposeConfig, output_path: Path) -> None:

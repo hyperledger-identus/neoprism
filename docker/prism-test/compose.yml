@@ -199,7 +199,7 @@ services:
     environment:
       NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: '1'
       NPRISM_CARDANO_DBSYNC_URL: postgresql://postgres:postgres@db-dbsync:5432/postgres
-      NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CARDANO_NETWORK: custom
       NPRISM_CARDANO_WALLET_BASE_URL: http://cardano-wallet:8090/v2
       NPRISM_CARDANO_WALLET_PASSPHRASE: super_secret
       NPRISM_CARDANO_WALLET_PAYMENT_ADDR: addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3

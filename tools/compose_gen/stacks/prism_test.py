@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-from ..metadata import VERSION
 from ..models import ComposeConfig
 from ..services import (
     caddy,
@@ -103,6 +102,7 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
             neoprism.Options(
                 image_override=options.neoprism_image_override,
                 host_port=18080,
+                network="custom",
                 db_host="db-neoprism",
                 confirmation_blocks=0,
                 index_interval=1,
