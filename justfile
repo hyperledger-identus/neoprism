@@ -1,3 +1,7 @@
+mod e2e 'tools/e2e.just'
+mod tools 'tools/tools.just'
+mod release 'tools/release.just'
+
 # PostgreSQL configuration
 
 db_port := "5432"
@@ -7,7 +11,7 @@ db_name := "postgres"
 
 # Show available commands
 default:
-    @just --list
+    @just --list --list-submodules
 
 # Install npm dependencies
 [group('neoprism')]
@@ -103,97 +107,3 @@ db-restore:
     export PGPASSWORD={{ db_pass }} && \
         pg_restore -h localhost -p {{ db_port }} -U {{ db_user }} -w -d {{ db_name }} postgres.dump && \
         echo "Database restored from postgres.dump"
-
-# Start PRISM conformance test environment
-[group('prism-test')]
-[working-directory('docker/prism-test')]
-prism-test-up:
-    docker-compose up -d
-
-# Stop PRISM conformance test environment and remove volumes
-[group('prism-test')]
-[working-directory('docker/prism-test')]
-prism-test-down:
-    docker-compose down --volumes
-
-# Run PRISM conformance tests
-[group('prism-test')]
-[working-directory('tests/prism-test')]
-prism-test-run: prism-test-build
-    sbt test
-
-# Build PRISM conformance test suite
-[group('prism-test')]
-[working-directory('tests/prism-test')]
-prism-test-build:
-    sbt clean scalafmtAll compile Test/compile
-
-# Automatically bump version using git-cliff
-[group('release')]
-release-bump:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    NEW_VERSION=$(git-cliff --bump --context | jq -r .[0].version | sed s/^v//)
-    just release-set "$NEW_VERSION"
-
-# Set project version manually
-[group('release')]
-release-set VERSION:
-    echo "Setting new version to {{ VERSION }}"
-    echo "{{ VERSION }}" > version
-    cargo set-version "{{ VERSION }}"
-    just build-config
-    git-cliff -t "{{ VERSION }}" > CHANGELOG.md
-
-# Build and release multi-arch cardano-testnet Docker image
-[group('release')]
-release-testnet:
-    #!/usr/bin/env bash
-    set -euxo pipefail
-    TAG=$(date +"%Y%m%d-%H%M%S")
-
-    echo "Building amd64 image..."
-    nix build .#cardano-testnet-docker-linux-amd64 -o result-amd64
-
-    echo "Building arm64 image..."
-    nix build .#cardano-testnet-docker-linux-arm64 -o result-arm64
-
-    echo "Loading images into Docker..."
-    docker load < ./result-amd64
-    docker load < ./result-arm64
-
-    echo "Tagging images with $TAG..."
-    docker tag cardano-testnet:latest-amd64 "patextreme/cardano-testnet:$TAG-amd64"
-    docker tag cardano-testnet:latest-arm64 "patextreme/cardano-testnet:$TAG-arm64"
-
-    rm -rf ./result-amd64 ./result-arm64
-
-    echo "Pushing architecture-specific images..."
-    docker push "patextreme/cardano-testnet:$TAG-amd64"
-    docker push "patextreme/cardano-testnet:$TAG-arm64"
-
-    echo "Creating and pushing multi-arch manifest..."
-    docker manifest create "patextreme/cardano-testnet:$TAG" \
-      "patextreme/cardano-testnet:$TAG-amd64" \
-      "patextreme/cardano-testnet:$TAG-arm64"
-    docker manifest push "patextreme/cardano-testnet:$TAG"
-
-    echo "✓ Released: patextreme/cardano-testnet:$TAG"
-
-# Format and lint-fix tools sources and justfile
-[group('tools')]
-[working-directory('tools')]
-tools-format:
-    echo "Formatting Python files..."
-    ruff check --select I --fix compose_gen
-    ruff format compose_gen
-
-    echo "Formatting justfile..."
-    just --fmt --unstable
-
-# Type check and validate Python tools code
-[group('tools')]
-tools-check:
-    #!/usr/bin/env bash
-    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-    nix build ".#checks.$SYSTEM.tools"

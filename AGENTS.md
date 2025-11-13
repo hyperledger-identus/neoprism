@@ -27,8 +27,8 @@
 #### Docker Configuration Generation
 - Location: `tools/compose_gen/` contains Python-based Docker Compose configuration generation
 - Run generation: `just build-config` (or `python -m compose_gen.main` from `tools/` directory)
-- Format tools code: `just tools-format` (runs ruff format and import sorting)
-- Check tools code: `just tools-check` (runs type checking and validation via Nix)
+- Format tools code: `just tools format` (runs ruff format and import sorting)
+- Check tools code: `just tools check` (runs type checking and validation via Nix)
 - Structure:
   - `models.py`: Pydantic models for type-safe Docker Compose schema
   - `services/`: Service builder modules (one per service)
