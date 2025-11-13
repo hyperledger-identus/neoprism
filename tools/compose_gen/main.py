@@ -7,6 +7,7 @@ import yaml
 from compose_gen.models import ComposeConfig
 
 from . import services, stacks
+from .metadata import VERSION
 
 
 def write_compose_file(config: ComposeConfig, output_path: Path) -> None:
@@ -67,11 +68,11 @@ def main() -> None:
                 ),
             }
         ),
-        "prism-test/compose": stacks.prism_test.mk_stack(
-            stacks.prism_test.Options(ci=False)
-        ),
+        "prism-test/compose": stacks.prism_test.mk_stack(stacks.prism_test.Options()),
         "prism-test/compose-ci": stacks.prism_test.mk_stack(
-            stacks.prism_test.Options(ci=True)
+            stacks.prism_test.Options(
+                neoprism_image_override=f"identus-neoprism:latest"
+            )
         ),
         "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(
             stacks.blockfrost_neoprism_demo.Options()

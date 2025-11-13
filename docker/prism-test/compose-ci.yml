@@ -217,7 +217,7 @@ services:
       - -f
       - http://localhost:8080/api/_system/health
       timeout: 5s
-    image: identus-neoprism:0.7.0
+    image: identus-neoprism:latest
     ports:
     - 18080:8080
     restart: always

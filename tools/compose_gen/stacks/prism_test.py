@@ -16,7 +16,7 @@ from ..services import (
 
 
 class Options(BaseModel):
-    ci: bool = False
+    neoprism_image_override: str | None = None
 
 
 def mk_stack(options: Options) -> ComposeConfig:
@@ -98,7 +98,7 @@ def mk_stack(options: Options) -> ComposeConfig:
     prism_services = {
         "neoprism-standalone": neoprism.mk_service(
             neoprism.Options(
-                image_override=f"identus-neoprism:{VERSION}" if options.ci else None,
+                image_override=options.neoprism_image_override,
                 host_port=18080,
                 db_host="db-neoprism",
                 confirmation_blocks=0,
