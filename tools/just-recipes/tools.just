@@ -6,8 +6,8 @@ format:
     ruff check --select I --fix tools/compose_gen
     ruff format tools/compose_gen
 
-    echo "Formatting justfile..."
-    just --fmt --unstable
+    echo "Formatting justfiles..."
+    find . -name '*.just' -type f -exec sh -c 'echo "  → {}" && just --fmt --unstable --justfile {}' \;
 
 # Type check and validate Python tools code
 check:

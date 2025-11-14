@@ -18,6 +18,13 @@ let
       buildFeatures ? [ ],
       extraPackages ? [ ],
     }:
+    let
+      callPackageCrossDefault =
+        if pkgs.system == "x86_64-linux" then
+          pkgs.pkgsCross.gnu64.callPackage
+        else
+          pkgs.pkgsCross.aarch64-multiplatform.callPackage;
+    in
     rec {
       # assets
       neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
@@ -36,13 +43,16 @@ let
         inherit buildFeatures;
         inherit (pkgs.rustTools) cargoLock;
       };
-      neoprism-docker = pkgs.callPackage ./neoprism-docker.nix {
-        inherit
-          version
-          neoprism-bin
-          neoprism-ui-assets
-          extraPackages
-          ;
+      neoprism-docker = callPackageCrossDefault ./neoprism-docker.nix {
+        inherit version neoprism-ui-assets extraPackages;
+        neoprism-bin =
+          if pkgs.system == "x86_64-linux" then neoprism-bin-x86_64-linux else neoprism-bin-aarch64-linux;
+      };
+      neoprism-docker-latest = callPackageCrossDefault ./neoprism-docker.nix {
+        inherit neoprism-ui-assets extraPackages;
+        neoprism-bin =
+          if pkgs.system == "x86_64-linux" then neoprism-bin-x86_64-linux else neoprism-bin-aarch64-linux;
+        version = "latest";
       };
       neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./neoprism-docker.nix {
         inherit version neoprism-ui-assets extraPackages;
@@ -56,13 +66,6 @@ let
             neoprism-bin = neoprism-bin-aarch64-linux;
             tagSuffix = "-arm64";
           };
-      neoprism-docker-latest = pkgs.callPackage ./neoprism-docker.nix {
-        inherit
-          neoprism-bin
-          neoprism-ui-assets
-          ;
-        version = "latest";
-      };
     };
   neoprismPackages = mkNeoprismPackages { };
 
