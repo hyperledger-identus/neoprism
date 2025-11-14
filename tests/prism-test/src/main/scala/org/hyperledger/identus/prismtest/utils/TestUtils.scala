@@ -71,7 +71,7 @@ trait TestDsl extends ProtoUtils, CryptoUtils:
             nodeClient
               .isOperationConfirmed(operationRef)
               .filterOrFail(identity)(Exception("operation is not confirmed"))
-              .retry(Schedule.recurs(90) && Schedule.spaced(1.seconds))
+              .retry(Schedule.recurs(90) && Schedule.spaced(1.second))
               .orDie
         )
       }

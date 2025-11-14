@@ -177,6 +177,42 @@ To set up and run NeoPRISM for development, follow these steps:
 - Default port used is `8080`.
 - No need to run `just build-assets` manually; `just run` handles asset generation automatically.
 - You can run `just build-assets` separately if you only want to generate web UI assets without starting the node.
+- All `docker/*/compose*.yml` files are auto-generated from Python sources in `tools/compose_gen/`. Do not edit these YAML files directly. Instead, modify the Python sources and run `just build-config` to regenerate them.
+
+## Running E2E Tests
+
+NeoPRISM includes end-to-end conformance tests that verify the PRISM DID protocol implementation. These tests validate DID operations (create, update, deactivate) against a local Cardano testnet.
+
+**Prerequisites:**
+- Nix with flakes enabled
+
+**Running the tests:**
+
+```bash
+# Enter the development shell
+nix develop
+
+# Run the full e2e test suite
+just e2e::run
+```
+
+This command will:
+1. Build the NeoPRISM and Cardano testnet Docker images
+2. Start a local test environment with a Cardano node
+3. Run the Scala-based conformance test suite
+4. Tear down the test environment
+
+**Important notes:**
+- The first run may take several minutes to build all Docker images. Subsequent runs will be faster as images are cached.
+- The Docker images are built using Nix, which only includes files tracked by git. If you add new files to the codebase, make sure to stage them with `git add` before running the tests, otherwise they won't be included in the Docker image build.
+
+**Building tests only:**
+
+To compile the test suite without running it:
+
+```bash
+just e2e::build
+```
 
 ### SQLx schema checks
 
@@ -241,20 +277,27 @@ Assuming you are in the development shell, here are some frequently used command
 
 The following justfile commands are available to automate the local development workflow:
 
-| command                                     | description                                                        |
-|---------------------------------------------|--------------------------------------------------------------------|
-| `just format`                               | Run the formatter on everything                                    |
-| `just build`                                | Build the whole project                                            |
-| `just build-assets`                         | Build the Web UI assets (CSS, JavaScript, static assets)           |
-| `just build-config`                         | Build the generated config                                         |
-| `just db-up`                                | Spin up the local PostgreSQL database (Docker)                     |
-| `just db-down`                              | Tear down the local PostgreSQL database                            |
-| `just db-dump`                              | Dump the local PostgreSQL database to the `postgres.dump` file     |
-| `just db-restore`                           | Restore the local PostgreSQL database from the `postgres.dump` file|
-| `just db-init-sqlite`                       | Create or migrate the embedded SQLite database (default path)      |
-| `just db-clean-sqlite`                      | Delete the embedded SQLite database file                           |
-| `just run indexer`                          | Run the indexer node, connecting to the local database             |
-| `just run indexer --cardano-addr <ADDR>`    | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
-| `just run indexer --dbsync-url <URL>`       | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
+| command                                   | description                                                                   |
+|-------------------------------------------|-------------------------------------------------------------------------------|
+| `just format`                             | Run the formatter on everything (Rust, Nix, TOML, Python, SQL, Hurl)          |
+| `just build`                              | Build the whole project (assets + cargo)                                      |
+| `just build-assets`                       | Build the Web UI assets (CSS, JavaScript, static assets)                      |
+| `just build-config`                       | Generate Docker Compose configs from the Python sources in `tools/`           |
+| `just test`                               | Run all tests with all features enabled                                       |
+| `just check`                              | Run the full Nix checks suite (format, lint, test, clippy)                    |
+| `just clean`                              | Clean all build artifacts                                                     |
+| `just db-up`                              | Spin up the local PostgreSQL database (Docker)                                |
+| `just db-down`                            | Tear down the local PostgreSQL database                                       |
+| `just db-dump`                            | Dump the local PostgreSQL database to the `postgres.dump` file                |
+| `just db-restore`                         | Restore the local PostgreSQL database from the `postgres.dump` file           |
+| `just db-init-sqlite`                     | Create or migrate the embedded SQLite database (default path)                 |
+| `just db-clean-sqlite`                    | Delete the embedded SQLite database file                                      |
+| `just run indexer`                        | Run the indexer node, connecting to the local database                        |
+| `just run indexer --cardano-addr <ADDR>`  | Run the indexer node, connecting to the Cardano relay at `<ADDR>`             |
+| `just run indexer --dbsync-url <URL>`     | Run the indexer node, connecting to the DB Sync instance at `<URL>`           |
+| `just tools format`                       | Format the Python code in `tools/`                                            |
+| `just tools check`                        | Type-check and validate the Python tooling code                               |
+| `just e2e::build`                         | Build the PRISM conformance (end-to-end) test suite                           |
+| `just e2e::run`                           | Run the PRISM conformance (end-to-end) test suite                             |
 
 > **Note:** `db-up`, `db-down`, `db-dump`, and `db-restore` manage the Dockerized PostgreSQL instance only. Use `db-init-sqlite` / `db-clean-sqlite` when working with the embedded SQLite backend.

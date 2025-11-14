@@ -3,26 +3,30 @@
 let
   rootDir = "$ROOT_DIR";
   inherit (pkgs.rustTools) rust;
+  inherit (pkgs.pythonTools) pythonEnv;
 in
 pkgs.mkShell {
   packages = with pkgs; [
     # base
-    docker
+    cowsay
     docker
     docker-compose
     git
     git-cliff
+    hurl
     just
     less
     ncurses
+    nix
     nixfmt-rfc-style
     pkg-config
     protobuf
     taplo
     which
-    # config
-    dhall
-    dhall-json
+    # python
+    pythonEnv
+    pyright
+    ruff
     # db
     sqlfluff
     sqlx-cli

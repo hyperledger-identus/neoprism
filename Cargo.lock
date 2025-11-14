@@ -1740,6 +1740,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "identus-did-prism-ledger"
+version = "0.7.0"
+dependencies = [
+ "async-trait",
+ "chrono",
+ "identus-apollo",
+ "identus-did-prism",
+ "identus-did-prism-indexer",
+ "identus-did-prism-submitter",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "identus-did-prism-submitter"
 version = "0.7.0"
 dependencies = [
@@ -2279,6 +2293,7 @@ dependencies = [
  "identus-did-core",
  "identus-did-prism",
  "identus-did-prism-indexer",
+ "identus-did-prism-ledger",
  "identus-did-prism-submitter",
  "identus-did-resolver-http",
  "lazybe",

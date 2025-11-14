@@ -1,7 +1,7 @@
 { rust-bin, rust-overlay }:
 
 let
-  nightlyVersion = "2025-07-08";
+  nightlyVersion = "2025-11-10";
   rustOverrideArgs = {
     extensions = [
       "rust-src"

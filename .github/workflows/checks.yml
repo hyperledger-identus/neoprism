@@ -13,7 +13,7 @@ on:
     - main
 
 jobs:
-  nix-flake-check:
+  neoprism-check:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,5 +26,21 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Run nix flake check
+      - name: Run neoprism check
         run: nix build .#checks.x86_64-linux.default
+
+  tools-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Run tools check
+        run: nix build .#checks.x86_64-linux.tools

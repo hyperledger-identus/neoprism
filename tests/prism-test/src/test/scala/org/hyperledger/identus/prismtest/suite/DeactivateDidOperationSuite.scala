@@ -2,7 +2,6 @@ package org.hyperledger.identus.prismtest.suite
 
 import io.iohk.atala.prism.protos.node_api.DIDData
 import org.hyperledger.identus.prismtest.utils.TestUtils
-import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
@@ -16,7 +15,7 @@ object DeactivateDidOperationSuite extends TestUtils:
     signatureSpec,
     prevOperationHashSpec,
     deactivatedSpec
-  ) @@ NodeName.skipIf("scala-did")
+  )
 
   private def deactivatedSpec = suite("Deactivated DID")(
     test("should reject re-creation") {

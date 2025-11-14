@@ -12,7 +12,7 @@ pkgs.mkShell {
     mdbook-d2
     mdbook-linkcheck
     yq-go
-    self.packages.${pkgs.system}.neoprism-bin
+    self.packages.${stdenv.hostPlatform.system}.neoprism-bin
   ];
   shellHook = ''
     export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)

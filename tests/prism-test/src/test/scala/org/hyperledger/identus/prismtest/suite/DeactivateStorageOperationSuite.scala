@@ -11,7 +11,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
     signatureSpec,
     prevOperationHashSpec,
     deactivatedStorageSpec
-  ) @@ NodeName.skipIf("prism-node", "scala-did")
+  ) @@ NodeName.skipIf("prism-node")
 
   private def deactivatedStorageSpec = suite("Deactivated storage")(
     test("should reject resubmitting same create storage operation after deactivation") {

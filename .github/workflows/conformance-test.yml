@@ -35,7 +35,7 @@ jobs:
         uses: docker/setup-compose-action@v1
 
       - name: Build neoprism image
-        run: nix build .#neoprism-docker -L -o result
+        run: nix build .#neoprism-docker-latest -L -o result
 
       - name: Load image into daemon
         run: |

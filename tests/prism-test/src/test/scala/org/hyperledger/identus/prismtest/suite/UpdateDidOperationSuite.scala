@@ -1,13 +1,11 @@
 package org.hyperledger.identus.prismtest.suite
 
 import org.hyperledger.identus.prismtest.utils.TestUtils
-import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
 
 object UpdateDidOperationSuite extends TestUtils:
-  // TODO: check if scala-did is patched correctly
   // TODO: add tests for add / remove / update service action
   def allSpecs = suite("UpdateDidOperation")(
     signatureSpec,
@@ -15,7 +13,7 @@ object UpdateDidOperationSuite extends TestUtils:
     addPublicKeySpec,
     removePublicKeySpec,
     contextSpec
-  ) @@ NodeName.skipIf("scala-did")
+  )
 
   private def contextSpec = suite("Context")(
     test("should accept new context values") {

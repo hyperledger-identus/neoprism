@@ -1,0 +1,19 @@
+[package]
+name              = "identus-did-prism-ledger"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+async-trait = { workspace = true }
+chrono      = { workspace = true }
+tokio       = { workspace = true, features = [ "sync", "time", "rt" ] }
+tracing     = { workspace = true }
+
+identus-apollo              = { workspace = true, features = [ "hash" ] }
+identus-did-prism           = { workspace = true }
+identus-did-prism-indexer   = { workspace = true }
+identus-did-prism-submitter = { workspace = true }
+
+[features]
+default   = [  ]
+in-memory = [  ]
