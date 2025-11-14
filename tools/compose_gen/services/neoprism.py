@@ -6,33 +6,18 @@ from ..metadata import VERSION
 from ..models import Healthcheck, Service, ServiceDependency
 
 
-class DbSyncDltSourceArgs(BaseModel):
-    """DbSync DLT source configuration."""
-
-    url: str
-    poll_interval: int = 10
-
-
-class RelayDltSource(BaseModel):
-    """Relay DLT source configuration."""
-
-    type: Literal["relay"]
+class OuraDltSource(BaseModel):
+    source_type: Literal["relay"] = "relay"
     address: str
 
 
 class DbSyncDltSource(BaseModel):
-    """DbSync DLT source configuration."""
-
-    type: Literal["dbsync"]
-    args: DbSyncDltSourceArgs
-
-
-DltSource = RelayDltSource | DbSyncDltSource
+    source_type: Literal["dbsync"] = "dbsync"
+    url: str
+    poll_interval: int = 10
 
 
 class DltSink(BaseModel):
-    """DLT sink configuration for publishing operations."""
-
     wallet_host: str
     wallet_port: int
     wallet_id: str
@@ -40,22 +25,32 @@ class DltSink(BaseModel):
     wallet_payment_address: str
 
 
-class Options(BaseModel):
-    """NeoPRISM service options."""
+class IndexerCommand(BaseModel):
+    command: Literal["indexer"] = "indexer"
+    dlt_source: OuraDltSource | DbSyncDltSource
 
+
+class StandaloneCommand(BaseModel):
+    command: Literal["standalone"] = "standalone"
+    dlt_source: OuraDltSource | DbSyncDltSource
+    dlt_sink: DltSink
+
+
+class DevCommand(BaseModel):
+    command: Literal["dev"] = "dev"
+
+
+class Options(BaseModel):
     image_override: str | None = None
     host_port: int | None = None
     db_host: str = "db"
     network: str = "mainnet"
-    dlt_source: DltSource
-    dlt_sink: DltSink | None = None
     confirmation_blocks: int | None = None
     index_interval: int | None = None
-    extra_depends_on: list[str] = []
+    command: IndexerCommand | StandaloneCommand | DevCommand
 
 
 def mk_service(options: Options) -> Service:
-    """Build NeoPRISM service configuration."""
     image = options.image_override or f"hyperledgeridentus/identus-neoprism:{VERSION}"
 
     # Build environment variables
@@ -72,18 +67,34 @@ def mk_service(options: Options) -> Service:
     if options.index_interval is not None:
         environment["NPRISM_INDEX_INTERVAL"] = str(options.index_interval)
 
-    # Add DLT source configuration
-    if options.dlt_source.type == "relay":
-        environment["NPRISM_CARDANO_RELAY_ADDR"] = options.dlt_source.address
-    else:  # dbsync
-        environment["NPRISM_CARDANO_DBSYNC_URL"] = options.dlt_source.args.url
-        environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
-            options.dlt_source.args.poll_interval
-        )
+    # Add Indexer configuration
+    if isinstance(options.command, IndexerCommand):
+        # Add source configuration
+        if isinstance(options.command.dlt_source, OuraDltSource):
+            environment["NPRISM_CARDANO_RELAY_ADDR"] = (
+                options.command.dlt_source.address
+            )
+        elif isinstance(options.command.dlt_source, DbSyncDltSource):
+            environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
+            environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
+                options.command.dlt_source.poll_interval
+            )
 
-    # Add DLT sink configuration if provided
-    if options.dlt_sink:
-        sink = options.dlt_sink
+    # Add standalone configuration
+    elif isinstance(options.command, StandaloneCommand):
+        # Add source configuration
+        if isinstance(options.command.dlt_source, OuraDltSource):
+            environment["NPRISM_CARDANO_RELAY_ADDR"] = (
+                options.command.dlt_source.address
+            )
+        elif isinstance(options.command.dlt_source, DbSyncDltSource):
+            environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
+            environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
+                options.command.dlt_source.poll_interval
+            )
+
+        # Add sink configuration
+        sink = options.command.dlt_sink
         environment.update(
             {
                 "NPRISM_CARDANO_WALLET_BASE_URL": f"http://{sink.wallet_host}:{sink.wallet_port}/v2",
@@ -96,17 +107,13 @@ def mk_service(options: Options) -> Service:
     # Build depends_on
     depends_on = {options.db_host: ServiceDependency(condition="service_healthy")}
 
-    if options.dlt_sink:
-        depends_on[options.dlt_sink.wallet_host] = ServiceDependency(
+    if isinstance(options.command, StandaloneCommand):
+        depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
             condition="service_healthy"
         )
 
-    # Add extra dependencies
-    for dep in options.extra_depends_on:
-        depends_on[dep] = ServiceDependency(condition="service_started")
-
     # Determine command based on mode
-    command = ["standalone" if options.dlt_sink else "indexer"]
+    command = [options.command.command]
 
     # Build ports
     ports = [f"{options.host_port}:8080"] if options.host_port else None

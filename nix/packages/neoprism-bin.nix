@@ -23,13 +23,14 @@ rustPlatform.buildRustPackage {
         baseName = builtins.baseNameOf path;
       in
       !(
-        baseName == "docs"
+        baseName == "AGENTS.md"
         || baseName == "docker"
+        || baseName == "docs"
         || baseName == ".github"
+        || baseName == "nix"
+        || baseName == "README.md"
         || baseName == "tests"
         || baseName == "tools"
-        || baseName == "README.md"
-        || baseName == "AGENTS.md"
       );
     src = ./../..;
   };

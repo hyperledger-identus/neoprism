@@ -5,8 +5,6 @@ from ..services import caddy, db, neoprism, ryo
 
 
 class Options(BaseModel):
-    """Blockfrost NeoPRISM demo stack options."""
-
     dbsync_url: str = "${DBSYNC_URL}"
     dbsync_host: str = "${DBSYNC_HOST}"
     dbsync_port: str = "${DBSYNC_PORT:-5432}"
@@ -16,17 +14,15 @@ class Options(BaseModel):
     network: str = "${NETWORK:-mainnet}"
 
 
-def mk_stack(options: Options) -> ComposeConfig:
-    """Build blockfrost-neoprism-demo stack configuration."""
+def mk_stack(options: Options = Options()) -> ComposeConfig:
     services = {
         "neoprism": neoprism.mk_service(
             neoprism.Options(
                 db_host="db-neoprism",
                 network=options.network,
                 host_port=8080,
-                dlt_source=neoprism.DbSyncDltSource(
-                    type="dbsync",
-                    args=neoprism.DbSyncDltSourceArgs(
+                command=neoprism.IndexerCommand(
+                    dlt_source=neoprism.DbSyncDltSource(
                         url=options.dbsync_url, poll_interval=10
                     ),
                 ),

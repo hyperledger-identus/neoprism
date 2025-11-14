@@ -4,10 +4,12 @@
   pythonTools,
   ruff,
   pyright,
+  just,
 }:
 
 let
   inherit (pythonTools) pythonEnv;
+  justfile = ./../../justfile;
 in
 stdenv.mkDerivation {
   name = "tools-checks";
@@ -17,6 +19,7 @@ stdenv.mkDerivation {
     pythonEnv
     ruff
     pyright
+    just
   ];
 
   buildPhase = "true";
@@ -27,6 +30,10 @@ stdenv.mkDerivation {
 
     echo "Type checking Python files..."
     pyright compose_gen
+
+    echo "Checking justfile formatting..."
+    cp ${justfile} justfile
+    just --fmt --unstable --check justfile
   '';
 
   installPhase = "touch $out";

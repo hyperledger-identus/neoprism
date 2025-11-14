@@ -15,20 +15,17 @@ services:
       - postgres
       timeout: 5s
     image: postgres:16
-    ports:
-    - 5432:5432
     restart: always
-  neoprism-indexer:
+  neoprism-standalone:
     command:
-    - indexer
+    - dev
     depends_on:
       db:
         condition: service_healthy
     environment:
-      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: '10'
-      NPRISM_CARDANO_DBSYNC_URL: ${DBSYNC_URL}
-      NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CARDANO_NETWORK: custom
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
+      NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info
     healthcheck:
       interval: 2s
@@ -39,7 +36,7 @@ services:
       - -f
       - http://localhost:8080/api/_system/health
       timeout: 5s
-    image: hyperledgeridentus/identus-neoprism:0.7.0
+    image: identus-neoprism:latest
     ports:
-    - 8080:8080
+    - 18080:8080
     restart: always

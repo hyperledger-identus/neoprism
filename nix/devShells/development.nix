@@ -8,6 +8,7 @@ in
 pkgs.mkShell {
   packages = with pkgs; [
     # base
+    cowsay
     docker
     docker-compose
     git

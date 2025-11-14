@@ -56,6 +56,13 @@ let
             neoprism-bin = neoprism-bin-aarch64-linux;
             tagSuffix = "-arm64";
           };
+      neoprism-docker-latest = pkgs.callPackage ./neoprism-docker.nix {
+        inherit
+          neoprism-bin
+          neoprism-ui-assets
+          ;
+        version = "latest";
+      };
     };
   neoprismPackages = mkNeoprismPackages { };
 

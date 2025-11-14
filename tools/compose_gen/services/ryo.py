@@ -6,8 +6,6 @@ IMAGE = "blockfrost/backend-ryo:v4.3.0"
 
 
 class DbSyncDbArgs(BaseModel):
-    """DbSync database connection arguments."""
-
     host: str
     port: str
     db_name: str
@@ -16,8 +14,6 @@ class DbSyncDbArgs(BaseModel):
 
 
 class Options(BaseModel):
-    """Ryo service options."""
-
     host_port: int | None = None
     dbsync_db: DbSyncDbArgs
     network: str = "mainnet"
@@ -29,7 +25,6 @@ class Options(BaseModel):
 
 
 def mk_service(options: Options) -> Service:
-    """Build Ryo service configuration."""
     ports = [f"{options.host_port}:3000"] if options.host_port else None
 
     # Build volumes

@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-from ..metadata import VERSION
 from ..models import ComposeConfig
 from ..services import (
     caddy,
@@ -16,13 +15,12 @@ from ..services import (
 
 
 class Options(BaseModel):
-    """Prism test stack options."""
+    neoprism_image_override: str | None = None
+    enable_prism_node: bool = False
+    enable_blockfrost: bool = False
 
-    ci: bool = False
 
-
-def mk_stack(options: Options) -> ComposeConfig:
-    """Build prism-test stack configuration."""
+def mk_stack(options: Options = Options()) -> ComposeConfig:
     network_magic = 42
     testnet_volume = "node-testnet"
     cardano_node_host = "cardano-node"
@@ -50,6 +48,13 @@ def mk_stack(options: Options) -> ComposeConfig:
                 testnet_volume=testnet_volume,
                 config_file="./ryo.yaml",
                 bootstrap_testnet_host="bootstrap-testnet",
+            )
+        ),
+        "cardano-submit-api": cardano_submit_api.mk_service(
+            cardano_submit_api.Options(
+                testnet_volume=testnet_volume,
+                cardano_node_host=cardano_node_host,
+                network_magic=network_magic,
             )
         ),
     }
@@ -88,40 +93,39 @@ def mk_stack(options: Options) -> ComposeConfig:
                 host_port=18081,
             )
         ),
-        "cardano-submit-api": cardano_submit_api.mk_service(
-            cardano_submit_api.Options(
-                testnet_volume=testnet_volume,
-                cardano_node_host=cardano_node_host,
-                network_magic=network_magic,
-            )
+        "db-dbsync": db.mk_service(db.Options()),
+    }
+
+    # NeoPRISM services
+    neoprism_services = {
+        "neoprism-standalone": neoprism.mk_service(
+            neoprism.Options(
+                image_override=options.neoprism_image_override,
+                host_port=18080,
+                network="custom",
+                db_host="db-neoprism",
+                confirmation_blocks=0,
+                index_interval=1,
+                command=neoprism.StandaloneCommand(
+                    dlt_source=neoprism.DbSyncDltSource(
+                        url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
+                        poll_interval=1,
+                    ),
+                    dlt_sink=neoprism.DltSink(
+                        wallet_host="cardano-wallet",
+                        wallet_port=8090,
+                        wallet_id=wallet_id,
+                        wallet_passphrase=wallet_passphrase,
+                        wallet_payment_address=wallet_payment_address,
+                    ),
+                ),
+            ),
         ),
+        "db-neoprism": db.mk_service(db.Options()),
     }
 
     # PRISM services
     prism_services = {
-        "neoprism-standalone": neoprism.mk_service(
-            neoprism.Options(
-                image_override=f"identus-neoprism:{VERSION}" if options.ci else None,
-                host_port=18080,
-                db_host="db-neoprism",
-                confirmation_blocks=0,
-                index_interval=1,
-                dlt_source=neoprism.DbSyncDltSource(
-                    type="dbsync",
-                    args=neoprism.DbSyncDltSourceArgs(
-                        url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
-                        poll_interval=1,
-                    ),
-                ),
-                dlt_sink=neoprism.DltSink(
-                    wallet_host="cardano-wallet",
-                    wallet_port=8090,
-                    wallet_id=wallet_id,
-                    wallet_passphrase=wallet_passphrase,
-                    wallet_payment_address=wallet_payment_address,
-                ),
-            ),
-        ),
         "prism-node": prism_node.mk_service(
             prism_node.Options(
                 node_db_host="db-prism-node",
@@ -135,12 +139,15 @@ def mk_stack(options: Options) -> ComposeConfig:
                 confirmation_blocks=0,
             )
         ),
-        "db-neoprism": db.mk_service(db.Options()),
-        "db-dbsync": db.mk_service(db.Options()),
         "db-prism-node": db.mk_service(db.Options()),
     }
 
     # Combine all services
-    all_services = {**prism_services, **cardano_services, **bf_services}
+    all_services = {
+        **cardano_services,
+        **neoprism_services,
+        **(prism_services if options.enable_prism_node else {}),
+        **(bf_services if options.enable_blockfrost else {}),
+    }
 
     return ComposeConfig(services=all_services, volumes={"node-testnet": {}})
