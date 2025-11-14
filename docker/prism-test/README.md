@@ -13,6 +13,8 @@ docker compose up
 
 The following services will be available:
 
+> **Note:** Service availability varies by configuration. See [Compose Configurations](#compose-configurations) for details.
+
 | Service                | URL                    | Remark                    |
 |------------------------|------------------------|---------------------------|
 | **NeoPRISM HTTP API**  | http://localhost:18080 |                           |
@@ -27,6 +29,36 @@ docker compose down      # Stop services
 docker compose down -v   # Stop and remove volumes (clean restart)
 ```
 
+## Compose Configurations
+
+### compose.yml - Full Testing Environment
+
+Complete PRISM testing stack with local Cardano testnet, Blockfrost API compatibility layer, and both NeoPRISM and legacy PRISM Node implementations. Use this for comprehensive integration testing and conformance testing against both node implementations.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+| **prism-node** | 50053 | PRISM Node gRPC API |
+| **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
+| **bf-proxy** | 18082 | Blockfrost API proxy |
+
+### compose-ci.yml - CI Testing Environment
+
+Identical to compose.yml but uses locally built `identus-neoprism:latest` image instead of the released version. Use this in CI pipelines or when testing local NeoPRISM builds against the full stack. Does not include Blockfrost services or PRISM Node.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+| **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
+
+### compose-dev.yml - Development Environment
+
+Minimal development setup running only NeoPRISM in dev mode with mock blockchain data. Use this for rapid development and testing of NeoPRISM features without waiting for blockchain synchronization or running Cardano infrastructure.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+
 ## Running Tests
 
 Run normal conformance tests:
@@ -36,12 +68,16 @@ cd tests/prism-test
 sbt test
 ```
 
-**Compose File Variants**
-
-- **compose.yml**: Standard environment
-- **compose-ci.yml**: CI environment (use CI locally built image)
-
 ## Pre-configured Entities
+
+### Cardano Testnet
+
+The local Cardano testnet is configured with custom parameters for testing.
+
+| Property | Value |
+|----------|-------|
+| **Network Magic** | `42` |
+| **Network** | Custom testnet |
 
 ### Wallet
 

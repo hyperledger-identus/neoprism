@@ -82,10 +82,11 @@ def build_test_configs() -> dict[str, ComposeConfig]:
         ),
         "prism-test/compose-dev": ComposeConfig(
             services={
-                "db": services.db.mk_service(services.db.Options(host_port=5432)),
-                "neoprism-indexer": services.neoprism.mk_service(
+                "db": services.db.mk_service(services.db.Options()),
+                "neoprism-standalone": services.neoprism.mk_service(
                     services.neoprism.Options(
                         image_override=f"identus-neoprism:latest",
+                        network="custom",
                         host_port=18080,
                         index_interval=1,
                         command=services.neoprism.DevCommand(),

@@ -15,17 +15,15 @@ services:
       - postgres
       timeout: 5s
     image: postgres:16
-    ports:
-    - 5432:5432
     restart: always
-  neoprism-indexer:
+  neoprism-standalone:
     command:
     - dev
     depends_on:
       db:
         condition: service_healthy
     environment:
-      NPRISM_CARDANO_NETWORK: mainnet
+      NPRISM_CARDANO_NETWORK: custom
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
       NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info
