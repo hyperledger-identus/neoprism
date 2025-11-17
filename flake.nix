@@ -50,16 +50,13 @@
                 cardano-submit-api
                 ;
               inherit (cardano-wallet.packages.${system}) cardano-wallet;
-              cardano-db-sync = cardano-db-sync.packages.${system}.default;
-            })
-            (_: prev: {
-              pkgsInternal = import ./nix/pkgsInternal { pkgs = prev; };
+              cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
             })
           ];
         };
       in
       {
-        checks = import ./nix/checks/default.nix { inherit pkgs; };
+        checks = import ./nix/checks/default.nix { inherit pkgs self; };
         devShells = import ./nix/devShells/default.nix { inherit pkgs self; };
         packages = import ./nix/packages/default.nix { inherit pkgs; };
       }

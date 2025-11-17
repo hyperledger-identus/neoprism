@@ -12,7 +12,7 @@ clean:
 
 # Start PRISM conformance test environment
 up NAME:
-    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml up -d
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml up -d --wait
 
 # Stop PRISM conformance test environment and remove volumes
 down NAME:
@@ -35,4 +35,3 @@ run: docker-publish-local
 [working-directory('./tests/prism-test')]
 docker-publish-local:
     nix build .#neoprism-docker-latest && docker load < ./result
-    nix build .#cardano-testnet-docker && docker load < ./result

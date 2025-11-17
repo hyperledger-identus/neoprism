@@ -3,6 +3,7 @@
   makeRustPlatform,
   rust,
   cargoLock,
+  stdenv,
   buildPackages,
   buildFeatures ? [ ],
 }:
@@ -34,7 +35,15 @@ rustPlatform.buildRustPackage {
       );
     src = ./../..;
   };
-  nativeBuildInputs = with buildPackages; [ protobuf ];
+  nativeBuildInputs =
+    with buildPackages;
+    [
+      protobuf
+    ]
+    ++ lib.optionals stdenv.buildPlatform.isDarwin [
+      buildPackages.libiconv
+      buildPackages.apple-sdk
+    ];
   doCheck = false;
   PROTOC = "${buildPackages.protobuf}/bin/protoc";
 }
