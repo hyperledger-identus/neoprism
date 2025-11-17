@@ -52,9 +52,6 @@
               inherit (cardano-wallet.packages.${system}) cardano-wallet;
               cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
             })
-            (_: prev: {
-              pkgsInternal = import ./nix/pkgsInternal { pkgs = prev; };
-            })
           ];
         };
       in
