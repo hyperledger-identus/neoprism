@@ -3,6 +3,7 @@
   makeRustPlatform,
   rust,
   cargoLock,
+  stdenv,
   buildPackages,
   buildFeatures ? [ ],
 }:
@@ -39,7 +40,7 @@ rustPlatform.buildRustPackage {
     [
       protobuf
     ]
-    ++ lib.optionals pkgs.stdenv.isDarwin [
+    ++ lib.optionals stdenv.isDarwin [
       buildPackages.libiconv
       buildPackages.apple-sdk
     ];
