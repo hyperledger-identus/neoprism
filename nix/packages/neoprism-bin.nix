@@ -40,7 +40,7 @@ rustPlatform.buildRustPackage {
     [
       protobuf
     ]
-    ++ lib.optionals stdenv.isDarwin [
+    ++ lib.optionals stdenv.hostPlatform.isDarwin [
       buildPackages.libiconv
       buildPackages.apple-sdk
     ];
