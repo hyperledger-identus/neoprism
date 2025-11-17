@@ -8,5 +8,6 @@
   inherit (self.packages.${pkgs.stdenv.hostPlatform.system})
     neoprism-bin
     neoprism-docker
+    neoprism-docker-latest
     ;
 }
