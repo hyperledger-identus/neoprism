@@ -36,5 +36,5 @@ identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true }
 
 [features]
-default        = [  ]
+default        = [ "sqlite-backend" ]
 sqlite-backend = [ "node-storage/sqlite-storage" ]

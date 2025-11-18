@@ -14,16 +14,19 @@ let
       }
       // overrides
     );
-  neoprismPackages = {
+  neoprismPackages = let buildFeatures = [ "sqlite-backend" ]; in {
     neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
     neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
+      inherit buildFeatures;
       rust = pkgs.rustTools.rustMinimal;
       inherit (pkgs.rustTools) cargoLock;
     };
     neoprism-bin-x86_64-linux = callPackageCrossWithRust "gnu64" ./neoprism-bin.nix {
+      inherit buildFeatures;
       inherit (pkgs.rustTools) cargoLock;
     };
     neoprism-bin-aarch64-linux = callPackageCrossWithRust "aarch64-multiplatform" ./neoprism-bin.nix {
+      inherit buildFeatures;
       inherit (pkgs.rustTools) cargoLock;
     };
   };
