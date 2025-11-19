@@ -92,6 +92,23 @@ def build_test_configs() -> dict[str, ComposeConfig]:
                 ),
             }
         ),
+        "prism-test/compose-dev-sqlite": ComposeConfig(
+            services={
+                "neoprism-standalone": services.neoprism.mk_service(
+                    services.neoprism.Options(
+                        image_override=f"identus-neoprism:latest",
+                        network="custom",
+                        host_port=18080,
+                        index_interval=1,
+                        command=services.neoprism.DevCommand(),
+                        db_backend="sqlite",
+                        sqlite_db_url="sqlite:///var/lib/neoprism/sqlite/neoprism.db",
+                        volumes=["neoprism-sqlite:/var/lib/neoprism/sqlite"],
+                    ),
+                ),
+            },
+            volumes={"neoprism-sqlite": {}},
+        ),
     }
 
 
