@@ -396,12 +396,14 @@ fn prepare_sqlite_destination(db_url: &str) -> std::io::Result<()> {
 #[cfg(feature = "sqlite-backend")]
 fn ensure_sqlite_parent(path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
-        if !parent.exists() {
-            fs::create_dir_all(parent)?;
-            #[cfg(all(unix, feature = "sqlite-backend"))]
-            {
-                fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
-            }
+        if parent.exists() {
+            return Ok(());
+        }
+
+        fs::create_dir_all(parent)?;
+        #[cfg(all(unix, feature = "sqlite-backend"))]
+        {
+            fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
         }
     }
     Ok(())
