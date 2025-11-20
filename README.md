@@ -214,6 +214,42 @@ To compile the test suite without running it:
 just e2e::build
 ```
 
+### Running specific E2E stacks
+
+The e2e harness now ships four compose variants that differ by backend (PostgreSQL or SQLite) and target audience (developer-friendly vs CI-hardening). You can exercise any stack individually by combining the `up`, `down`, and `run` recipes:
+
+```bash
+# Start only the SQLite developer stack
+just e2e::up dev-sqlite
+# Run the Scala tests that target the running stack
+(cd tests/prism-test && sbt test)
+# Clean up once finished
+just e2e::down dev-sqlite
+```
+
+`just e2e::run` iterates over every stack in sequence—`dev`, `dev-sqlite`, `ci`, and `ci-sqlite`—so that both backends are covered automatically.
+
+### Configuration matrix
+
+| Mode | Backend | Compose file | `just` target | Recommended usage | Pros | Trade-offs |
+|------|---------|--------------|---------------|-------------------|------|------------|
+| dev | PostgreSQL | `docker/prism-test/compose-dev.yml` | `just e2e::up dev` | Local development when you want parity with production | Exercises the original schema and WAL-heavy workflow | Requires Dockerized Postgres and slightly longer start-up |
+| dev | SQLite | `docker/prism-test/compose-dev-sqlite.yml` | `just e2e::up dev-sqlite` | Fast local iterations or laptop CI checks | Zero extra services, file-backed DB keeps resource usage low | Single-writer semantics; best for smoke tests |
+| ci | PostgreSQL | `docker/prism-test/compose-ci.yml` | `just e2e::up ci` | Full CI pipeline and release rehearsal | Mirrors production topology with stricter health checks | Pulls more images and runs longer |
+| ci | SQLite | `docker/prism-test/compose-ci-sqlite.yml` | `just e2e::up ci-sqlite` | CI shard that validates the embedded backend | Ensures SQLite stays first-class even under CI load | Cardano/I/O limits are similar to `ci`, so still slower than dev |
+
+Pick the stack that matches your goal; for example, run `dev-sqlite` while iterating on backend logic, and keep `ci` or `ci-sqlite` in nightly pipelines for extra safety.
+
+### Full QA helper script
+
+The repository root contains a `run.sh` helper that strings the common QA steps together:
+
+```bash
+./run.sh
+```
+
+This script performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, executes `just e2e::run`, and finally smoke-tests the SQLite developer stack. Use it right before sending a PR to replicate the checks we run manually.
+
 ### SQLx schema checks
 
 The development shell now bundles `sqlx-cli`, `sqlite`, and all required headers. Whenever you change migrations or entity definitions, run both backends to ensure they stay valid:
