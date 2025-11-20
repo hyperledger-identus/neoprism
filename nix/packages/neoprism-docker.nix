@@ -12,6 +12,10 @@
 dockerTools.buildLayeredImage {
   name = "identus-neoprism";
   tag = "${version}${tagSuffix}";
+  extraCommands = ''
+    install -d -m 700 var/lib/neoprism/sqlite
+    touch var/lib/neoprism/sqlite/.keep
+  '';
   contents = [
     bash
     curl
@@ -27,5 +31,8 @@ dockerTools.buildLayeredImage {
     Entrypoint = [ "/bin/neoprism-node" ];
     Cmd = [ ];
     WorkingDir = "/";
+    Volumes = {
+      "/var/lib/neoprism/sqlite" = { };
+    };
   };
 }

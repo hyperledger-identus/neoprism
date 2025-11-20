@@ -1,42 +1,55 @@
+use std::str::FromStr;
+
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockMetadata, BlockNo, DltCursor, OperationMetadata, SlotNo};
+use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{
     DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationId, RawOperationRepo,
 };
 use lazybe::db::DbOps;
-use lazybe::db::postgres::PostgresDbCtx;
+use lazybe::db::sqlite::SqliteDbCtx;
 use lazybe::filter::Filter;
 use lazybe::page::PaginationInput;
 use lazybe::sort::Sort;
-use sqlx::PgPool;
+use lazybe::uuid::Uuid;
+use sqlx::SqlitePool;
+use sqlx::sqlite::{SqliteConnectOptions, SqliteJournalMode, SqlitePoolOptions, SqliteSynchronous};
 
+use super::shared::parse_raw_operation;
+use crate::entity::DidSuffix;
 use crate::{Error, entity};
 
 #[derive(Debug, Clone)]
-pub struct PostgresDb {
-    pub pool: PgPool,
-    db_ctx: PostgresDbCtx,
+pub struct SqliteDb {
+    pub pool: SqlitePool,
+    db_ctx: SqliteDbCtx,
 }
 
-impl PostgresDb {
+impl SqliteDb {
     pub async fn connect(db_url: &str) -> Result<Self, Error> {
-        let pool = PgPool::connect(db_url).await?;
+        let options = SqliteConnectOptions::from_str(db_url)?
+            .create_if_missing(true)
+            .journal_mode(SqliteJournalMode::Wal)
+            .synchronous(SqliteSynchronous::Normal);
+        let pool = SqlitePoolOptions::new()
+            .max_connections(5)
+            .connect_with(options)
+            .await?;
         Ok(Self {
-            db_ctx: PostgresDbCtx,
+            db_ctx: SqliteDbCtx,
             pool,
         })
     }
 
     pub async fn migrate(&self) -> Result<(), Error> {
-        sqlx::migrate!("./migrations").run(&self.pool).await?;
+        sqlx::migrate!("./migrations/sqlite").run(&self.pool).await?;
         Ok(())
     }
 }
 
 #[async_trait::async_trait]
-impl IndexerStateRepo for PostgresDb {
+impl IndexerStateRepo for SqliteDb {
     type Error = Error;
 
     async fn get_last_indexed_block(&self) -> Result<Option<(SlotNo, BlockNo)>, Self::Error> {
@@ -118,7 +131,7 @@ LIMIT 1
 }
 
 #[async_trait::async_trait]
-impl RawOperationRepo for PostgresDb {
+impl RawOperationRepo for SqliteDb {
     type Error = Error;
 
     async fn get_raw_operations_unindexed(
@@ -189,12 +202,15 @@ impl RawOperationRepo for PostgresDb {
 
         let result = match vdr_operation {
             None => None,
-            Some(op) => self
-                .db_ctx
-                .get::<entity::RawOperation>(&mut tx, op.raw_operation_id)
-                .await?
-                .map(parse_raw_operation)
-                .transpose()?,
+            Some(op) => {
+                let raw_op =
+                    sqlx::query_as::<_, entity::RawOperation>(r#"SELECT * FROM raw_operation WHERE id = ?1 LIMIT 1"#)
+                        .bind(op.raw_operation_id)
+                        .fetch_optional(&mut *tx)
+                        .await?;
+
+                raw_op.map(parse_raw_operation).transpose()?
+            }
         };
 
         tx.commit().await?;
@@ -207,30 +223,41 @@ impl RawOperationRepo for PostgresDb {
     ) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for (metadata, signed_operation) in operations {
-            let create_op = entity::CreateRawOperation {
-                signed_operation_data: signed_operation.encode_to_vec(),
-                slot: metadata
-                    .block_metadata
-                    .slot_number
-                    .inner()
-                    .try_into()
-                    .expect("slot_number does not fit in i64"),
-                block_number: metadata
-                    .block_metadata
-                    .block_number
-                    .inner()
-                    .try_into()
-                    .expect("block_number does not fit in i64"),
-                cbt: metadata.block_metadata.cbt,
-                absn: metadata
-                    .block_metadata
-                    .absn
-                    .try_into()
-                    .expect("absn does not fit in i32"),
-                osn: metadata.osn.try_into().expect("osn does not fit in i32"),
-                is_indexed: false,
-            };
-            self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;
+            let slot: i64 = metadata
+                .block_metadata
+                .slot_number
+                .inner()
+                .try_into()
+                .expect("slot_number does not fit in i64");
+            let block_number: i64 = metadata
+                .block_metadata
+                .block_number
+                .inner()
+                .try_into()
+                .expect("block_number does not fit in i64");
+            let absn: i32 = metadata
+                .block_metadata
+                .absn
+                .try_into()
+                .expect("absn does not fit in i32");
+            let osn: i32 = metadata.osn.try_into().expect("osn does not fit in i32");
+
+            sqlx::query(
+                r#"
+INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, is_indexed)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0)
+ON CONFLICT(block_number, absn, osn) DO NOTHING
+                "#,
+            )
+            .bind(Uuid::new_v4())
+            .bind(signed_operation.encode_to_vec())
+            .bind(slot)
+            .bind(block_number)
+            .bind(metadata.block_metadata.cbt)
+            .bind(absn)
+            .bind(osn)
+            .execute(&mut *tx)
+            .await?;
         }
         tx.commit().await?;
         Ok(())
@@ -238,56 +265,53 @@ impl RawOperationRepo for PostgresDb {
 }
 
 #[async_trait::async_trait]
-impl IndexedOperationRepo for PostgresDb {
+impl IndexedOperationRepo for SqliteDb {
     type Error = Error;
 
     async fn insert_indexed_operations(&self, operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for op in operations {
-            // mark raw_operation as indexed
-            self.db_ctx
-                .update::<entity::RawOperation>(
-                    &mut tx,
-                    *op.raw_operation_id().as_ref(),
-                    entity::UpdateRawOperation {
-                        is_indexed: Some(true),
-                        ..Default::default()
-                    },
-                )
+            let raw_uuid = *op.raw_operation_id().as_ref();
+            sqlx::query("UPDATE raw_operation SET is_indexed = 1 WHERE id = ?1")
+                .bind(raw_uuid)
+                .execute(&mut *tx)
                 .await?;
 
-            // write to indexing table
             match op {
-                IndexedOperation::Ssi { raw_operation_id, did } => {
-                    self.db_ctx
-                        .create::<entity::IndexedSsiOperation>(
-                            &mut tx,
-                            entity::CreateIndexedSsiOperation {
-                                raw_operation_id: raw_operation_id.into(),
-                                did: did.into(),
-                            },
-                        )
-                        .await?;
+                IndexedOperation::Ssi { did, .. } => {
+                    let did_bytes = DidSuffix::from(did).into_bytes();
+                    sqlx::query(
+                        r#"
+INSERT INTO indexed_ssi_operation (raw_operation_id, did, indexed_at)
+VALUES (?1, ?2, datetime('now'))
+                        "#,
+                    )
+                    .bind(raw_uuid)
+                    .bind(did_bytes)
+                    .execute(&mut *tx)
+                    .await?;
                 }
                 IndexedOperation::Vdr {
-                    raw_operation_id,
                     operation_hash,
                     init_operation_hash,
                     prev_operation_hash,
                     did,
+                    ..
                 } => {
-                    self.db_ctx
-                        .create::<entity::IndexedVdrOperation>(
-                            &mut tx,
-                            entity::CreateIndexedVdrOperation {
-                                raw_operation_id: raw_operation_id.into(),
-                                operation_hash,
-                                init_operation_hash,
-                                prev_operation_hash,
-                                did: did.into(),
-                            },
-                        )
-                        .await?;
+                    let did_bytes = DidSuffix::from(did).into_bytes();
+                    sqlx::query(
+                        r#"
+INSERT INTO indexed_vdr_operation (raw_operation_id, operation_hash, init_operation_hash, prev_operation_hash, did, indexed_at)
+VALUES (?1, ?2, ?3, ?4, ?5, datetime('now'))
+                        "#,
+                    )
+                    .bind(raw_uuid)
+                    .bind(operation_hash)
+                    .bind(init_operation_hash)
+                    .bind(prev_operation_hash)
+                    .bind(did_bytes)
+                    .execute(&mut *tx)
+                    .await?;
                 }
                 IndexedOperation::Ignored { .. } => (),
             };
@@ -298,7 +322,7 @@ impl IndexedOperationRepo for PostgresDb {
 }
 
 #[async_trait::async_trait]
-impl DltCursorRepo for PostgresDb {
+impl DltCursorRepo for SqliteDb {
     type Error = Error;
 
     async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
@@ -343,26 +367,52 @@ impl DltCursorRepo for PostgresDb {
     }
 }
 
-fn parse_raw_operation(
-    value: entity::RawOperation,
-) -> Result<(RawOperationId, OperationMetadata, SignedPrismOperation), Error> {
-    let metadata = OperationMetadata {
-        block_metadata: BlockMetadata {
-            slot_number: u64::try_from(value.slot)
-                .expect("slot value does not fit in u64")
-                .into(),
-            block_number: u64::try_from(value.block_number)
-                .expect("block_number value does not fit in u64")
-                .into(),
-            cbt: value.cbt,
-            absn: value.absn.try_into().expect("absn value does not fit in u32"),
-        },
-        osn: value.osn.try_into().expect("osn value does not fit in u32"),
-    };
-    SignedPrismOperation::decode(value.signed_operation_data.as_slice())
-        .map(|op| (value.id.into(), metadata, op))
-        .map_err(|e| Error::ProtobufDecode {
-            source: e,
-            target_type: std::any::type_name::<SignedPrismOperation>(),
-        })
+#[cfg(test)]
+mod tests {
+    use chrono::{TimeZone, Utc};
+    use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
+    use tempfile::TempDir;
+
+    use super::*;
+
+    fn dummy_metadata(block: u64, absn: u32, osn: u32) -> OperationMetadata {
+        OperationMetadata {
+            block_metadata: BlockMetadata {
+                slot_number: block.into(),
+                block_number: block.into(),
+                cbt: Utc.timestamp_opt(0, 0).single().expect("failed to build timestamp"),
+                absn,
+            },
+            osn,
+        }
+    }
+
+    async fn setup_db() -> (TempDir, SqliteDb) {
+        let dir = tempfile::tempdir().expect("temp dir");
+        let db_path = dir.path().join("db.sqlite");
+        let url = format!("sqlite://{}", db_path.display());
+        let db = SqliteDb::connect(&url).await.expect("connect sqlite");
+        db.migrate().await.expect("migrate sqlite");
+        (dir, db)
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn insert_raw_operations_is_idempotent_on_absn_triplet() {
+        let (_tmp_dir, db) = setup_db().await;
+        let metadata = dummy_metadata(42, 1, 7);
+        let operation = SignedPrismOperation::default();
+
+        db.insert_raw_operations(vec![(metadata.clone(), operation.clone())])
+            .await
+            .expect("first insert succeeds");
+        db.insert_raw_operations(vec![(metadata, operation)])
+            .await
+            .expect("duplicate insert ignored");
+
+        let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM raw_operation")
+            .fetch_one(&db.pool)
+            .await
+            .expect("count rows");
+        assert_eq!(count, 1);
+    }
 }

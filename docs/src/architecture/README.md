@@ -2,11 +2,13 @@
 
 NeoPRISM is a modular DID infrastructure for Cardano that can operate in multiple deployment modes:
 
-- **Indexer**: Reads and validates DID operations from the Cardano blockchain, storing them in PostgreSQL. When queried, it reconstructs the current DID state by replaying relevant operations and returns DID documents via its REST API.
+- **Indexer**: Reads and validates DID operations from the Cardano blockchain, storing them in the configured database backend (PostgreSQL or the embedded SQLite engine). When queried, it reconstructs the current DID state by replaying relevant operations and returns DID documents via its REST API.
 
 - **Submitter**: Receives signed DID operations and batches them into Cardano transaction metadata for publishing. This is a stateless process that does not manage private keys. It delegates transaction submission to a Cardano wallet component (currently `cardano-wallet`).
 
 - **Standalone**: Runs both indexer and submitter in a single process for simplified deployments.
+
+> Storage note: both the standalone and distributed layouts can point to PostgreSQL (recommended for production) or to the embedded SQLite file for local development. See [database configuration](../configuration/database.md) for trade-offs and CLI flags.
 
 > **Note:** NeoPRISM does not manage keys for DID operations or Cardano wallets. Keys for DID operations are managed by the client that submits signed operations. Cardano wallet keys are managed by the cardano-wallet component.
 
@@ -26,7 +28,7 @@ internal: "Deployment" {
   neoprism: "NeoPRISM Standalone"
   cardano-wallet: "Cardano HTTP wallet"
   cardano-blockproducer: "Cardano block-producer node"
-  db: "PostgreSQL" {
+  db: "Database" {
     shape: cylinder
   }
 
@@ -45,7 +47,7 @@ internal.cardano-blockproducer -> cardano-node: propagate blocks
 
 In this deployment mode, the indexer and submitter run as separate processes, which may be hosted on different machines. This separation allows for independent scaling of each component; for example, multiple indexer instances can be deployed to support high read volume.
 
-- The **indexer** process reads, validates, and indexes DID operations from the Cardano blockchain, storing them in a shared PostgreSQL database.
+- The **indexer** process reads, validates, and indexes DID operations from the Cardano blockchain, storing them in a shared database backend (PostgreSQL in production, SQLite for lightweight deployments).
 - The **submitter** process is stateless and receives signed DID operations, batching and submitting them to the Cardano blockchain via the wallet component. It does not use the database.
 
 A reverse proxy is recommended to route requests to the appropriate service, handling authentication and API path routing for both the indexer and submitter.
@@ -59,7 +61,7 @@ cardano-node: "Cardano relay node" {
 
 indexer-deployment: "Indexer Deployment" {
   indexer: "NeoPRISM Indexer"
-  db: "PostgreSQL" {
+  db: "Database" {
     shape: cylinder
   }
 

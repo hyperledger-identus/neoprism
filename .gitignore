@@ -3,6 +3,7 @@ target/
 .env
 *.db
 *.dump
+data/
 node_modules/
 result
 __pycache__

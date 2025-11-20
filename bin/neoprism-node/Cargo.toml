@@ -12,9 +12,9 @@ axum               = { workspace = true }
 clap               = { workspace = true, features = [ "derive", "env" ] }
 chrono             = { workspace = true }
 derive_more        = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
+dirs               = { workspace = true }
 lazybe             = { workspace = true, features = [ "openapi" ] }
 maud               = { workspace = true, features = [ "axum" ] }
-serde_json         = { workspace = true }
 serde              = { workspace = true, features = [ "derive" ] }
 sqlx               = { workspace = true, features = [ "runtime-tokio" ] }
 tokio              = { workspace = true, features = [ "full" ] }
@@ -36,4 +36,5 @@ identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true }
 
 [features]
-default = [  ]
+default        = [ "sqlite-backend" ]
+sqlite-backend = [ "node-storage/sqlite-storage" ]

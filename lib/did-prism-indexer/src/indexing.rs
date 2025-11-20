@@ -25,7 +25,7 @@ enum IntermediateIndexedOperation {
 /// Run indexer loop until no more operation to index
 pub async fn run_indexer_loop<Repo>(repo: &Repo) -> anyhow::Result<()>
 where
-    Repo: RawOperationRepo + IndexedOperationRepo,
+    Repo: RawOperationRepo + IndexedOperationRepo + ?Sized,
     <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
     <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
@@ -84,7 +84,7 @@ where
 pub async fn run_sync_loop<Repo, Src>(repo: &Repo, source: Src) -> anyhow::Result<()>
 where
     Src: DltSource,
-    Repo: RawOperationRepo + IndexedOperationRepo + Send,
+    Repo: RawOperationRepo + IndexedOperationRepo + Send + Sync + ?Sized,
     <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
     <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
@@ -130,7 +130,7 @@ async fn recursively_find_vdr_root<Repo>(
     prev_operation_hash: &[u8],
 ) -> anyhow::Result<Option<(CanonicalPrismDid, Vec<u8>)>>
 where
-    Repo: RawOperationRepo + IndexedOperationRepo,
+    Repo: RawOperationRepo + IndexedOperationRepo + ?Sized,
     <Repo as RawOperationRepo>::Error: Send + Sync + 'static,
     <Repo as IndexedOperationRepo>::Error: Send + Sync + 'static,
 {
