@@ -16,22 +16,24 @@ up NAME:
 
 # Stop PRISM conformance test environment and remove volumes
 down NAME:
-    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes
+    docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes --remove-orphans
 
 # Run all PRISM conformance test suites
-[working-directory('./tests/prism-test')]
 run: docker-publish-local
-    cowsay "Testing dev configuration"
-    just e2e::up dev
-    SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test
-    just e2e::down dev
+    for cfg in dev dev-sqlite; do \
+        cowsay "Testing ${cfg} configuration"; \
+        just e2e::up ${cfg}; \
+        (cd tests/prism-test && SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test); \
+        just e2e::down ${cfg}; \
+    done
 
-    cowsay "Testing ci configuration"
-    just e2e::up ci
-    sbt test
-    just e2e::down ci
+    for cfg in ci ci-sqlite; do \
+        cowsay "Testing ${cfg} configuration"; \
+        just e2e::up ${cfg}; \
+        (cd tests/prism-test && sbt test); \
+        just e2e::down ${cfg}; \
+    done
 
 # Build and load Docker images for local testing
-[working-directory('./tests/prism-test')]
 docker-publish-local:
     nix build .#neoprism-docker-latest && docker load < ./result

@@ -73,9 +73,22 @@ def build_test_configs() -> dict[str, ComposeConfig]:
         "prism-test/compose": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(enable_blockfrost=True, enable_prism_node=True)
         ),
+        "prism-test/compose-sqlite": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                enable_blockfrost=True,
+                enable_prism_node=True,
+                neoprism_backend="sqlite",
+            )
+        ),
         "prism-test/compose-ci": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(
                 neoprism_image_override=f"identus-neoprism:latest",
+            )
+        ),
+        "prism-test/compose-ci-sqlite": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override=f"identus-neoprism:latest",
+                neoprism_backend="sqlite",
             )
         ),
         "prism-test/compose-dev": ComposeConfig(
