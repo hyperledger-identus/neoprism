@@ -113,7 +113,7 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
   override def isOperationConfirmed(ref: OperationRef): UIO[Boolean] =
     skipCheckMillis match
       case Some(delay) => ZIO.succeed(true).delay(delay.millis)
-      case None =>
+      case None        =>
         for
           wallets <- cardanoWalletClient.batched
             .get("/v2/wallets")
