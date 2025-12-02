@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.8.0) - 2025-12-02
+
+### 🚀 Features
+
+- Add in-memory ledger for testing purposes ([#155](https://github.com/hyperledger-identus/neoprism/pull/155))
+
+### 💼 Other
+
+- Support cross-platform docker build for macOS ([#164](https://github.com/hyperledger-identus/neoprism/pull/164))
+
+### 🚜 Refactor
+
+- Migrate docker compose config generation from dhall to python ([#159](https://github.com/hyperledger-identus/neoprism/pull/159))
+
+### 📚 Documentation
+
+- Add blockfrost deployment example with neoprism integration ([#152](https://github.com/hyperledger-identus/neoprism/pull/152))
+
+### 🎨 Styling
+
+- Remove unnecessary future annotations imports ([#162](https://github.com/hyperledger-identus/neoprism/pull/162))
+
+### 🧪 Testing
+
+- Streamline e2e testing workflow and build commands ([#161](https://github.com/hyperledger-identus/neoprism/pull/161))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update sbt-scalafmt from 2.5.5 to 2.5.6 ([#150](https://github.com/hyperledger-identus/neoprism/pull/150))
+- Replace nix shell scripts with justfile task runner ([#154](https://github.com/hyperledger-identus/neoprism/pull/154))
+- Remove scala-did implementation and references ([#160](https://github.com/hyperledger-identus/neoprism/pull/160))
+- Update grpc-netty-shaded from 1.76.0 to 1.76.1 ([#166](https://github.com/hyperledger-identus/neoprism/pull/166))
+- Update grpc-netty-shaded from 1.76.1 to 1.77.0 ([#167](https://github.com/hyperledger-identus/neoprism/pull/167))
+- Update zio-http from 3.5.1 to 3.7.0 ([#171](https://github.com/hyperledger-identus/neoprism/pull/171))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.22 to 2.1.23 ([#170](https://github.com/hyperledger-identus/neoprism/pull/170))
+- Update scalafmt-core from 3.10.1 to 3.10.2 ([#169](https://github.com/hyperledger-identus/neoprism/pull/169))
+
 ## [0.7.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.7.0) - 2025-10-30
 
 ### 🚀 Features
@@ -20,6 +57,7 @@ All notable changes to this project will be documented in this file.
 
 - Update scalafmt-core from 3.9.6 to 3.9.10 ([#146](https://github.com/hyperledger-identus/neoprism/pull/146))
 - Update scalafmt-core from 3.9.10 to 3.10.1 ([#147](https://github.com/hyperledger-identus/neoprism/pull/147))
+- *(release)* Prepare the next release ([#149](https://github.com/hyperledger-identus/neoprism/pull/149))
 
 ## [0.6.2](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.6.2) - 2025-10-27
 
