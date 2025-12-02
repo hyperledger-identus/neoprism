@@ -36,6 +36,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc.js"></script>
@@ -92,10 +93,13 @@
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
+                sidebar_toggle.checked = false;
             }
-            sidebar_toggle.checked = sidebar === 'visible';
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
@@ -146,7 +150,12 @@
 
                 <div id="search-wrapper" class="hidden">
                     <form id="searchbar-outer" class="searchbar-outer">
-                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
                     </form>
                     <div id="searchresults-outer" class="searchresults-outer hidden">
                         <div id="searchresults-header" class="searchresults-header"></div>
@@ -174,6 +183,7 @@ Commands:
   indexer           Start the node in indexer mode
   submitter         Start the node in submitter mode
   standalone        Start the node in standalone mode
+  dev               Start the node in standalone mode with an in-memory blockchain for development
   generate-openapi  Generate OpenAPI specification for the API
   help              Print this message or the help of the given subcommand(s)
 
@@ -202,11 +212,11 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync URL. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
           Number of seconds to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
       --index-interval &lt;INDEX_INTERVAL&gt;
@@ -233,7 +243,7 @@ Options:
       --external-url &lt;EXTERNAL_URL&gt;
           External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
+          Base URL of the Cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
           Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
@@ -264,11 +274,11 @@ Options:
       --skip-migration
           Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview]
+          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
           Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync url. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync URL. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
           Number of seconds to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10]
       --index-interval &lt;INDEX_INTERVAL&gt;
@@ -276,7 +286,7 @@ Options:
       --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
           Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base url of cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
+          Base URL of the Cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
           Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
@@ -342,6 +352,7 @@ Options:
         <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
+
 
 
     </div>
