@@ -48,6 +48,7 @@ class Options(BaseModel):
     confirmation_blocks: int | None = None
     index_interval: int | None = None
     command: IndexerCommand | StandaloneCommand | DevCommand
+    external_url: str | None = None
 
 
 def mk_service(options: Options) -> Service:
@@ -66,6 +67,9 @@ def mk_service(options: Options) -> Service:
 
     if options.index_interval is not None:
         environment["NPRISM_INDEX_INTERVAL"] = str(options.index_interval)
+
+    if options.external_url is not None:
+        environment["NPRISM_EXTERNAL_URL"] = str(options.external_url)
 
     # Add Indexer configuration
     if isinstance(options.command, IndexerCommand):
