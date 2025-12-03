@@ -64,7 +64,6 @@ def mk_service(options: Options) -> Service:
     depends_on: dict[str, ServiceDependency] = {}
 
     if options.db_backend == "sqlite":
-        environment["NPRISM_DB_BACKEND"] = "sqlite"
         environment["NPRISM_DB_URL"] = (
             options.sqlite_db_url or "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
         )

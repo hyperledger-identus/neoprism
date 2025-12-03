@@ -282,9 +282,7 @@ The generated `sqlx-data.json` reflects the currently enabled features, so keep 
 
 ### Database backends
 
-NeoPRISM supports both PostgreSQL and embedded SQLite storage. Pick the backend with the `--db-backend {postgres,sqlite}` flag (or `NPRISM_DB_BACKEND`). Postgres remains the default and still requires `NPRISM_DB_URL`.
-
-When `sqlite` is selected and no database URL is provided, the node stores its data under your platform's application-data directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS or `$XDG_DATA_HOME/NeoPRISM/<network>/neoprism.db` on Linux). Provide an explicit `sqlite://…` URL if you want to override the location.
+NeoPRISM supports both PostgreSQL and embedded SQLite storage. The backend is inferred from `--db-url` / `NPRISM_DB_URL`: use a `postgres://` URL for Postgres or a `sqlite://` URL for SQLite. If you omit the flag entirely, the node falls back to an embedded SQLite file in your platform's application-data directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS or `$XDG_DATA_HOME/NeoPRISM/<network>/neoprism.db` on Linux).
 
 SQLite is great for local development, demos, and CI smoke tests, but remember:
 

@@ -5,7 +5,6 @@ services:
     - dev
     environment:
       NPRISM_CARDANO_NETWORK: custom
-      NPRISM_DB_BACKEND: sqlite
       NPRISM_DB_URL: sqlite:///var/lib/neoprism/sqlite/neoprism.db
       NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info

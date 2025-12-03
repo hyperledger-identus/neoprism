@@ -28,9 +28,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{
-    DbArgs, DbBackend, DevArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs,
-};
+use crate::cli::{DbArgs, DevArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
 
 mod app;
 mod cli;
@@ -43,6 +41,12 @@ enum RunMode {
     Indexer,
     Submitter,
     Standalone,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DbBackend {
+    Postgres,
+    Sqlite,
 }
 
 type SharedStorage = Arc<dyn StorageBackend>;
@@ -240,28 +244,22 @@ async fn run_server(
 }
 
 async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> SharedStorage {
-    #[cfg(not(feature = "sqlite-backend"))]
-    let _ = network_hint;
+    let db_config = resolve_db_config(db_args, network_hint);
 
-    match db_args.db_backend {
-        DbBackend::Postgres => Arc::new(init_postgres_database(db_args).await),
+    match db_config.backend {
+        DbBackend::Postgres => Arc::new(init_postgres_database(&db_config.url, db_args).await),
         DbBackend::Sqlite => {
             #[cfg(feature = "sqlite-backend")]
             {
-                return init_sqlite_database(db_args, network_hint).await;
+                return init_sqlite_database(&db_config.url, db_args).await;
             }
             #[cfg(not(feature = "sqlite-backend"))]
-            panic!("sqlite backend selected, but binary was built without the `sqlite-backend` feature");
+            panic!("sqlite database url provided, but binary was built without the `sqlite-backend` feature");
         }
     }
 }
 
-async fn init_postgres_database(db_args: &DbArgs) -> PostgresDb {
-    let db_url = db_args
-        .db_url
-        .as_deref()
-        .expect("NPRISM_DB_URL must be set when using the postgres backend");
-
+async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
     let db = PostgresDb::connect(db_url)
         .await
         .expect("Unable to connect to database");
@@ -350,11 +348,8 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
 }
 
 #[cfg(feature = "sqlite-backend")]
-async fn init_sqlite_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> SharedStorage {
-    let db_url = db_args
-        .db_url
-        .clone()
-        .unwrap_or_else(|| default_sqlite_url(network_hint));
+async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
+    let db_url = db_url.to_string();
 
     prepare_sqlite_destination(&db_url).expect("Failed to prepare sqlite database path");
 
@@ -418,6 +413,48 @@ fn sqlite_path_from_url(db_url: &str) -> Option<PathBuf> {
         return None;
     }
     Some(Path::new(path_part).to_path_buf())
+}
+
+fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> DatabaseConfig {
+    #[cfg(not(feature = "sqlite-backend"))]
+    let _ = network_hint;
+
+    if let Some(db_url) = &db_args.db_url {
+        let backend = infer_db_backend(db_url);
+        return DatabaseConfig {
+            backend,
+            url: db_url.clone(),
+        };
+    }
+
+    #[cfg(feature = "sqlite-backend")]
+    {
+        let url = default_sqlite_url(network_hint);
+        tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
+        return DatabaseConfig {
+            backend: DbBackend::Sqlite,
+            url,
+        };
+    }
+
+    #[cfg(not(feature = "sqlite-backend"))]
+    panic!("NPRISM_DB_URL must be set (no SQLite backend available)");
+}
+
+fn infer_db_backend(db_url: &str) -> DbBackend {
+    if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
+        return DbBackend::Postgres;
+    }
+    if db_url.starts_with("sqlite://") || db_url.starts_with("sqlite:") {
+        return DbBackend::Sqlite;
+    }
+
+    panic!("NPRISM_DB_URL must start with postgres:// or sqlite://");
+}
+
+struct DatabaseConfig {
+    backend: DbBackend,
+    url: String,
 }
 
 #[cfg(feature = "sqlite-backend")]

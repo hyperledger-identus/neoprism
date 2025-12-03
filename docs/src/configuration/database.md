@@ -1,19 +1,13 @@
 # Database Backends
 
-NeoPRISM can persist indexed operations in PostgreSQL or in an embedded SQLite file. Pick the backend at runtime with:
-
-```bash
-neoprism-node indexer --db-backend {postgres|sqlite} ...
-```
-
-or set the corresponding environment variable:
+NeoPRISM can persist indexed operations in PostgreSQL or in an embedded SQLite file. The backend is inferred from the `NPRISM_DB_URL` / `--db-url` scheme:
 
 ```
-NPRISM_DB_BACKEND=postgres   # default
-NPRISM_DB_BACKEND=sqlite
+NPRISM_DB_URL=postgres://user:pass@host:5432/db
+NPRISM_DB_URL=sqlite:///absolute/path/to/neoprism.db
 ```
 
-When PostgreSQL is selected you must also provide `NPRISM_DB_URL` (or `--db-url`). SQLite derives its file path automatically but allows you to override it with `sqlite://...` URLs.
+If you omit `NPRISM_DB_URL`, NeoPRISM defaults to a SQLite database under your platform app-data directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS).
 
 ## Comparison
 
@@ -31,8 +25,8 @@ When PostgreSQL is selected you must also provide `NPRISM_DB_URL` (or `--db-url`
 
 ## SQLite specifics
 
-- Select `--db-backend sqlite` (or `NPRISM_DB_BACKEND=sqlite`). If `--db-url` is omitted, the node stores data in your platform app directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS).
-- Override the location by passing `sqlite://absolute/path/to/db`. The helper commands `just db-init-sqlite` and `just db-clean-sqlite` manage migrations for the default file under `data/sqlite/`.
+- Provide `NPRISM_DB_URL=sqlite://...` (or `--db-url`) to point at a specific file, or omit it to use the default app-data location (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS).
+- The helper commands `just db-init-sqlite` and `just db-clean-sqlite` manage migrations for the default file under `data/sqlite/`.
 - The parent directory is created with `700` permissions on Unix hosts to keep the file private.
 - SQLite enforces WAL mode automatically, but remember that only one process should write to the file at a time. Schedule periodic `VACUUM` runs if you prune large chunks of data.
 
