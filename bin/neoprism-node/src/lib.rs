@@ -431,10 +431,10 @@ fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>)
     {
         let url = default_sqlite_url(network_hint);
         tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
-        return DatabaseConfig {
+        DatabaseConfig {
             backend: DbBackend::Sqlite,
             url,
-        };
+        }
     }
 
     #[cfg(not(feature = "sqlite-backend"))]
