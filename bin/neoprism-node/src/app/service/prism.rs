@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidResolver, ResolutionOptions, ResolutionResult};
@@ -7,18 +9,18 @@ use identus_did_prism::dlt::{BlockNo, SlotNo};
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{IndexerStateRepo, RawOperationRepo};
-use node_storage::PostgresDb;
+use node_storage::StorageBackend;
 
 use super::error::{InvalidDid, ResolutionError};
 
 #[derive(Clone)]
 pub struct PrismDidService {
-    db: PostgresDb,
+    db: Arc<dyn StorageBackend>,
 }
 
 impl PrismDidService {
-    pub fn new(db: &PostgresDb) -> Self {
-        Self { db: db.clone() }
+    pub fn new(db: Arc<dyn StorageBackend>) -> Self {
+        Self { db }
     }
 
     pub async fn get_indexer_stats(&self) -> anyhow::Result<Option<(SlotNo, BlockNo)>> {

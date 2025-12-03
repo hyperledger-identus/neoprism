@@ -91,9 +91,9 @@ pub struct ServerArgs {
 
 #[derive(Args)]
 pub struct DbArgs {
-    /// Database URL (e.g. postgres://user:pass@host:5432/db)
+    /// Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted.
     #[arg(long, env = "NPRISM_DB_URL")]
-    pub db_url: String,
+    pub db_url: Option<String>,
     /// Skip database migration on node startup.
     #[arg(long, env = "NPRISM_SKIP_MIGRATION")]
     pub skip_migration: bool,

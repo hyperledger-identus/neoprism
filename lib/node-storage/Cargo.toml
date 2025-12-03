@@ -3,6 +3,14 @@ name              = "node-storage"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = [  ]
+sqlite-storage = [
+  "lazybe/sqlite",
+  "sea-query/backend-sqlite",
+  "sqlx/sqlite",
+]
+
 [dependencies]
 async-trait    = { workspace = true }
 chrono         = { workspace = true, features = [ "serde" ] }
@@ -19,3 +27,7 @@ uuid           = { workspace = true, features = [ "serde" ] }
 identus-did-prism           = { workspace = true }
 identus-did-prism-indexer   = { workspace = true }
 identus-did-prism-submitter = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+tokio    = { workspace = true, features = [ "macros", "rt-multi-thread" ] }

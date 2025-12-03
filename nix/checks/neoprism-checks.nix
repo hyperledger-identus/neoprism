@@ -26,7 +26,7 @@ rustPlatform.buildRustPackage {
   buildPhase = "cargo b --all-features --all-targets";
   checkPhase = ''
     deadnix -f
-    sqlfluff lint --dialect postgres ./lib/node-storage/migrations
+    sqlfluff lint --dialect postgres ./lib/node-storage/migrations/postgres
     cargo fmt --check
     cargo test
     cargo clippy --all-targets -- -D warnings

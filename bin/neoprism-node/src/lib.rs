@@ -2,19 +2,27 @@
 #![feature(error_reporter)]
 
 use std::fs;
+#[cfg(all(unix, feature = "sqlite-backend"))]
+use std::os::unix::fs::PermissionsExt;
+#[cfg(feature = "sqlite-backend")]
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
 use cli::Cli;
+#[cfg(feature = "sqlite-backend")]
+use dirs::data_dir;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use identus_did_resolver_http::DidResolverStateDyn;
-use node_storage::PostgresDb;
+#[cfg(feature = "sqlite-backend")]
+use node_storage::SqliteDb;
+use node_storage::{PostgresDb, StorageBackend};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -34,6 +42,14 @@ enum RunMode {
     Submitter,
     Standalone,
 }
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum DbBackend {
+    Postgres,
+    Sqlite,
+}
+
+type SharedStorage = Arc<dyn StorageBackend>;
 
 #[derive(Clone)]
 struct AppState {
@@ -95,17 +111,17 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
 }
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let db = init_database(&args.db, Some(&network)).await;
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let app_state = AppState {
         run_mode: RunMode::Indexer,
     };
     let indexer_state = IndexerState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
     };
     let indexer_ui_state = IndexerUiState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
     run_server(
@@ -128,18 +144,18 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
 }
 
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db).await;
     let network = args.dlt_source.cardano_network.clone().into();
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, &db).await;
+    let db = init_database(&args.db, Some(&network)).await;
+    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
     let indexer_state = IndexerState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
     };
     let indexer_ui_state = IndexerUiState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
         dlt_source: cursor_rx.map(|cursor_rx| DltSourceState { cursor_rx, network }),
     };
     let submitter_state = SubmitterState { dlt_sink };
@@ -154,16 +170,16 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
 }
 
 async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db).await;
-    let (cursor_rx, dlt_sink) = init_memory_ledger(&db);
+    let db = init_database(&args.db, Some(&NetworkIdentifier::Custom)).await;
+    let (cursor_rx, dlt_sink) = init_memory_ledger(db.clone());
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
     let indexer_state = IndexerState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
     };
     let indexer_ui_state = IndexerUiState {
-        prism_did_service: PrismDidService::new(&db),
+        prism_did_service: PrismDidService::new(db.clone()),
         dlt_source: Some(DltSourceState {
             cursor_rx,
             network: NetworkIdentifier::Custom,
@@ -227,8 +243,24 @@ async fn run_server(
     Ok(())
 }
 
-async fn init_database(db_args: &DbArgs) -> PostgresDb {
-    let db = PostgresDb::connect(&db_args.db_url)
+async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> SharedStorage {
+    let db_config = resolve_db_config(db_args, network_hint);
+
+    match db_config.backend {
+        DbBackend::Postgres => Arc::new(init_postgres_database(&db_config.url, db_args).await),
+        DbBackend::Sqlite => {
+            #[cfg(feature = "sqlite-backend")]
+            {
+                return init_sqlite_database(&db_config.url, db_args).await;
+            }
+            #[cfg(not(feature = "sqlite-backend"))]
+            panic!("sqlite database url provided, but binary was built without the `sqlite-backend` feature");
+        }
+    }
+}
+
+async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
+    let db = PostgresDb::connect(db_url)
         .await
         .expect("Unable to connect to database");
 
@@ -244,7 +276,7 @@ async fn init_database(db_args: &DbArgs) -> PostgresDb {
 }
 
 fn init_memory_ledger(
-    db: &PostgresDb,
+    db: SharedStorage,
 ) -> (
     tokio::sync::watch::Receiver<Option<DltCursor>>,
     Arc<dyn DltSink + Send + Sync + 'static>,
@@ -261,7 +293,7 @@ fn init_memory_ledger(
 async fn init_dlt_source(
     dlt_args: &DltSourceArgs,
     network: &NetworkIdentifier,
-    db: &PostgresDb,
+    db: SharedStorage,
 ) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
     if let Some(address) = &dlt_args.cardano_relay_addr {
         tracing::info!(
@@ -313,4 +345,124 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
         dlt_args.cardano_wallet_passphrase.to_string(),
         dlt_args.cardano_wallet_payment_addr.to_string(),
     ))
+}
+
+#[cfg(feature = "sqlite-backend")]
+async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
+    let db_url = db_url.to_string();
+
+    prepare_sqlite_destination(&db_url).expect("Failed to prepare sqlite database path");
+
+    let db = SqliteDb::connect(&db_url)
+        .await
+        .expect("Unable to connect to sqlite database");
+
+    if db_args.skip_migration {
+        tracing::info!("Skipping database migrations");
+    } else {
+        tracing::info!("Applying database migrations");
+        db.migrate().await.expect("Failed to apply migrations");
+        tracing::info!("Applied database migrations successfully");
+    }
+
+    Arc::new(db)
+}
+
+#[cfg(feature = "sqlite-backend")]
+fn default_sqlite_url(network_hint: Option<&NetworkIdentifier>) -> String {
+    let mut base = data_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+    base.push("NeoPRISM");
+    if let Some(network) = network_hint {
+        base.push(network_identifier_slug(network));
+    }
+    base.push("neoprism.db");
+    ensure_sqlite_parent(&base).expect("Failed to prepare sqlite data directory");
+    format!("sqlite://{}", base.to_string_lossy())
+}
+
+#[cfg(feature = "sqlite-backend")]
+fn prepare_sqlite_destination(db_url: &str) -> std::io::Result<()> {
+    if let Some(path) = sqlite_path_from_url(db_url) {
+        ensure_sqlite_parent(&path)?;
+    }
+    Ok(())
+}
+
+#[cfg(feature = "sqlite-backend")]
+fn ensure_sqlite_parent(path: &Path) -> std::io::Result<()> {
+    if let Some(parent) = path.parent() {
+        if parent.exists() {
+            return Ok(());
+        }
+
+        fs::create_dir_all(parent)?;
+        #[cfg(all(unix, feature = "sqlite-backend"))]
+        {
+            fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
+        }
+    }
+    Ok(())
+}
+
+#[cfg(feature = "sqlite-backend")]
+fn sqlite_path_from_url(db_url: &str) -> Option<PathBuf> {
+    const SQLITE_SCHEME: &str = "sqlite://";
+    let rest = db_url.strip_prefix(SQLITE_SCHEME)?;
+    let path_part = rest.split('?').next().unwrap_or_default();
+    if path_part.is_empty() || path_part.starts_with(':') {
+        return None;
+    }
+    Some(Path::new(path_part).to_path_buf())
+}
+
+fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> DatabaseConfig {
+    #[cfg(not(feature = "sqlite-backend"))]
+    let _ = network_hint;
+
+    if let Some(db_url) = &db_args.db_url {
+        let backend = infer_db_backend(db_url);
+        return DatabaseConfig {
+            backend,
+            url: db_url.clone(),
+        };
+    }
+
+    #[cfg(feature = "sqlite-backend")]
+    {
+        let url = default_sqlite_url(network_hint);
+        tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
+        DatabaseConfig {
+            backend: DbBackend::Sqlite,
+            url,
+        }
+    }
+
+    #[cfg(not(feature = "sqlite-backend"))]
+    panic!("NPRISM_DB_URL must be set (no SQLite backend available)");
+}
+
+fn infer_db_backend(db_url: &str) -> DbBackend {
+    if db_url.starts_with("postgres://") || db_url.starts_with("postgresql://") {
+        return DbBackend::Postgres;
+    }
+    if db_url.starts_with("sqlite://") || db_url.starts_with("sqlite:") {
+        return DbBackend::Sqlite;
+    }
+
+    panic!("NPRISM_DB_URL must start with postgres:// or sqlite://");
+}
+
+struct DatabaseConfig {
+    backend: DbBackend,
+    url: String,
+}
+
+#[cfg(feature = "sqlite-backend")]
+fn network_identifier_slug(network: &NetworkIdentifier) -> &'static str {
+    match network {
+        NetworkIdentifier::Mainnet => "mainnet",
+        NetworkIdentifier::Preprod => "preprod",
+        NetworkIdentifier::Preview => "preview",
+        NetworkIdentifier::Custom => "custom",
+    }
 }

@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 from ..models import ComposeConfig
@@ -18,6 +20,7 @@ class Options(BaseModel):
     neoprism_image_override: str | None = None
     enable_prism_node: bool = False
     enable_blockfrost: bool = False
+    neoprism_backend: Literal["postgres", "sqlite"] = "postgres"
 
 
 def mk_stack(options: Options = Options()) -> ComposeConfig:
@@ -97,33 +100,48 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
     }
 
     # NeoPRISM services
-    neoprism_services = {
-        "neoprism-standalone": neoprism.mk_service(
-            neoprism.Options(
-                image_override=options.neoprism_image_override,
-                host_port=18080,
-                network="custom",
-                db_host="db-neoprism",
-                external_url="http://localhost:18080",
-                confirmation_blocks=0,
-                index_interval=1,
-                command=neoprism.StandaloneCommand(
-                    dlt_source=neoprism.DbSyncDltSource(
-                        url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
-                        poll_interval=1,
-                    ),
-                    dlt_sink=neoprism.DltSink(
-                        wallet_host="cardano-wallet",
-                        wallet_port=8090,
-                        wallet_id=wallet_id,
-                        wallet_passphrase=wallet_passphrase,
-                        wallet_payment_address=wallet_payment_address,
-                    ),
-                ),
+    sqlite_volume = "neoprism-sqlite"
+    neoprism_service_options = neoprism.Options(
+        image_override=options.neoprism_image_override,
+        host_port=18080,
+        network="custom",
+        db_host="db-neoprism",
+        external_url="http://localhost:18080",
+        confirmation_blocks=0,
+        index_interval=1,
+        command=neoprism.StandaloneCommand(
+            dlt_source=neoprism.DbSyncDltSource(
+                url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
+                poll_interval=1,
+            ),
+            dlt_sink=neoprism.DltSink(
+                wallet_host="cardano-wallet",
+                wallet_port=8090,
+                wallet_id=wallet_id,
+                wallet_passphrase=wallet_passphrase,
+                wallet_payment_address=wallet_payment_address,
             ),
         ),
-        "db-neoprism": db.mk_service(db.Options()),
-    }
+    )
+
+    neoprism_services = {}
+    volumes: dict[str, dict] = {testnet_volume: {}}
+
+    if options.neoprism_backend == "sqlite":
+        neoprism_service_options.db_backend = "sqlite"
+        neoprism_service_options.sqlite_db_url = (
+            "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
+        )
+        neoprism_service_options.volumes = [
+            f"{sqlite_volume}:/var/lib/neoprism/sqlite"
+        ]
+        volumes[sqlite_volume] = {}
+    else:
+        neoprism_services["db-neoprism"] = db.mk_service(db.Options())
+
+    neoprism_services["neoprism-standalone"] = neoprism.mk_service(
+        neoprism_service_options
+    )
 
     # PRISM services
     prism_services = {
@@ -151,4 +169,4 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
         **(bf_services if options.enable_blockfrost else {}),
     }
 
-    return ComposeConfig(services=all_services, volumes={"node-testnet": {}})
+    return ComposeConfig(services=all_services, volumes=volumes)

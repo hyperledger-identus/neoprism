@@ -48,6 +48,9 @@ class Options(BaseModel):
     confirmation_blocks: int | None = None
     index_interval: int | None = None
     command: IndexerCommand | StandaloneCommand | DevCommand
+    db_backend: Literal["postgres", "sqlite"] = "postgres"
+    sqlite_db_url: str | None = None
+    volumes: list[str] | None = None
     external_url: str | None = None
 
 
@@ -57,9 +60,19 @@ def mk_service(options: Options) -> Service:
     # Build environment variables
     environment = {
         "RUST_LOG": "oura=warn,tracing::span=warn,info",
-        "NPRISM_DB_URL": f"postgres://postgres:postgres@{options.db_host}:5432/postgres",
         "NPRISM_CARDANO_NETWORK": options.network,
     }
+    depends_on: dict[str, ServiceDependency] = {}
+
+    if options.db_backend == "sqlite":
+        environment["NPRISM_DB_URL"] = (
+            options.sqlite_db_url or "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
+        )
+    else:
+        environment["NPRISM_DB_URL"] = (
+            f"postgres://postgres:postgres@{options.db_host}:5432/postgres"
+        )
+        depends_on[options.db_host] = ServiceDependency(condition="service_healthy")
 
     # Add optional configuration
     if options.confirmation_blocks is not None:
@@ -109,8 +122,6 @@ def mk_service(options: Options) -> Service:
         )
 
     # Build depends_on
-    depends_on = {options.db_host: ServiceDependency(condition="service_healthy")}
-
     if isinstance(options.command, StandaloneCommand):
         depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
             condition="service_healthy"
@@ -127,8 +138,9 @@ def mk_service(options: Options) -> Service:
         ports=ports,
         environment=environment,
         command=command,
-        depends_on=depends_on,
+        depends_on=depends_on or None,
         healthcheck=Healthcheck(
             test=["CMD", "curl", "-f", "http://localhost:8080/api/_system/health"]
         ),
+        volumes=options.volumes,
     )

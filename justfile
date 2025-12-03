@@ -9,6 +9,13 @@ db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
 
+# Embedded SQLite defaults
+sqlite_db_path := "data/sqlite/neoprism-dev.sqlite"
+sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
+
+# Use bash with strict error handling for all recipes
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
 # Show available commands
 default:
     @just --list --list-submodules
@@ -74,11 +81,9 @@ format:
     find . -name '*.hurl' -type f -exec sh -c 'echo "  → {}" && hurlfmt --in-place {}' \;
 
     echo "Formatting SQL files..."
-    cd lib/node-storage/migrations && \
-        sqlfluff fix . && \
-        sqlfluff lint .
+    (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
-# Start local PostgreSQL database in Docker
+# Start local PostgreSQL database in Docker (Postgres only)
 [group('neoprism')]
 db-up:
     docker run \
@@ -89,21 +94,35 @@ db-up:
       -e POSTGRES_PASSWORD={{ db_pass }} \
       -p {{ db_port }}:5432 postgres:16
 
-# Stop local PostgreSQL database
+# Stop local PostgreSQL database (Postgres only)
 [group('neoprism')]
 db-down:
     docker stop prism-db
 
-# Dump local database to postgres.dump file
+# Dump local PostgreSQL database to postgres.dump file
 [group('neoprism')]
 db-dump:
     export PGPASSWORD={{ db_pass }} && \
         pg_dump -h localhost -p {{ db_port }} -U {{ db_user }} -w -d {{ db_name }} -Fc > postgres.dump && \
         echo "Database dumped to postgres.dump"
 
-# Restore local database from postgres.dump file
+# Restore local PostgreSQL database from postgres.dump file
 [group('neoprism')]
 db-restore:
     export PGPASSWORD={{ db_pass }} && \
         pg_restore -h localhost -p {{ db_port }} -U {{ db_user }} -w -d {{ db_name }} postgres.dump && \
         echo "Database restored from postgres.dump"
+
+# Initialize or upgrade the embedded SQLite database
+[group('neoprism')]
+db-init-sqlite:
+    mkdir -p "$(dirname {{ sqlite_db_path }})"
+    touch {{ sqlite_db_path }}
+    DATABASE_URL={{ sqlite_db_url }} sqlx migrate run --source lib/node-storage/migrations/sqlite
+    echo "SQLite database migrated at {{ sqlite_db_path }}"
+
+# Remove the embedded SQLite database file
+[group('neoprism')]
+db-clean-sqlite:
+    rm -f {{ sqlite_db_path }}
+    echo "Removed SQLite database at {{ sqlite_db_path }}"

@@ -214,6 +214,82 @@ To compile the test suite without running it:
 just e2e::build
 ```
 
+### Running specific E2E stacks
+
+The e2e harness now ships four compose variants that differ by backend (PostgreSQL or SQLite) and target audience (developer-friendly vs CI-hardening). You can exercise any stack individually by combining the `up`, `down`, and `run` recipes:
+
+```bash
+# Start only the SQLite developer stack
+just e2e::up dev-sqlite
+# Run the Scala tests that target the running stack
+(cd tests/prism-test && sbt test)
+# Clean up once finished
+just e2e::down dev-sqlite
+```
+
+`just e2e::run` iterates over every stack in sequence—`dev`, `dev-sqlite`, `ci`, and `ci-sqlite`—so that both backends are covered automatically.
+
+### Configuration matrix
+
+| Mode | Backend | Compose file | `just` target | Recommended usage | Pros | Trade-offs |
+|------|---------|--------------|---------------|-------------------|------|------------|
+| dev | PostgreSQL | `docker/prism-test/compose-dev.yml` | `just e2e::up dev` | Local development when you want parity with production | Exercises the original schema and WAL-heavy workflow | Requires Dockerized Postgres and slightly longer start-up |
+| dev | SQLite | `docker/prism-test/compose-dev-sqlite.yml` | `just e2e::up dev-sqlite` | Fast local iterations or laptop CI checks | Zero extra services, file-backed DB keeps resource usage low | Single-writer semantics; best for smoke tests |
+| ci | PostgreSQL | `docker/prism-test/compose-ci.yml` | `just e2e::up ci` | Full CI pipeline and release rehearsal | Mirrors production topology with stricter health checks | Pulls more images and runs longer |
+| ci | SQLite | `docker/prism-test/compose-ci-sqlite.yml` | `just e2e::up ci-sqlite` | CI shard that validates the embedded backend | Ensures SQLite stays first-class even under CI load | Cardano/I/O limits are similar to `ci`, so still slower than dev |
+
+Pick the stack that matches your goal; for example, run `dev-sqlite` while iterating on backend logic, and keep `ci` or `ci-sqlite` in nightly pipelines for extra safety.
+
+### Full QA helper script
+
+The repository root contains a `full-check.sh` helper that strings the common QA steps together:
+
+```bash
+./full-check.sh
+```
+
+This script performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, executes `just e2e::run`, and finally smoke-tests the SQLite developer stack. Use it right before sending a PR to replicate the checks we run manually.
+
+### SQLx schema checks
+
+The development shell now bundles `sqlx-cli`, `sqlite`, and all required headers. Whenever you change migrations or entity definitions, run both backends to ensure they stay valid:
+
+```bash
+# Postgres schema (point to your local instance)
+nix develop -c 'DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres sqlx migrate run'
+
+# Embedded SQLite schema (creates a throwaway file)
+nix develop -c 'DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite sqlx migrate run'
+```
+
+Remove the temporary SQLite file afterwards if you do not need it anymore.
+
+#### Offline sqlx metadata (optional)
+
+If you rely on `cargo sqlx prepare` for offline builds, regenerate metadata for each backend:
+
+```bash
+# Postgres metadata
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
+  cargo sqlx prepare --bin neoprism-node
+
+# SQLite metadata (enable the sqlite-backend feature)
+DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite \
+  cargo sqlx prepare --bin neoprism-node --features sqlite-backend
+```
+
+The generated `sqlx-data.json` reflects the currently enabled features, so keep both variants in sync if you commit the file.
+
+### Database backends
+
+NeoPRISM supports both PostgreSQL and embedded SQLite storage. The backend is inferred from `--db-url` / `NPRISM_DB_URL`: use a `postgres://` URL for Postgres or a `sqlite://` URL for SQLite. If you omit the flag entirely, the node falls back to an embedded SQLite file in your platform's application-data directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS or `$XDG_DATA_HOME/NeoPRISM/<network>/neoprism.db` on Linux).
+
+SQLite is great for local development, demos, and CI smoke tests, but remember:
+
+- It is effectively single-writer; keep the node as the only process touching the file.
+- WAL mode is enforced automatically to keep reads non-blocking.
+- Long running readers can delay checkpointing and grow the file; run `VACUUM` occasionally if you prune data manually.
+
 ## Frequently used commands
 
 These are commands you can run outside the development shell:
@@ -235,23 +311,27 @@ Assuming you are in the development shell, here are some frequently used command
 
 The following justfile commands are available to automate the local development workflow:
 
-| command                                     | description                                                        |
-|---------------------------------------------|--------------------------------------------------------------------|
-| `just format`                               | Run the formatter on everything (Rust, Nix, TOML, Python, SQL, Hurl)|
-| `just build`                                | Build the whole project (assets + cargo)                           |
-| `just build-assets`                         | Build the Web UI assets (CSS, JavaScript, static assets)           |
-| `just build-config`                         | Generate Docker Compose configs from Python sources in `tools/`    |
-| `just test`                                 | Run all tests with all features enabled                            |
-| `just check`                                | Run comprehensive Nix checks (format, lint, test, clippy)          |
-| `just clean`                                | Clean all build artifacts                                          |
-| `just db-up`                                | Spin up the local database                                         |
-| `just db-down`                              | Tear down the local database                                       |
-| `just db-dump`                              | Dump the local database to the `postgres.dump` file                |
-| `just db-restore`                           | Restore the local database from the `postgres.dump` file           |
-| `just run indexer`                          | Run the indexer node, connecting to the local database             |
-| `just run indexer --cardano-addr <ADDR>`    | Run the indexer node, connecting to the Cardano relay at `<ADDR>`  |
-| `just run indexer --dbsync-url <URL>`       | Run the indexer node, connecting to the DB Sync instance at `<URL>`|
-| `just tools format`                         | Format Python code in `tools/` directory                           |
-| `just tools check`                          | Type check and validate Python tools code                          |
-| `just e2e::build`                           | Build the conformance test suite                                   |
-| `just e2e::run`                             | Run the full e2e conformance test suite                            |
+| command                                   | description                                                                   |
+|-------------------------------------------|-------------------------------------------------------------------------------|
+| `just format`                             | Run the formatter on everything (Rust, Nix, TOML, Python, SQL, Hurl)          |
+| `just build`                              | Build the whole project (assets + cargo)                                      |
+| `just build-assets`                       | Build the Web UI assets (CSS, JavaScript, static assets)                      |
+| `just build-config`                       | Generate Docker Compose configs from the Python sources in `tools/`           |
+| `just test`                               | Run all tests with all features enabled                                       |
+| `just check`                              | Run the full Nix checks suite (format, lint, test, clippy)                    |
+| `just clean`                              | Clean all build artifacts                                                     |
+| `just db-up`                              | Spin up the local PostgreSQL database (Docker)                                |
+| `just db-down`                            | Tear down the local PostgreSQL database                                       |
+| `just db-dump`                            | Dump the local PostgreSQL database to the `postgres.dump` file                |
+| `just db-restore`                         | Restore the local PostgreSQL database from the `postgres.dump` file           |
+| `just db-init-sqlite`                     | Create or migrate the embedded SQLite database (default path)                 |
+| `just db-clean-sqlite`                    | Delete the embedded SQLite database file                                      |
+| `just run indexer`                        | Run the indexer node, connecting to the local database                        |
+| `just run indexer --cardano-addr <ADDR>`  | Run the indexer node, connecting to the Cardano relay at `<ADDR>`             |
+| `just run indexer --dbsync-url <URL>`     | Run the indexer node, connecting to the DB Sync instance at `<URL>`           |
+| `just tools format`                       | Format the Python code in `tools/`                                            |
+| `just tools check`                        | Type-check and validate the Python tooling code                               |
+| `just e2e::build`                         | Build the PRISM conformance (end-to-end) test suite                           |
+| `just e2e::run`                           | Run the PRISM conformance (end-to-end) test suite                             |
+
+> **Note:** `db-up`, `db-down`, `db-dump`, and `db-restore` manage the Dockerized PostgreSQL instance only. Use `db-init-sqlite` / `db-clean-sqlite` when working with the embedded SQLite backend.
