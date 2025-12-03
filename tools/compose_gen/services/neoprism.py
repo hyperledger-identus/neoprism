@@ -51,6 +51,7 @@ class Options(BaseModel):
     db_backend: Literal["postgres", "sqlite"] = "postgres"
     sqlite_db_url: str | None = None
     volumes: list[str] | None = None
+    external_url: str | None = None
 
 
 def mk_service(options: Options) -> Service:
@@ -79,6 +80,9 @@ def mk_service(options: Options) -> Service:
 
     if options.index_interval is not None:
         environment["NPRISM_INDEX_INTERVAL"] = str(options.index_interval)
+
+    if options.external_url is not None:
+        environment["NPRISM_EXTERNAL_URL"] = str(options.external_url)
 
     # Add Indexer configuration
     if isinstance(options.command, IndexerCommand):

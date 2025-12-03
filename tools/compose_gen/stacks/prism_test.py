@@ -106,6 +106,7 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
         host_port=18080,
         network="custom",
         db_host="db-neoprism",
+        external_url="http://localhost:18080",
         confirmation_blocks=0,
         index_interval=1,
         command=neoprism.StandaloneCommand(
