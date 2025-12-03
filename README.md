@@ -122,7 +122,7 @@ To get started, install Nix by following the instructions [here](https://nixos.o
 __Entering the development shell__
 
 If you already have `cargo` and other required dependencies (such as `protoc`) installed, you can use your own environment.
-You can review the [nix shell](./nix/devShells/neoprism.nix) file to see the required dependencies and adapt them to your setup.
+You can review the [nix shell](./nix/devShells/development.nix) file to see the required dependencies and adapt them to your setup.
 
 We recommend using the `nix develop` command to enter the development shell.
 This ensures a consistent environment and uses the same library versions for building and testing.
