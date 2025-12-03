@@ -188,6 +188,7 @@ services:
       NPRISM_CARDANO_WALLET_WALLET_ID: 9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d
       NPRISM_CONFIRMATION_BLOCKS: '0'
       NPRISM_DB_URL: sqlite:///var/lib/neoprism/sqlite/neoprism.db
+      NPRISM_EXTERNAL_URL: http://localhost:18080
       NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info
     healthcheck:
