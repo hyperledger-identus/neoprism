@@ -2,10 +2,6 @@ mod e2e 'tools/just-recipes/e2e.just'
 mod tools 'tools/just-recipes/tools.just'
 mod release 'tools/just-recipes/release.just'
 
-# Use bash with strict error handling for all recipes
-
-set shell := ["bash", "-euo", "pipefail", "-c"]
-
 # PostgreSQL configuration
 
 db_port := "5432"
