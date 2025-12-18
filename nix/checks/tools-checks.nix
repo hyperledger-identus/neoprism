@@ -24,6 +24,8 @@ stdenv.mkDerivation {
 
   buildPhase = "true";
 
+  doCheck = true;
+
   checkPhase = ''
     echo "Linting Python files..."
     ruff check compose_gen

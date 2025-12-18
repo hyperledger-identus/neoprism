@@ -40,18 +40,32 @@ class DevCommand(BaseModel):
     command: Literal["dev"] = "dev"
 
 
+class PostgresStorageBackend(BaseModel):
+    backend: Literal["postgres"] = "postgres"
+    host: str = "db"
+
+    @property
+    def db_url(self) -> str:
+        return f"postgres://postgres:postgres@{self.host}:5432/postgres"
+
+
+class SqliteStorageBackend(BaseModel):
+    backend: Literal["sqlite"] = "sqlite"
+    db_url: str = "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
+
+
 class Options(BaseModel):
-    image_override: str | None = None
-    host_port: int | None = None
-    db_host: str = "db"
+    command: IndexerCommand | StandaloneCommand | DevCommand
+    storage_backend: PostgresStorageBackend | SqliteStorageBackend = (
+        PostgresStorageBackend()
+    )
     network: str = "mainnet"
+    host_port: int | None = None
     confirmation_blocks: int | None = None
     index_interval: int | None = None
-    command: IndexerCommand | StandaloneCommand | DevCommand
-    db_backend: Literal["postgres", "sqlite"] = "postgres"
-    sqlite_db_url: str | None = None
     volumes: list[str] | None = None
     external_url: str | None = None
+    image_override: str | None = None
 
 
 def mk_service(options: Options) -> Service:
@@ -64,15 +78,13 @@ def mk_service(options: Options) -> Service:
     }
     depends_on: dict[str, ServiceDependency] = {}
 
-    if options.db_backend == "sqlite":
-        environment["NPRISM_DB_URL"] = (
-            options.sqlite_db_url or "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
+    if isinstance(options.storage_backend, SqliteStorageBackend):
+        environment["NPRISM_DB_URL"] = options.storage_backend.db_url
+    elif isinstance(options.storage_backend, PostgresStorageBackend):
+        environment["NPRISM_DB_URL"] = options.storage_backend.db_url
+        depends_on[options.storage_backend.host] = ServiceDependency(
+            condition="service_healthy"
         )
-    else:
-        environment["NPRISM_DB_URL"] = (
-            f"postgres://postgres:postgres@{options.db_host}:5432/postgres"
-        )
-        depends_on[options.db_host] = ServiceDependency(condition="service_healthy")
 
     # Add optional configuration
     if options.confirmation_blocks is not None:

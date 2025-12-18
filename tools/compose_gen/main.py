@@ -82,45 +82,26 @@ def build_test_configs() -> dict[str, ComposeConfig]:
         ),
         "prism-test/compose-ci": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(
-                neoprism_image_override=f"identus-neoprism:latest",
+                neoprism_image_override="identus-neoprism:latest",
             )
         ),
         "prism-test/compose-ci-sqlite": stacks.prism_test.mk_stack(
             stacks.prism_test.Options(
-                neoprism_image_override=f"identus-neoprism:latest",
+                neoprism_image_override="identus-neoprism:latest",
                 neoprism_backend="sqlite",
             )
         ),
-        "prism-test/compose-dev": ComposeConfig(
-            services={
-                "db": services.db.mk_service(services.db.Options()),
-                "neoprism-standalone": services.neoprism.mk_service(
-                    services.neoprism.Options(
-                        image_override=f"identus-neoprism:latest",
-                        network="custom",
-                        host_port=18080,
-                        index_interval=1,
-                        command=services.neoprism.DevCommand(),
-                    ),
-                ),
-            }
+        "prism-test/compose-dev": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override="identus-neoprism:latest", neoprism_mode="dev"
+            )
         ),
-        "prism-test/compose-dev-sqlite": ComposeConfig(
-            services={
-                "neoprism-standalone": services.neoprism.mk_service(
-                    services.neoprism.Options(
-                        image_override=f"identus-neoprism:latest",
-                        network="custom",
-                        host_port=18080,
-                        index_interval=1,
-                        command=services.neoprism.DevCommand(),
-                        db_backend="sqlite",
-                        sqlite_db_url="sqlite:///var/lib/neoprism/sqlite/neoprism.db",
-                        volumes=["neoprism-sqlite:/var/lib/neoprism/sqlite"],
-                    ),
-                ),
-            },
-            volumes={"neoprism-sqlite": {}},
+        "prism-test/compose-dev-sqlite": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override="identus-neoprism:latest",
+                neoprism_mode="dev",
+                neoprism_backend="sqlite",
+            )
         ),
     }
 

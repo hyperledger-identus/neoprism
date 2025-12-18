@@ -8,7 +8,6 @@ def mk_stack() -> ComposeConfig:
         "neoprism-indexer": neoprism.mk_service(
             neoprism.Options(
                 host_port=8081,
-                db_host="db",
                 network="mainnet",
                 command=neoprism.IndexerCommand(
                     dlt_source=neoprism.OuraDltSource(

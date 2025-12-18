@@ -9,6 +9,5 @@ let
 in
 rec {
   python = python313;
-
   pythonEnv = python.withPackages commonPackages;
 }

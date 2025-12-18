@@ -14,12 +14,13 @@ class Options(BaseModel):
     network: str = "${NETWORK:-mainnet}"
 
 
-def mk_stack(options: Options = Options()) -> ComposeConfig:
+def mk_stack(options: Options | None = None) -> ComposeConfig:
+    options = options or Options()
     services = {
         "neoprism": neoprism.mk_service(
             neoprism.Options(
-                db_host="db-neoprism",
                 network=options.network,
+                storage_backend=neoprism.PostgresStorageBackend(host="db-neoprism"),
                 host_port=8080,
                 command=neoprism.IndexerCommand(
                     dlt_source=neoprism.DbSyncDltSource(
