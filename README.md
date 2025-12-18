@@ -273,9 +273,9 @@ If you rely on `cargo sqlx prepare` for offline builds, regenerate metadata for 
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
   cargo sqlx prepare --bin neoprism-node
 
-# SQLite metadata (enable the sqlite-backend feature)
+# SQLite metadata
 DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite \
-  cargo sqlx prepare --bin neoprism-node --features sqlite-backend
+  cargo sqlx prepare --bin neoprism-node
 ```
 
 The generated `sqlx-data.json` reflects the currently enabled features, so keep both variants in sync if you commit the file.

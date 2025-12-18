@@ -25,9 +25,9 @@ default:
 init:
     npm install
 
-# Build the entire project (assets + cargo)
+# Build the entire project
 [group('neoprism')]
-build: build-assets
+build: build-assets build-config
     cargo build --all-features
 
 # Build Tailwind CSS assets

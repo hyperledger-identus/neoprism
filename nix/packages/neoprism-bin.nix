@@ -5,7 +5,6 @@
   cargoLock,
   stdenv,
   buildPackages,
-  buildFeatures ? [ ],
 }:
 
 let
@@ -15,7 +14,7 @@ let
   };
 in
 rustPlatform.buildRustPackage {
-  inherit cargoLock buildFeatures;
+  inherit cargoLock;
   name = "neoprism";
   src = lib.cleanSourceWith {
     filter =
