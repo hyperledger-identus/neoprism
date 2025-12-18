@@ -20,18 +20,21 @@ down NAME:
 
 # Run all PRISM conformance test suites
 run: docker-publish-local
-    for cfg in sqlite-dev; do \
-        cowsay "Testing ${cfg} configuration"; \
-        just e2e::up ${cfg}; \
-        (cd tests/prism-test && SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test); \
-        just e2e::down ${cfg}; \
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    for cfg in sqlite-dev; do
+        cowsay "Testing ${cfg} configuration"
+        just e2e::up ${cfg}
+        (cd tests/prism-test && SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test)
+        just e2e::down ${cfg}
     done
 
-    for cfg in ci ci-sqlite; do \
-        cowsay "Testing ${cfg} configuration"; \
-        just e2e::up ${cfg}; \
-        (cd tests/prism-test && sbt test); \
-        just e2e::down ${cfg}; \
+    for cfg in ci ci-sqlite; do
+        cowsay "Testing ${cfg} configuration"
+        just e2e::up ${cfg}
+        (cd tests/prism-test && sbt test)
+        just e2e::down ${cfg}
     done
 
 # Build and load Docker images for local testing
