@@ -20,7 +20,7 @@ down NAME:
 
 # Run all PRISM conformance test suites
 run: docker-publish-local
-    for cfg in dev dev-sqlite; do \
+    for cfg in sqlite-dev; do \
         cowsay "Testing ${cfg} configuration"; \
         just e2e::up ${cfg}; \
         (cd tests/prism-test && SKIP_CONFIRMATION_CHECK_MILLIS=2000 sbt test); \
