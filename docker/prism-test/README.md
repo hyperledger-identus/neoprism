@@ -4,7 +4,7 @@ Local PRISM testing environment with a local Cardano testnet, wallet services, a
 
 ## Quick Start
 
-Start the environment:
+Start the default environment (PostgreSQL backend):
 
 ```sh
 cd docker/prism-test
@@ -33,31 +33,59 @@ docker compose down -v   # Stop and remove volumes (clean restart)
 
 ### compose.yml - Full Testing Environment
 
-Complete PRISM testing stack with local Cardano testnet, Blockfrost API compatibility layer, and both NeoPRISM and legacy PRISM Node implementations. Use this for comprehensive integration testing and conformance testing against both node implementations.
+Complete PRISM testing stack with local Cardano testnet, Blockfrost API compatibility layer, and both NeoPRISM and legacy PRISM Node implementations. NeoPRISM uses PostgreSQL backend. Use this for comprehensive integration testing and conformance testing against both node implementations.
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (PostgreSQL backend) |
 | **prism-node** | 50053 | PRISM Node gRPC API |
 | **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
 | **bf-proxy** | 18082 | Blockfrost API proxy |
+| **db-neoprism** | - | PostgreSQL database for NeoPRISM |
+| **db-prism-node** | - | PostgreSQL database for PRISM Node |
+| **db-dbsync** | - | PostgreSQL database for db-sync |
 
 ### compose-ci.yml - CI Testing Environment
 
-Identical to compose.yml but uses locally built `identus-neoprism:latest` image instead of the released version. Use this in CI pipelines or when testing local NeoPRISM builds against the full stack. Does not include Blockfrost services or PRISM Node.
+Identical to compose.yml but uses locally built `identus-neoprism:latest` image instead of the released version. NeoPRISM uses PostgreSQL backend. Use this in CI pipelines or when testing local NeoPRISM builds against the full stack. Does not include Blockfrost services or PRISM Node.
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (PostgreSQL backend) |
 | **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
+| **db-neoprism** | - | PostgreSQL database for NeoPRISM |
+| **db-dbsync** | - | PostgreSQL database for db-sync |
 
-### compose-dev.yml - Development Environment
+### compose-sqlite.yml - Full Testing Environment (SQLite)
 
-Minimal development setup running only NeoPRISM in dev mode with mock blockchain data. Use this for rapid development and testing of NeoPRISM features without waiting for blockchain synchronization or running Cardano infrastructure.
+Complete PRISM testing stack with local Cardano testnet, Blockfrost API compatibility layer, and both NeoPRISM and legacy PRISM Node implementations. NeoPRISM uses in-memory SQLite backend. Use this for comprehensive integration testing with SQLite instead of PostgreSQL.
 
 | Service | Port | Description |
 |---------|------|-------------|
-| **neoprism-standalone** | 18080 | NeoPRISM HTTP API |
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (in-memory SQLite backend) |
+| **prism-node** | 50053 | PRISM Node gRPC API |
+| **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
+| **bf-proxy** | 18082 | Blockfrost API proxy |
+| **db-prism-node** | - | PostgreSQL database for PRISM Node |
+| **db-dbsync** | - | PostgreSQL database for db-sync |
+
+### compose-ci-sqlite.yml - CI Testing Environment (SQLite)
+
+Identical to compose-ci.yml but uses in-memory SQLite backend instead of PostgreSQL. Uses locally built `identus-neoprism:latest` image. Use this in CI pipelines for testing with SQLite backend. Does not include Blockfrost services or PRISM Node.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (in-memory SQLite backend) |
+| **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
+| **db-dbsync** | - | PostgreSQL database for db-sync |
+
+### compose-sqlite-dev.yml - Minimal Development Environment
+
+Lightweight setup with only NeoPRISM standalone service running in dev mode. Uses in-memory SQLite backend with no external dependencies. Uses locally built `identus-neoprism:latest` image. Ideal for quick local development and testing NeoPRISM features in isolation without full infrastructure overhead.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (in-memory SQLite, dev mode) |
 
 ## Running Tests
 
