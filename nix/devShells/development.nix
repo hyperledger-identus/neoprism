@@ -29,7 +29,6 @@ pkgs.mkShell {
     ruff
     # db
     sqlfluff
-    sqlx-cli
     sqlite
     # rust
     cargo-edit

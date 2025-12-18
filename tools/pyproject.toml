@@ -13,3 +13,22 @@ select = [
   "C4",  # flake8-comprehensions
   "SIM", # flake8-simplify
 ]
+
+[tool.pyright]
+# Strict type checking to catch type errors early and maintain code quality.
+# All compose_gen code must pass strict mode checks.
+typeCheckingMode = "strict"
+pythonVersion    = "3.13"
+include          = [ "compose_gen" ]
+
+# Core strict mode rules
+reportUnnecessaryIsInstance = true
+reportUnknownVariableType   = true
+reportUnknownArgumentType   = true
+reportMissingTypeArgument   = true
+
+# Additional quality rules
+reportUnusedImport               = "warning"
+reportUnusedVariable             = "warning"
+reportIncompatibleMethodOverride = true
+reportPrivateUsage               = "warning"

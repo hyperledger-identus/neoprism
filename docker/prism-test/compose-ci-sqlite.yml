@@ -125,7 +125,7 @@ services:
       NPRISM_CARDANO_WALLET_PAYMENT_ADDR: addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3
       NPRISM_CARDANO_WALLET_WALLET_ID: 9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d
       NPRISM_CONFIRMATION_BLOCKS: '0'
-      NPRISM_DB_URL: sqlite:///var/lib/neoprism/sqlite/neoprism.db
+      NPRISM_DB_URL: 'sqlite::memory:'
       NPRISM_EXTERNAL_URL: http://localhost:18080
       NPRISM_INDEX_INTERVAL: '1'
       RUST_LOG: oura=warn,tracing::span=warn,info
@@ -142,8 +142,5 @@ services:
     ports:
     - 18080:8080
     restart: always
-    volumes:
-    - neoprism-sqlite:/var/lib/neoprism/sqlite
 volumes:
-  neoprism-sqlite: {}
   node-testnet: {}

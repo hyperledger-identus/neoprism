@@ -10,11 +10,9 @@ db_pass := "postgres"
 db_name := "postgres"
 
 # Embedded SQLite defaults
+
 sqlite_db_path := "data/sqlite/neoprism-dev.sqlite"
 sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
-
-# Use bash with strict error handling for all recipes
-set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # Show available commands
 default:
@@ -25,9 +23,9 @@ default:
 init:
     npm install
 
-# Build the entire project (assets + cargo)
+# Build the entire project
 [group('neoprism')]
-build: build-assets
+build: build-assets build-config
     cargo build --all-features
 
 # Build Tailwind CSS assets
@@ -42,23 +40,16 @@ build-assets:
 build-config:
     python -m compose_gen.main
 
-# Run neoprism-node with local database connection (pass arguments after --)
+# Run neoprism-node with development database connection
 [group('neoprism')]
 run *ARGS: build-assets
-    export NPRISM_DB_URL="postgres://{{ db_user }}:{{ db_pass }}@localhost:{{ db_port }}/{{ db_name }}" && \
+    export NPRISM_DB_URL="sqlite::memory:" && \
         cargo run --bin neoprism-node -- {{ ARGS }}
 
 # Run all tests with all features enabled
 [group('neoprism')]
 test:
     cargo test --all-features
-
-# Run comprehensive Nix checks (format, lint, test, clippy)
-[group('neoprism')]
-check:
-    #!/usr/bin/env bash
-    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-    nix build ".#checks.$SYSTEM.default"
 
 # Clean all build artifacts
 [group('neoprism')]
@@ -83,9 +74,26 @@ format:
     echo "Formatting SQL files..."
     (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
-# Start local PostgreSQL database in Docker (Postgres only)
-[group('neoprism')]
-db-up:
+# Run checks (tests, formatting, lints)
+[group('checks')]
+check:
+    #!/usr/bin/env bash
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.default"
+
+# Run full checks before submitting a PR, including end-to-end tests
+[group('checks')]
+full-check: clean format build test
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Running comprehensive pre-PR checks..."
+    just e2e::docker-publish-local
+    just e2e::run
+    echo "✓ All checks completed successfully."
+
+# Start local PostgreSQL database in Docker
+[group('database')]
+postgres-up:
     docker run \
       -d --rm \
       --name prism-db \
@@ -94,35 +102,34 @@ db-up:
       -e POSTGRES_PASSWORD={{ db_pass }} \
       -p {{ db_port }}:5432 postgres:16
 
-# Stop local PostgreSQL database (Postgres only)
-[group('neoprism')]
-db-down:
+# Stop local PostgreSQL database
+[group('database')]
+postgres-down:
     docker stop prism-db
 
-# Dump local PostgreSQL database to postgres.dump file
-[group('neoprism')]
-db-dump:
+# Dump PostgreSQL database to postgres.dump file
+[group('database')]
+postgres-dump:
     export PGPASSWORD={{ db_pass }} && \
         pg_dump -h localhost -p {{ db_port }} -U {{ db_user }} -w -d {{ db_name }} -Fc > postgres.dump && \
         echo "Database dumped to postgres.dump"
 
-# Restore local PostgreSQL database from postgres.dump file
-[group('neoprism')]
-db-restore:
+# Restore PostgreSQL database from postgres.dump file
+[group('database')]
+postgres-restore:
     export PGPASSWORD={{ db_pass }} && \
         pg_restore -h localhost -p {{ db_port }} -U {{ db_user }} -w -d {{ db_name }} postgres.dump && \
         echo "Database restored from postgres.dump"
 
-# Initialize or upgrade the embedded SQLite database
-[group('neoprism')]
-db-init-sqlite:
+# Initialize the embedded SQLite database
+[group('database')]
+sqlite-init:
     mkdir -p "$(dirname {{ sqlite_db_path }})"
     touch {{ sqlite_db_path }}
-    DATABASE_URL={{ sqlite_db_url }} sqlx migrate run --source lib/node-storage/migrations/sqlite
-    echo "SQLite database migrated at {{ sqlite_db_path }}"
+    echo "SQLite database initialized at {{ sqlite_db_path }}"
 
 # Remove the embedded SQLite database file
-[group('neoprism')]
-db-clean-sqlite:
+[group('database')]
+sqlite-clean:
     rm -f {{ sqlite_db_path }}
     echo "Removed SQLite database at {{ sqlite_db_path }}"

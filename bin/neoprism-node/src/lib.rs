@@ -2,9 +2,8 @@
 #![feature(error_reporter)]
 
 use std::fs;
-#[cfg(all(unix, feature = "sqlite-backend"))]
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
-#[cfg(feature = "sqlite-backend")]
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
@@ -12,7 +11,6 @@ use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
 use cli::Cli;
-#[cfg(feature = "sqlite-backend")]
 use dirs::data_dir;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
@@ -20,9 +18,7 @@ use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use identus_did_resolver_http::DidResolverStateDyn;
-#[cfg(feature = "sqlite-backend")]
-use node_storage::SqliteDb;
-use node_storage::{PostgresDb, StorageBackend};
+use node_storage::{PostgresDb, SqliteDb, StorageBackend};
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -248,18 +244,11 @@ async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier
 
     match db_config.backend {
         DbBackend::Postgres => Arc::new(init_postgres_database(&db_config.url, db_args).await),
-        DbBackend::Sqlite => {
-            #[cfg(feature = "sqlite-backend")]
-            {
-                return init_sqlite_database(&db_config.url, db_args).await;
-            }
-            #[cfg(not(feature = "sqlite-backend"))]
-            panic!("sqlite database url provided, but binary was built without the `sqlite-backend` feature");
-        }
+        DbBackend::Sqlite => init_sqlite_database(&db_config.url, db_args).await,
     }
 }
 
-async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
+async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
     let db = PostgresDb::connect(db_url)
         .await
         .expect("Unable to connect to database");
@@ -272,7 +261,7 @@ async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
         tracing::info!("Applied database migrations successfully");
     }
 
-    db
+    Arc::new(db)
 }
 
 fn init_memory_ledger(
@@ -347,7 +336,6 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
     ))
 }
 
-#[cfg(feature = "sqlite-backend")]
 async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
     let db_url = db_url.to_string();
 
@@ -368,7 +356,6 @@ async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
     Arc::new(db)
 }
 
-#[cfg(feature = "sqlite-backend")]
 fn default_sqlite_url(network_hint: Option<&NetworkIdentifier>) -> String {
     let mut base = data_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
     base.push("NeoPRISM");
@@ -380,7 +367,6 @@ fn default_sqlite_url(network_hint: Option<&NetworkIdentifier>) -> String {
     format!("sqlite://{}", base.to_string_lossy())
 }
 
-#[cfg(feature = "sqlite-backend")]
 fn prepare_sqlite_destination(db_url: &str) -> std::io::Result<()> {
     if let Some(path) = sqlite_path_from_url(db_url) {
         ensure_sqlite_parent(&path)?;
@@ -388,7 +374,6 @@ fn prepare_sqlite_destination(db_url: &str) -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "sqlite-backend")]
 fn ensure_sqlite_parent(path: &Path) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         if parent.exists() {
@@ -396,7 +381,7 @@ fn ensure_sqlite_parent(path: &Path) -> std::io::Result<()> {
         }
 
         fs::create_dir_all(parent)?;
-        #[cfg(all(unix, feature = "sqlite-backend"))]
+        #[cfg(unix)]
         {
             fs::set_permissions(parent, std::fs::Permissions::from_mode(0o700))?;
         }
@@ -404,7 +389,6 @@ fn ensure_sqlite_parent(path: &Path) -> std::io::Result<()> {
     Ok(())
 }
 
-#[cfg(feature = "sqlite-backend")]
 fn sqlite_path_from_url(db_url: &str) -> Option<PathBuf> {
     const SQLITE_SCHEME: &str = "sqlite://";
     let rest = db_url.strip_prefix(SQLITE_SCHEME)?;
@@ -416,9 +400,6 @@ fn sqlite_path_from_url(db_url: &str) -> Option<PathBuf> {
 }
 
 fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> DatabaseConfig {
-    #[cfg(not(feature = "sqlite-backend"))]
-    let _ = network_hint;
-
     if let Some(db_url) = &db_args.db_url {
         let backend = infer_db_backend(db_url);
         return DatabaseConfig {
@@ -427,18 +408,12 @@ fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>)
         };
     }
 
-    #[cfg(feature = "sqlite-backend")]
-    {
-        let url = default_sqlite_url(network_hint);
-        tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
-        DatabaseConfig {
-            backend: DbBackend::Sqlite,
-            url,
-        }
+    let url = default_sqlite_url(network_hint);
+    tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
+    DatabaseConfig {
+        backend: DbBackend::Sqlite,
+        url,
     }
-
-    #[cfg(not(feature = "sqlite-backend"))]
-    panic!("NPRISM_DB_URL must be set (no SQLite backend available)");
 }
 
 fn infer_db_backend(db_url: &str) -> DbBackend {
@@ -457,7 +432,6 @@ struct DatabaseConfig {
     url: String,
 }
 
-#[cfg(feature = "sqlite-backend")]
 fn network_identifier_slug(network: &NetworkIdentifier) -> &'static str {
     match network {
         NetworkIdentifier::Mainnet => "mainnet",

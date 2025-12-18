@@ -158,7 +158,7 @@ To set up and run NeoPRISM for development, follow these steps:
    ```
 3. **Start the local PostgreSQL database** (required for NeoPRISM to store data):
    ```bash
-   just db-up
+   just postgres-up
    ```
 4. **Run the NeoPRISM node** (this will automatically generate all required assets):
    ```bash
@@ -170,7 +170,7 @@ To set up and run NeoPRISM for development, follow these steps:
 
 - To stop and remove the local database:
   ```bash
-  just db-down
+  just postgres-down
   ```
 
 **Notes**
@@ -242,13 +242,13 @@ Pick the stack that matches your goal; for example, run `dev-sqlite` while itera
 
 ### Full QA helper script
 
-The repository root contains a `full-check.sh` helper that strings the common QA steps together:
+The justfile provides a `full-check` recipe that strings the common QA steps together:
 
 ```bash
-./full-check.sh
+just full-check
 ```
 
-This script performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, executes `just e2e::run`, and finally smoke-tests the SQLite developer stack. Use it right before sending a PR to replicate the checks we run manually.
+This recipe performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, and executes `just e2e::run`. Use it right before sending a PR to replicate the checks we run manually.
 
 ### SQLx schema checks
 
@@ -273,9 +273,9 @@ If you rely on `cargo sqlx prepare` for offline builds, regenerate metadata for 
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/postgres \
   cargo sqlx prepare --bin neoprism-node
 
-# SQLite metadata (enable the sqlite-backend feature)
+# SQLite metadata
 DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite \
-  cargo sqlx prepare --bin neoprism-node --features sqlite-backend
+  cargo sqlx prepare --bin neoprism-node
 ```
 
 The generated `sqlx-data.json` reflects the currently enabled features, so keep both variants in sync if you commit the file.
@@ -320,12 +320,12 @@ The following justfile commands are available to automate the local development 
 | `just test`                               | Run all tests with all features enabled                                       |
 | `just check`                              | Run the full Nix checks suite (format, lint, test, clippy)                    |
 | `just clean`                              | Clean all build artifacts                                                     |
-| `just db-up`                              | Spin up the local PostgreSQL database (Docker)                                |
-| `just db-down`                            | Tear down the local PostgreSQL database                                       |
-| `just db-dump`                            | Dump the local PostgreSQL database to the `postgres.dump` file                |
-| `just db-restore`                         | Restore the local PostgreSQL database from the `postgres.dump` file           |
-| `just db-init-sqlite`                     | Create or migrate the embedded SQLite database (default path)                 |
-| `just db-clean-sqlite`                    | Delete the embedded SQLite database file                                      |
+| `just postgres-up`                        | Spin up the local PostgreSQL database (Docker)                                |
+| `just postgres-down`                      | Tear down the local PostgreSQL database                                       |
+| `just postgres-dump`                      | Dump the local PostgreSQL database to the `postgres.dump` file                |
+| `just postgres-restore`                   | Restore the local PostgreSQL database from the `postgres.dump` file           |
+| `just sqlite-init`                        | Create or migrate the embedded SQLite database (default path)                 |
+| `just sqlite-clean`                       | Delete the embedded SQLite database file                                      |
 | `just run indexer`                        | Run the indexer node, connecting to the local database                        |
 | `just run indexer --cardano-addr <ADDR>`  | Run the indexer node, connecting to the Cardano relay at `<ADDR>`             |
 | `just run indexer --dbsync-url <URL>`     | Run the indexer node, connecting to the DB Sync instance at `<URL>`           |
@@ -334,4 +334,3 @@ The following justfile commands are available to automate the local development 
 | `just e2e::build`                         | Build the PRISM conformance (end-to-end) test suite                           |
 | `just e2e::run`                           | Run the PRISM conformance (end-to-end) test suite                             |
 
-> **Note:** `db-up`, `db-down`, `db-dump`, and `db-restore` manage the Dockerized PostgreSQL instance only. Use `db-init-sqlite` / `db-clean-sqlite` when working with the embedded SQLite backend.
