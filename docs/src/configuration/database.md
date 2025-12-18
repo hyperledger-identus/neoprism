@@ -19,14 +19,14 @@ If you omit `NPRISM_DB_URL`, NeoPRISM defaults to a SQLite database under your p
 ## PostgreSQL specifics
 
 - Provide `NPRISM_DB_URL` / `--db-url` in standard libpq form (`postgres://user:pass@host:port/db`).
-- The helper targets `just env::postgres-up`, `env::postgres-down`, `env::postgres-dump`, and `env::postgres-restore` spin up and manage a Dockerized Postgres instance for local work.
+- The helper targets `just postgres-up`, `postgres-down`, `postgres-dump`, and `postgres-restore` spin up and manage a Dockerized Postgres instance for local work.
 - All pre-existing migrations live under `lib/node-storage/migrations/postgres` and continue to be linted via `sqlfluff`.
 - The Docker images and compose stacks ship with PostgreSQL enabled so existing deployments do not need any additional flags.
 
 ## SQLite specifics
 
 - Provide `NPRISM_DB_URL=sqlite://...` (or `--db-url`) to point at a specific file, or omit it to use the default app-data location (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS).
-- The helper commands `just db-init-sqlite` and `just db-clean-sqlite` manage migrations for the default file under `data/sqlite/`.
+- The helper commands `just sqlite-init` and `just sqlite-clean` manage migrations for the default file under `data/sqlite/`.
 - The parent directory is created with `700` permissions on Unix hosts to keep the file private.
 - SQLite enforces WAL mode automatically, but remember that only one process should write to the file at a time. Schedule periodic `VACUUM` runs if you prune large chunks of data.
 

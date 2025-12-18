@@ -1,4 +1,8 @@
 ## TODO
 
-- [ ] Check sqlite migration if it runs during app startup
-- [ ] `dev` command should use in-memory sqlite
+- [ ] Optimize the e2e stack to test. We don't need to test in-memory blockchain permutation
+  - `compose`
+  - `compose-sqlite`
+  - `compose-sqlite-dev`
+  - `compose-ci`
+  - `compose-ci-sqlite`
