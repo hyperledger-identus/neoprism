@@ -39,13 +39,13 @@ just e2e::down dev-sqlite
 
 ## Full repository check
 
-Before opening a PR, run the umbrella script from the repository root:
+Before opening a PR, run the umbrella command from the repository root:
 
 ```bash
-./full-check.sh
+just full-check
 ```
 
-It chains formatting, `cargo build`, `just test`, Docker image builds, the full `just e2e::run` suite, and finally an additional SQLite smoke test. This mirrors the checks we expect to pass in CI.
+It chains formatting, `cargo build`, `just test`, Docker image builds, and the full `just e2e::run` suite. This mirrors the checks we expect to pass in CI.
 
 ## Manual compose usage
 
@@ -66,7 +66,7 @@ Manually editing the YAML files is discouraged—change the Python sources under
 
 ## Who should run the suite?
 
-- **NeoPRISM contributors:** run either `just e2e::run` or `./full-check.sh` whenever core logic changes.
+- **NeoPRISM contributors:** run either `just e2e::run` or `just full-check` whenever core logic changes.
 - **Downstream PRISM node teams:** point the compose stack at your image (override the `image:` field or use `docker load` to drop in local builds) and reuse the same test harness.
 
 ## Extending the suite

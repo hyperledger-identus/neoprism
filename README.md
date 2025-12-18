@@ -242,13 +242,13 @@ Pick the stack that matches your goal; for example, run `dev-sqlite` while itera
 
 ### Full QA helper script
 
-The repository root contains a `full-check.sh` helper that strings the common QA steps together:
+The justfile provides a `full-check` recipe that strings the common QA steps together:
 
 ```bash
-./full-check.sh
+just full-check
 ```
 
-This script performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, executes `just e2e::run`, and finally smoke-tests the SQLite developer stack. Use it right before sending a PR to replicate the checks we run manually.
+This recipe performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, and executes `just e2e::run`. Use it right before sending a PR to replicate the checks we run manually.
 
 ### SQLx schema checks
 

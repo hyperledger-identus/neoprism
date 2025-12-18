@@ -19,7 +19,7 @@ If you omit `NPRISM_DB_URL`, NeoPRISM defaults to a SQLite database under your p
 ## PostgreSQL specifics
 
 - Provide `NPRISM_DB_URL` / `--db-url` in standard libpq form (`postgres://user:pass@host:port/db`).
-- The helper targets `just db-up`, `db-down`, `db-dump`, and `db-restore` spin up and manage a Dockerized Postgres instance for local work.
+- The helper targets `just env::postgres-up`, `env::postgres-down`, `env::postgres-dump`, and `env::postgres-restore` spin up and manage a Dockerized Postgres instance for local work.
 - All pre-existing migrations live under `lib/node-storage/migrations/postgres` and continue to be linted via `sqlfluff`.
 - The Docker images and compose stacks ship with PostgreSQL enabled so existing deployments do not need any additional flags.
 
@@ -32,7 +32,7 @@ If you omit `NPRISM_DB_URL`, NeoPRISM defaults to a SQLite database under your p
 
 ## Testing both backends
 
-The e2e suite and the `full-check.sh` helper exercise both PostgreSQL and SQLite compose stacks (`dev`, `dev-sqlite`, `ci`, `ci-sqlite`). When troubleshooting, you can run any stack in isolation:
+The e2e suite and the `just full-check` command exercise both PostgreSQL and SQLite compose stacks (`dev`, `dev-sqlite`, `ci`, `ci-sqlite`). When troubleshooting, you can run any stack in isolation:
 
 ```bash
 just e2e::up dev-sqlite

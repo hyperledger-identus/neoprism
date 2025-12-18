@@ -8,8 +8,8 @@
 - Run all Rust tests: `just test` (or `cargo test --all-features` inside dev shell)
 - Run a single Rust test: `cargo test -p <crate> <test_name>` (or `cargo test --package <crate> <test_name>`)
 - Format all sources: `just format` (formats Rust, Nix, TOML, Python, SQL)
-- Start local database: `just db-up`
-- Stop local database: `just db-down`
+- Start local database: `just env::postgres-up`
+- Stop local database: `just env::postgres-down`
 
 ### Code Style Guidelines
 - Imports: group by standard, external, then local; remove unused imports.

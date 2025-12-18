@@ -32,7 +32,7 @@ build-assets:
 build-config:
     python -m compose_gen.main
 
-# Run neoprism-node with local database connection (pass arguments after --)
+# Run neoprism-node with development database connection
 [group('development')]
 run *ARGS: build-assets
     export NPRISM_DB_URL="sqlite::memory:" && \
@@ -66,9 +66,19 @@ format:
     echo "Formatting SQL files..."
     (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
-# Run comprehensive Nix checks (format, lint, test, clippy)
+# Run checks (tests, formatting, lints)
 [group('checks')]
 check:
     #!/usr/bin/env bash
     SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
     nix build ".#checks.$SYSTEM.default"
+
+# Run full checks before submitting a PR, including end-to-end tests
+[group('checks')]
+full-check: clean format build test
+    #!/usr/bin/env bash
+    set -euo pipefail
+    echo "Running comprehensive pre-PR checks..."
+    just e2e::docker-publish-local
+    just e2e::run
+    echo "✓ All checks completed successfully."

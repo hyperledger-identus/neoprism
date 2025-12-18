@@ -132,9 +132,7 @@ def mk_stack(options: Options = Options()) -> ComposeConfig:
         neoprism_service_options.sqlite_db_url = (
             "sqlite:///var/lib/neoprism/sqlite/neoprism.db"
         )
-        neoprism_service_options.volumes = [
-            f"{sqlite_volume}:/var/lib/neoprism/sqlite"
-        ]
+        neoprism_service_options.volumes = [f"{sqlite_volume}:/var/lib/neoprism/sqlite"]
         volumes[sqlite_volume] = {}
     else:
         neoprism_services["db-neoprism"] = db.mk_service(db.Options())

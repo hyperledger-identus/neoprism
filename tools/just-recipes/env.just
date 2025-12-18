@@ -1,12 +1,14 @@
 set working-directory := '../..'
 
 # PostgreSQL configuration
+
 db_port := "5432"
 db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
 
 # Embedded SQLite defaults
+
 sqlite_db_path := "data/sqlite/neoprism-dev.sqlite"
 sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
 
@@ -44,11 +46,11 @@ postgres-restore:
 # SQLite Database
 # ============================================================================
 
-# Initialize or upgrade the embedded SQLite database
+# Initialize the embedded SQLite database
 sqlite-init:
     mkdir -p "$(dirname {{ sqlite_db_path }})"
     touch {{ sqlite_db_path }}
-    echo "SQLite database migrated at {{ sqlite_db_path }}"
+    echo "SQLite database initialized at {{ sqlite_db_path }}"
 
 # Remove the embedded SQLite database file
 sqlite-clean:
