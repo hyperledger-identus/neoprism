@@ -3,15 +3,18 @@ mod tools 'tools/just-recipes/tools.just'
 mod release 'tools/just-recipes/release.just'
 
 # Use bash with strict error handling for all recipes
+
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
 # PostgreSQL configuration
+
 db_port := "5432"
 db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
 
 # Embedded SQLite defaults
+
 sqlite_db_path := "data/sqlite/neoprism-dev.sqlite"
 sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
 

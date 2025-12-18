@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, model_validator
 
@@ -173,14 +173,14 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
     }
 
     # Combine all services
-    all_services = {
+    all_services: dict[str, Any] = {
         **neoprism_services,
         **(cardano_services if options.enable_cardano_node else {}),
         **(prism_services if options.enable_prism_node else {}),
         **(bf_services if options.enable_blockfrost else {}),
     }
 
-    all_volumes: dict[str, dict] = {
+    all_volumes: dict[str, dict[str, Any]] = {
         **({testnet_volume: {}} if options.enable_cardano_node else {})
     }
 

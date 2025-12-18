@@ -7,6 +7,7 @@ format:
     ruff format tools/compose_gen
 
     echo "Formatting justfiles..."
+    just --fmt --unstable
     find . -name '*.just' -type f -exec sh -c 'echo "  → {}" && just --fmt --unstable --justfile {}' \;
 
 # Type check and validate Python tools code

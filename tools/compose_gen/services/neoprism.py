@@ -80,7 +80,7 @@ def mk_service(options: Options) -> Service:
 
     if isinstance(options.storage_backend, SqliteStorageBackend):
         environment["NPRISM_DB_URL"] = options.storage_backend.db_url
-    elif isinstance(options.storage_backend, PostgresStorageBackend):
+    else:
         environment["NPRISM_DB_URL"] = options.storage_backend.db_url
         depends_on[options.storage_backend.host] = ServiceDependency(
             condition="service_healthy"
@@ -103,7 +103,7 @@ def mk_service(options: Options) -> Service:
             environment["NPRISM_CARDANO_RELAY_ADDR"] = (
                 options.command.dlt_source.address
             )
-        elif isinstance(options.command.dlt_source, DbSyncDltSource):
+        else:
             environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
             environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
                 options.command.dlt_source.poll_interval
@@ -116,7 +116,7 @@ def mk_service(options: Options) -> Service:
             environment["NPRISM_CARDANO_RELAY_ADDR"] = (
                 options.command.dlt_source.address
             )
-        elif isinstance(options.command.dlt_source, DbSyncDltSource):
+        else:
             environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
             environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
                 options.command.dlt_source.poll_interval
