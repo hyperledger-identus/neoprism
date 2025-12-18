@@ -158,7 +158,7 @@ To set up and run NeoPRISM for development, follow these steps:
    ```
 3. **Start the local PostgreSQL database** (required for NeoPRISM to store data):
    ```bash
-   just db-up
+   just env::postgres-up
    ```
 4. **Run the NeoPRISM node** (this will automatically generate all required assets):
    ```bash
@@ -170,7 +170,7 @@ To set up and run NeoPRISM for development, follow these steps:
 
 - To stop and remove the local database:
   ```bash
-  just db-down
+  just env::postgres-down
   ```
 
 **Notes**
@@ -320,12 +320,12 @@ The following justfile commands are available to automate the local development 
 | `just test`                               | Run all tests with all features enabled                                       |
 | `just check`                              | Run the full Nix checks suite (format, lint, test, clippy)                    |
 | `just clean`                              | Clean all build artifacts                                                     |
-| `just db-up`                              | Spin up the local PostgreSQL database (Docker)                                |
-| `just db-down`                            | Tear down the local PostgreSQL database                                       |
-| `just db-dump`                            | Dump the local PostgreSQL database to the `postgres.dump` file                |
-| `just db-restore`                         | Restore the local PostgreSQL database from the `postgres.dump` file           |
-| `just db-init-sqlite`                     | Create or migrate the embedded SQLite database (default path)                 |
-| `just db-clean-sqlite`                    | Delete the embedded SQLite database file                                      |
+| `just env::postgres-up`                   | Spin up the local PostgreSQL database (Docker)                                |
+| `just env::postgres-down`                 | Tear down the local PostgreSQL database                                       |
+| `just env::postgres-dump`                 | Dump the local PostgreSQL database to the `postgres.dump` file                |
+| `just env::postgres-restore`              | Restore the local PostgreSQL database from the `postgres.dump` file           |
+| `just env::sqlite-init`                   | Create or migrate the embedded SQLite database (default path)                 |
+| `just env::sqlite-clean`                  | Delete the embedded SQLite database file                                      |
 | `just run indexer`                        | Run the indexer node, connecting to the local database                        |
 | `just run indexer --cardano-addr <ADDR>`  | Run the indexer node, connecting to the Cardano relay at `<ADDR>`             |
 | `just run indexer --dbsync-url <URL>`     | Run the indexer node, connecting to the DB Sync instance at `<URL>`           |
@@ -334,4 +334,4 @@ The following justfile commands are available to automate the local development 
 | `just e2e::build`                         | Build the PRISM conformance (end-to-end) test suite                           |
 | `just e2e::run`                           | Run the PRISM conformance (end-to-end) test suite                             |
 
-> **Note:** `db-up`, `db-down`, `db-dump`, and `db-restore` manage the Dockerized PostgreSQL instance only. Use `db-init-sqlite` / `db-clean-sqlite` when working with the embedded SQLite backend.
+> **Note:** All database and environment management commands are now under the `env::` namespace. PostgreSQL commands (`env::postgres-*`) manage the Dockerized PostgreSQL instance, while SQLite commands (`env::sqlite-*`) work with the embedded SQLite backend. See `just --list env` for all available environment commands.

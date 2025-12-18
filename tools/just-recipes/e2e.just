@@ -3,7 +3,7 @@ set working-directory := '../..'
 # Build PRISM conformance test suite
 [working-directory('./tests/prism-test')]
 build:
-    sbt clean scalafmtAll compile Test/compile
+    sbt scalafmtAll compile Test/compile
 
 # Clean PRISM conformance test build artifacts
 [working-directory('./tests/prism-test')]

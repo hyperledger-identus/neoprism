@@ -248,7 +248,7 @@ async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier
     }
 }
 
-async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
+async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
     let db = PostgresDb::connect(db_url)
         .await
         .expect("Unable to connect to database");
@@ -261,7 +261,7 @@ async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> PostgresDb {
         tracing::info!("Applied database migrations successfully");
     }
 
-    db
+    Arc::new(db)
 }
 
 fn init_memory_ledger(
