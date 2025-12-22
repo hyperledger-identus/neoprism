@@ -27,6 +27,8 @@ pub struct BlockMetadata {
     ///
     /// This is used to order PrismBlock within the same Cardano block
     pub absn: u32,
+    /// Cardano transaction id
+    pub tx_id: TxId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -121,6 +123,16 @@ impl BlockNo {
 pub struct TxId(#[serde(serialize_with = "TxId::serialize", deserialize_with = "TxId::deserialize")] Sha256Digest);
 
 impl TxId {
+    /// Create a TxId from raw bytes (must be 32 bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, identus_apollo::hash::Error> {
+        Sha256Digest::from_bytes(bytes).map(Self)
+    }
+
+    /// Convert TxId to vector of bytes
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
     fn serialize<S>(bytes: &Sha256Digest, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

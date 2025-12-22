@@ -244,8 +244,8 @@ impl RawOperationRepo for SqliteDb {
 
             sqlx::query(
                 r#"
-INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, is_indexed)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0)
+INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, tx_hash, is_indexed)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)
 ON CONFLICT(block_number, absn, osn) DO NOTHING
                 "#,
             )
@@ -256,6 +256,7 @@ ON CONFLICT(block_number, absn, osn) DO NOTHING
             .bind(metadata.block_metadata.cbt)
             .bind(absn)
             .bind(osn)
+            .bind(metadata.block_metadata.tx_id.to_vec())
             .execute(&mut *tx)
             .await?;
         }
@@ -370,7 +371,8 @@ impl DltCursorRepo for SqliteDb {
 #[cfg(test)]
 mod tests {
     use chrono::{TimeZone, Utc};
-    use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
+    use identus_apollo::hash::sha256;
+    use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
     use tempfile::TempDir;
 
     use super::*;
@@ -382,6 +384,7 @@ mod tests {
                 block_number: block.into(),
                 cbt: Utc.timestamp_opt(0, 0).single().expect("failed to build timestamp"),
                 absn,
+                tx_id: TxId::from(sha256(block.to_le_bytes())),
             },
             osn,
         }

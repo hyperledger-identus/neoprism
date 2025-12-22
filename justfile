@@ -8,6 +8,7 @@ db_port := "5432"
 db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
+postgres_db_url := "postgres://postgres:postgres@localhost:5432/postgres"
 
 # Embedded SQLite defaults
 
@@ -43,7 +44,7 @@ build-config:
 # Run neoprism-node with development database connection
 [group('neoprism')]
 run *ARGS: build-assets
-    export NPRISM_DB_URL="sqlite::memory:" && \
+    export NPRISM_DB_URL="{{ sqlite_db_url }}" && \
         cargo run --bin neoprism-node -- {{ ARGS }}
 
 # Run all tests with all features enabled

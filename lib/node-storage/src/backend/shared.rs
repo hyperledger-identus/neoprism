@@ -1,4 +1,4 @@
-use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
+use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto::prism::SignedPrismOperation;
 use identus_did_prism_indexer::repo::RawOperationId;
@@ -22,6 +22,7 @@ pub fn parse_raw_operation(
 
 impl entity::RawOperation {
     fn block_metadata(&self) -> Result<BlockMetadata, Error> {
+        let tx_id = TxId::from_bytes(&self.tx_hash).expect("invalid tx_hash in database");
         Ok(BlockMetadata {
             slot_number: u64::try_from(self.slot).expect("slot value does not fit in u64").into(),
             block_number: u64::try_from(self.block_number)
@@ -29,6 +30,7 @@ impl entity::RawOperation {
                 .into(),
             cbt: self.cbt,
             absn: self.absn.try_into().expect("absn value does not fit in u32"),
+            tx_id,
         })
     }
 }

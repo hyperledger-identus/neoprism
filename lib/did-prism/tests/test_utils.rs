@@ -3,7 +3,7 @@
 use chrono::DateTime;
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
+use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto;
 
@@ -100,6 +100,7 @@ pub fn populate_metadata(
             block_number: 0.into(),
             cbt: DateTime::UNIX_EPOCH,
             absn: 0,
+            tx_id: TxId::from(identus_apollo::hash::sha256([0u8; 32])),
         },
         osn: 0,
     };

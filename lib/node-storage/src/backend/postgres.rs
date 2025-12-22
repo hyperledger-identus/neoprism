@@ -229,6 +229,7 @@ impl RawOperationRepo for PostgresDb {
                     .try_into()
                     .expect("absn does not fit in i32"),
                 osn: metadata.osn.try_into().expect("osn does not fit in i32"),
+                tx_hash: metadata.block_metadata.tx_id.to_vec(),
                 is_indexed: false,
             };
             self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;

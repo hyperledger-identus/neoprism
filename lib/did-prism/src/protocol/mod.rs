@@ -11,7 +11,7 @@ use protobuf::SpecialFields;
 use self::v1::V1Processor;
 use crate::did::operation::{PublicKey, PublicKeyId, Service, ServiceEndpoint, ServiceId, ServiceType, StorageData};
 use crate::did::{CanonicalPrismDid, DidState, StorageState};
-use crate::dlt::{BlockMetadata, OperationMetadata};
+use crate::dlt::{BlockMetadata, OperationMetadata, TxId};
 use crate::prelude::*;
 use crate::proto::prism::prism_operation::Operation;
 use crate::proto::prism_ssi::{ProtoCreateDID, ProtoDeactivateDID, ProtoUpdateDID};
@@ -388,6 +388,7 @@ fn init_unpublished_context(
             block_number: 0.into(),
             cbt: DateTime::UNIX_EPOCH,
             absn: 0,
+            tx_id: TxId::from(identus_apollo::hash::sha256([0u8; 32])),
         },
         osn: 0,
     };
