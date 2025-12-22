@@ -1,19 +1,21 @@
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto::prism::SignedPrismOperation;
-use identus_did_prism_indexer::repo::RawOperationId;
+use identus_did_prism_indexer::repo::RawOperationRecord;
 
 use crate::{Error, entity};
 
-pub fn parse_raw_operation(
-    value: entity::RawOperation,
-) -> Result<(RawOperationId, OperationMetadata, SignedPrismOperation), Error> {
+pub fn parse_raw_operation(value: entity::RawOperation) -> Result<RawOperationRecord, Error> {
     let metadata = OperationMetadata {
         block_metadata: value.block_metadata()?,
         osn: value.osn.try_into().expect("osn value does not fit in u32"),
     };
     SignedPrismOperation::decode(value.signed_operation_data.as_slice())
-        .map(|op| (value.id.into(), metadata, op))
+        .map(|signed_operation| RawOperationRecord {
+            id: value.id.into(),
+            metadata,
+            signed_operation,
+        })
         .map_err(|e| Error::ProtobufDecode {
             source: e,
             target_type: std::any::type_name::<SignedPrismOperation>(),

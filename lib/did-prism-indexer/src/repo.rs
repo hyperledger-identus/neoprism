@@ -10,6 +10,18 @@ use uuid::Uuid;
 #[derive(Clone, Debug, Copy, derive_more::From, derive_more::Into, derive_more::AsRef)]
 pub struct RawOperationId(Uuid);
 
+/// A raw operation record retrieved from storage, containing the operation ID,
+/// its metadata, and the signed operation itself.
+#[derive(Debug, Clone)]
+pub struct RawOperationRecord {
+    /// The unique identifier for this raw operation in storage
+    pub id: RawOperationId,
+    /// Metadata about when and where this operation was published on-chain
+    pub metadata: OperationMetadata,
+    /// The signed PRISM operation data
+    pub signed_operation: SignedPrismOperation,
+}
+
 pub enum IndexedOperation {
     Ssi {
         raw_operation_id: RawOperationId,
@@ -41,24 +53,16 @@ impl IndexedOperation {
 pub trait RawOperationRepo {
     type Error: std::error::Error;
 
-    async fn get_raw_operations_unindexed(
-        &self,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error>;
 
-    async fn get_raw_operations_by_did(
-        &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+    async fn get_raw_operations_by_did(&self, did: &CanonicalPrismDid) -> Result<Vec<RawOperationRecord>, Self::Error>;
 
     async fn get_raw_operation_vdr_by_operation_hash(
         &self,
         operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+    ) -> Result<Option<RawOperationRecord>, Self::Error>;
 
-    async fn get_raw_operations_by_tx_id(
-        &self,
-        tx_id: &TxId,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error>;
+    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error>;
 
     async fn insert_raw_operations(
         &self,
@@ -103,32 +107,24 @@ where
 {
     type Error = T::Error;
 
-    async fn get_raw_operations_unindexed(
-        &self,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
         self.as_ref().get_raw_operations_unindexed().await
     }
 
-    async fn get_raw_operations_by_did(
-        &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_did(&self, did: &CanonicalPrismDid) -> Result<Vec<RawOperationRecord>, Self::Error> {
         self.as_ref().get_raw_operations_by_did(did).await
     }
 
     async fn get_raw_operation_vdr_by_operation_hash(
         &self,
         operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    ) -> Result<Option<RawOperationRecord>, Self::Error> {
         self.as_ref()
             .get_raw_operation_vdr_by_operation_hash(operation_hash)
             .await
     }
 
-    async fn get_raw_operations_by_tx_id(
-        &self,
-        tx_id: &TxId,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error> {
         self.as_ref().get_raw_operations_by_tx_id(tx_id).await
     }
 

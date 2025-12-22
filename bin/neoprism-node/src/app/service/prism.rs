@@ -74,7 +74,7 @@ impl PrismDidService {
             .await
             .map_err(|e| ResolutionError::InternalError { source: e.into() })?
             .into_iter()
-            .map(|(_, meta, signed_operation)| (meta, signed_operation))
+            .map(|record| (record.metadata, record.signed_operation))
             .collect::<Vec<_>>();
 
         if operations.is_empty() {
@@ -114,7 +114,7 @@ impl PrismDidService {
             .get_raw_operations_by_tx_id(tx_id)
             .await?
             .into_iter()
-            .map(|(_, meta, op)| (meta, op))
+            .map(|record| (record.metadata, record.signed_operation))
             .collect())
     }
 }

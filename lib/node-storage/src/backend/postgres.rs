@@ -3,7 +3,7 @@ use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{
-    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationId, RawOperationRepo,
+    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationRecord, RawOperationRepo,
 };
 use lazybe::db::DbOps;
 use lazybe::db::postgres::PostgresDbCtx;
@@ -122,9 +122,7 @@ LIMIT 1
 impl RawOperationRepo for PostgresDb {
     type Error = Error;
 
-    async fn get_raw_operations_unindexed(
-        &self,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
@@ -147,10 +145,7 @@ impl RawOperationRepo for PostgresDb {
         Ok(result)
     }
 
-    async fn get_raw_operations_by_did(
-        &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_did(&self, did: &CanonicalPrismDid) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let suffix_bytes = did.suffix().to_vec();
         let mut tx = self.pool.begin().await?;
         let result = self
@@ -173,7 +168,7 @@ impl RawOperationRepo for PostgresDb {
     async fn get_raw_operation_vdr_by_operation_hash(
         &self,
         operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    ) -> Result<Option<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let vdr_operation = self
             .db_ctx
@@ -202,10 +197,7 @@ impl RawOperationRepo for PostgresDb {
         Ok(result)
     }
 
-    async fn get_raw_operations_by_tx_id(
-        &self,
-        tx_id: &TxId,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx

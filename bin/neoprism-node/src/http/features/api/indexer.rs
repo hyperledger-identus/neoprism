@@ -38,12 +38,12 @@ mod models {
         pub slot_number: SlotNo,
         pub block_number: BlockNo,
         pub block_timestamp: DateTime<Utc>,
+        pub absn: u32,
         pub operations: Vec<OperationSummary>,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     pub struct OperationSummary {
-        pub absn: u32,
         pub osn: u32,
         pub signed_operation_data: SignedPrismOperationHexStr,
     }
@@ -172,11 +172,11 @@ pub async fn transaction_details(
         slot_number: metadata.block_metadata.slot_number,
         block_number: metadata.block_metadata.block_number,
         block_timestamp: metadata.block_metadata.cbt,
+        absn: metadata.block_metadata.absn,
         operations: operations
             .into_iter()
             .map(|(metadata, signed_op)| OperationSummary {
-                absn: metadata.block_metadata.absn.try_into().unwrap_or(0),
-                osn: metadata.osn.try_into().unwrap_or(0),
+                osn: metadata.osn,
                 signed_operation_data: signed_op.into(),
             })
             .collect(),
