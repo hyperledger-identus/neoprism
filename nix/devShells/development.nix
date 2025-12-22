@@ -28,6 +28,7 @@ pkgs.mkShell {
     pyright
     ruff
     # db
+    postgresql_16
     sqlfluff
     sqlite
     # rust
