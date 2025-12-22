@@ -108,13 +108,13 @@ impl PrismDidService {
     pub async fn get_raw_operations_by_tx_id(
         &self,
         tx_id: &TxId,
-    ) -> anyhow::Result<Vec<(OperationMetadata, SignedPrismOperation)>> {
+    ) -> anyhow::Result<Vec<(OperationMetadata, SignedPrismOperation, CanonicalPrismDid)>> {
         Ok(self
             .db
             .get_raw_operations_by_tx_id(tx_id)
             .await?
             .into_iter()
-            .map(|record| (record.metadata, record.signed_operation))
+            .map(|(record, did)| (record.metadata, record.signed_operation, did))
             .collect())
     }
 }

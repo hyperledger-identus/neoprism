@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use identus_apollo::hash::Sha256Digest;
+use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
@@ -212,24 +213,34 @@ impl RawOperationRepo for SqliteDb {
         Ok(result)
     }
 
-    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error> {
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
-            .list::<entity::RawOperation>(
+            .list::<entity::RawOperationByDid>(
                 &mut tx,
-                Filter::all([entity::RawOperationFilter::tx_hash().eq(tx_id.to_vec())]),
+                Filter::all([entity::RawOperationByDidFilter::tx_hash().eq(tx_id.to_vec())]),
                 Sort::new([
-                    entity::RawOperationSort::block_number().asc(),
-                    entity::RawOperationSort::absn().asc(),
-                    entity::RawOperationSort::osn().asc(),
+                    entity::RawOperationByDidSort::block_number().asc(),
+                    entity::RawOperationByDidSort::absn().asc(),
+                    entity::RawOperationByDidSort::osn().asc(),
                 ]),
                 None,
             )
             .await?
             .data
             .into_iter()
-            .map(parse_raw_operation)
+            .map(|ro| {
+                let did_suffix = HexStr::from(ro.did.as_bytes());
+                parse_raw_operation(ro.into()).and_then(|i| {
+                    CanonicalPrismDid::from_suffix(did_suffix)
+                        .map_err(|e| e.into())
+                        .map(|j| (i, j))
+                })
+            })
             .collect::<Result<Vec<_>, _>>()?;
         tx.commit().await?;
         Ok(result)

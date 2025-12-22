@@ -46,6 +46,7 @@ mod models {
     pub struct OperationSummary {
         pub osn: u32,
         pub signed_operation_data: SignedPrismOperationHexStr,
+        pub did: String,
     }
 }
 
@@ -175,9 +176,10 @@ pub async fn transaction_details(
         absn: metadata.block_metadata.absn,
         operations: operations
             .into_iter()
-            .map(|(metadata, signed_op)| OperationSummary {
+            .map(|(metadata, signed_op, did)| OperationSummary {
                 osn: metadata.osn,
                 signed_operation_data: signed_op.into(),
+                did: did.to_string(),
             })
             .collect(),
     };

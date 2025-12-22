@@ -62,7 +62,10 @@ pub trait RawOperationRepo {
         operation_hash: &Sha256Digest,
     ) -> Result<Option<RawOperationRecord>, Self::Error>;
 
-    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error>;
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error>;
 
     async fn insert_raw_operations(
         &self,
@@ -124,7 +127,10 @@ where
             .await
     }
 
-    async fn get_raw_operations_by_tx_id(&self, tx_id: &TxId) -> Result<Vec<RawOperationRecord>, Self::Error> {
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
         self.as_ref().get_raw_operations_by_tx_id(tx_id).await
     }
 
