@@ -8,12 +8,12 @@ use identus_did_prism_submitter::DltSink;
 use tokio::sync::mpsc;
 
 pub struct InMemoryDltSink {
-    block_tx: mpsc::Sender<PrismObject>,
+    block_tx: mpsc::Sender<(PrismObject, TxId)>,
     count: AtomicU64,
 }
 
 impl InMemoryDltSink {
-    pub fn new(block_tx: mpsc::Sender<PrismObject>) -> Self {
+    pub fn new(block_tx: mpsc::Sender<(PrismObject, TxId)>) -> Self {
         Self {
             block_tx,
             count: AtomicU64::new(0),
@@ -36,7 +36,7 @@ impl DltSink for InMemoryDltSink {
         let count = self.count.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         let tx_id = TxId::from(sha256(count.to_le_bytes()));
         self.block_tx
-            .send(prism_object)
+            .send((prism_object, tx_id.clone()))
             .await
             .map_err(|e| e.to_string())
             .map(|_| tx_id)
