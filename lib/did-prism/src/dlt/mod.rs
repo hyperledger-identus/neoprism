@@ -154,6 +154,15 @@ impl TxId {
     }
 }
 
+impl std::str::FromStr for TxId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = HexStr::from_str(s).map_err(|e| format!("invalid hex string: {}", e))?;
+        Self::from_bytes(&bytes.to_bytes()).map_err(|e| format!("invalid tx id: {}", e))
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, strum::Display, strum::EnumString, strum::VariantArray)]
 pub enum NetworkIdentifier {
     #[strum(serialize = "mainnet")]

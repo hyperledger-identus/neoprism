@@ -44,7 +44,7 @@ build-config:
 # Run neoprism-node with development database connection
 [group('neoprism')]
 run *ARGS: build-assets
-    export NPRISM_DB_URL="{{ sqlite_db_url }}" && \
+    export NPRISM_DB_URL="{{ postgres_db_url }}" && \
         cargo run --bin neoprism-node -- {{ ARGS }}
 
 # Run all tests with all features enabled

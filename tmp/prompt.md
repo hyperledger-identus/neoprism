@@ -1,15 +1,12 @@
 ## Objective
 
-We want to include the `tx` in `BlockMetadata` and index them in the database.
-The `tx_hash` is the transaction hash from the cardano blockchain which `DltSource` should provide.
-The implementation of the `DltSource` should have this for both oura and dbsync.
+Now that we have indexed the `tx_hash` in the database, we want to expose the API for user to query transaction centric data.
+You will have to create a new endpoint `GET /api/transactions/{tx_id}` to let user query the transaction data.
+The transaction data should contain the transaction detail and the operations inside it.
+You only need to provide the endpoit to get transaction by ID, no need to do transaction listing.
 
-## Constraints
+## Hint
 
-- The transaction id already has the newtype `TxId`. Use that.
-- Do not worry about old indexed data where the tx_hash will be null. We will nuke old data and re-index everything.
-
-## Resources
-
-- For oura implementation `EventContext` please check `https://github.com/patextreme/oura/blob/61dc55e7cb580af1f6b37a30b69146d614c6214d/src/framework/legacy_v1.rs#L199`
+You'll have to implement a new method `get_raw_operations_by_tx_id` in the `RawOperationRepo` then use this as a data source in the new API endpoint.
+You can use the view `raw_operation_by_did` which has the `tx_hash` field.
 

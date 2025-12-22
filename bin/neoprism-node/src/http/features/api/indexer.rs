@@ -3,22 +3,25 @@ use axum::body::Bytes;
 use axum::extract::{Path, State};
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
+use identus_did_prism::dlt::TxId;
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
 use utoipa::OpenApi;
 
 use crate::IndexerState;
 use crate::http::features::api::error::{ApiError, ApiErrorResponseBody};
-use crate::http::features::api::indexer::models::IndexerStats;
+use crate::http::features::api::indexer::models::{IndexerStats, OperationSummary, TransactionDetails};
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDidData, ApiIndexerStats, ApiVdrBlob};
+use crate::http::urls::{ApiDidData, ApiIndexerStats, ApiTransaction, ApiVdrBlob};
 
 #[derive(OpenApi)]
-#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob))]
+#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, transaction_details))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
-    use identus_did_prism::dlt::{BlockNo, SlotNo};
+    use chrono::{DateTime, Utc};
+    use identus_did_prism::did::operation::SignedPrismOperationHexStr;
+    use identus_did_prism::dlt::{BlockNo, SlotNo, TxId};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
 
@@ -26,6 +29,23 @@ mod models {
     pub struct IndexerStats {
         pub last_prism_slot_number: Option<SlotNo>,
         pub last_prism_block_number: Option<BlockNo>,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+    pub struct TransactionDetails {
+        pub tx_id: TxId,
+        pub operation_count: u32,
+        pub slot_number: SlotNo,
+        pub block_number: BlockNo,
+        pub block_timestamp: DateTime<Utc>,
+        pub operations: Vec<OperationSummary>,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+    pub struct OperationSummary {
+        pub absn: u32,
+        pub osn: u32,
+        pub signed_operation_data: SignedPrismOperationHexStr,
     }
 }
 
@@ -110,4 +130,57 @@ pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<Ind
         Err(e) => Err(ApiError::Internal { source: e })?,
     };
     Ok(Json(stats))
+}
+
+#[utoipa::path(
+    get,
+    summary = "Returns transaction details and all operations within the transaction",
+    path = ApiTransaction::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "Successfully retrieved transaction details", body = TransactionDetails),
+        (status = BAD_REQUEST, description = "The provided transaction ID is invalid", body = ApiErrorResponseBody),
+        (status = NOT_FOUND, description = "The transaction does not exist or contains no PRISM operations", body = ApiErrorResponseBody),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred", body = ApiErrorResponseBody),
+    ),
+    params(
+        ("tx_id" = String, Path, description = "Cardano transaction hash (64-character hex string)")
+    )
+)]
+pub async fn transaction_details(
+    Path(tx_id): Path<TxId>,
+    State(state): State<IndexerState>,
+) -> Result<Json<TransactionDetails>, ApiError> {
+    let service = &state.prism_did_service;
+    let operations = service
+        .get_raw_operations_by_tx_id(&tx_id)
+        .await
+        .map_err(|e| ApiError::Internal { source: e })?;
+
+    if operations.is_empty() {
+        return Err(ApiError::NotFound);
+    }
+
+    // Extract transaction metadata from first operation
+    // (all operations in same transaction share these values)
+    let first_op = &operations[0];
+    let metadata = &first_op.0;
+
+    let tx_details = TransactionDetails {
+        tx_id,
+        operation_count: operations.len() as u32,
+        slot_number: metadata.block_metadata.slot_number,
+        block_number: metadata.block_metadata.block_number,
+        block_timestamp: metadata.block_metadata.cbt,
+        operations: operations
+            .into_iter()
+            .map(|(metadata, signed_op)| OperationSummary {
+                absn: metadata.block_metadata.absn.try_into().unwrap_or(0),
+                osn: metadata.osn.try_into().unwrap_or(0),
+                signed_operation_data: signed_op.into(),
+            })
+            .collect(),
+    };
+
+    Ok(Json(tx_details))
 }

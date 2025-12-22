@@ -49,3 +49,6 @@ SELECT
     MIN(cbt) AS first_cbt
 FROM raw_operation_by_did
 GROUP BY 1;
+
+-- Add index on tx_hash column for efficient transaction lookup
+CREATE INDEX idx_raw_operation_tx_hash ON raw_operation(tx_hash);
