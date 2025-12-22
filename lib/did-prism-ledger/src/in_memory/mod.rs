@@ -23,17 +23,13 @@ pub fn create_ledger() -> (InMemoryDltSource, Arc<dyn DltSink + Send + Sync>) {
         while let Some(prism_object) = object_rx.recv().await {
             let slot = block_count;
             let block_number = slot; // For in-memory blockchain, use slot as block number
-
-            // Generate synthetic tx_id for in-memory ledger by hashing block number
-            let tx_id = TxId::from(sha256((block_number as u64).to_le_bytes()));
-
             let published_prism_object = PublishedPrismObject {
                 block_metadata: BlockMetadata {
                     slot_number: SlotNo::from(slot),
                     block_number: BlockNo::from(block_number),
+                    tx_id: TxId::from(sha256((block_number as i32).to_le_bytes())),
                     cbt: Utc::now(),
                     absn: 0, // In-memory blocks contain a single PrismObject per block
-                    tx_id,
                 },
                 prism_object,
             };
