@@ -26,6 +26,7 @@ pub struct RawOperation {
     pub absn: i32,
     pub osn: i32,
     pub tx_hash: Vec<u8>,
+    pub operation_id: Vec<u8>,
     pub is_indexed: bool,
 }
 
@@ -84,6 +85,7 @@ pub struct RawOperationByDid {
     pub absn: i32,
     pub osn: i32,
     pub tx_hash: Vec<u8>,
+    pub operation_id: Vec<u8>,
     pub is_indexed: bool,
     pub did: DidSuffix,
 }
@@ -99,6 +101,7 @@ impl From<RawOperationByDid> for RawOperation {
             absn: value.absn,
             osn: value.osn,
             tx_hash: value.tx_hash,
+            operation_id: value.operation_id,
             is_indexed: value.is_indexed,
         }
     }

@@ -1,5 +1,6 @@
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
+use identus_did_prism::did::operation::OperationId;
 use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
@@ -231,12 +232,43 @@ impl RawOperationRepo for PostgresDb {
         Ok(result)
     }
 
+    async fn get_raw_operation_by_operation_id(
+        &self,
+        operation_id: &OperationId,
+    ) -> Result<Option<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+
+        let result = self
+            .db_ctx
+            .list::<entity::RawOperationByDid>(
+                &mut tx,
+                Filter::all([entity::RawOperationByDidFilter::operation_id().eq(operation_id.to_vec())]),
+                Sort::empty(),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?
+            .data
+            .into_iter()
+            .next()
+            .map(|ro| -> Result<(RawOperationRecord, CanonicalPrismDid), Error> {
+                let did_suffix = HexStr::from(ro.did.as_bytes());
+                let record = parse_raw_operation(ro.into())?;
+                let did = CanonicalPrismDid::from_suffix(did_suffix)?;
+                Ok((record, did))
+            })
+            .transpose()?;
+
+        tx.commit().await?;
+        Ok(result)
+    }
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
         for (metadata, signed_operation) in operations {
+            let operation_id = signed_operation.operation_id();
             let create_op = entity::CreateRawOperation {
                 signed_operation_data: signed_operation.encode_to_vec(),
                 slot: metadata
@@ -259,6 +291,7 @@ impl RawOperationRepo for PostgresDb {
                     .expect("absn does not fit in i32"),
                 osn: metadata.osn.try_into().expect("osn does not fit in i32"),
                 tx_hash: metadata.block_metadata.tx_id.to_vec(),
+                operation_id: operation_id.to_vec(),
                 is_indexed: false,
             };
             self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;

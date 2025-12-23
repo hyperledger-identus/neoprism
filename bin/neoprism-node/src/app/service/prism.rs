@@ -3,7 +3,7 @@ use std::sync::Arc;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidResolver, ResolutionOptions, ResolutionResult};
-use identus_did_prism::did::operation::StorageData;
+use identus_did_prism::did::operation::{OperationId, StorageData};
 use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
 use identus_did_prism::dlt::{BlockNo, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::SignedPrismOperation;
@@ -116,6 +116,17 @@ impl PrismDidService {
             .into_iter()
             .map(|(record, did)| (record.metadata, record.signed_operation, did))
             .collect())
+    }
+
+    pub async fn get_raw_operation_by_operation_id(
+        &self,
+        operation_id: &OperationId,
+    ) -> anyhow::Result<Option<(OperationMetadata, SignedPrismOperation, CanonicalPrismDid)>> {
+        Ok(self
+            .db
+            .get_raw_operation_by_operation_id(operation_id)
+            .await?
+            .map(|(record, did)| (record.metadata, record.signed_operation, did)))
     }
 }
 

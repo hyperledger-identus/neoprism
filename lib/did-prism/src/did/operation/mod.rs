@@ -3,6 +3,7 @@ mod storage;
 
 use std::str::FromStr;
 
+use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub use ssi::*;
@@ -62,5 +63,66 @@ impl SignedPrismOperationHexStr {
         let op = SignedPrismOperation::decode(&bytes.to_bytes())
             .map_err(|e| serde::de::Error::custom(format!("Value cannot be decoded to SignedPrismOperation: {e}")))?;
         Ok(op)
+    }
+}
+
+#[derive(
+    Clone, PartialEq, Eq, Hash, Serialize, Deserialize, derive_more::Debug, derive_more::Display, derive_more::From,
+)]
+#[display("{}", identus_apollo::hex::HexStr::from(self.0.as_bytes()))]
+#[debug("{}", identus_apollo::hex::HexStr::from(self.0.as_bytes()))]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "openapi", schema(value_type = String, example = "a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd"))]
+pub struct OperationId(
+    #[serde(
+        serialize_with = "OperationId::serialize",
+        deserialize_with = "OperationId::deserialize"
+    )]
+    Sha256Digest,
+);
+
+impl OperationId {
+    /// Create an OperationId from raw bytes (must be 32 bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, identus_apollo::hash::Error> {
+        Sha256Digest::from_bytes(bytes).map(Self)
+    }
+
+    /// Convert OperationId to vector of bytes
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
+    /// Get reference to underlying bytes
+    pub fn as_bytes(&self) -> &[u8] {
+        self.0.as_bytes()
+    }
+
+    fn serialize<S>(bytes: &Sha256Digest, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let hex_str = HexStr::from(bytes.as_bytes());
+        serializer.serialize_str(&hex_str.to_string())
+    }
+
+    fn deserialize<'de, D>(deserializer: D) -> Result<Sha256Digest, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let hex_str = String::deserialize(deserializer)?;
+        let bytes = HexStr::from_str(&hex_str)
+            .map_err(|e| serde::de::Error::custom(format!("value is not a valid hex: {e}")))?;
+        let digest = Sha256Digest::from_bytes(&bytes.to_bytes())
+            .map_err(|e| serde::de::Error::custom(format!("value is not a valid digest: {e}")))?;
+        Ok(digest)
+    }
+}
+
+impl std::str::FromStr for OperationId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = HexStr::from_str(s).map_err(|e| format!("invalid hex string: {}", e))?;
+        Self::from_bytes(&bytes.to_bytes()).map_err(|e| format!("invalid operation id: {}", e))
     }
 }

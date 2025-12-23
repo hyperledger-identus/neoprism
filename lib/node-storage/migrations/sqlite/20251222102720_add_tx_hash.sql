@@ -10,8 +10,9 @@ DELETE FROM raw_operation;
 -- Reset cursor so indexer starts from beginning
 DELETE FROM dlt_cursor;
 
--- Add tx_hash column to raw_operation table
+-- Add tx_hash and operation_id columns to raw_operation table
 ALTER TABLE raw_operation ADD COLUMN tx_hash BLOB NOT NULL;
+ALTER TABLE raw_operation ADD COLUMN operation_id BLOB NOT NULL;
 
 -- Recreate views to include tx_hash
 DROP VIEW IF EXISTS did_stats;
@@ -32,6 +33,7 @@ SELECT
     ro.absn,
     ro.osn,
     ro.tx_hash,
+    ro.operation_id,
     ro.is_indexed,
     u.did
 FROM unioned AS u
@@ -50,5 +52,6 @@ SELECT
 FROM raw_operation_by_did
 GROUP BY 1;
 
--- Add index on tx_hash column for efficient transaction lookup
+-- Add indexes for efficient transaction and operation lookups
 CREATE INDEX idx_raw_operation_tx_hash ON raw_operation(tx_hash);
+CREATE INDEX idx_raw_operation_operation_id ON raw_operation(operation_id);

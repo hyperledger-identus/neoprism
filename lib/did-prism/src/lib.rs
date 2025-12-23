@@ -11,6 +11,7 @@ pub mod proto {
     use identus_apollo::hash::{Sha256Digest, sha256};
     use protobuf::Message;
 
+    use crate::did::operation::OperationId;
     use crate::proto::prism::{PrismOperation, SignedPrismOperation};
 
     include!(concat!(env!("OUT_DIR"), "/generated/mod.rs"));
@@ -40,6 +41,13 @@ pub mod proto {
     impl SignedPrismOperation {
         pub fn operation_hash(&self) -> Option<Sha256Digest> {
             self.operation.as_ref().map(|op| op.operation_hash())
+        }
+
+        /// Compute the operation ID by hashing the entire signed operation
+        /// (including signature) as protobuf bytes
+        pub fn operation_id(&self) -> OperationId {
+            let bytes = self.encode_to_vec();
+            sha256(bytes).into()
         }
     }
 }

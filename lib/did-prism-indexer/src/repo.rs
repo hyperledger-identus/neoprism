@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::CanonicalPrismDid;
+use identus_did_prism::did::operation::OperationId;
 use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
@@ -66,6 +67,11 @@ pub trait RawOperationRepo {
         &self,
         tx_id: &TxId,
     ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error>;
+
+    async fn get_raw_operation_by_operation_id(
+        &self,
+        operation_id: &OperationId,
+    ) -> Result<Option<(RawOperationRecord, CanonicalPrismDid)>, Self::Error>;
 
     async fn insert_raw_operations(
         &self,
@@ -132,6 +138,13 @@ where
         tx_id: &TxId,
     ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
         self.as_ref().get_raw_operations_by_tx_id(tx_id).await
+    }
+
+    async fn get_raw_operation_by_operation_id(
+        &self,
+        operation_id: &OperationId,
+    ) -> Result<Option<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        self.as_ref().get_raw_operation_by_operation_id(operation_id).await
     }
 
     async fn insert_raw_operations(
