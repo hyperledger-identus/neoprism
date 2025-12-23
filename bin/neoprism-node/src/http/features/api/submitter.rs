@@ -1,5 +1,7 @@
 use axum::Json;
 use axum::extract::State;
+use identus_did_prism::dlt::OperationId;
+use identus_did_prism::prelude::SignedPrismOperation;
 use utoipa::OpenApi;
 
 use crate::SubmitterState;
@@ -47,13 +49,12 @@ pub async fn submit_signed_operations(
     State(state): State<SubmitterState>,
     Json(req): Json<SignedOperationSubmissionRequest>,
 ) -> Result<Json<SignedOperationSubmissionResponse>, ApiError> {
-    let signed_operations: Vec<identus_did_prism::prelude::SignedPrismOperation> =
-        req.signed_operations.into_iter().map(|i| i.into()).collect();
+    let signed_operations: Vec<SignedPrismOperation> = req.signed_operations.into_iter().map(|i| i.into()).collect();
 
     // Compute operation IDs before submission
     let operation_ids: Vec<_> = signed_operations
         .iter()
-        .map(|op| identus_did_prism::did::operation::OperationId::from(op.operation_id()))
+        .map(|op| OperationId::from(op.operation_id()))
         .collect();
 
     let result = state.dlt_sink.publish_operations(signed_operations).await;
