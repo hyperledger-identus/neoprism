@@ -1,9 +1,10 @@
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo};
+use identus_apollo::hex::HexStr;
+use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{
-    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationId, RawOperationRepo,
+    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationRecord, RawOperationRepo,
 };
 use lazybe::db::DbOps;
 use lazybe::db::postgres::PostgresDbCtx;
@@ -122,9 +123,7 @@ LIMIT 1
 impl RawOperationRepo for PostgresDb {
     type Error = Error;
 
-    async fn get_raw_operations_unindexed(
-        &self,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
@@ -147,10 +146,7 @@ impl RawOperationRepo for PostgresDb {
         Ok(result)
     }
 
-    async fn get_raw_operations_by_did(
-        &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_did(&self, did: &CanonicalPrismDid) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let suffix_bytes = did.suffix().to_vec();
         let mut tx = self.pool.begin().await?;
         let result = self
@@ -173,7 +169,7 @@ impl RawOperationRepo for PostgresDb {
     async fn get_raw_operation_vdr_by_operation_hash(
         &self,
         operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    ) -> Result<Option<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let vdr_operation = self
             .db_ctx
@@ -198,6 +194,39 @@ impl RawOperationRepo for PostgresDb {
                 .transpose()?,
         };
 
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity::RawOperationByDid>(
+                &mut tx,
+                Filter::all([entity::RawOperationByDidFilter::tx_hash().eq(tx_id.to_vec())]),
+                Sort::new([
+                    entity::RawOperationByDidSort::block_number().asc(),
+                    entity::RawOperationByDidSort::absn().asc(),
+                    entity::RawOperationByDidSort::osn().asc(),
+                ]),
+                None,
+            )
+            .await?
+            .data
+            .into_iter()
+            .map(|ro| {
+                let did_suffix = HexStr::from(ro.did.as_bytes());
+                parse_raw_operation(ro.into()).and_then(|i| {
+                    CanonicalPrismDid::from_suffix(did_suffix)
+                        .map_err(|e| e.into())
+                        .map(|j| (i, j))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         tx.commit().await?;
         Ok(result)
     }
@@ -229,6 +258,7 @@ impl RawOperationRepo for PostgresDb {
                     .try_into()
                     .expect("absn does not fit in i32"),
                 osn: metadata.osn.try_into().expect("osn does not fit in i32"),
+                tx_hash: metadata.block_metadata.tx_id.to_vec(),
                 is_indexed: false,
             };
             self.db_ctx.create::<entity::RawOperation>(&mut tx, create_op).await?;

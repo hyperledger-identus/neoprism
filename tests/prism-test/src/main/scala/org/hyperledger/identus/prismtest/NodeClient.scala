@@ -46,14 +46,14 @@ object NodeClient:
   def neoprism(
       neoprismHost: String,
       neoprismPort: Int
-  )(cardanoWalletHost: String, cardanoWalletPort: Int)(skipCheckMillis: Option[Int]): RLayer[Client, NodeClient] =
-    ZLayer
-      .fromZIO {
-        for
-          neoprismClient <- ZIO.serviceWith[Client](_.url(url"http://$neoprismHost:$neoprismPort"))
-          cardanoWalletClient <- ZIO.serviceWith[Client](_.url(url"http://$cardanoWalletHost:$cardanoWalletPort"))
-        yield NeoprismNodeClient(neoprismClient, cardanoWalletClient, skipCheckMillis)
-      }
+  ): RLayer[Client, NodeClient] =
+    ZLayer.fromZIO {
+      ZIO.serviceWith[Client](client =>
+        NeoprismNodeClient(
+          client.url(url"http://$neoprismHost:$neoprismPort")
+        )
+      )
+    }
 
 private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, CryptoUtils, ProtoUtils:
 
@@ -96,9 +96,7 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
         )
       )
 
-private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Client, skipCheckMillis: Option[Int])
-    extends NodeClient,
-      CryptoUtils:
+private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, CryptoUtils:
 
   import NeoprismNodeClient.*
 
@@ -111,26 +109,10 @@ private class NeoprismNodeClient(neoprismClient: Client, cardanoWalletClient: Cl
       .orDie
 
   override def isOperationConfirmed(ref: OperationRef): UIO[Boolean] =
-    skipCheckMillis match
-      case Some(delay) => ZIO.succeed(true).delay(delay.millis)
-      case None        =>
-        for
-          wallets <- cardanoWalletClient.batched
-            .get("/v2/wallets")
-            .flatMap(_.body.to[List[Wallet]])
-            .orDie
-          wallet <- ZIO.succeed(wallets.headOption).someOrFailException.orDie
-          txSlotNo <- cardanoWalletClient.batched
-            .get(url"/v2/wallets/${wallet.id}/transactions/$ref".toString)
-            .flatMap(_.body.to[TransactionResponse])
-            .map(_.inserted_at.map(_.absolute_slot_number))
-            .orDie
-          indexerSlotNo <- neoprismClient.batched
-            .get(url"/api/indexer-stats".toString)
-            .flatMap(_.body.to[IndexerStatsResponse])
-            .map(_.last_prism_slot_number)
-            .orDie
-        yield indexerSlotNo.exists(indexerSlot => txSlotNo.exists(txSlot => indexerSlot >= txSlot))
+    neoprismClient.batched
+      .get(url"/api/transactions/$ref".toString)
+      .map(_.status == Status.Ok)
+      .orDie
 
   override def getDidDocument(did: String): UIO[Option[DIDData]] =
     for
@@ -157,31 +139,3 @@ private object NeoprismNodeClient:
     given dec: JsonDecoder[ScheduleOperationResponse] = JsonDecoder.derived
     given enc: JsonEncoder[ScheduleOperationResponse] = JsonEncoder.derived
     given JsonCodec[ScheduleOperationResponse] = JsonCodec.fromEncoderDecoder(enc, dec)
-
-  case class Wallet(id: String)
-
-  object Wallet:
-    given dec: JsonDecoder[Wallet] = JsonDecoder.derived
-    given enc: JsonEncoder[Wallet] = JsonEncoder.derived
-    given JsonCodec[Wallet] = JsonCodec.fromEncoderDecoder(enc, dec)
-
-  case class TransactionResponse(inserted_at: Option[LedgerTimestamp])
-
-  object TransactionResponse:
-    given dec: JsonDecoder[TransactionResponse] = JsonDecoder.derived
-    given enc: JsonEncoder[TransactionResponse] = JsonEncoder.derived
-    given JsonCodec[TransactionResponse] = JsonCodec.fromEncoderDecoder(enc, dec)
-
-  case class LedgerTimestamp(absolute_slot_number: Int)
-
-  object LedgerTimestamp:
-    given dec: JsonDecoder[LedgerTimestamp] = JsonDecoder.derived
-    given enc: JsonEncoder[LedgerTimestamp] = JsonEncoder.derived
-    given JsonCodec[LedgerTimestamp] = JsonCodec.fromEncoderDecoder(enc, dec)
-
-  case class IndexerStatsResponse(last_prism_block_number: Option[Int], last_prism_slot_number: Option[Int])
-
-  object IndexerStatsResponse:
-    given dec: JsonDecoder[IndexerStatsResponse] = JsonDecoder.derived
-    given enc: JsonEncoder[IndexerStatsResponse] = JsonEncoder.derived
-    given JsonCodec[IndexerStatsResponse] = JsonCodec.fromEncoderDecoder(enc, dec)

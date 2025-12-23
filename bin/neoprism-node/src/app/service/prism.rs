@@ -5,7 +5,8 @@ use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidResolver, ResolutionOptions, ResolutionResult};
 use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
-use identus_did_prism::dlt::{BlockNo, SlotNo};
+use identus_did_prism::dlt::{BlockNo, OperationMetadata, SlotNo, TxId};
+use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{IndexerStateRepo, RawOperationRepo};
@@ -73,7 +74,7 @@ impl PrismDidService {
             .await
             .map_err(|e| ResolutionError::InternalError { source: e.into() })?
             .into_iter()
-            .map(|(_, meta, signed_operation)| (meta, signed_operation))
+            .map(|record| (record.metadata, record.signed_operation))
             .collect::<Vec<_>>();
 
         if operations.is_empty() {
@@ -102,6 +103,19 @@ impl PrismDidService {
         let page = page.unwrap_or(0);
         let dids = self.db.get_all_dids(page, 100).await?;
         Ok(dids)
+    }
+
+    pub async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> anyhow::Result<Vec<(OperationMetadata, SignedPrismOperation, CanonicalPrismDid)>> {
+        Ok(self
+            .db
+            .get_raw_operations_by_tx_id(tx_id)
+            .await?
+            .into_iter()
+            .map(|(record, did)| (record.metadata, record.signed_operation, did))
+            .collect())
     }
 }
 

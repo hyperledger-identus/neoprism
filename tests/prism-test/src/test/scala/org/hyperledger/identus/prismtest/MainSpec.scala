@@ -25,9 +25,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         UpdateStorageOperationSuite.allSpecs +
         DeactivateStorageOperationSuite.allSpecs
 
-    val neoprismLayer =
-      ZLayer(ZIO.systemWith(_.env("SKIP_CONFIRMATION_CHECK_MILLIS")).map(env => env.flatMap(_.toIntOption)))
-        .flatMap(skipCheckMillis => NodeClient.neoprism("localhost", 18080)("localhost", 18081)(skipCheckMillis.get))
+    val neoprismLayer = NodeClient.neoprism("localhost", 18080)
 
     val neoprismSpec = suite("NeoPRISM suite")(allSpecs)
       .provide(

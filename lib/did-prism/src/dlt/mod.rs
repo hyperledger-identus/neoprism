@@ -23,6 +23,8 @@ pub struct BlockMetadata {
     pub block_number: BlockNo,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
+    /// Cardano transaction id
+    pub tx_id: TxId,
     /// PrismBlock sequence number
     ///
     /// This is used to order PrismBlock within the same Cardano block
@@ -121,6 +123,16 @@ impl BlockNo {
 pub struct TxId(#[serde(serialize_with = "TxId::serialize", deserialize_with = "TxId::deserialize")] Sha256Digest);
 
 impl TxId {
+    /// Create a TxId from raw bytes (must be 32 bytes)
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, identus_apollo::hash::Error> {
+        Sha256Digest::from_bytes(bytes).map(Self)
+    }
+
+    /// Convert TxId to vector of bytes
+    pub fn to_vec(&self) -> Vec<u8> {
+        self.0.to_vec()
+    }
+
     fn serialize<S>(bytes: &Sha256Digest, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -139,6 +151,15 @@ impl TxId {
         let digest = Sha256Digest::from_bytes(&bytes.to_bytes())
             .map_err(|e| serde::de::Error::custom(format!("Value is not a valid digest: {e}")))?;
         Ok(digest)
+    }
+}
+
+impl std::str::FromStr for TxId {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let bytes = HexStr::from_str(s).map_err(|e| format!("invalid hex string: {}", e))?;
+        Self::from_bytes(&bytes.to_bytes()).map_err(|e| format!("invalid tx id: {}", e))
     }
 }
 

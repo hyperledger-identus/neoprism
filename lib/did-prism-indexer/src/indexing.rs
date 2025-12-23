@@ -36,7 +36,10 @@ where
         }
 
         tracing::info!("Indexing {} operations", unindexed_operations.len());
-        for (raw_operation_id, meta, signed_operation) in unindexed_operations {
+        for record in unindexed_operations {
+            let raw_operation_id = record.id;
+            let meta = record.metadata;
+            let signed_operation = record.signed_operation;
             let intermediate_indexed_op = index_from_signed_operation(signed_operation);
             let indexed_op = match intermediate_indexed_op {
                 Ok(IntermediateIndexedOperation::Ssi { did }) => IndexedOperation::Ssi { raw_operation_id, did },
@@ -146,7 +149,8 @@ where
             .await?;
         match parent {
             None => return Ok(None), // no root found
-            Some((_, _, signed_operation)) => {
+            Some(record) => {
+                let signed_operation = record.signed_operation;
                 match index_from_signed_operation(signed_operation) {
                     Ok(IntermediateIndexedOperation::VdrRoot { did, operation_hash }) => {
                         return Ok(Some((did, operation_hash))); // found root

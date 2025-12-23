@@ -268,6 +268,8 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Optio
                     br;
                     strong { "Block seq no: " } (metadata.block_metadata.absn)
                     br;
+                    strong { "Transaction ID: " } (metadata.block_metadata.tx_id)
+                    br;
                     strong { "Operation seq no: " } (metadata.osn)
                     br;
                     strong { "Operation payload: " }

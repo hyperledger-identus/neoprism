@@ -1,11 +1,12 @@
 use std::str::FromStr;
 
 use identus_apollo::hash::Sha256Digest;
-use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo};
+use identus_apollo::hex::HexStr;
+use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
 use identus_did_prism_indexer::repo::{
-    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationId, RawOperationRepo,
+    DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationRecord, RawOperationRepo,
 };
 use lazybe::db::DbOps;
 use lazybe::db::sqlite::SqliteDbCtx;
@@ -134,9 +135,7 @@ LIMIT 1
 impl RawOperationRepo for SqliteDb {
     type Error = Error;
 
-    async fn get_raw_operations_unindexed(
-        &self,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let result = self
             .db_ctx
@@ -159,10 +158,7 @@ impl RawOperationRepo for SqliteDb {
         Ok(result)
     }
 
-    async fn get_raw_operations_by_did(
-        &self,
-        did: &CanonicalPrismDid,
-    ) -> Result<Vec<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    async fn get_raw_operations_by_did(&self, did: &CanonicalPrismDid) -> Result<Vec<RawOperationRecord>, Self::Error> {
         let suffix_bytes = did.suffix().to_vec();
         let mut tx = self.pool.begin().await?;
         let result = self
@@ -185,7 +181,7 @@ impl RawOperationRepo for SqliteDb {
     async fn get_raw_operation_vdr_by_operation_hash(
         &self,
         operation_hash: &Sha256Digest,
-    ) -> Result<Option<(RawOperationId, OperationMetadata, SignedPrismOperation)>, Self::Error> {
+    ) -> Result<Option<RawOperationRecord>, Self::Error> {
         let mut tx = self.pool.begin().await?;
         let vdr_operation = self
             .db_ctx
@@ -217,6 +213,39 @@ impl RawOperationRepo for SqliteDb {
         Ok(result)
     }
 
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+        let result = self
+            .db_ctx
+            .list::<entity::RawOperationByDid>(
+                &mut tx,
+                Filter::all([entity::RawOperationByDidFilter::tx_hash().eq(tx_id.to_vec())]),
+                Sort::new([
+                    entity::RawOperationByDidSort::block_number().asc(),
+                    entity::RawOperationByDidSort::absn().asc(),
+                    entity::RawOperationByDidSort::osn().asc(),
+                ]),
+                None,
+            )
+            .await?
+            .data
+            .into_iter()
+            .map(|ro| {
+                let did_suffix = HexStr::from(ro.did.as_bytes());
+                parse_raw_operation(ro.into()).and_then(|i| {
+                    CanonicalPrismDid::from_suffix(did_suffix)
+                        .map_err(|e| e.into())
+                        .map(|j| (i, j))
+                })
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
@@ -244,8 +273,8 @@ impl RawOperationRepo for SqliteDb {
 
             sqlx::query(
                 r#"
-INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, is_indexed)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, 0)
+INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, tx_hash, is_indexed)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)
 ON CONFLICT(block_number, absn, osn) DO NOTHING
                 "#,
             )
@@ -256,6 +285,7 @@ ON CONFLICT(block_number, absn, osn) DO NOTHING
             .bind(metadata.block_metadata.cbt)
             .bind(absn)
             .bind(osn)
+            .bind(metadata.block_metadata.tx_id.to_vec())
             .execute(&mut *tx)
             .await?;
         }
@@ -370,7 +400,8 @@ impl DltCursorRepo for SqliteDb {
 #[cfg(test)]
 mod tests {
     use chrono::{TimeZone, Utc};
-    use identus_did_prism::dlt::{BlockMetadata, OperationMetadata};
+    use identus_apollo::hash::sha256;
+    use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
     use tempfile::TempDir;
 
     use super::*;
@@ -382,6 +413,7 @@ mod tests {
                 block_number: block.into(),
                 cbt: Utc.timestamp_opt(0, 0).single().expect("failed to build timestamp"),
                 absn,
+                tx_id: TxId::from(sha256(block.to_le_bytes())),
             },
             osn,
         }

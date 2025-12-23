@@ -25,6 +25,7 @@ pub struct RawOperation {
     pub cbt: DateTime<Utc>,
     pub absn: i32,
     pub osn: i32,
+    pub tx_hash: Vec<u8>,
     pub is_indexed: bool,
 }
 
@@ -82,6 +83,7 @@ pub struct RawOperationByDid {
     pub cbt: DateTime<Utc>,
     pub absn: i32,
     pub osn: i32,
+    pub tx_hash: Vec<u8>,
     pub is_indexed: bool,
     pub did: DidSuffix,
 }
@@ -96,6 +98,7 @@ impl From<RawOperationByDid> for RawOperation {
             cbt: value.cbt,
             absn: value.absn,
             osn: value.osn,
+            tx_hash: value.tx_hash,
             is_indexed: value.is_indexed,
         }
     }

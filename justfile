@@ -8,6 +8,7 @@ db_port := "5432"
 db_user := "postgres"
 db_pass := "postgres"
 db_name := "postgres"
+postgres_db_url := "postgres://postgres:postgres@localhost:5432/postgres"
 
 # Embedded SQLite defaults
 
@@ -58,7 +59,7 @@ clean:
 
 # Format all source files (Nix, TOML, Rust, Python, SQL)
 [group('neoprism')]
-format:
+format: tools::format
     echo "Formatting Nix files..."
     find . -name '*.nix' -type f -exec sh -c 'echo "  → {}" && nixfmt {}' \;
 
@@ -74,22 +75,18 @@ format:
     echo "Formatting SQL files..."
     (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
-# Run checks (tests, formatting, lints)
+# Run fast checks (tests, formatting, lints)
 [group('checks')]
-check:
-    #!/usr/bin/env bash
-    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
-    nix build ".#checks.$SYSTEM.default"
+check: clean format build test tools::check
+    echo "✓ All checks completed successfully."
 
 # Run full checks before submitting a PR, including end-to-end tests
 [group('checks')]
-full-check: clean format build test
+full-check: check e2e::run
     #!/usr/bin/env bash
-    set -euo pipefail
-    echo "Running comprehensive pre-PR checks..."
-    just e2e::docker-publish-local
-    just e2e::run
-    echo "✓ All checks completed successfully."
+    SYSTEM=$(nix eval --impure --raw --expr 'builtins.currentSystem')
+    nix build ".#checks.$SYSTEM.default"
+    echo "✓ All full checks completed successfully."
 
 # Start local PostgreSQL database in Docker
 [group('database')]

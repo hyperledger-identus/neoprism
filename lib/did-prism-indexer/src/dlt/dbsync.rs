@@ -17,7 +17,7 @@ mod models {
 
     use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
+    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
     use identus_did_prism::proto::MessageExt;
     use identus_did_prism::proto::prism::PrismObject;
     use serde::{Deserialize, Serialize};
@@ -32,6 +32,7 @@ mod models {
         pub block_no: i32,
         pub block_hash: Vec<u8>,
         pub tx_idx: i32,
+        pub tx_hash: Vec<u8>,
         pub metadata: serde_json::Value,
     }
 
@@ -60,11 +61,17 @@ mod models {
 
     pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
         let block_hash = HexStr::from(&metadata.block_hash).to_string();
+        let tx_id = TxId::from_bytes(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
+            source: e.to_string().into(),
+            block_hash: Some(block_hash.clone()),
+            tx_idx: Some(metadata.tx_idx as usize),
+        })?;
         let block_metadata = BlockMetadata {
             slot_number: (metadata.slot_no as u64).into(),
             block_number: (metadata.block_no as u64).into(),
             cbt: metadata.time,
             absn: metadata.tx_idx as u32,
+            tx_id,
         };
         let tx_idx = Some(metadata.tx_idx as usize);
 
@@ -343,6 +350,7 @@ SELECT
     b.block_no,
     b.hash AS block_hash,
     tx.block_index AS tx_idx,
+    tx.hash AS tx_hash,
     tx_meta.json AS metadata
 FROM tx_metadata AS tx_meta
 LEFT JOIN tx ON tx_meta.tx_id = tx.id
