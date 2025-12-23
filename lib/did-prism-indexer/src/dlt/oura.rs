@@ -21,7 +21,6 @@ mod models {
     use std::str::FromStr;
 
     use chrono::{DateTime, Utc};
-    use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
     use identus_did_prism::prelude::*;
     use identus_did_prism::proto::prism::PrismObject;
@@ -60,17 +59,11 @@ mod models {
                 tx_idx,
                 name: "tx_hash",
             })?;
-        let tx_hash_bytes = HexStr::from_str(tx_hash_hex).map_err(|e| MetadataReadError::PrismBlockHexDecode {
-            source: e,
+        let tx_id = TxId::from_str(tx_hash_hex).map_err(|e| MetadataReadError::InvalidMetadataType {
+            source: e.into(),
             block_hash: block_hash.clone(),
             tx_idx,
         })?;
-        let tx_id =
-            TxId::from_bytes(&tx_hash_bytes.to_bytes()).map_err(|e| MetadataReadError::InvalidMetadataType {
-                source: e.to_string().into(),
-                block_hash: block_hash.clone(),
-                tx_idx,
-            })?;
         let block_metadata = BlockMetadata {
             cbt: timestamp,
             absn: context.tx_idx.ok_or(MetadataReadError::MissingBlockProperty {
