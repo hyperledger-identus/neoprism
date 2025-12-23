@@ -23,12 +23,12 @@ pub struct BlockMetadata {
     pub block_number: BlockNo,
     /// Cardano block timestamp
     pub cbt: DateTime<Utc>,
+    /// Cardano transaction id
+    pub tx_id: TxId,
     /// PrismBlock sequence number
     ///
     /// This is used to order PrismBlock within the same Cardano block
     pub absn: u32,
-    /// Cardano transaction id
-    pub tx_id: TxId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

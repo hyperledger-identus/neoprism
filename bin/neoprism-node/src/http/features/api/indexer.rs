@@ -3,6 +3,7 @@ use axum::body::Bytes;
 use axum::extract::{Path, State};
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
+use identus_did_prism::did::PrismDidOps;
 use identus_did_prism::dlt::TxId;
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
@@ -20,6 +21,7 @@ pub struct IndexerOpenApiDoc;
 
 mod models {
     use chrono::{DateTime, Utc};
+    use identus_did_core::Did;
     use identus_did_prism::did::operation::SignedPrismOperationHexStr;
     use identus_did_prism::dlt::{BlockNo, SlotNo, TxId};
     use serde::{Deserialize, Serialize};
@@ -46,7 +48,7 @@ mod models {
     pub struct OperationSummary {
         pub osn: u32,
         pub signed_operation_data: SignedPrismOperationHexStr,
-        pub did: String,
+        pub did: Did,
     }
 }
 
@@ -145,7 +147,7 @@ pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<Ind
         (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred", body = ApiErrorResponseBody),
     ),
     params(
-        ("tx_id" = String, Path, description = "Cardano transaction hash (64-character hex string)")
+        ("tx_id" = TxId, Path, description = "Cardano transaction hash (64-character hex string)")
     )
 )]
 pub async fn transaction_details(
@@ -179,7 +181,7 @@ pub async fn transaction_details(
             .map(|(metadata, signed_op, did)| OperationSummary {
                 osn: metadata.osn,
                 signed_operation_data: signed_op.into(),
-                did: did.to_string(),
+                did: did.to_did(),
             })
             .collect(),
     };
