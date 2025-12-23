@@ -250,6 +250,7 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Optio
         .iter()
         .map(|(metadata, signed_op, error)| {
             let block_time = metadata.block_metadata.cbt.to_rfc3339();
+            let operation_id = signed_op.operation_id();
             let operation_payload = format!("{signed_op:?}");
             let error_lines = error
                 .as_ref()
@@ -269,6 +270,8 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Optio
                     strong { "Block seq no: " } (metadata.block_metadata.absn)
                     br;
                     strong { "Transaction ID: " } (metadata.block_metadata.tx_id)
+                    br;
+                    strong { "Operation ID: " } (operation_id)
                     br;
                     strong { "Operation seq no: " } (metadata.osn)
                     br;

@@ -4,6 +4,7 @@ use axum::extract::{Path, State};
 use identus_apollo::hex::HexStr;
 use identus_did_core::Did;
 use identus_did_prism::did::PrismDidOps;
+use identus_did_prism::did::operation::OperationId;
 use identus_did_prism::dlt::TxId;
 use identus_did_prism::proto::MessageExt;
 use identus_did_prism::proto::node_api::DIDData;
@@ -11,18 +12,20 @@ use utoipa::OpenApi;
 
 use crate::IndexerState;
 use crate::http::features::api::error::{ApiError, ApiErrorResponseBody};
-use crate::http::features::api::indexer::models::{IndexerStats, OperationSummary, TransactionDetails};
+use crate::http::features::api::indexer::models::{
+    IndexerStats, OperationDetails, OperationSummary, TransactionDetails,
+};
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDidData, ApiIndexerStats, ApiTransaction, ApiVdrBlob};
+use crate::http::urls::{ApiDidData, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob};
 
 #[derive(OpenApi)]
-#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, transaction_details))]
+#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, transaction_details, operation_details))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
     use chrono::{DateTime, Utc};
     use identus_did_core::Did;
-    use identus_did_prism::did::operation::SignedPrismOperationHexStr;
+    use identus_did_prism::did::operation::{OperationId, SignedPrismOperationHexStr};
     use identus_did_prism::dlt::{BlockNo, SlotNo, TxId};
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
@@ -48,6 +51,20 @@ mod models {
     pub struct OperationSummary {
         pub osn: u32,
         pub signed_operation_data: SignedPrismOperationHexStr,
+        pub operation_id: OperationId,
+        pub did: Did,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+    pub struct OperationDetails {
+        pub operation_id: OperationId,
+        pub tx_id: TxId,
+        pub signed_operation_data: SignedPrismOperationHexStr,
+        pub slot_number: SlotNo,
+        pub block_number: BlockNo,
+        pub block_timestamp: DateTime<Utc>,
+        pub absn: u32,
+        pub osn: u32,
         pub did: Did,
     }
 }
@@ -180,6 +197,7 @@ pub async fn transaction_details(
             .into_iter()
             .map(|(metadata, signed_op, did)| OperationSummary {
                 osn: metadata.osn,
+                operation_id: signed_op.operation_id(),
                 signed_operation_data: signed_op.into(),
                 did: did.to_did(),
             })
@@ -187,4 +205,46 @@ pub async fn transaction_details(
     };
 
     Ok(Json(tx_details))
+}
+
+#[utoipa::path(
+    get,
+    summary = "Returns operation details for a specific operation ID",
+    path = ApiOperation::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "Successfully retrieved operation details", body = OperationDetails),
+        (status = BAD_REQUEST, description = "The provided operation ID is invalid", body = ApiErrorResponseBody),
+        (status = NOT_FOUND, description = "The operation does not exist", body = ApiErrorResponseBody),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred", body = ApiErrorResponseBody),
+    ),
+    params(
+        ("operation_id" = OperationId, Path, description = "Operation hash (64-character hex string)")
+    )
+)]
+pub async fn operation_details(
+    Path(operation_id): Path<OperationId>,
+    State(state): State<IndexerState>,
+) -> Result<Json<OperationDetails>, ApiError> {
+    let service = &state.prism_did_service;
+    let result = service
+        .get_raw_operation_by_operation_id(&operation_id)
+        .await
+        .map_err(|e| ApiError::Internal { source: e })?;
+
+    let (metadata, signed_op, did) = result.ok_or(ApiError::NotFound)?;
+
+    let details = OperationDetails {
+        operation_id,
+        tx_id: metadata.block_metadata.tx_id,
+        signed_operation_data: signed_op.into(),
+        slot_number: metadata.block_metadata.slot_number,
+        block_number: metadata.block_metadata.block_number,
+        block_timestamp: metadata.block_metadata.cbt,
+        absn: metadata.block_metadata.absn,
+        osn: metadata.osn,
+        did: did.to_did(),
+    };
+
+    Ok(Json(details))
 }

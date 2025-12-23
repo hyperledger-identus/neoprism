@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
+use identus_did_prism::did::operation::OperationId;
 use identus_did_prism::dlt::{BlockNo, DltCursor, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::*;
 use identus_did_prism::utils::paging::Paginated;
@@ -246,6 +247,36 @@ impl RawOperationRepo for SqliteDb {
         Ok(result)
     }
 
+    async fn get_raw_operation_by_operation_id(
+        &self,
+        operation_id: &OperationId,
+    ) -> Result<Option<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        let mut tx = self.pool.begin().await?;
+
+        let result = self
+            .db_ctx
+            .list::<entity::RawOperationByDid>(
+                &mut tx,
+                Filter::all([entity::RawOperationByDidFilter::operation_id().eq(operation_id.to_vec())]),
+                Sort::empty(),
+                Some(PaginationInput { page: 0, limit: 1 }),
+            )
+            .await?
+            .data
+            .into_iter()
+            .next()
+            .map(|ro| -> Result<(RawOperationRecord, CanonicalPrismDid), Error> {
+                let did_suffix = HexStr::from(ro.did.as_bytes());
+                let record = parse_raw_operation(ro.into())?;
+                let did = CanonicalPrismDid::from_suffix(did_suffix)?;
+                Ok((record, did))
+            })
+            .transpose()?;
+
+        tx.commit().await?;
+        Ok(result)
+    }
+
     async fn insert_raw_operations(
         &self,
         operations: Vec<(OperationMetadata, SignedPrismOperation)>,
@@ -271,10 +302,11 @@ impl RawOperationRepo for SqliteDb {
                 .expect("absn does not fit in i32");
             let osn: i32 = metadata.osn.try_into().expect("osn does not fit in i32");
 
+            let operation_id = signed_operation.operation_id();
             sqlx::query(
                 r#"
-INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, tx_hash, is_indexed)
-VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, 0)
+INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, tx_hash, operation_id, is_indexed)
+VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, 0)
 ON CONFLICT(block_number, absn, osn) DO NOTHING
                 "#,
             )
@@ -286,6 +318,7 @@ ON CONFLICT(block_number, absn, osn) DO NOTHING
             .bind(absn)
             .bind(osn)
             .bind(metadata.block_metadata.tx_id.to_vec())
+            .bind(operation_id.to_vec())
             .execute(&mut *tx)
             .await?;
         }

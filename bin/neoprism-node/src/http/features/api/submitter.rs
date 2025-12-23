@@ -1,5 +1,6 @@
 use axum::Json;
 use axum::extract::State;
+use identus_did_prism::prelude::SignedPrismOperation;
 use utoipa::OpenApi;
 
 use crate::SubmitterState;
@@ -15,7 +16,7 @@ use crate::http::urls;
 pub struct SubmitterOpenApiDoc;
 
 mod models {
-    use identus_did_prism::did::operation::SignedPrismOperationHexStr;
+    use identus_did_prism::did::operation::{OperationId, SignedPrismOperationHexStr};
     use identus_did_prism::dlt::TxId;
     use serde::{Deserialize, Serialize};
     use utoipa::ToSchema;
@@ -28,6 +29,7 @@ mod models {
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
     pub struct SignedOperationSubmissionResponse {
         pub tx_id: TxId,
+        pub operation_ids: Vec<OperationId>,
     }
 }
 
@@ -46,10 +48,14 @@ pub async fn submit_signed_operations(
     State(state): State<SubmitterState>,
     Json(req): Json<SignedOperationSubmissionRequest>,
 ) -> Result<Json<SignedOperationSubmissionResponse>, ApiError> {
-    let ops = req.signed_operations.into_iter().map(|i| i.into()).collect();
-    let result = state.dlt_sink.publish_operations(ops).await;
+    let signed_operations: Vec<SignedPrismOperation> = req.signed_operations.into_iter().map(|i| i.into()).collect();
+
+    // Compute operation IDs before submission
+    let operation_ids: Vec<_> = signed_operations.iter().map(|op| op.operation_id()).collect();
+
+    let result = state.dlt_sink.publish_operations(signed_operations).await;
     match result {
-        Ok(tx_id) => Ok(Json(SignedOperationSubmissionResponse { tx_id })),
+        Ok(tx_id) => Ok(Json(SignedOperationSubmissionResponse { tx_id, operation_ids })),
         Err(e) => Err(ApiError::Internal {
             source: anyhow::anyhow!(e),
         }),
