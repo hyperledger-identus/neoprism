@@ -5,7 +5,7 @@ val V = new {
   val zioHttp = "3.7.4"
   val monocle = "3.3.0"
   val apollo = "1.8.0"
-  val grpcNetty = "1.77.0"
+  val grpcNetty = "1.78.0"
 }
 
 val D = new {
