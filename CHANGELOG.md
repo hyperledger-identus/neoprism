@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.9.0) - 2025-12-24
+
+### 🚀 Features
+
+- Sqlite backend #108 ([#158](https://github.com/hyperledger-identus/neoprism/pull/158))
+- Add transaction ID indexing and query endpoint ([#184](https://github.com/hyperledger-identus/neoprism/pull/184))
+- Add operation ID indexing and query endpoint ([#185](https://github.com/hyperledger-identus/neoprism/pull/185))
+
+### 🚜 Refactor
+
+- Streamline development tooling and configuration ([#181](https://github.com/hyperledger-identus/neoprism/pull/181))
+
+### 📚 Documentation
+
+- Correct the broken link to the nix shell ([#175](https://github.com/hyperledger-identus/neoprism/pull/175))
+- Update e2e commands and stack naming conventions ([#189](https://github.com/hyperledger-identus/neoprism/pull/189))
+
+### ⚙️ Miscellaneous Tasks
+
+- Add external URL config to neoprism service in test setup ([#174](https://github.com/hyperledger-identus/neoprism/pull/174))
+- Update zio-http from 3.7.0 to 3.7.1 ([#176](https://github.com/hyperledger-identus/neoprism/pull/176))
+- Update zio-http from 3.7.1 to 3.7.3 ([#178](https://github.com/hyperledger-identus/neoprism/pull/178))
+- Update zio-http from 3.7.3 to 3.7.4 ([#179](https://github.com/hyperledger-identus/neoprism/pull/179))
+
 ## [0.8.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.8.0) - 2025-12-02
 
 ### 🚀 Features
@@ -38,6 +62,7 @@ All notable changes to this project will be documented in this file.
 - Update zio-http from 3.5.1 to 3.7.0 ([#171](https://github.com/hyperledger-identus/neoprism/pull/171))
 - Update zio, zio-test, zio-test-magnolia, ... from 2.1.22 to 2.1.23 ([#170](https://github.com/hyperledger-identus/neoprism/pull/170))
 - Update scalafmt-core from 3.10.1 to 3.10.2 ([#169](https://github.com/hyperledger-identus/neoprism/pull/169))
+- Add Scorecard supply-chain security workflow ([#172](https://github.com/hyperledger-identus/neoprism/pull/172))
 
 ## [0.7.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.7.0) - 2025-10-30
 
