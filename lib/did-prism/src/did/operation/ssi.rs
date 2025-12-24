@@ -522,6 +522,39 @@ pub struct Service {
 }
 
 impl Service {
+    pub fn update_type(&mut self, ty: ServiceType) {
+        let type_str = match &ty {
+            ServiceType::One(t) => t.0.to_string(),
+            ServiceType::Many(ts) => {
+                let ls: Vec<String> = ts.iter().map(|i| i.0.to_string()).collect();
+                serde_json::json!(ls).to_string()
+            }
+        };
+        self.orig.type_ = type_str;
+        self.r#type = ty;
+    }
+
+    pub fn update_service_endpoint(&mut self, endpoint: ServiceEndpoint) {
+        let endpoint_str = match &endpoint {
+            ServiceEndpoint::One(ServiceEndpointValue::Uri(uri)) => uri.to_string(),
+            ServiceEndpoint::One(ServiceEndpointValue::Json(obj)) => {
+                serde_json::to_string(obj).expect("Conversion from domain model to json cannot fail")
+            }
+            ServiceEndpoint::Many(values) => serde_json::to_string(
+                &values
+                    .iter()
+                    .map(|i| match i {
+                        ServiceEndpointValue::Uri(uri) => serde_json::json!(uri),
+                        ServiceEndpointValue::Json(obj) => serde_json::json!(obj),
+                    })
+                    .collect::<Vec<serde_json::Value>>(),
+            )
+            .expect("Conversion from domain model to json cannot fail"),
+        };
+        self.orig.service_endpoint = endpoint_str;
+        self.service_endpoint = endpoint;
+    }
+
     pub fn parse(service: &proto::prism_ssi::Service, param: &OperationParameters) -> Result<Self, ServiceError> {
         let id = ServiceId::parse(&service.id, param.max_id_size).map_err(|e| ServiceError::InvalidServiceId {
             source: e,
