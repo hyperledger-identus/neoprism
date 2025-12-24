@@ -220,25 +220,24 @@ The e2e harness now ships four compose variants that differ by backend (PostgreS
 
 ```bash
 # Start only the SQLite developer stack
-just e2e::up dev-sqlite
+just e2e::up sqlite-dev
 # Run the Scala tests that target the running stack
 (cd tests/prism-test && sbt test)
 # Clean up once finished
-just e2e::down dev-sqlite
+just e2e::down sqlite-dev
 ```
 
-`just e2e::run` iterates over every stack in sequence—`dev`, `dev-sqlite`, `ci`, and `ci-sqlite`—so that both backends are covered automatically.
+`just e2e::run` iterates over every stack in sequence—`sqlite-dev`, `ci`, and `ci-sqlite`—so that both backends are covered automatically.
 
 ### Configuration matrix
 
 | Mode | Backend | Compose file | `just` target | Recommended usage | Pros | Trade-offs |
 |------|---------|--------------|---------------|-------------------|------|------------|
-| dev | PostgreSQL | `docker/prism-test/compose-dev.yml` | `just e2e::up dev` | Local development when you want parity with production | Exercises the original schema and WAL-heavy workflow | Requires Dockerized Postgres and slightly longer start-up |
-| dev | SQLite | `docker/prism-test/compose-dev-sqlite.yml` | `just e2e::up dev-sqlite` | Fast local iterations or laptop CI checks | Zero extra services, file-backed DB keeps resource usage low | Single-writer semantics; best for smoke tests |
+| sqlite-dev | SQLite | `docker/prism-test/compose-sqlite-dev.yml` | `just e2e::up sqlite-dev` | Fast local iterations or laptop CI checks | Zero extra services, file-backed DB keeps resource usage low | Single-writer semantics; best for smoke tests |
 | ci | PostgreSQL | `docker/prism-test/compose-ci.yml` | `just e2e::up ci` | Full CI pipeline and release rehearsal | Mirrors production topology with stricter health checks | Pulls more images and runs longer |
 | ci | SQLite | `docker/prism-test/compose-ci-sqlite.yml` | `just e2e::up ci-sqlite` | CI shard that validates the embedded backend | Ensures SQLite stays first-class even under CI load | Cardano/I/O limits are similar to `ci`, so still slower than dev |
 
-Pick the stack that matches your goal; for example, run `dev-sqlite` while iterating on backend logic, and keep `ci` or `ci-sqlite` in nightly pipelines for extra safety.
+Pick the stack that matches your goal; for example, run `sqlite-dev` while iterating on backend logic, and keep `ci` or `ci-sqlite` in nightly pipelines for extra safety.
 
 ### Full QA helper script
 
