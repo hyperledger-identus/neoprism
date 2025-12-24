@@ -66,8 +66,8 @@ Lint suggestions
 ## Scala Guidelines
 
 ### Build, Lint, and Test Commands
-- Format Scala sources: `just prism-test-build`
-- Build and run conformance tests: `just prism-test-run`
+- Build Scala conformance tests: `just e2e::build`
+- Run conformance tests: `just e2e::run`
 - Build docs site: `nix build .#docs-site`
 
 ### Code Style Guidelines
