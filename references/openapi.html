@@ -182,7 +182,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.8.0
+  version: 0.9.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -348,6 +348,44 @@ paths:
           description: Indexer service is not available.
           content:
             application/json: {}
+  /api/operations/{operation_id}:
+    get:
+      tags:
+        - Indexer API
+      summary: Returns operation details for a specific operation ID
+      operationId: operation_details
+      parameters:
+        - name: operation_id
+          in: path
+          description: Operation hash (64-character hex string)
+          required: true
+          schema:
+            $ref: '#/components/schemas/OperationId'
+      responses:
+        "200":
+          description: Successfully retrieved operation details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OperationDetails'
+        "400":
+          description: The provided operation ID is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "404":
+          description: The operation does not exist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
   /api/signed-operation-submissions:
     post:
       tags:
@@ -374,6 +412,44 @@ paths:
                 $ref: '#/components/schemas/ApiErrorResponseBody'
         "500":
           description: An unexpected error occurred during submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+  /api/transactions/{tx_id}:
+    get:
+      tags:
+        - Indexer API
+      summary: Returns transaction details and all operations within the transaction
+      operationId: transaction_details
+      parameters:
+        - name: tx_id
+          in: path
+          description: Cardano transaction hash (64-character hex string)
+          required: true
+          schema:
+            $ref: '#/components/schemas/TxId'
+      responses:
+        "200":
+          description: Successfully retrieved transaction details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionDetails'
+        "400":
+          description: The provided transaction ID is invalid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "404":
+          description: The transaction does not exist or contains no PRISM operations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred
           content:
             application/json:
               schema:
@@ -612,6 +688,63 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/Base64UrlStrNoPad'
+    OperationDetails:
+      type: object
+      required:
+        - operation_id
+        - tx_id
+        - signed_operation_data
+        - slot_number
+        - block_number
+        - block_timestamp
+        - absn
+        - osn
+        - did
+      properties:
+        absn:
+          type: integer
+          format: int32
+          minimum: 0
+        block_number:
+          $ref: '#/components/schemas/BlockNo'
+        block_timestamp:
+          type: string
+          format: date-time
+        did:
+          $ref: '#/components/schemas/Did'
+        operation_id:
+          $ref: '#/components/schemas/OperationId'
+        osn:
+          type: integer
+          format: int32
+          minimum: 0
+        signed_operation_data:
+          $ref: '#/components/schemas/SignedPrismOperationHexStr'
+        slot_number:
+          $ref: '#/components/schemas/SlotNo'
+        tx_id:
+          $ref: '#/components/schemas/TxId'
+    OperationId:
+      type: string
+      example: a1b2c3d4e5f6789012345678901234567890123456789012345678901234abcd
+    OperationSummary:
+      type: object
+      required:
+        - osn
+        - signed_operation_data
+        - operation_id
+        - did
+      properties:
+        did:
+          $ref: '#/components/schemas/Did'
+        operation_id:
+          $ref: '#/components/schemas/OperationId'
+        osn:
+          type: integer
+          format: int32
+          minimum: 0
+        signed_operation_data:
+          $ref: '#/components/schemas/SignedPrismOperationHexStr'
     ResolutionResult:
       type: object
       required:
@@ -664,7 +797,12 @@ components:
       type: object
       required:
         - tx_id
+        - operation_ids
       properties:
+        operation_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationId'
         tx_id:
           $ref: '#/components/schemas/TxId'
     SignedPrismOperationHexStr:
@@ -683,6 +821,38 @@ components:
           additionalProperties: {}
           propertyNames:
             type: string
+    TransactionDetails:
+      type: object
+      required:
+        - tx_id
+        - operation_count
+        - slot_number
+        - block_number
+        - block_timestamp
+        - absn
+        - operations
+      properties:
+        absn:
+          type: integer
+          format: int32
+          minimum: 0
+        block_number:
+          $ref: '#/components/schemas/BlockNo'
+        block_timestamp:
+          type: string
+          format: date-time
+        operation_count:
+          type: integer
+          format: int32
+          minimum: 0
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationSummary'
+        slot_number:
+          $ref: '#/components/schemas/SlotNo'
+        tx_id:
+          $ref: '#/components/schemas/TxId'
     TxId:
       type: string
       example: 5ab0cf7e4c7cd4b63ba84a4fe299409be12ba85607cb6d1a149e80bc2eac070d
