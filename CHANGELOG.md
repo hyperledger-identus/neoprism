@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.9.1) - 2025-12-24
+
+### 🐛 Bug Fixes
+
+- Ensure service updates sync original and domain models ([#192](https://github.com/hyperledger-identus/neoprism/pull/192))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update scalafmt-core from 3.10.2 to 3.10.3 ([#187](https://github.com/hyperledger-identus/neoprism/pull/187))
+- Update grpc-netty-shaded from 1.77.0 to 1.78.0 ([#186](https://github.com/hyperledger-identus/neoprism/pull/186))
+
 ## [0.9.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.9.0) - 2025-12-24
 
 ### 🚀 Features
