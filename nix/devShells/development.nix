@@ -14,6 +14,7 @@ pkgs.mkShell {
     git
     git-cliff
     hurl
+    jq
     just
     less
     ncurses
