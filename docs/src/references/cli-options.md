@@ -24,6 +24,12 @@
 <!-- cmdrun neoprism-node standalone -h -->
 ```
 
+## Dev options
+
+```
+<!-- cmdrun neoprism-node dev -h -->
+```
+
 ## Generate OpenAPI options
 
 ```
