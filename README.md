@@ -80,12 +80,31 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 # Quickstart
 
+## Try It Now
+
+Quickly experiment with NeoPRISM using an in-memory database (no data persistence):
+
+```bash
+docker run -p 8080:8080 hyperledgeridentus/identus-neoprism:latest dev
+```
+
+This command starts a NeoPRISM node in development mode with:
+- In-memory SQLite database (data is lost when container stops)
+- Mock Cardano data source (no real blockchain connection)
+- Web UI and API server on port 8080
+
+Access the Web UI at [http://localhost:8080](http://localhost:8080) to explore the interface.
+
+**Note:** This mode is for quick experimentation only. For persistent data and real blockchain integration, see the Docker Compose setup below.
+
 ## Public Demo Instance
+
+Try NeoPRISM without any setup using these hosted instances connected to live Cardano networks:
 
 - Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
 - Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
 
-## Self-hosting
+## Docker Compose
 
 This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura.
 It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database.
