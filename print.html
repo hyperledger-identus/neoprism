@@ -194,7 +194,7 @@
 <li><a href="https://neoprism-preprod.patlo.dev">Preprod Instance</a></li>
 </ul>
 <blockquote>
-<p><strong>Note:</strong> The public NeoPRISM instances below are personal deployments by the project author, intended for quick evaluation and testing. Please do not use them for production purposes.</p>
+<p><strong>Note:</strong> The public NeoPRISM instances above are personal deployments by the project author, intended for quick evaluation and testing. Please do not use them for production purposes.</p>
 </blockquote>
 <h2 id="external-resources"><a class="header" href="#external-resources">External Resources</a></h2>
 <ul>
@@ -919,6 +919,21 @@ Options:
           Payment address for making transactions [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
   -h, --help
           Print help
+</code></pre>
+<h2 id="dev-options"><a class="header" href="#dev-options">Dev options</a></h2>
+<pre><code>Start the node in standalone mode with an in-memory blockchain for development
+
+Usage: neoprism-node dev [OPTIONS]
+
+Options:
+      --address &lt;ADDRESS&gt;            Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
+  -p, --port &lt;PORT&gt;                  Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
+      --assets-path &lt;ASSETS_PATH&gt;    The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+      --cors-enabled                 Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;  External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
+      --db-url &lt;DB_URL&gt;              Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
+      --skip-migration               Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
+  -h, --help                         Print help
 </code></pre>
 <h2 id="generate-openapi-options"><a class="header" href="#generate-openapi-options">Generate OpenAPI options</a></h2>
 <pre><code>Generate OpenAPI specification for the API
