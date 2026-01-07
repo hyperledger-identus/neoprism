@@ -9,10 +9,6 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    sbt = {
-      url = "github:zaninime/sbt-derivation";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     flake-utils.url = "github:numtide/flake-utils";
     cardano-node.url = "github:IntersectMBO/cardano-node/10.5.1";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync/13.6.0.5";
@@ -24,7 +20,6 @@
       self,
       nixpkgs,
       rust-overlay,
-      sbt,
       flake-utils,
       cardano-node,
       cardano-db-sync,
@@ -40,7 +35,6 @@
           overlays = [
             (import rust-overlay)
             (_: prev: {
-              mkSbtDerivation = sbt.mkSbtDerivation.${system};
               rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
               pythonTools = prev.callPackage ./nix/pythonTools.nix { };
               inherit (cardano-node.packages.${system})

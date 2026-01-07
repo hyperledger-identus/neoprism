@@ -13,7 +13,7 @@
 - [Mainnet Instance](https://neoprism.patlo.dev)
 - [Preprod Instance](https://neoprism-preprod.patlo.dev)
 
-> **Note:** The public NeoPRISM instances below are personal deployments by the project author, intended for quick evaluation and testing. Please do not use them for production purposes.
+> **Note:** The public NeoPRISM instances above are personal deployments by the project author, intended for quick evaluation and testing. Please do not use them for production purposes.
 
 ## External Resources
 

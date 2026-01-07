@@ -45,7 +45,7 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)
 
-  // Comment the ignore aspect and run `sbt testOnly -- -tags fixture`
+  // Comment the ignore aspect and run `sbt "testOnly -- -tags fixture"`
   // to output the generated test vector
   private def generateDidFixtureSpec = test("generate did fixtures for testing") {
     val seed = Array.fill[Byte](64)(0)
@@ -60,13 +60,15 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
 
     val did = spo.getDid.get
     val (_, vdrHdKey) = makeVdrKey(seed)
+    val spoHex = spo.toByteArray.toHexString
     val vdrPrivateKeyHex = vdrHdKey.getKMMSecp256k1PrivateKey().getEncoded().toHexString
     val prismObjectHex = PrismObject(blockContent = Some(PrismBlock(operations = Seq(spo)))).toByteArray.toHexString
 
     for
-      _ <- ZIO.debug(s"DID                : $did")
-      _ <- ZIO.debug(s"VDR key name       : $vdrKeyName")
-      _ <- ZIO.debug(s"VDR privateKey hex : $vdrPrivateKeyHex")
-      _ <- ZIO.debug(s"PrismObject hex    : $prismObjectHex")
+      _ <- ZIO.debug(s"DID                 : $did")
+      _ <- ZIO.debug(s"VDR key name        : $vdrKeyName")
+      _ <- ZIO.debug(s"VDR privateKey hex  : $vdrPrivateKeyHex")
+      _ <- ZIO.debug(s"PrismObject hex     : $prismObjectHex")
+      _ <- ZIO.debug(s"SignedOperation hex : $spoHex")
     yield assertCompletes
   } @@ TestAspect.tag("fixture") @@ TestAspect.ignore

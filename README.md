@@ -80,12 +80,54 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 # Quickstart
 
+## Try It Now
+
+Quickly experiment with NeoPRISM using an in-memory database and in-memory blockchain:
+
+```bash
+docker run --rm -p 8080:8080 -e NPRISM_DB_URL=sqlite::memory: hyperledgeridentus/identus-neoprism:<VERSION> dev
+```
+
+> **Note:** Replace `<VERSION>` with a specific release tag (e.g., `0.1.0`).
+
+This command starts a NeoPRISM node in development mode with:
+- In-memory SQLite database (data is lost when container stops)
+- Mock Cardano data source (no real blockchain connection)
+- Web UI and API server on port 8080
+
+Access the Web UI at [http://localhost:8080](http://localhost:8080) to explore the interface.
+
+<details>
+<summary>Submit a sample DID operation (optional)</summary>
+
+Once the container is running, you can submit a sample DID operation from another terminal:
+
+> **Note:** The hex string below is a pre-generated test signed operation for demonstration purposes.
+
+```bash
+curl -X 'POST' \
+  'http://localhost:8080/api/signed-operation-submissions' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "signed_operations": [
+    "0a086d61737465722d3012473045022100d54e1b7ce250c6d1333348c21aa162703793809d8751f07f82f5f9584b91850902201b2b3b43013a8bac123d9e32531aa6d8a065c23ff3e4160d7f4f0ce8c84c44581a7e0a7c0a7a123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123a0a06617574682d3010044a2e0a09736563703235366b31122103868f518859c09aa1a045c215d3a141b042299f09157192f67bc5c8a97e175b4d"
+  ]
+}'
+```
+
+Then navigate to [http://localhost:8080/explorer](http://localhost:8080/explorer) to see the DIDs on the in-memory blockchain.
+
+</details>
+
 ## Public Demo Instance
+
+Try NeoPRISM without any setup using these hosted instances connected to live Cardano networks:
 
 - Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
 - Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
 
-## Self-hosting
+## Docker Compose
 
 This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura.
 It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database.
