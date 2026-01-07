@@ -82,11 +82,13 @@ did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KP
 
 ## Try It Now
 
-Quickly experiment with NeoPRISM using an in-memory database (no data persistence):
+Quickly experiment with NeoPRISM using an in-memory database and in-memory blockchain:
 
 ```bash
 docker run --rm -p 8080:8080 -e NPRISM_DB_URL=sqlite::memory: hyperledgeridentus/identus-neoprism:<VERSION> dev
 ```
+
+> **Note:** Replace `<VERSION>` with a specific release tag (e.g., `0.1.0`).
 
 This command starts a NeoPRISM node in development mode with:
 - In-memory SQLite database (data is lost when container stops)
@@ -99,6 +101,8 @@ Access the Web UI at [http://localhost:8080](http://localhost:8080) to explore t
 <summary>Submit a sample DID operation (optional)</summary>
 
 Once the container is running, you can submit a sample DID operation from another terminal:
+
+> **Note:** The hex string below is a pre-generated test signed operation for demonstration purposes.
 
 ```bash
 curl -X 'POST' \
