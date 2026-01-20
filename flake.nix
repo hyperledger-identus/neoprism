@@ -17,7 +17,6 @@
 
   outputs =
     {
-      self,
       nixpkgs,
       rust-overlay,
       flake-parts,
@@ -32,13 +31,19 @@
         "aarch64-darwin"
       ];
 
+      imports = [
+        ./nix/devShells
+      ];
+
       perSystem =
         {
           system,
+          pkgs,
+          self',
           ...
         }:
-        let
-          pkgs = import nixpkgs {
+        {
+          _module.args.pkgs = import nixpkgs {
             inherit system;
             config.unfree = true;
             overlays = [
@@ -57,11 +62,9 @@
               })
             ];
           };
-        in
-        {
+
           packages = import ./nix/packages/default.nix { inherit pkgs; };
-          devShells = import ./nix/devShells/default.nix { inherit pkgs self; };
-          checks = import ./nix/checks/default.nix { inherit pkgs self; };
+          checks = import ./nix/checks/default.nix { inherit pkgs self'; };
         };
     };
 }

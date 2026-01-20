@@ -1,4 +1,4 @@
-{ self, pkgs }:
+{ self', pkgs }:
 
 let
   rootDir = "$ROOT_DIR";
@@ -12,7 +12,7 @@ pkgs.mkShell {
     mdbook-d2
     mdbook-linkcheck
     yq-go
-    self.packages.${stdenv.hostPlatform.system}.neoprism-bin
+    self'.packages.neoprism-bin
   ];
   shellHook = ''
     export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
