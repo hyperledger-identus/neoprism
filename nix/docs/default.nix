@@ -1,8 +1,19 @@
 { ... }:
+
+let
+  version = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ../../version);
+in
 {
   perSystem =
     { pkgs, self', ... }:
     {
+      packages = {
+        docs-site = pkgs.callPackage ./docs-site.nix {
+          inherit version;
+          neoprism-bin = self'.packages.neoprism-bin;
+        };
+      };
+
       devShells.docs = pkgs.mkShell {
         name = "docs-shell";
         buildInputs = with pkgs; [

@@ -33,8 +33,8 @@
 
       imports = [
         ./nix/devShells
-        ./nix/packages
         ./nix/checks
+        ./nix/docs
         ./nix/neoprism
         ./nix/cardano
       ];
