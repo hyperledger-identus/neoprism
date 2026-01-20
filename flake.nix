@@ -35,6 +35,7 @@
         ./nix/devShells
         ./nix/packages
         ./nix/checks
+        ./nix/neoprism
       ];
 
       perSystem =
