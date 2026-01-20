@@ -2,45 +2,13 @@
 
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, self', ... }:
     let
       hostSystem = pkgs.stdenv.hostPlatform.system;
       version = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ../../version);
-      callPackageCrossWithRust =
-        targetSystem: path: overrides:
-        pkgs.pkgsCross."${targetSystem}".callPackage path (
-          {
-            rust = pkgs.rustTools.mkRustCross {
-              pkgsCross = pkgs.pkgsCross."${targetSystem}";
-              minimal = true;
-            };
-          }
-          // overrides
-        );
-      neoprismPackages = {
-        neoprism-ui-assets = pkgs.callPackage ./neoprism-ui-assets.nix { };
-        neoprism-bin = pkgs.callPackage ./neoprism-bin.nix {
-          rust = pkgs.rustTools.rustMinimal;
-          inherit (pkgs.rustTools) cargoLock;
-        };
-        neoprism-bin-x86_64-linux = callPackageCrossWithRust "gnu64" ./neoprism-bin.nix {
-          inherit (pkgs.rustTools) cargoLock;
-        };
-        neoprism-bin-aarch64-linux = callPackageCrossWithRust "aarch64-multiplatform" ./neoprism-bin.nix {
-          inherit (pkgs.rustTools) cargoLock;
-        };
-      };
-      # Docker images target Linux, regardless of host platform
       dockerCrossPlatformConfig = {
-        x86_64-linux = {
-          callPackage = pkgs.pkgsCross.gnu64.callPackage;
-          neoprism-bin = neoprismPackages.neoprism-bin-x86_64-linux;
-        };
-        aarch64-darwin = {
-          # macOS builds Linux ARM64 containers
-          callPackage = pkgs.pkgsCross.aarch64-multiplatform.callPackage;
-          neoprism-bin = neoprismPackages.neoprism-bin-aarch64-linux;
-        };
+        x86_64-linux = pkgs.pkgsCross.gnu64;
+        aarch64-darwin = pkgs.pkgsCross.aarch64-multiplatform;
       };
     in
     {
@@ -48,34 +16,8 @@
         # docs-site
         docs-site = pkgs.callPackage ./docs-site.nix {
           inherit version;
-          inherit (neoprismPackages) neoprism-bin;
+          neoprism-bin = self'.packages.neoprism-bin;
         };
-
-        # neoprism docker
-        neoprism-docker = dockerCrossPlatformConfig.${hostSystem}.callPackage ./neoprism-docker.nix {
-          inherit version;
-          inherit (neoprismPackages) neoprism-ui-assets;
-          inherit (dockerCrossPlatformConfig.${hostSystem}) neoprism-bin;
-        };
-        neoprism-docker-latest = dockerCrossPlatformConfig.${hostSystem}.callPackage ./neoprism-docker.nix {
-          inherit (neoprismPackages) neoprism-ui-assets;
-          inherit (dockerCrossPlatformConfig.${hostSystem}) neoprism-bin;
-          version = "latest";
-        };
-        neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./neoprism-docker.nix {
-          inherit version;
-          inherit (neoprismPackages) neoprism-ui-assets;
-          neoprism-bin = neoprismPackages.neoprism-bin-x86_64-linux;
-          tagSuffix = "-amd64";
-        };
-        neoprism-docker-linux-arm64 =
-          pkgs.pkgsCross.aarch64-multiplatform.callPackage ./neoprism-docker.nix
-            {
-              inherit version;
-              inherit (neoprismPackages) neoprism-ui-assets;
-              neoprism-bin = neoprismPackages.neoprism-bin-aarch64-linux;
-              tagSuffix = "-arm64";
-            };
 
         # cardano-testnet docker
         cardano-testnet-docker =
@@ -89,7 +31,6 @@
             {
               tagSuffix = "-arm64";
             };
-      }
-      // neoprismPackages;
+      };
     };
 }

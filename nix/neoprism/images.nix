@@ -27,26 +27,26 @@ in
     {
       packages = rec {
         # native built images
-        new-neoprism-docker = dockerBuildConfig.${system}.callPackage ./packages/neoprism-docker.nix {
+        neoprism-docker = dockerBuildConfig.${system}.callPackage ./packages/neoprism-docker.nix {
           inherit version;
-          neoprism-ui-assets = self'.packages.new-neoprism-ui-assets;
+          neoprism-ui-assets = self'.packages.neoprism-ui-assets;
           inherit (dockerBuildConfig.${system}) neoprism-bin;
         };
-        new-neoprism-docker-latest = new-neoprism-docker.override { version = "latest"; };
+        neoprism-docker-latest = neoprism-docker.override { version = "latest"; };
 
         # cross built images
-        new-neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./packages/neoprism-docker.nix {
+        neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./packages/neoprism-docker.nix {
           inherit version;
-          neoprism-ui-assets = self'.packages.new-neoprism-ui-assets;
-          neoprism-bin = self'.packages.new-neoprism-bin-x86_64-linux;
+          neoprism-ui-assets = self'.packages.neoprism-ui-assets;
+          neoprism-bin = self'.packages.neoprism-bin-x86_64-linux;
           tagSuffix = "-amd64";
         };
-        new-neoprism-docker-linux-arm64 =
+        neoprism-docker-linux-arm64 =
           pkgs.pkgsCross.aarch64-multiplatform.callPackage ./packages/neoprism-docker.nix
             {
               inherit version;
-              neoprism-ui-assets = self'.packages.new-neoprism-ui-assets;
-              neoprism-bin = self'.packages.new-neoprism-bin-aarch64-linux;
+              neoprism-ui-assets = self'.packages.neoprism-ui-assets;
+              neoprism-bin = self'.packages.neoprism-bin-aarch64-linux;
               tagSuffix = "-arm64";
             };
       };
