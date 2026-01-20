@@ -33,6 +33,7 @@
 
       imports = [
         ./nix/devShells
+        ./nix/packages
       ];
 
       perSystem =
@@ -63,7 +64,6 @@
             ];
           };
 
-          packages = import ./nix/packages/default.nix { inherit pkgs; };
           checks = import ./nix/checks/default.nix { inherit pkgs self'; };
         };
     };
