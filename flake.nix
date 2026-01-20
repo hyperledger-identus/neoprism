@@ -36,6 +36,7 @@
         ./nix/packages
         ./nix/checks
         ./nix/neoprism
+        ./nix/cardano
       ];
 
       perSystem =
