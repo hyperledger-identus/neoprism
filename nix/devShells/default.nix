@@ -58,6 +58,7 @@
         '';
 
         # envs
+        LANG = "C.utf8";
         RUST_LOG = "info,oura=warn,tower_http::trace=debug";
 
         JAVA_HOME = "${pkgs.jdk}/lib/openjdk";

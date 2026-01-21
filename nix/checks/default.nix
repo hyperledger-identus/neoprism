@@ -12,12 +12,8 @@
           docs-site
           neoprism-ui-assets
           neoprism-bin
-          neoprism-bin-x86_64-linux
-          neoprism-bin-aarch64-linux
           neoprism-docker
           neoprism-docker-latest
-          neoprism-docker-linux-amd64
-          neoprism-docker-linux-arm64
           ;
       };
     };
