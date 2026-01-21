@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from ..models import Service, ServiceDependency
 
-IMAGE = "ghcr.io/intersectmbo/cardano-submit-api:10.5.1"
+IMAGE = "ghcr.io/intersectmbo/cardano-submit-api:10.5.3"
 
 
 class Options(BaseModel):

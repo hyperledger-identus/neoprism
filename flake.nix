@@ -10,9 +10,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
     flake-parts.url = "github:hercules-ci/flake-parts";
-    cardano-node.url = "github:IntersectMBO/cardano-node/10.5.1";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.5.3";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync/13.6.0.5";
-    cardano-wallet.url = "github:cardano-foundation/cardano-wallet/v2025-03-31";
+    cardano-wallet.url = "github:cardano-foundation/cardano-wallet/v2025-12-15";
   };
 
   outputs =

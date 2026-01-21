@@ -88,7 +88,7 @@ services:
       - CMD-SHELL
       - cardano-wallet network information
       timeout: 5s
-    image: cardanofoundation/cardano-wallet:2025.3.31
+    image: cardanofoundation/cardano-wallet:2025.12.15
     ports:
     - 18081:8090
     restart: always
