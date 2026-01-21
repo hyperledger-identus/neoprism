@@ -37,6 +37,7 @@
         ./nix/docs
         ./nix/neoprism
         ./nix/cardano
+        ./nix/neoprismLib.nix
       ];
 
       perSystem =

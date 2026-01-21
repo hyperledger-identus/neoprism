@@ -1,11 +1,16 @@
 { ... }:
 
-let
-  version = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ../../version);
-in
 {
   perSystem =
-    { pkgs, self', ... }:
+    {
+      pkgs,
+      self',
+      neoprismLib,
+      ...
+    }:
+    let
+      inherit (neoprismLib) version;
+    in
     {
       packages = {
         docs-site = pkgs.callPackage ./docs-site.nix {

@@ -1,17 +1,16 @@
 { ... }:
 
-let
-  version = builtins.replaceStrings [ "\n" ] [ "" ] (builtins.readFile ../../version);
-in
 {
   perSystem =
     {
       pkgs,
       system,
       self',
+      neoprismLib,
       ...
     }:
     let
+      inherit (neoprismLib) version;
       dockerBuildConfig = {
         x86_64-linux = {
           callPackage = pkgs.pkgsCross.gnu64.callPackage;
