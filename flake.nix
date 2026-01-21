@@ -37,6 +37,7 @@
         ./nix/docs
         ./nix/neoprism
         ./nix/cardano
+        ./nix/prism-test
         ./nix/neoprismLib.nix
       ];
 
