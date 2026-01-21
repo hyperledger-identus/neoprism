@@ -1,11 +1,20 @@
 { ... }:
 {
   perSystem =
-    { pkgs, self', ... }:
+    {
+      pkgs,
+      self',
+      neoprismLib,
+      ...
+    }:
     {
       checks = {
-        default = pkgs.callPackage ./neoprism-checks.nix { };
-        tools = pkgs.callPackage ./tools-checks.nix { };
+        default = pkgs.callPackage ./neoprism-checks.nix {
+          rustTools = neoprismLib.rustTools;
+        };
+        tools = pkgs.callPackage ./tools-checks.nix {
+          pythonTools = neoprismLib.pythonTools;
+        };
       }
       // {
         inherit (self'.packages)

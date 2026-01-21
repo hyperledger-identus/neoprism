@@ -1,10 +1,10 @@
 { ... }:
 {
   perSystem =
-    { pkgs, ... }:
+    { pkgs, neoprismLib, ... }:
     let
-      inherit (pkgs.rustTools) rust;
-      inherit (pkgs.pythonTools) pythonEnv;
+      inherit (neoprismLib.rustTools) rust;
+      inherit (neoprismLib.pythonTools) pythonEnv;
     in
     {
       devShells.default = pkgs.mkShell {

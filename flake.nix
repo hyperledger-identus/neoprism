@@ -47,24 +47,25 @@
           ...
         }:
         {
-          _module.args.pkgs = import nixpkgs {
-            inherit system;
-            config.unfree = true;
-            overlays = [
-              (import rust-overlay)
-              (_: prev: {
-                rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
-                pythonTools = prev.callPackage ./nix/pythonTools.nix { };
-                inherit (cardano-node.packages.${system})
-                  cardano-cli
-                  cardano-node
-                  cardano-testnet
-                  cardano-submit-api
-                  ;
-                inherit (cardano-wallet.packages.${system}) cardano-wallet;
-                cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
-              })
-            ];
+          _module.args = {
+            inherit rust-overlay;
+            pkgs = import nixpkgs {
+              inherit system;
+              config.unfree = true;
+              overlays = [
+                (import rust-overlay)
+                (_: _: {
+                  inherit (cardano-node.packages.${system})
+                    cardano-cli
+                    cardano-node
+                    cardano-testnet
+                    cardano-submit-api
+                    ;
+                  inherit (cardano-wallet.packages.${system}) cardano-wallet;
+                  cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
+                })
+              ];
+            };
           };
         };
     };
