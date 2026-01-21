@@ -7,7 +7,7 @@
 let
   npmDeps = buildNpmPackage {
     name = "assets-nodemodules";
-    src = ./../..;
+    src = ./../../..;
     npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
     dontNpmBuild = true;
     installPhase = ''
@@ -17,7 +17,7 @@ let
 in
 stdenv.mkDerivation {
   name = "neoprism-ui-assets";
-  src = ./../..;
+  src = ./../../..;
   buildInputs = [ tailwindcss_4 ];
   installPhase = ''
     mkdir -p ./node_modules

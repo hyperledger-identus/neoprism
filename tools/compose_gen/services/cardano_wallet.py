@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 from ..models import Healthcheck, Service, ServiceDependency
 
-IMAGE = "cardanofoundation/cardano-wallet:2025.3.31"
+IMAGE = "cardanofoundation/cardano-wallet:2025.12.15"
 
 
 class Options(BaseModel):

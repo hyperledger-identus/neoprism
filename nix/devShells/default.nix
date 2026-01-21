@@ -1,9 +1,70 @@
-{ self, pkgs }:
-
+{ ... }:
 {
-  default = import ./development.nix { inherit pkgs; };
-  cardano = import ./cardano.nix { inherit pkgs; };
-  prism-test = import ./prism-test.nix { inherit pkgs; };
+  perSystem =
+    { pkgs, neoprismLib, ... }:
+    let
+      inherit (neoprismLib.rustTools) rust;
+      inherit (neoprismLib.pythonTools) pythonEnv;
+    in
+    {
+      devShells.default = pkgs.mkShell {
+        packages = with pkgs; [
+          # base
+          cowsay
+          docker
+          docker-compose
+          git
+          git-cliff
+          hurl
+          jq
+          just
+          less
+          ncurses
+          nix
+          nixfmt
+          pkg-config
+          protobuf
+          taplo
+          which
+          # python
+          pythonEnv
+          pyright
+          ruff
+          # db
+          postgresql_16
+          sqlfluff
+          sqlite
+          # rust
+          cargo-edit
+          cargo-expand
+          cargo-license
+          cargo-udeps
+          rust
+          # js
+          nodejs_20
+          tailwindcss_4
+          typescript-language-server
+          esbuild
+          # scala
+          jdk
+          metals
+          sbt
+        ];
 
-  docs = import ./docs.nix { inherit pkgs self; };
+        shellHook = ''
+          export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
+          ${pkgs.cowsay}/bin/cowsay "Working on project root directory: $ROOT_DIR"
+          cd "$ROOT_DIR"
+        '';
+
+        # envs
+        LANG = "C.utf8";
+        RUST_LOG = "info,oura=warn,tower_http::trace=debug";
+
+        JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
+        SBT_OPTS = "-Xmx4G";
+        SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        LD_LIBRARY_PATH = "${pkgs.stdenv.cc.cc.lib}/lib/"; # required by scalapb
+      };
+    };
 }

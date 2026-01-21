@@ -32,7 +32,7 @@ rustPlatform.buildRustPackage {
         || baseName == "tests"
         || baseName == "tools"
       );
-    src = ./../..;
+    src = ./../../..;
   };
   nativeBuildInputs =
     with buildPackages;

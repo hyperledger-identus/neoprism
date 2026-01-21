@@ -9,50 +9,64 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    flake-utils.url = "github:numtide/flake-utils";
-    cardano-node.url = "github:IntersectMBO/cardano-node/10.5.1";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    cardano-node.url = "github:IntersectMBO/cardano-node/10.5.3";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync/13.6.0.5";
-    cardano-wallet.url = "github:cardano-foundation/cardano-wallet/v2025-03-31";
+    cardano-wallet.url = "github:cardano-foundation/cardano-wallet/v2025-12-15";
   };
 
   outputs =
     {
-      self,
       nixpkgs,
       rust-overlay,
-      flake-utils,
+      flake-parts,
       cardano-node,
       cardano-db-sync,
       cardano-wallet,
       ...
-    }:
-    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-darwin" ] (
-      system:
-      let
-        pkgs = import nixpkgs {
-          inherit system;
-          config.unfree = true;
-          overlays = [
-            (import rust-overlay)
-            (_: prev: {
-              rustTools = prev.callPackage ./nix/rustTools.nix { inherit rust-overlay; };
-              pythonTools = prev.callPackage ./nix/pythonTools.nix { };
-              inherit (cardano-node.packages.${system})
-                cardano-cli
-                cardano-node
-                cardano-testnet
-                cardano-submit-api
-                ;
-              inherit (cardano-wallet.packages.${system}) cardano-wallet;
-              cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
-            })
-          ];
+    }@inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [
+        "x86_64-linux"
+        "aarch64-darwin"
+      ];
+
+      imports = [
+        ./nix/devShells
+        ./nix/checks
+        ./nix/docs
+        ./nix/neoprism
+        ./nix/cardano
+        ./nix/prism-test
+        ./nix/neoprismLib.nix
+      ];
+
+      perSystem =
+        {
+          system,
+          ...
+        }:
+        {
+          _module.args = {
+            inherit rust-overlay;
+            pkgs = import nixpkgs {
+              inherit system;
+              config.unfree = true;
+              overlays = [
+                (import rust-overlay)
+                (_: _: {
+                  inherit (cardano-node.packages.${system})
+                    cardano-cli
+                    cardano-node
+                    cardano-testnet
+                    cardano-submit-api
+                    ;
+                  inherit (cardano-wallet.packages.${system}) cardano-wallet;
+                  cardano-db-sync = cardano-db-sync.packages.${system}."cardano-db-sync:exe:cardano-db-sync";
+                })
+              ];
+            };
+          };
         };
-      in
-      {
-        checks = import ./nix/checks/default.nix { inherit pkgs self; };
-        devShells = import ./nix/devShells/default.nix { inherit pkgs self; };
-        packages = import ./nix/packages/default.nix { inherit pkgs; };
-      }
-    );
+    };
 }
