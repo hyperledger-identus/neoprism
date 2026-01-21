@@ -21,7 +21,7 @@
           less
           ncurses
           nix
-          nixfmt-rfc-style
+          nixfmt
           pkg-config
           protobuf
           taplo
