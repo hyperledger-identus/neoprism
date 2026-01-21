@@ -2,7 +2,7 @@
 
 {
   perSystem =
-    { pkgs, system, ... }:
+    { pkgs, ... }:
     let
       rust = pkgs.rustTools.rustMinimal;
       rust-gnu64 = pkgs.rustTools.mkRustCross {
