@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 use blockfrost::{BlockfrostAPI, Order, Pagination};
 use blockfrost_openapi::models::{BlockContent, TxMetadataLabelJsonInner};
+use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
@@ -312,6 +313,20 @@ impl BlockfrostStreamWorker {
                 tokio::time::sleep(RESTART_DELAY).await;
             }
         })
+    }
+
+    fn persist_cursor(block: &models::BlockfrostBlock, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+        let block_hash_bytes = HexStr::from(block.hash.as_bytes()).to_bytes();
+        let Some(cbt) = chrono::DateTime::from_timestamp(block.time, 0) else {
+            return;
+        };
+        let cursor = DltCursor {
+            slot: block.slot,
+            block_hash: block_hash_bytes,
+            cbt: Some(cbt),
+        };
+        let _ = sync_cursor_tx.send(Some(cursor));
+        tracing::debug!("Cursor persisted to slot={}, height={}", block.slot, block.height);
     }
 
     async fn stream_loop(
