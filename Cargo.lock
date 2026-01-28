@@ -1902,6 +1902,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "blockfrost",
+ "blockfrost-openapi",
  "chrono",
  "derive_more",
  "identus-apollo",
