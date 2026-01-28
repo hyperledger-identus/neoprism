@@ -1,10 +1,3 @@
-//! Blockfrost DLT source implementation.
-//!
-//! This module provides a DLT source that fetches PRISM data from the Blockfrost API.
-//! It follows the same pattern as DbSyncSource, using REST API polling.
-//!
-//! TODO: Implement actual Blockfrost API calls in the stream_loop method.
-
 use std::str::FromStr;
 use std::sync::Arc;
 
