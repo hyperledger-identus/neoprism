@@ -6,7 +6,6 @@
 //! TODO: Implement actual Blockfrost API calls in the stream_loop method.
 
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
-use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
 
@@ -16,32 +15,108 @@ use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
 mod models {
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject};
+    use std::str::FromStr;
+
+    use chrono::DateTime;
+    use identus_apollo::hex::HexStr;
+    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::proto::prism::PrismObject;
+    use serde::{Deserialize, Serialize};
 
     use crate::dlt::error::MetadataReadError;
 
-    // Placeholder struct for Blockfrost block data
     #[derive(Debug, Clone)]
     pub struct BlockfrostBlock {
-        pub slot: u64,
         pub hash: String,
         pub height: u64,
+        pub slot: u64,
         pub time: i64,
     }
 
-    // Placeholder struct for Blockfrost transaction metadata
     #[derive(Debug, Clone)]
     pub struct BlockfrostMetadata {
         pub tx_hash: String,
-        pub label: String,
+        pub tx_index: u32,
         pub json_metadata: serde_json::Value,
     }
 
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub struct MetadataMapJson {
+        pub c: Vec<String>,
+        pub v: u64,
+    }
+
     pub fn parse_blockfrost_metadata(
-        _block: BlockfrostBlock,
-        _metadata: BlockfrostMetadata,
+        block: BlockfrostBlock,
+        metadata: BlockfrostMetadata,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
-        todo!("Parse Blockfrost metadata into PublishedPrismObject")
+        let block_hash = HexStr::from(block.hash.as_bytes());
+        let block_hash_string = block_hash.to_string();
+        let tx_idx = Some(metadata.tx_index as usize);
+
+        let tx_id = TxId::from_str(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
+            source: e.into(),
+            block_hash: Some(block_hash_string.clone()),
+            tx_idx,
+        })?;
+
+        let cbt = DateTime::from_timestamp(block.time, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
+            block_hash: Some(block_hash_string.clone()),
+            tx_idx,
+            timestamp: block.time,
+        })?;
+
+        let block_metadata = BlockMetadata {
+            slot_number: block.slot.into(),
+            block_number: block.height.into(),
+            cbt,
+            absn: metadata.tx_index,
+            tx_id,
+        };
+
+        let metadata_json: MetadataMapJson =
+            serde_json::from_value(metadata.json_metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
+                source: e.into(),
+                block_hash: Some(block_hash_string.clone()),
+                tx_idx,
+            })?;
+
+        let byte_group = metadata_json
+            .c
+            .into_iter()
+            .map(|s| {
+                if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
+                    && let Ok(hex_str) = HexStr::from_str(hex_suffix)
+                    && prefix == "0x"
+                {
+                    Ok(hex_str.to_bytes())
+                } else {
+                    Err(MetadataReadError::InvalidMetadataType {
+                        source: "expect metadata byte group to be in hex format".into(),
+                        block_hash: Some(block_hash_string.clone()),
+                        tx_idx,
+                    })
+                }
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        let mut bytes = Vec::with_capacity(64 * byte_group.len());
+        for mut b in byte_group.into_iter() {
+            bytes.append(&mut b);
+        }
+
+        let prism_object =
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
+                source: e,
+                block_hash: Some(block_hash_string.clone()),
+                tx_idx,
+            })?;
+
+        Ok(PublishedPrismObject {
+            block_metadata,
+            prism_object,
+        })
     }
 }
 
