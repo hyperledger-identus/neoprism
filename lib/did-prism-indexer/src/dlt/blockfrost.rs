@@ -5,6 +5,7 @@
 //!
 //! TODO: Implement actual Blockfrost API calls in the stream_loop method.
 
+use std::str::FromStr;
 use std::sync::Arc;
 
 use blockfrost::{BlockfrostAPI, Order, Pagination};
@@ -57,9 +58,13 @@ mod models {
         block: BlockfrostBlock,
         metadata: BlockfrostMetadata,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
-        let block_hash = HexStr::from(block.hash.as_bytes());
-        let block_hash_string = block_hash.to_string();
         let tx_idx = Some(metadata.tx_index as usize);
+        let block_hash = HexStr::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
+            source: e.into(),
+            block_hash: None,
+            tx_idx,
+        })?;
+        let block_hash_string = block_hash.to_string();
 
         let tx_id = TxId::from_str(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.into(),
@@ -316,7 +321,14 @@ impl BlockfrostStreamWorker {
     }
 
     fn persist_cursor(block: &models::BlockfrostBlock, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
-        let block_hash_bytes = HexStr::from(block.hash.as_bytes()).to_bytes();
+        let hex_str = match HexStr::from_str(&block.hash) {
+            Ok(h) => h,
+            Err(e) => {
+                tracing::error!("Failed to parse block hash for cursor: {}, error: {}", block.hash, e);
+                return;
+            }
+        };
+        let block_hash_bytes = hex_str.to_bytes();
         let Some(cbt) = chrono::DateTime::from_timestamp(block.time, 0) else {
             return;
         };
