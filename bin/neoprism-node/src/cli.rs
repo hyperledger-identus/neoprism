@@ -117,6 +117,21 @@ pub struct DltSourceArgs {
     /// Number of seconds to wait before polling DB Sync for the next update.
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value_t = 10)]
     pub cardano_dbsync_poll_interval: u64,
+    /// Blockfrost API key.
+    /// If provided, the node will sync events from Blockfrost API.
+    #[arg(long, env = "NPRISM_BLOCKFROST_API_KEY", group = "dlt-source")]
+    pub blockfrost_api_key: Option<String>,
+    /// Blockfrost base URL.
+    #[arg(
+        long,
+        env = "NPRISM_BLOCKFROST_BASE_URL",
+        default_value = "https://cardano-mainnet.blockfrost.io/api/v0",
+        group = "dlt-source"
+    )]
+    pub blockfrost_base_url: String,
+    /// Number of seconds to wait before polling Blockfrost for the next update.
+    #[arg(long, env = "NPRISM_BLOCKFROST_POLL_INTERVAL", default_value_t = 10)]
+    pub blockfrost_poll_interval: u64,
     /// Number of seconds to wait before checking for unindexed operations.
     #[arg(long, env = "NPRISM_INDEX_INTERVAL", default_value_t = 10)]
     pub index_interval: u64,
