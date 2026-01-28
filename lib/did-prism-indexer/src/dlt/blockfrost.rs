@@ -6,8 +6,12 @@
 //! TODO: Implement actual Blockfrost API calls in the stream_loop method.
 
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
+
+use blockfrost::{BlockfrostAPI, Order, Pagination};
+use blockfrost_openapi::models::{BlockContent, TxMetadataLabelJsonInner};
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
@@ -118,6 +122,77 @@ mod models {
             prism_object,
         })
     }
+}
+
+async fn fetch_latest_confirmed_block(
+    api: &BlockfrostAPI,
+    confirmation_blocks: u16,
+) -> Result<BlockContent, DltError> {
+    let block = api.blocks_latest().await.map_err(|_| DltError::Connection {
+        location: location!(),
+    })?;
+
+    let tip_height = block.height.ok_or_else(|| DltError::Connection {
+        location: location!(),
+    })? as i64;
+
+    let confirmed_height = tip_height - confirmation_blocks as i64;
+
+    if confirmed_height < 0 {
+        return Err(DltError::Connection {
+            location: location!(),
+        });
+    }
+
+    if confirmed_height == tip_height {
+        Ok(block)
+    } else {
+        api.blocks_by_id(&confirmed_height.to_string()).await.map_err(|_| DltError::Connection {
+            location: location!(),
+        })
+    }
+}
+
+async fn fetch_prism_metadata_pages(
+    api: &BlockfrostAPI,
+) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
+    let mut results = Vec::new();
+    let mut page = 1;
+
+    loop {
+        let pagination = Pagination::new(Order::Asc, page, 100);
+        let page_results = api.metadata_txs_by_label("21325", pagination).await.map_err(|_| DltError::Connection {
+            location: location!(),
+        })?;
+
+        if page_results.is_empty() {
+            break;
+        }
+
+        results.extend(page_results);
+        page += 1;
+    }
+
+    Ok(results)
+}
+
+async fn get_block_for_tx(
+    api: &BlockfrostAPI,
+    tx_hash: &str,
+) -> Result<(models::BlockfrostBlock, u32), DltError> {
+    let tx = api.transaction_by_hash(tx_hash).await.map_err(|_| DltError::Connection {
+        location: location!(),
+    })?;
+
+    let block = models::BlockfrostBlock {
+        hash: tx.block,
+        height: tx.block_height as u64,
+        slot: tx.slot as u64,
+        time: tx.block_time as i64,
+    };
+    let tx_index = tx.index as u32;
+
+    Ok((block, tx_index))
 }
 
 pub struct BlockfrostSource<Store: DltCursorRepo + Send + 'static> {
