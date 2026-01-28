@@ -20,10 +20,8 @@ mod models {
     use chrono::DateTime;
     use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
-    use identus_did_prism::proto::MessageExt;
-    use identus_did_prism::proto::prism::PrismObject;
-    use serde::{Deserialize, Serialize};
 
+    use crate::dlt::common::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone)]
@@ -39,12 +37,6 @@ mod models {
         pub tx_hash: String,
         pub tx_index: u32,
         pub json_metadata: serde_json::Value,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataMapJson {
-        pub c: Vec<String>,
-        pub v: u64,
     }
 
     pub fn parse_blockfrost_metadata(
@@ -86,36 +78,7 @@ mod models {
                 tx_idx,
             })?;
 
-        let byte_group = metadata_json
-            .c
-            .into_iter()
-            .map(|s| {
-                if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
-                    && let Ok(hex_str) = HexStr::from_str(hex_suffix)
-                    && prefix == "0x"
-                {
-                    Ok(hex_str.to_bytes())
-                } else {
-                    Err(MetadataReadError::InvalidMetadataType {
-                        source: "expect metadata byte group to be in hex format".into(),
-                        block_hash: Some(block_hash_string.clone()),
-                        tx_idx,
-                    })
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut bytes = Vec::with_capacity(64 * byte_group.len());
-        for mut b in byte_group.into_iter() {
-            bytes.append(&mut b);
-        }
-
-        let prism_object =
-            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
-                source: e,
-                block_hash: Some(block_hash_string.clone()),
-                tx_idx,
-            })?;
+        let prism_object = metadata_json.parse_prism_object(&block_hash_string, tx_idx)?;
 
         Ok(PublishedPrismObject {
             block_metadata,

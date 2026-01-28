@@ -13,16 +13,12 @@ use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
 mod models {
-    use std::str::FromStr;
-
     use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
-    use identus_did_prism::proto::MessageExt;
-    use identus_did_prism::proto::prism::PrismObject;
-    use serde::{Deserialize, Serialize};
     use sqlx::FromRow;
 
+    use crate::dlt::common::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone, FromRow)]
@@ -43,12 +39,6 @@ mod models {
         pub block_hash: Vec<u8>,
     }
 
-    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-    pub struct MetadataMapJson {
-        pub c: Vec<String>,
-        pub v: u64,
-    }
-
     impl From<MetadataProjection> for BlockTimeProjection {
         fn from(value: MetadataProjection) -> Self {
             Self {
@@ -61,10 +51,11 @@ mod models {
 
     pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
         let block_hash = HexStr::from(&metadata.block_hash).to_string();
+        let tx_idx = Some(metadata.tx_idx as usize);
         let tx_id = TxId::from_bytes(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.to_string().into(),
             block_hash: Some(block_hash.clone()),
-            tx_idx: Some(metadata.tx_idx as usize),
+            tx_idx,
         })?;
         let block_metadata = BlockMetadata {
             slot_number: (metadata.slot_no as u64).into(),
@@ -73,7 +64,6 @@ mod models {
             absn: metadata.tx_idx as u32,
             tx_id,
         };
-        let tx_idx = Some(metadata.tx_idx as usize);
 
         let metadata_json: MetadataMapJson =
             serde_json::from_value(metadata.metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
@@ -82,36 +72,7 @@ mod models {
                 tx_idx,
             })?;
 
-        let byte_group = metadata_json
-            .c
-            .into_iter()
-            .map(|s| {
-                if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
-                    && let Ok(hex_str) = HexStr::from_str(hex_suffix)
-                    && prefix == "0x"
-                {
-                    Ok(hex_str.to_bytes())
-                } else {
-                    Err(MetadataReadError::InvalidMetadataType {
-                        source: "expect metadata byte group to be in hex format".into(),
-                        block_hash: Some(block_hash.clone()),
-                        tx_idx,
-                    })
-                }
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut bytes = Vec::with_capacity(64 * byte_group.len());
-        for mut b in byte_group.into_iter() {
-            bytes.append(&mut b);
-        }
-
-        let prism_object =
-            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
-                source: e,
-                block_hash: Some(block_hash.clone()),
-                tx_idx,
-            })?;
+        let prism_object = metadata_json.parse_prism_object(&block_hash, tx_idx)?;
 
         Ok(PublishedPrismObject {
             block_metadata,
