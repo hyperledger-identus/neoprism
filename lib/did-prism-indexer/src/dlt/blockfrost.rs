@@ -5,13 +5,14 @@
 //!
 //! TODO: Implement actual Blockfrost API calls in the stream_loop method.
 
+use std::sync::Arc;
+
+use blockfrost::{BlockfrostAPI, Order, Pagination};
+use blockfrost_openapi::models::{BlockContent, TxMetadataLabelJsonInner};
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
-
-use blockfrost::{BlockfrostAPI, Order, Pagination};
-use blockfrost_openapi::models::{BlockContent, TxMetadataLabelJsonInner};
 
 use crate::DltSource;
 use crate::dlt::common::CursorPersistWorker;
@@ -124,46 +125,41 @@ mod models {
     }
 }
 
-async fn fetch_latest_confirmed_block(
-    api: &BlockfrostAPI,
-    confirmation_blocks: u16,
-) -> Result<BlockContent, DltError> {
-    let block = api.blocks_latest().await.map_err(|_| DltError::Connection {
-        location: location!(),
-    })?;
+async fn fetch_latest_confirmed_block(api: &BlockfrostAPI, confirmation_blocks: u16) -> Result<BlockContent, DltError> {
+    let block = api
+        .blocks_latest()
+        .await
+        .map_err(|_| DltError::Connection { location: location!() })?;
 
-    let tip_height = block.height.ok_or_else(|| DltError::Connection {
-        location: location!(),
-    })? as i64;
+    let tip_height = block
+        .height
+        .ok_or_else(|| DltError::Connection { location: location!() })? as i64;
 
     let confirmed_height = tip_height - confirmation_blocks as i64;
 
     if confirmed_height < 0 {
-        return Err(DltError::Connection {
-            location: location!(),
-        });
+        return Err(DltError::Connection { location: location!() });
     }
 
     if confirmed_height == tip_height {
         Ok(block)
     } else {
-        api.blocks_by_id(&confirmed_height.to_string()).await.map_err(|_| DltError::Connection {
-            location: location!(),
-        })
+        api.blocks_by_id(&confirmed_height.to_string())
+            .await
+            .map_err(|_| DltError::Connection { location: location!() })
     }
 }
 
-async fn fetch_prism_metadata_pages(
-    api: &BlockfrostAPI,
-) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
+async fn fetch_prism_metadata_pages(api: &BlockfrostAPI) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
     let mut results = Vec::new();
     let mut page = 1;
 
     loop {
         let pagination = Pagination::new(Order::Asc, page, 100);
-        let page_results = api.metadata_txs_by_label("21325", pagination).await.map_err(|_| DltError::Connection {
-            location: location!(),
-        })?;
+        let page_results = api
+            .metadata_txs_by_label("21325", pagination)
+            .await
+            .map_err(|_| DltError::Connection { location: location!() })?;
 
         if page_results.is_empty() {
             break;
@@ -176,13 +172,11 @@ async fn fetch_prism_metadata_pages(
     Ok(results)
 }
 
-async fn get_block_for_tx(
-    api: &BlockfrostAPI,
-    tx_hash: &str,
-) -> Result<(models::BlockfrostBlock, u32), DltError> {
-    let tx = api.transaction_by_hash(tx_hash).await.map_err(|_| DltError::Connection {
-        location: location!(),
-    })?;
+async fn get_block_for_tx(api: &BlockfrostAPI, tx_hash: &str) -> Result<(models::BlockfrostBlock, u32), DltError> {
+    let tx = api
+        .transaction_by_hash(tx_hash)
+        .await
+        .map_err(|_| DltError::Connection { location: location!() })?;
 
     let block = models::BlockfrostBlock {
         hash: tx.block,
@@ -293,9 +287,12 @@ impl BlockfrostStreamWorker {
             loop {
                 tracing::info!("Starting Blockfrost stream worker");
 
+                let mut settings = blockfrost::BlockFrostSettings::default();
+                settings.base_url = Some(base_url.clone());
+                let api = Arc::new(BlockfrostAPI::new(&api_key, settings));
+
                 if let Err(e) = Self::stream_loop(
-                    &api_key,
-                    &base_url,
+                    api.clone(),
                     event_tx.clone(),
                     sync_cursor_tx.clone(),
                     self.from_slot,
@@ -318,13 +315,12 @@ impl BlockfrostStreamWorker {
     }
 
     async fn stream_loop(
-        _api_key: &str,
-        _base_url: &str,
-        _event_tx: mpsc::Sender<PublishedPrismObject>,
-        _sync_cursor_tx: watch::Sender<Option<DltCursor>>,
-        _from_slot: u64,
-        _confirmation_blocks: u16,
-        _poll_interval: u64,
+        api: Arc<BlockfrostAPI>,
+        event_tx: mpsc::Sender<PublishedPrismObject>,
+        sync_cursor_tx: watch::Sender<Option<DltCursor>>,
+        from_slot: u64,
+        confirmation_blocks: u16,
+        poll_interval: u64,
     ) -> Result<(), DltError> {
         todo!("Implement Blockfrost streaming loop with API polling")
     }
