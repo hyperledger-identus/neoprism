@@ -337,6 +337,80 @@ impl BlockfrostStreamWorker {
         confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Result<(), DltError> {
-        todo!("Implement Blockfrost streaming loop with API polling")
+        let initial_cursor = sync_cursor_tx.borrow().as_ref().map(|c| c.slot).unwrap_or(from_slot);
+        let mut current_slot = initial_cursor;
+
+        loop {
+            let confirmed_block = fetch_latest_confirmed_block(&api, confirmation_blocks).await?;
+            let confirmed_height = confirmed_block
+                .height
+                .ok_or_else(|| DltError::Connection { location: location!() })?
+                as u64;
+            let confirmed_slot = confirmed_block
+                .slot
+                .ok_or_else(|| DltError::Connection { location: location!() })? as u64;
+            let confirmed_time = confirmed_block.time as i64;
+
+            let prism_txs = fetch_prism_metadata_pages(&api).await?;
+
+            let mut new_prism_blocks = false;
+
+            for tx_meta in prism_txs {
+                let (block, tx_index) = get_block_for_tx(&api, &tx_meta.tx_hash).await?;
+
+                if block.slot > current_slot && block.height <= confirmed_height {
+                    let json_metadata = tx_meta
+                        .json_metadata
+                        .ok_or_else(|| DltError::Connection { location: location!() })?;
+                    let metadata = models::BlockfrostMetadata {
+                        tx_hash: tx_meta.tx_hash.clone(),
+                        tx_index,
+                        json_metadata,
+                    };
+
+                    match models::parse_blockfrost_metadata(block.clone(), metadata) {
+                        Ok(prism_object) => {
+                            tracing::info!(
+                                "Detected PRISM metadata in tx={}, slot={}, index={}",
+                                tx_meta.tx_hash,
+                                block.slot,
+                                tx_index
+                            );
+
+                            event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
+                                source: e.to_string().into(),
+                                location: location!(),
+                            })?;
+
+                            Self::persist_cursor(&block, &sync_cursor_tx);
+
+                            current_slot = block.slot;
+                            new_prism_blocks = true;
+                        }
+                        Err(e) => {
+                            tracing::warn!(
+                                "Failed to parse PRISM metadata in tx={}, slot={}, index={}: {}",
+                                tx_meta.tx_hash,
+                                block.slot,
+                                tx_index,
+                                e
+                            );
+                        }
+                    }
+                }
+            }
+
+            if !new_prism_blocks {
+                let block_for_cursor = models::BlockfrostBlock {
+                    hash: confirmed_block.hash,
+                    height: confirmed_height,
+                    slot: confirmed_slot,
+                    time: confirmed_time,
+                };
+                Self::persist_cursor(&block_for_cursor, &sync_cursor_tx);
+
+                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+            }
+        }
     }
 }
