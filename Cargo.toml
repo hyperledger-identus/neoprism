@@ -33,6 +33,7 @@ node-storage                = { path = "lib/node-storage" }
 anyhow             = { version = "1" }
 async-trait        = { version = "0.1" }
 axum               = { version = "0.8" }
+blockfrost         = { version = "1.2", default-features = false }
 chrono             = { version = "0.4" }
 clap               = { version = "4" }
 derive_more        = { version = "2" }
