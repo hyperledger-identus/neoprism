@@ -21,7 +21,7 @@ mod models {
     use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
 
-    use crate::dlt::common::MetadataMapJson;
+    use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone)]

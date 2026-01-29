@@ -18,7 +18,7 @@ mod models {
     use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
     use sqlx::FromRow;
 
-    use crate::dlt::common::MetadataMapJson;
+    use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone, FromRow)]
