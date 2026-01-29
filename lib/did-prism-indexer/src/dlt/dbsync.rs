@@ -15,7 +15,7 @@ use crate::repo::DltCursorRepo;
 mod models {
     use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
+    use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
     use sqlx::FromRow;
 
     use crate::dlt::common::metadata_map::MetadataMapJson;
@@ -49,30 +49,43 @@ mod models {
         }
     }
 
-    pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
-        let block_hash = HexStr::from(&metadata.block_hash).to_string();
-        let tx_idx = Some(metadata.tx_idx as usize);
+    fn parse_block_metadata(
+        metadata: &MetadataProjection,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<BlockMetadata, MetadataReadError> {
         let tx_id = TxId::from_bytes(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.to_string().into(),
-            block_hash: Some(block_hash.clone()),
-            tx_idx,
+            block_hash: block_hash.clone(),
+            tx_idx: *tx_idx,
         })?;
-        let block_metadata = BlockMetadata {
-            slot_number: (metadata.slot_no as u64).into(),
-            block_number: (metadata.block_no as u64).into(),
+
+        Ok(BlockMetadata {
+            slot_number: SlotNo::from(metadata.slot_no as u64),
+            block_number: BlockNo::from(metadata.block_no as u64),
             cbt: metadata.time,
             absn: metadata.tx_idx as u32,
             tx_id,
-        };
+        })
+    }
+
+    pub fn parse_published_prism_object(
+        metadata: MetadataProjection,
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash_str = HexStr::from(&metadata.block_hash).to_string();
+        let block_hash = Some(block_hash_str.clone());
+        let tx_idx = Some(metadata.tx_idx as usize);
+
+        let block_metadata = parse_block_metadata(&metadata, &block_hash, &tx_idx)?;
 
         let metadata_json: MetadataMapJson =
             serde_json::from_value(metadata.metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
                 source: e.into(),
-                block_hash: Some(block_hash.clone()),
+                block_hash,
                 tx_idx,
             })?;
 
-        let prism_object = metadata_json.parse_prism_object(&block_hash, tx_idx)?;
+        let prism_object = metadata_json.parse_prism_object(&block_hash_str, tx_idx)?;
 
         Ok(PublishedPrismObject {
             block_metadata,
@@ -249,7 +262,7 @@ impl DbSyncStreamWorker {
             HexStr::from(&row.block_hash).to_string(),
         );
 
-        let parsed_prism_object = models::parse_metadata_projection(row);
+        let parsed_prism_object = models::parse_published_prism_object(row);
         match parsed_prism_object {
             Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
                 source: e.to_string().into(),
