@@ -216,11 +216,11 @@ impl BlockfrostStreamWorker {
         })
     }
 
-    fn persist_cursor(tx: &TxContent, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn emit_cursor_progress(tx: &TxContent, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let hex_str = match HexStr::from_str(&tx.hash) {
             Ok(h) => h,
             Err(e) => {
-                tracing::error!("Failed to parse block hash for cursor: {}, error: {}", tx.hash, e);
+                tracing::error!("failed to parse block hash for cursor: {}, error: {}", tx.hash, e);
                 return;
             }
         };
@@ -232,7 +232,7 @@ impl BlockfrostStreamWorker {
         ) {
             Ok(cbt) => cbt,
             Err(e) => {
-                tracing::error!("Failed to parse block timestamp for cursor: {}", e);
+                tracing::error!("failed to parse block timestamp for cursor: {}", e);
                 return;
             }
         };
@@ -243,7 +243,7 @@ impl BlockfrostStreamWorker {
             blockfrost_page: Some(page),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("Cursor persisted to slot={}, height={}", tx.slot, tx.block_height);
+        tracing::debug!("cursor progress emitted to slot={}", tx.slot);
     }
 
     async fn stream_loop(
@@ -268,9 +268,9 @@ impl BlockfrostStreamWorker {
                 Some(metadata) => {
                     let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
                     let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
-                    Self::persist_cursor(&tx_content, current_page, &sync_cursor_tx);
+                    Self::emit_cursor_progress(&tx_content, current_page, &sync_cursor_tx);
                     if let Err(e) = handle_result {
-                        tracing::error!("Error handling event from Blockfrost source");
+                        tracing::error!("error handling event from blockfrost source");
                         let report = std::error::Report::new(&e).pretty(true);
                         tracing::error!("{}", report);
                         return Err(e);
@@ -295,7 +295,7 @@ impl BlockfrostStreamWorker {
         tracing::info!(
             "detected a new prism_block on slot ({}, {})",
             tx_content.slot,
-            tx_content.block,
+            tx_content.block
         );
 
         let parsed_prism_object = models::parse_published_prism_object(tx_content, metadata);
@@ -305,7 +305,7 @@ impl BlockfrostStreamWorker {
                 location: location!(),
             })?,
             Err(e) => {
-                tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
+                tracing::warn!("unable to parse blockfrost metadata into PrismObject: {}", e);
             }
         }
         Ok(())

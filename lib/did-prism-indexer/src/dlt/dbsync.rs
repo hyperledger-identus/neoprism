@@ -230,9 +230,9 @@ impl DbSyncStreamWorker {
             let row_count = metadata_rows.len();
             for row in metadata_rows {
                 let handle_result = Self::handle_prism_row(row.clone(), &event_tx).await;
-                Self::persist_cursor(row.into(), &sync_cursor_tx);
+                Self::emit_cursor_progress(row.into(), &sync_cursor_tx);
                 if let Err(e) = handle_result {
-                    tracing::error!("Error handling event from DbSync source");
+                    tracing::error!("error handling event from dbsync source");
                     let report = std::error::Report::new(&e).pretty(true);
                     tracing::error!("{}", report);
                     return Err(e);
@@ -243,9 +243,9 @@ impl DbSyncStreamWorker {
                 // get latest block if we don't find any prism block just to know where we are
                 if let Ok(block_time) = Self::fetch_latest_block(&pool, confirmation_blocks)
                     .await
-                    .inspect_err(|e| tracing::error!("Unable to get the latest block: {}", e))
+                    .inspect_err(|e| tracing::error!("unable to get the latest block: {}", e))
                 {
-                    Self::persist_cursor(block_time, &sync_cursor_tx);
+                    Self::emit_cursor_progress(block_time, &sync_cursor_tx);
                 }
 
                 // sleep if we don't find a new block to avoid spamming db sync
@@ -261,7 +261,7 @@ impl DbSyncStreamWorker {
         tracing::info!(
             "detected a new prism_block on slot ({}, {})",
             row.slot_no,
-            HexStr::from(&row.block_hash).to_string(),
+            HexStr::from(&row.block_hash).to_string()
         );
 
         let parsed_prism_object = models::parse_published_prism_object(row);
@@ -277,7 +277,7 @@ impl DbSyncStreamWorker {
         Ok(())
     }
 
-    fn persist_cursor(block_time: BlockTimeProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn emit_cursor_progress(block_time: BlockTimeProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let slot = block_time.slot_no as u64;
         let block_hash = HexStr::from(block_time.block_hash);
         let timestamp = block_time.time;
@@ -288,7 +288,7 @@ impl DbSyncStreamWorker {
             blockfrost_page: None,
         };
         let _ = sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("cursor persisted to slot={}", slot);
+        tracing::debug!("cursor progress emitted to slot={}", slot);
     }
 
     async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
@@ -307,7 +307,7 @@ LIMIT 1
         .bind(i64::from(confirmation_blocks))
         .fetch_one(pool)
         .await
-        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
+        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {}", e))
         .map_err(|e| DltError::Connection {
             source: e.into(),
             location: location!(),
@@ -343,7 +343,7 @@ LIMIT 1000
         .bind(i64::from(confirmation_blocks))
         .fetch_all(pool)
         .await
-        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
+        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {}", e))
         .map_err(|e| DltError::Connection {
             source: e.into(),
             location: location!(),
