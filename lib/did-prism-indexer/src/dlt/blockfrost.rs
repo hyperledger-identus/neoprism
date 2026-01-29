@@ -215,7 +215,7 @@ impl BlockfrostStreamWorker {
         })
     }
 
-    fn persist_cursor(tx: &TxContent, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn persist_cursor(tx: &TxContent, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let hex_str = match HexStr::from_str(&tx.hash) {
             Ok(h) => h,
             Err(e) => {
@@ -239,6 +239,7 @@ impl BlockfrostStreamWorker {
             slot: tx.slot as u64,
             block_hash: block_hash_bytes,
             cbt: Some(cbt),
+            blockfrost_page: Some(page),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
         tracing::debug!("Cursor persisted to slot={}, height={}", tx.slot, tx.block_height);

@@ -286,6 +286,7 @@ impl DbSyncStreamWorker {
             slot,
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
+            blockfrost_page: None,
         };
         let _ = sync_cursor_tx.send(Some(cursor));
         tracing::debug!("cursor persisted to slot={}", slot);

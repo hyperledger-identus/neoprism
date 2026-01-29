@@ -378,6 +378,7 @@ impl DltCursorRepo for PostgresDb {
                 slot: model.slot as u64,
                 block_hash: model.block_hash,
                 cbt: None,
+                blockfrost_page: model.blockfrost_page.map(|p| p as u32),
             });
         tx.commit().await?;
         Ok(result)
@@ -399,6 +400,7 @@ impl DltCursorRepo for PostgresDb {
                 entity::CreateDltCursor {
                     slot: cursor.slot as i64,
                     block_hash: cursor.block_hash,
+                    blockfrost_page: cursor.blockfrost_page.map(|p| p as i64),
                 },
             )
             .await?;

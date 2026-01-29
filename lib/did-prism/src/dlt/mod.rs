@@ -13,6 +13,7 @@ pub struct DltCursor {
     pub slot: u64,
     pub block_hash: Vec<u8>,
     pub cbt: Option<DateTime<Utc>>,
+    pub blockfrost_page: Option<u32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
