@@ -5,6 +5,8 @@
   protobuf,
   sqlfluff,
   deadnix,
+  openssl,
+  pkg-config,
 }:
 
 let
@@ -22,6 +24,10 @@ rustPlatform.buildRustPackage {
     protobuf
     sqlfluff
     deadnix
+    pkg-config
+  ];
+  buildInputs = [
+    openssl
   ];
   buildPhase = "cargo b --all-features --all-targets";
   checkPhase = ''

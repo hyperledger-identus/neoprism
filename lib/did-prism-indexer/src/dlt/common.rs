@@ -1,57 +1,67 @@
-use std::str::FromStr;
-
-use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::DltCursor;
-use identus_did_prism::proto::MessageExt;
-use identus_did_prism::proto::prism::PrismObject;
-use serde::{Deserialize, Serialize};
 use tokio::sync::watch;
 use tokio::task::JoinHandle;
 
-use crate::dlt::error::{DltError, MetadataReadError};
+use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
-/// PRISM metadata structure from Cardano blockchain.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct MetadataMapJson {
-    /// Byte groups containing hex-encoded data (typically with "0x" prefix)
-    pub c: Vec<String>,
-    /// Version number of the PRISM protocol
-    pub v: u64,
-}
+#[cfg(any(feature = "blockfrost", feature = "dbsync"))]
+pub mod metadata_map {
+    use std::str::FromStr;
 
-impl MetadataMapJson {
-    /// Parse the byte groups and decode the PRISM object.
-    pub fn parse_prism_object(self, block_hash: &str, tx_idx: Option<usize>) -> Result<PrismObject, MetadataReadError> {
-        let byte_group = self
-            .c
-            .into_iter()
-            .map(|s| {
-                if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
-                    && let Ok(hex_str) = HexStr::from_str(hex_suffix)
-                    && prefix == "0x"
-                {
-                    Ok(hex_str.to_bytes())
-                } else {
-                    Err(MetadataReadError::InvalidMetadataType {
-                        source: "expect metadata byte group to be in hex format".into(),
-                        block_hash: Some(block_hash.to_string()),
-                        tx_idx,
-                    })
-                }
+    use identus_apollo::hex::HexStr;
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::proto::prism::PrismObject;
+    use serde::{Deserialize, Serialize};
+
+    use crate::dlt::error::MetadataReadError;
+
+    /// PRISM metadata structure from Cardano blockchain.
+    #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+    pub struct MetadataMapJson {
+        /// Byte groups containing hex-encoded data (typically with "0x" prefix)
+        pub c: Vec<String>,
+        /// Version number of the PRISM protocol
+        pub v: u64,
+    }
+
+    impl MetadataMapJson {
+        /// Parse the byte groups and decode the PRISM object.
+        pub fn parse_prism_object(
+            self,
+            block_hash: &str,
+            tx_idx: Option<usize>,
+        ) -> Result<PrismObject, MetadataReadError> {
+            let byte_group = self
+                .c
+                .into_iter()
+                .map(|s| {
+                    if let Some((prefix, hex_suffix)) = s.split_at_checked(2)
+                        && let Ok(hex_str) = HexStr::from_str(hex_suffix)
+                        && prefix == "0x"
+                    {
+                        Ok(hex_str.to_bytes())
+                    } else {
+                        Err(MetadataReadError::InvalidMetadataType {
+                            source: "expect metadata byte group to be in hex format".into(),
+                            block_hash: Some(block_hash.to_string()),
+                            tx_idx,
+                        })
+                    }
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+
+            let mut bytes = Vec::with_capacity(64 * byte_group.len());
+            for mut b in byte_group.into_iter() {
+                bytes.append(&mut b);
+            }
+
+            PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
+                source: e,
+                block_hash: Some(block_hash.to_string()),
+                tx_idx,
             })
-            .collect::<Result<Vec<_>, _>>()?;
-
-        let mut bytes = Vec::with_capacity(64 * byte_group.len());
-        for mut b in byte_group.into_iter() {
-            bytes.append(&mut b);
         }
-
-        PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
-            source: e,
-            block_hash: Some(block_hash.to_string()),
-            tx_idx,
-        })
     }
 }
 
@@ -82,7 +92,7 @@ impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
                 tracing::info!(
                     "Persisting cursor on slot ({}, {})",
                     cursor.slot,
-                    HexStr::from(cursor.block_hash.as_slice()).to_string(),
+                    identus_apollo::hex::HexStr::from(cursor.block_hash.as_slice()).to_string(),
                 );
 
                 let persist_result = self.store.set_cursor(cursor).await;

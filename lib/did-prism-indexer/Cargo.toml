@@ -27,4 +27,4 @@ identus-did-prism = { workspace = true }
 default    = [  ]
 oura       = [ "dep:oura", "dep:pallas-primitives" ]
 dbsync     = [ "dep:sqlx", "dep:serde_json" ]
-blockfrost = [ "dep:blockfrost", "dep:blockfrost-openapi" ]
+blockfrost = [ "dep:blockfrost", "dep:blockfrost-openapi", "dep:serde_json" ]
