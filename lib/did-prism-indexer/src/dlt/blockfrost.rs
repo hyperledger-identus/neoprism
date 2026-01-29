@@ -2,9 +2,10 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use blockfrost::BlockfrostAPI;
-use blockfrost_openapi::models::TxContent;
+use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
 use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
+use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
 
@@ -93,7 +94,7 @@ pub struct BlockfrostSource<Store: DltCursorRepo + Send + 'static> {
     api_key: String,
     base_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
-    from_slot: u64,
+    from_page: u32,
     confirmation_blocks: u16,
     poll_interval: u64,
 }
@@ -111,7 +112,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
             store,
             api_key,
             base_url,
-            cursor.map(|i| i.slot).unwrap_or_default(),
+            cursor.and_then(|i| i.blockfrost_page).unwrap_or(1),
             confirmation_blocks,
             poll_interval,
         ))
@@ -121,7 +122,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
         store: Store,
         api_key: &str,
         base_url: &str,
-        from_slot: u64,
+        from_page: u32,
         confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Self {
@@ -131,7 +132,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
             api_key: api_key.to_string(),
             base_url: base_url.to_string(),
             sync_cursor_tx: cursor_tx,
-            from_slot,
+            from_page,
             confirmation_blocks,
             poll_interval,
         }
@@ -152,7 +153,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for Blockfro
             base_url: self.base_url,
             sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
-            from_slot: self.from_slot,
+            from_page: self.from_page,
             confirmation_blocks: self.confirmation_blocks,
             poll_interval: self.poll_interval,
         };
@@ -169,7 +170,7 @@ struct BlockfrostStreamWorker {
     base_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
-    from_slot: u64,
+    from_page: u32,
     confirmation_blocks: u16,
     poll_interval: u64,
 }
@@ -194,7 +195,7 @@ impl BlockfrostStreamWorker {
                     api.clone(),
                     event_tx.clone(),
                     sync_cursor_tx.clone(),
-                    self.from_slot,
+                    self.from_page,
                     self.confirmation_blocks,
                     self.poll_interval,
                 )
@@ -249,15 +250,27 @@ impl BlockfrostStreamWorker {
         api: Arc<BlockfrostAPI>,
         event_tx: mpsc::Sender<PublishedPrismObject>,
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
-        from_slot: u64,
+        from_page: u32,
         confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Result<(), DltError> {
-        let initial_cursor = sync_cursor_tx.borrow().as_ref().map(|c| c.slot).unwrap_or(from_slot);
-        let mut current_slot = initial_cursor;
+        let mut sync_cursor = sync_cursor_tx
+            .borrow()
+            .as_ref()
+            .and_then(|c| c.blockfrost_page)
+            .unwrap_or(from_page);
 
         loop {
             unimplemented!();
         }
+    }
+
+    async fn fetch_metadata_page(api: &BlockfrostAPI, page: u32) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
+        let pagination = blockfrost::Pagination::new(blockfrost::Order::Asc, page as usize, 100);
+        let result = api
+            .metadata_txs_by_label("21325", pagination)
+            .await
+            .map_err(|_| DltError::Connection { location: location!() })?;
+        Ok(result)
     }
 }
