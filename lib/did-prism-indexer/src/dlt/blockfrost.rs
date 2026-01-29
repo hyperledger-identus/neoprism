@@ -270,7 +270,10 @@ impl BlockfrostStreamWorker {
         let result = api
             .metadata_txs_by_label("21325", pagination)
             .await
-            .map_err(|_| DltError::Connection { location: location!() })?;
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })?;
         Ok(result)
     }
 }

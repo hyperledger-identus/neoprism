@@ -321,7 +321,10 @@ impl OuraStreamWorker {
                     handle_result
                 }
                 Err(RecvTimeoutError::Timeout) => Err(DltError::EventRecvTimeout { location: location!() }),
-                Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection { location: location!() }),
+                Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection {
+                    source: RecvTimeoutError::Disconnected.into(),
+                    location: location!(),
+                }),
             };
             if let Err(e) = handle_result {
                 tracing::error!("Error handling event from oura source");

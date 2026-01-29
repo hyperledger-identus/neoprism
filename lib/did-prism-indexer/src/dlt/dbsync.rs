@@ -309,7 +309,10 @@ LIMIT 1
         .fetch_one(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
-        .map_err(|_| DltError::Connection { location: location!() })?;
+        .map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
 
         Ok(row)
     }
@@ -342,7 +345,10 @@ LIMIT 1000
         .fetch_all(pool)
         .await
         .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
-        .map_err(|_| DltError::Connection { location: location!() })?;
+        .map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
         Ok(rows)
     }
 }
