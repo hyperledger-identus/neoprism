@@ -1,9 +1,7 @@
-use std::str::FromStr;
 use std::sync::Arc;
 
 use blockfrost::BlockfrostAPI;
 use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
-use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
@@ -18,7 +16,7 @@ use crate::repo::DltCursorRepo;
 mod models {
     use std::str::FromStr;
 
-    use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
+    use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
     use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
@@ -27,7 +25,7 @@ mod models {
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone)]
-    pub struct BlockTimeProjection {
+    pub(crate) struct BlockTimeProjection {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
         pub block_hash: Vec<u8>,
@@ -37,23 +35,43 @@ mod models {
         type Error = MetadataReadError;
 
         fn try_from(tx: &TxContent) -> Result<Self, Self::Error> {
-            let block_hash_hex = HexStr::from_str(&tx.block).map_err(|e| {
-                MetadataReadError::PrismBlockHexDecode {
-                    source: e,
-                    block_hash: Some(tx.block.clone()),
-                    tx_idx: Some(tx.index as usize),
-                }
+            let block_hash_hex = HexStr::from_str(&tx.block).map_err(|e| MetadataReadError::PrismBlockHexDecode {
+                source: e,
+                block_hash: Some(tx.block.clone()),
+                tx_idx: Some(tx.index as usize),
             })?;
-
-            let time = parse_blockfrost_timestamp(
-                tx.block_time as i64,
-                &Some(tx.block.clone()),
-                &Some(tx.index as usize),
-            )?;
+            let time =
+                parse_blockfrost_timestamp(tx.block_time as i64, &Some(tx.block.clone()), &Some(tx.index as usize))?;
 
             Ok(BlockTimeProjection {
                 time,
                 slot_no: tx.slot as i64,
+                block_hash: block_hash_hex.to_bytes(),
+            })
+        }
+    }
+
+    impl TryFrom<&BlockContent> for BlockTimeProjection {
+        type Error = MetadataReadError;
+
+        fn try_from(block: &BlockContent) -> Result<Self, Self::Error> {
+            let block_hash_hex = HexStr::from_str(&block.hash).map_err(|e| MetadataReadError::PrismBlockHexDecode {
+                source: e,
+                block_hash: Some(block.hash.clone()),
+                tx_idx: None,
+            })?;
+            let Some(slot_no) = block.slot else {
+                Err(MetadataReadError::MissingBlockProperty {
+                    block_hash: Some(block.hash.clone()),
+                    tx_idx: None,
+                    name: "slot",
+                })?
+            };
+            let time = parse_blockfrost_timestamp(block.time as i64, &Some(block.hash.clone()), &None)?;
+
+            Ok(BlockTimeProjection {
+                time,
+                slot_no: slot_no as i64,
                 block_hash: block_hash_hex.to_bytes(),
             })
         }
@@ -251,7 +269,11 @@ impl BlockfrostStreamWorker {
         })
     }
 
-    fn emit_cursor_progress(block_time: BlockTimeProjection, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn emit_cursor_progress(
+        block_time: BlockTimeProjection,
+        page: u32,
+        sync_cursor_tx: &watch::Sender<Option<DltCursor>>,
+    ) {
         let cursor = DltCursor {
             slot: block_time.slot_no as u64,
             block_hash: block_time.block_hash,
@@ -275,7 +297,6 @@ impl BlockfrostStreamWorker {
             .and_then(|c| c.blockfrost_page)
             .unwrap_or(from_page);
 
-        // TODO: handle the logic of getting latest confirmed block
         loop {
             let metadata = Self::fetch_metadata_page(&api, current_page).await?;
 
@@ -295,10 +316,12 @@ impl BlockfrostStreamWorker {
                     current_page += 1;
                 }
                 None => {
-                    // TODO: get latest block just to broadcast the progress
                     if let Some(latest_confirmed_block) =
                         Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
-                    {};
+                        && let Ok(block_time) = BlockTimeProjection::try_from(&latest_confirmed_block)
+                    {
+                        Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
+                    };
 
                     // sleep if we don't find a new block to avoid spamming db sync
                     tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;

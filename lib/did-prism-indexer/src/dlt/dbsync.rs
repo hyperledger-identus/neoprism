@@ -290,7 +290,10 @@ impl DbSyncStreamWorker {
         let _ = sync_cursor_tx.send(Some(cursor));
     }
 
-    async fn fetch_latest_confirmed_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
+    async fn fetch_latest_confirmed_block(
+        pool: &PgPool,
+        confirmation_blocks: u16,
+    ) -> Result<BlockTimeProjection, DltError> {
         let row = sqlx::query_as(
             r#"
 SELECT
