@@ -10,6 +10,7 @@ use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
 
 use crate::DltSource;
+use crate::dlt::blockfrost::models::BlockTimeProjection;
 use crate::dlt::common::CursorPersistWorker;
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
@@ -19,6 +20,7 @@ mod models {
 
     use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
     use chrono::{DateTime, Utc};
+    use identus_apollo::hex::HexStr;
     use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
 
     use crate::dlt::common::metadata_map::MetadataMapJson;
@@ -29,6 +31,32 @@ mod models {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
         pub block_hash: Vec<u8>,
+    }
+
+    impl TryFrom<&TxContent> for BlockTimeProjection {
+        type Error = MetadataReadError;
+
+        fn try_from(tx: &TxContent) -> Result<Self, Self::Error> {
+            let block_hash_hex = HexStr::from_str(&tx.block).map_err(|e| {
+                MetadataReadError::PrismBlockHexDecode {
+                    source: e,
+                    block_hash: Some(tx.block.clone()),
+                    tx_idx: Some(tx.index as usize),
+                }
+            })?;
+
+            let time = parse_blockfrost_timestamp(
+                tx.block_time as i64,
+                &Some(tx.block.clone()),
+                &Some(tx.index as usize),
+            )?;
+
+            Ok(BlockTimeProjection {
+                time,
+                slot_no: tx.slot as i64,
+                block_hash: block_hash_hex.to_bytes(),
+            })
+        }
     }
 
     pub fn parse_blockfrost_timestamp(
@@ -223,34 +251,14 @@ impl BlockfrostStreamWorker {
         })
     }
 
-    fn emit_cursor_progress(tx: &TxContent, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
-        let block_hash_hex = match HexStr::from_str(&tx.block) {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::error!("failed to parse block hash for cursor: {}, error: {}", tx.hash, e);
-                return;
-            }
-        };
-        let block_hash_bytes = block_hash_hex.to_bytes();
-        let cbt = match models::parse_blockfrost_timestamp(
-            tx.block_time as i64,
-            &Some(tx.block.clone()),
-            &Some(tx.index as usize),
-        ) {
-            Ok(cbt) => cbt,
-            Err(e) => {
-                tracing::error!("failed to parse block timestamp for cursor: {}", e);
-                return;
-            }
-        };
+    fn emit_cursor_progress(block_time: BlockTimeProjection, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let cursor = DltCursor {
-            slot: tx.slot as u64,
-            block_hash: block_hash_bytes,
-            cbt: Some(cbt),
+            slot: block_time.slot_no as u64,
+            block_hash: block_time.block_hash,
+            cbt: Some(block_time.time),
             blockfrost_page: Some(page),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("cursor progress emitted to slot={}", tx.slot);
     }
 
     async fn stream_loop(
@@ -275,7 +283,9 @@ impl BlockfrostStreamWorker {
                 Some(metadata) => {
                     let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
                     let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
-                    Self::emit_cursor_progress(&tx_content, current_page, &sync_cursor_tx);
+                    if let Ok(block_time) = BlockTimeProjection::try_from(&tx_content) {
+                        Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
+                    };
                     if let Err(e) = handle_result {
                         tracing::error!("error handling event from blockfrost source");
                         let report = std::error::Report::new(&e).pretty(true);

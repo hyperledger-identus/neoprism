@@ -288,7 +288,6 @@ impl DbSyncStreamWorker {
             blockfrost_page: None,
         };
         let _ = sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("cursor progress emitted to slot={}", slot);
     }
 
     async fn fetch_latest_confirmed_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {

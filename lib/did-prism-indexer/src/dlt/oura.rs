@@ -355,7 +355,6 @@ impl OuraStreamWorker {
             blockfrost_page: None,
         };
         let _ = self.sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("cursor progress emitted to slot={}", slot);
     }
 
     fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
