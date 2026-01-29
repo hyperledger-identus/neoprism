@@ -2,7 +2,7 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use blockfrost::BlockfrostAPI;
-use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
+use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
 use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
@@ -18,11 +18,18 @@ mod models {
     use std::str::FromStr;
 
     use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
-    use chrono::DateTime;
+    use chrono::{DateTime, Utc};
     use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
 
     use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
+
+    #[derive(Debug, Clone)]
+    pub struct BlockTimeProjection {
+        pub time: DateTime<Utc>,
+        pub slot_no: i64,
+        pub block_hash: Vec<u8>,
+    }
 
     pub fn parse_blockfrost_timestamp(
         block_time: i64,
@@ -217,14 +224,14 @@ impl BlockfrostStreamWorker {
     }
 
     fn emit_cursor_progress(tx: &TxContent, page: u32, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
-        let hex_str = match HexStr::from_str(&tx.hash) {
+        let block_hash_hex = match HexStr::from_str(&tx.block) {
             Ok(h) => h,
             Err(e) => {
                 tracing::error!("failed to parse block hash for cursor: {}, error: {}", tx.hash, e);
                 return;
             }
         };
-        let block_hash_bytes = hex_str.to_bytes();
+        let block_hash_bytes = block_hash_hex.to_bytes();
         let cbt = match models::parse_blockfrost_timestamp(
             tx.block_time as i64,
             &Some(tx.block.clone()),
@@ -279,6 +286,9 @@ impl BlockfrostStreamWorker {
                 }
                 None => {
                     // TODO: get latest block just to broadcast the progress
+                    if let Some(latest_confirmed_block) =
+                        Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
+                    {};
 
                     // sleep if we don't find a new block to avoid spamming db sync
                     tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
@@ -309,6 +319,27 @@ impl BlockfrostStreamWorker {
             }
         }
         Ok(())
+    }
+
+    async fn fetch_latest_confirmed_block(
+        api: &BlockfrostAPI,
+        confirmation_blocks: u16,
+    ) -> Result<Option<BlockContent>, DltError> {
+        let latest_block = api.blocks_latest().await.map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
+        let Some(latest_confirmed_block_no) = latest_block.height.map(|h| h - (confirmation_blocks as i32)) else {
+            return Ok(None);
+        };
+        let latest_confirmed_block = api
+            .blocks_by_id(&latest_confirmed_block_no.to_string())
+            .await
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })?;
+        Ok(Some(latest_confirmed_block))
     }
 
     async fn fetch_tx_by_id(api: &BlockfrostAPI, tx_hash: &str) -> Result<TxContent, DltError> {
