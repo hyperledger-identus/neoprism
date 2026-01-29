@@ -59,7 +59,7 @@ mod models {
     }
 
     pub fn parse_published_prism_object(
-        block: TxContent,
+        block: &TxContent,
         metadata: TxMetadataLabelJsonInner,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
         let block_hash = Some(block.block.clone());
@@ -254,19 +254,74 @@ impl BlockfrostStreamWorker {
         confirmation_blocks: u16,
         poll_interval: u64,
     ) -> Result<(), DltError> {
-        let mut sync_cursor = sync_cursor_tx
+        let mut current_page = sync_cursor_tx
             .borrow()
             .as_ref()
             .and_then(|c| c.blockfrost_page)
             .unwrap_or(from_page);
 
+        // TODO: handle the logic of getting latest confirmed block
         loop {
-            unimplemented!();
+            let metadata = Self::fetch_metadata_page(&api, current_page).await?;
+
+            match metadata {
+                Some(metadata) => {
+                    let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
+                    let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
+                    Self::persist_cursor(&tx_content, current_page, &sync_cursor_tx);
+                    if let Err(e) = handle_result {
+                        tracing::error!("Error handling event from Blockfrost source");
+                        let report = std::error::Report::new(&e).pretty(true);
+                        tracing::error!("{}", report);
+                        return Err(e);
+                    }
+                    current_page += 1;
+                }
+                None => {
+                    // TODO: get latest block just to broadcast the progress
+
+                    // sleep if we don't find a new block to avoid spamming db sync
+                    tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                }
+            }
         }
     }
 
-    async fn fetch_metadata_page(api: &BlockfrostAPI, page: u32) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
-        let pagination = blockfrost::Pagination::new(blockfrost::Order::Asc, page as usize, 100);
+    async fn handle_metadata(
+        tx_content: &TxContent,
+        metadata: TxMetadataLabelJsonInner,
+        event_tx: &mpsc::Sender<PublishedPrismObject>,
+    ) -> Result<(), DltError> {
+        tracing::info!(
+            "detected a new prism_block on slot ({}, {})",
+            tx_content.slot,
+            tx_content.block,
+        );
+
+        let parsed_prism_object = models::parse_published_prism_object(tx_content, metadata);
+        match parsed_prism_object {
+            Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
+                source: e.to_string().into(),
+                location: location!(),
+            })?,
+            Err(e) => {
+                tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
+            }
+        }
+        Ok(())
+    }
+
+    async fn fetch_tx_by_id(api: &BlockfrostAPI, tx_hash: &str) -> Result<TxContent, DltError> {
+        api.transaction_by_hash(tx_hash)
+            .await
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })
+    }
+
+    async fn fetch_metadata_page(api: &BlockfrostAPI, page: u32) -> Result<Option<TxMetadataLabelJsonInner>, DltError> {
+        let pagination = blockfrost::Pagination::new(blockfrost::Order::Asc, page as usize, 1);
         let result = api
             .metadata_txs_by_label("21325", pagination)
             .await
@@ -274,6 +329,6 @@ impl BlockfrostStreamWorker {
                 source: e.into(),
                 location: location!(),
             })?;
-        Ok(result)
+        Ok(result.into_iter().next())
     }
 }

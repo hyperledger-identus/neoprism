@@ -75,12 +75,12 @@ mod models {
                 block_hash: block_hash.clone(),
                 tx_idx: *tx_idx,
                 name: "block_number",
-            })? as u64),
+            })?),
             slot_number: SlotNo::from(context.slot.ok_or(MetadataReadError::MissingBlockProperty {
                 block_hash: block_hash.clone(),
                 tx_idx: *tx_idx,
                 name: "slot",
-            })? as u64),
+            })?),
             tx_id,
         })
     }

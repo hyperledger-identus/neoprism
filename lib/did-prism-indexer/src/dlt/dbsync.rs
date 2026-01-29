@@ -274,7 +274,6 @@ impl DbSyncStreamWorker {
                 tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
             }
         }
-
         Ok(())
     }
 
