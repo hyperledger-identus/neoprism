@@ -175,6 +175,7 @@ impl DbSyncStreamWorker {
             let event_tx = self.event_tx;
             let sync_cursor_tx = self.sync_cursor_tx;
             loop {
+                tracing::info!("starting dbsync stream worker");
                 let pool = PgPoolOptions::new().max_connections(1).connect(&db_url).await;
                 match pool {
                     Ok(pool) => {
@@ -188,18 +189,19 @@ impl DbSyncStreamWorker {
                         )
                         .await
                         {
-                            tracing::error!("DbSync stream loop termitated with error {}", e);
+                            tracing::error!("stream loop terminated with error");
+                            let report = std::error::Report::new(&e).pretty(true);
+                            tracing::error!("{}", report);
                         }
                     }
                     Err(e) => {
-                        tracing::error!("Unable to connect to dbsync database: {}", e);
+                        tracing::error!("unable to connect to dbsync database");
+                        let report = std::error::Report::new(&e).pretty(true);
+                        tracing::error!("{}", report);
                     }
                 }
 
-                tracing::error!(
-                    "DbSync pipeline terminated, Restarting in {} seconds",
-                    RESTART_DELAY.as_secs()
-                );
+                tracing::error!("dbsync pipeline terminated, restarting in {}s", RESTART_DELAY.as_secs());
 
                 tokio::time::sleep(RESTART_DELAY).await;
             }
@@ -257,7 +259,7 @@ impl DbSyncStreamWorker {
         event_tx: &mpsc::Sender<PublishedPrismObject>,
     ) -> Result<(), DltError> {
         tracing::info!(
-            "Detected a new prism_block on slot ({}, {})",
+            "detected a new prism_block on slot ({}, {})",
             row.slot_no,
             HexStr::from(&row.block_hash).to_string(),
         );
@@ -269,8 +271,7 @@ impl DbSyncStreamWorker {
                 location: location!(),
             })?,
             Err(e) => {
-                // TODO: add debug level error report
-                tracing::warn!("Unable to parse dbsync row into PrismObject. ({})", e);
+                tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
             }
         }
 
@@ -287,6 +288,7 @@ impl DbSyncStreamWorker {
             cbt: Some(timestamp),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
+        tracing::debug!("cursor persisted to slot={}", slot);
     }
 
     async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {

@@ -190,7 +190,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             Some(cursor) => {
                 let blockhash_hex = HexStr::from(cursor.block_hash).to_string();
                 tracing::info!(
-                    "Persisted cursor found, starting syncing from ({}, {})",
+                    "persisted cursor found, starting syncing from ({}, {})",
                     cursor.slot,
                     blockhash_hex
                 );
@@ -198,7 +198,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
                 Ok(Self::new(store, remote_addr, chain, intersect, confirmation_blocks))
             }
             None => {
-                tracing::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
+                tracing::info!("persisted cursor not found, starting syncing from PRISM genesis slot");
                 Ok(Self::since_genesis(store, remote_addr, chain, confirmation_blocks))
             }
         }
@@ -274,7 +274,7 @@ impl OuraStreamWorker {
         std::thread::spawn(move || {
             loop {
                 let with_utils = self.build_with_util();
-                tracing::info!("Bootstraping oura pipeline thread");
+                tracing::info!("bootstrapping oura pipeline thread");
                 let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::InitSource {
                     source: e.to_string().into(),
                 })?;
@@ -290,10 +290,7 @@ impl OuraStreamWorker {
                     }
                 };
 
-                tracing::error!(
-                    "Oura pipeline terminated. Restarting in {} seconds",
-                    RESTART_DELAY.as_secs()
-                );
+                tracing::error!("oura pipeline terminated, restarting in {}s", RESTART_DELAY.as_secs());
                 std::thread::sleep(RESTART_DELAY);
             }
         })
@@ -354,6 +351,7 @@ impl OuraStreamWorker {
             cbt: Some(timestamp),
         };
         let _ = self.sync_cursor_tx.send(Some(cursor));
+        tracing::debug!("cursor persisted to slot={}", slot);
     }
 
     fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
@@ -366,7 +364,7 @@ impl OuraStreamWorker {
 
         let context = event.context;
         tracing::info!(
-            "Detected a new prism_block on slot ({}, {})",
+            "detected a new prism_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
             context.block_hash.as_deref().unwrap_or_default(),
         );
@@ -381,8 +379,7 @@ impl OuraStreamWorker {
                     location: location!(),
                 })?,
             Err(e) => {
-                // TODO: add debug level error report
-                tracing::warn!("Unable to parse oura event into PrismObject. ({})", e);
+                tracing::warn!("unable to parse oura event into PrismObject: {}", e);
             }
         }
 

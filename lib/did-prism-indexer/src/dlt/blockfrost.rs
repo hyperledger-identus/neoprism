@@ -23,17 +23,24 @@ mod models {
     use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
+    pub fn parse_blockfrost_timestamp(
+        block_time: i64,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<DateTime<chrono::Utc>, MetadataReadError> {
+        DateTime::from_timestamp(block_time, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
+            block_hash: block_hash.clone(),
+            tx_idx: *tx_idx,
+            timestamp: block_time,
+        })
+    }
+
     fn parse_block_metadata(
         block: &TxContent,
         block_hash: &Option<String>,
         tx_idx: &Option<usize>,
     ) -> Result<BlockMetadata, MetadataReadError> {
-        let cbt =
-            DateTime::from_timestamp(block.block_time as i64, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
-                block_hash: block_hash.clone(),
-                tx_idx: *tx_idx,
-                timestamp: block.block_time as i64,
-            })?;
+        let cbt = parse_blockfrost_timestamp(block.block_time as i64, block_hash, tx_idx)?;
 
         let tx_id = TxId::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.into(),
@@ -177,7 +184,7 @@ impl BlockfrostStreamWorker {
             let sync_cursor_tx = self.sync_cursor_tx;
 
             loop {
-                tracing::info!("Starting Blockfrost stream worker");
+                tracing::info!("starting blockfrost stream worker");
 
                 let mut settings = blockfrost::BlockFrostSettings::default();
                 settings.base_url = Some(base_url.clone());
@@ -193,11 +200,13 @@ impl BlockfrostStreamWorker {
                 )
                 .await
                 {
-                    tracing::error!("Blockfrost stream loop terminated with error: {}", e);
+                    tracing::error!("stream loop terminated with error");
+                    let report = std::error::Report::new(&e).pretty(true);
+                    tracing::error!("{}", report);
                 }
 
                 tracing::error!(
-                    "Blockfrost pipeline terminated, restarting in {} seconds",
+                    "blockfrost pipeline terminated, restarting in {}s",
                     RESTART_DELAY.as_secs()
                 );
 
@@ -215,8 +224,16 @@ impl BlockfrostStreamWorker {
             }
         };
         let block_hash_bytes = hex_str.to_bytes();
-        let Some(cbt) = chrono::DateTime::from_timestamp(tx.block_time as i64, 0) else {
-            return;
+        let cbt = match models::parse_blockfrost_timestamp(
+            tx.block_time as i64,
+            &Some(tx.block.clone()),
+            &Some(tx.index as usize),
+        ) {
+            Ok(cbt) => cbt,
+            Err(e) => {
+                tracing::error!("Failed to parse block timestamp for cursor: {}", e);
+                return;
+            }
         };
         let cursor = DltCursor {
             slot: tx.slot as u64,
