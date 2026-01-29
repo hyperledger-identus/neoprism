@@ -59,12 +59,16 @@ rustPlatform.buildRustPackage {
     echo "checking feature gate for identus-did-prism-indexer"
     cargo clippy -p identus-did-prism-indexer --all-targets --features oura -- -D warnings
     cargo clippy -p identus-did-prism-indexer --all-targets --features dbsync -- -D warnings
+    cargo clippy -p identus-did-prism-indexer --all-targets --features blockfrost -- -D warnings
 
     echo "checking feature gate for identus-did-prism-ledger"
     cargo clippy -p identus-did-prism-ledger --all-targets --features in-memory -- -D warnings
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
+
+    echo "checking feature gate for node-storage"
+    cargo clippy -p node-storage --all-targets --features sqlite-storage -- -D warnings
   '';
   installPhase = "touch $out";
 
