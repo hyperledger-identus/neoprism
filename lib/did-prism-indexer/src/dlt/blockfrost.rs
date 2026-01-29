@@ -14,16 +14,62 @@ use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
 
 mod models {
-    use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
-    use identus_did_prism::dlt::PublishedPrismObject;
+    use std::str::FromStr;
 
+    use blockfrost_openapi::models::{TxContent, TxMetadataLabelJsonInner};
+    use chrono::DateTime;
+    use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
+
+    use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     pub fn parse_blockfrost_metadata(
         block: TxContent,
         metadata: TxMetadataLabelJsonInner,
     ) -> Result<PublishedPrismObject, MetadataReadError> {
-        unimplemented!();
+        let block_hash = Some(block.block.clone());
+        let tx_idx = Some(block.index as usize);
+
+        let cbt =
+            DateTime::from_timestamp(block.block_time as i64, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
+                block_hash: block_hash.clone(),
+                tx_idx,
+                timestamp: block.block_time as i64,
+            })?;
+
+        let tx_id = TxId::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
+            source: e.into(),
+            block_hash: block_hash.clone(),
+            tx_idx,
+        })?;
+
+        let block_metadata = BlockMetadata {
+            slot_number: SlotNo::from(block.slot as u64),
+            block_number: BlockNo::from(block.block_height as u64),
+            cbt,
+            absn: block.index as u32,
+            tx_id,
+        };
+
+        let json_metadata = metadata.json_metadata.ok_or(MetadataReadError::MissingBlockProperty {
+            block_hash: block_hash.clone(),
+            tx_idx,
+            name: "json_metadata",
+        })?;
+
+        let metadata_map: MetadataMapJson =
+            serde_json::from_value(json_metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
+                source: e.into(),
+                block_hash: block_hash.clone(),
+                tx_idx,
+            })?;
+
+        let prism_object = metadata_map.parse_prism_object(&block.block, tx_idx)?;
+
+        Ok(PublishedPrismObject {
+            block_metadata,
+            prism_object,
+        })
     }
 }
 
