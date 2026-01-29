@@ -23,33 +23,41 @@ mod models {
     use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
-    pub fn parse_blockfrost_metadata(
-        block: TxContent,
-        metadata: TxMetadataLabelJsonInner,
-    ) -> Result<PublishedPrismObject, MetadataReadError> {
-        let block_hash = Some(block.block.clone());
-        let tx_idx = Some(block.index as usize);
-
+    fn parse_block_metadata(
+        block: &TxContent,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<BlockMetadata, MetadataReadError> {
         let cbt =
             DateTime::from_timestamp(block.block_time as i64, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
                 block_hash: block_hash.clone(),
-                tx_idx,
+                tx_idx: *tx_idx,
                 timestamp: block.block_time as i64,
             })?;
 
         let tx_id = TxId::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.into(),
             block_hash: block_hash.clone(),
-            tx_idx,
+            tx_idx: *tx_idx,
         })?;
 
-        let block_metadata = BlockMetadata {
+        Ok(BlockMetadata {
             slot_number: SlotNo::from(block.slot as u64),
             block_number: BlockNo::from(block.block_height as u64),
             cbt,
             absn: block.index as u32,
             tx_id,
-        };
+        })
+    }
+
+    pub fn parse_published_prism_object(
+        block: TxContent,
+        metadata: TxMetadataLabelJsonInner,
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash = Some(block.block.clone());
+        let tx_idx = Some(block.index as usize);
+
+        let block_metadata = parse_block_metadata(&block, &block_hash, &tx_idx)?;
 
         let json_metadata = metadata.json_metadata.ok_or(MetadataReadError::MissingBlockProperty {
             block_hash: block_hash.clone(),
