@@ -241,7 +241,7 @@ impl DbSyncStreamWorker {
 
             if row_count == 0 {
                 // get latest block if we don't find any prism block just to know where we are
-                if let Ok(block_time) = Self::fetch_latest_block(&pool, confirmation_blocks)
+                if let Ok(block_time) = Self::fetch_latest_confirmed_block(&pool, confirmation_blocks)
                     .await
                     .inspect_err(|e| tracing::error!("unable to get the latest block: {}", e))
                 {
@@ -291,7 +291,7 @@ impl DbSyncStreamWorker {
         tracing::debug!("cursor progress emitted to slot={}", slot);
     }
 
-    async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
+    async fn fetch_latest_confirmed_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
         let row = sqlx::query_as(
             r#"
 SELECT
