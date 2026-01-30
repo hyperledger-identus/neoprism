@@ -84,7 +84,7 @@ impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
                 tokio::time::sleep(DELAY).await;
 
                 if let Err(e) = recv_result {
-                    tracing::error!("error getting cursor to persist: {}", e);
+                    tracing::error!("error getting cursor to persist: {:?}", e);
                 }
 
                 let cursor = self.cursor_rx.borrow_and_update().clone();
@@ -97,7 +97,7 @@ impl<Store: DltCursorRepo + Send + 'static> CursorPersistWorker<Store> {
 
                 let persist_result = self.store.set_cursor(cursor).await;
                 if let Err(e) = persist_result {
-                    tracing::error!("error persisting cursor: {}", e);
+                    tracing::error!("error persisting cursor: {:?}", e);
                 }
             }
         })
