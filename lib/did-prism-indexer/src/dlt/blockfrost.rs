@@ -118,7 +118,7 @@ mod models {
         let block_hash = Some(block.block.clone());
         let tx_idx = Some(block.index as usize);
 
-        let block_metadata = parse_block_metadata(&block, &block_hash, &tx_idx)?;
+        let block_metadata = parse_block_metadata(block, &block_hash, &tx_idx)?;
 
         let json_metadata = metadata.json_metadata.ok_or(MetadataReadError::MissingBlockProperty {
             block_hash: block_hash.clone(),
