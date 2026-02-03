@@ -24,7 +24,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
                 host_port=8080,
                 command=neoprism.IndexerCommand(
                     dlt_source=neoprism.DbSyncDltSource(
-                        url=options.dbsync_url, poll_interval=10
+                        url=options.dbsync_url, poll_interval="10s"
                     ),
                 ),
             ),

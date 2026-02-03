@@ -25,7 +25,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: '10'
+      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: 10s
       NPRISM_CARDANO_DBSYNC_URL: ${DBSYNC_URL}
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres

@@ -120,7 +120,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
         neoprism_command = neoprism.StandaloneCommand(
             dlt_source=neoprism.DbSyncDltSource(
                 url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
-                poll_interval=1,
+                poll_interval="1s",
             ),
             dlt_sink=neoprism.DltSink(
                 wallet_host="cardano-wallet",
@@ -146,7 +146,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
         storage_backend=neoprism_storage_backend,
         external_url="http://localhost:18080",
         confirmation_blocks=0,
-        index_interval=1,
+        index_interval="1s",
         command=neoprism_command,
     )
 

@@ -14,7 +14,7 @@ class OuraDltSource(BaseModel):
 class DbSyncDltSource(BaseModel):
     source_type: Literal["dbsync"] = "dbsync"
     url: str
-    poll_interval: int = 10
+    poll_interval: str = "10s"
 
 
 class DltSink(BaseModel):
@@ -62,7 +62,7 @@ class Options(BaseModel):
     network: str = "mainnet"
     host_port: int | None = None
     confirmation_blocks: int | None = None
-    index_interval: int | None = None
+    index_interval: str | None = None
     volumes: list[str] | None = None
     external_url: str | None = None
     image_override: str | None = None

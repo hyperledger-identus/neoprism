@@ -117,7 +117,7 @@ services:
       cardano-wallet:
         condition: service_healthy
     environment:
-      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: '1'
+      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: 1s
       NPRISM_CARDANO_DBSYNC_URL: postgresql://postgres:postgres@db-dbsync:5432/postgres
       NPRISM_CARDANO_NETWORK: custom
       NPRISM_CARDANO_WALLET_BASE_URL: http://cardano-wallet:8090/v2
@@ -127,7 +127,7 @@ services:
       NPRISM_CONFIRMATION_BLOCKS: '0'
       NPRISM_DB_URL: 'sqlite::memory:'
       NPRISM_EXTERNAL_URL: http://localhost:18080
-      NPRISM_INDEX_INTERVAL: '1'
+      NPRISM_INDEX_INTERVAL: 1s
       RUST_LOG: oura=warn,tracing::span=warn,info
     healthcheck:
       interval: 2s
