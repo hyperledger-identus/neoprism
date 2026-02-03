@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
@@ -100,7 +102,7 @@ pub struct DbSyncSource<Store: DltCursorRepo + Send + 'static> {
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     from_slot: u64,
     confirmation_blocks: u16,
-    poll_interval: u64,
+    poll_interval: Duration,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
@@ -108,7 +110,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
         store: Store,
         dbsync_url: &str,
         confirmation_blocks: u16,
-        poll_interval: u64,
+        poll_interval: Duration,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         Ok(Self::new(
@@ -120,7 +122,13 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DbSyncSource<Store> {
         ))
     }
 
-    pub fn new(store: Store, dbsync_url: &str, from_slot: u64, confirmation_blocks: u16, poll_interval: u64) -> Self {
+    pub fn new(
+        store: Store,
+        dbsync_url: &str,
+        from_slot: u64,
+        confirmation_blocks: u16,
+        poll_interval: Duration,
+    ) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
@@ -164,7 +172,7 @@ struct DbSyncStreamWorker {
     event_tx: mpsc::Sender<PublishedPrismObject>,
     from_slot: u64,
     confirmation_blocks: u16,
-    poll_interval: u64,
+    poll_interval: Duration,
 }
 
 impl DbSyncStreamWorker {
@@ -214,7 +222,7 @@ impl DbSyncStreamWorker {
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
         from_slot: u64,
         confirmation_blocks: u16,
-        poll_interval: u64,
+        poll_interval: Duration,
     ) -> Result<(), DltError> {
         let mut sync_cursor = sync_cursor_tx
             .subscribe()
@@ -249,7 +257,7 @@ impl DbSyncStreamWorker {
                 }
 
                 // sleep if we don't find a new block to avoid spamming db sync
-                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                tokio::time::sleep(poll_interval).await;
             }
         }
     }

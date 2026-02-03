@@ -6,6 +6,7 @@ use std::fs;
 use std::os::unix::fs::PermissionsExt;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::time::Duration;
 
 use app::service::PrismDidService;
 use axum::Router;
@@ -273,7 +274,7 @@ fn init_memory_ledger(
 ) {
     let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
     let sync_worker = DltSyncWorker::new(db.clone(), dlt_source);
-    let index_worker = DltIndexWorker::new(db.clone(), 1);
+    let index_worker = DltIndexWorker::new(db.clone(), Duration::from_secs(1));
     let cursor_rx = sync_worker.sync_cursor();
     tokio::spawn(sync_worker.run());
     tokio::spawn(index_worker.run());
@@ -329,7 +330,7 @@ async fn init_dlt_source(
             confirmation_blocks: dlt_args.confirmation_blocks,
             poll_interval: dlt_args.blockfrost_poll_interval,
             concurrency_limit: dlt_args.blockfrost_concurrency_limit,
-            api_delay_ms: dlt_args.blockfrost_api_delay,
+            api_delay: dlt_args.blockfrost_api_delay,
         };
         let source = BlockfrostSource::since_persisted_cursor(
             db.clone(),

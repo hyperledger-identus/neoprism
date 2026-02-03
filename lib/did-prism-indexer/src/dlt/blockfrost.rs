@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::sync::Arc;
+use std::time::Duration;
 
 use blockfrost::BlockfrostAPI;
 use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
@@ -147,9 +148,9 @@ mod models {
 #[derive(Debug, Clone)]
 pub struct BlockfrostConfig {
     pub confirmation_blocks: u16,
-    pub poll_interval: u64,
+    pub poll_interval: Duration,
     pub concurrency_limit: usize,
-    pub api_delay_ms: u64,
+    pub api_delay: Duration,
 }
 
 pub struct BlockfrostSource<Store: DltCursorRepo + Send + 'static> {
@@ -294,7 +295,7 @@ impl BlockfrostStreamWorker {
             let Some(last_confirmed_block) =
                 Self::fetch_latest_confirmed_block(&api, config.confirmation_blocks).await?
             else {
-                tokio::time::sleep(tokio::time::Duration::from_secs(config.poll_interval)).await;
+                tokio::time::sleep(config.poll_interval).await;
                 continue;
             };
 
@@ -310,7 +311,7 @@ impl BlockfrostStreamWorker {
                     .map(|metadata| {
                         let api = api.clone();
                         async move {
-                            tokio::time::sleep(tokio::time::Duration::from_millis(config.api_delay_ms)).await;
+                            tokio::time::sleep(config.api_delay).await;
                             let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
                             tracing::debug!(tx=?tx_content.hash, block_height=?tx_content.block_height, slot=?tx_content.slot, "fetched transaction successfully");
                             Ok::<_, DltError>((tx_content, metadata))
@@ -336,7 +337,7 @@ impl BlockfrostStreamWorker {
                 if let Ok(block_time) = BlockTimeProjection::try_from(&last_confirmed_block) {
                     Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
                 };
-                tokio::time::sleep(tokio::time::Duration::from_secs(config.poll_interval)).await;
+                tokio::time::sleep(config.poll_interval).await;
                 continue;
             }
 
