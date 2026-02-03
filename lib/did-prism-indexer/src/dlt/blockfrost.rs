@@ -312,29 +312,21 @@ impl BlockfrostStreamWorker {
             .unwrap_or(from_page);
 
         loop {
+            let Some(last_confirmed_block) = Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
+            else {
+                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                continue;
+            };
+
             let batch = Self::fetch_metadata_page(&api, current_page, PAGE_SIZE).await?;
-            let batch_len = batch.len();
             let unprocessed_batch = batch
                 .into_iter()
                 .filter(|metadata| !processed_tx_of_page.contains(&metadata.tx_hash))
                 .collect::<Vec<_>>();
 
-            if unprocessed_batch.is_empty() {
-                // No new data, emit cursor from latest confirmed block and sleep
-                if let Some(latest_confirmed_block) =
-                    Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
-                    && let Ok(block_time) = BlockTimeProjection::try_from(&latest_confirmed_block)
-                {
-                    Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
-                };
-
-                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
-                continue;
-            }
-
-            // Fetch all transaction details concurrently while maintaining order
-            let tx_contents: Vec<(TxContent, TxMetadataLabelJsonInner)> =
-                futures::stream::iter(unprocessed_batch.into_iter())
+            // Fetch all transaction details concurrently while filtering out unconfirmed transactions
+            let unprocessed_confirmed_batch: Vec<(TxContent, TxMetadataLabelJsonInner)> = {
+                let txs = futures::stream::iter(unprocessed_batch.into_iter())
                     .map(|metadata| {
                         let api = api.clone();
                         async move {
@@ -347,7 +339,27 @@ impl BlockfrostStreamWorker {
                     .try_collect::<Vec<_>>()
                     .await?;
 
-            for (tx_content, metadata) in tx_contents {
+                txs.into_iter()
+                    .filter(|(tx, _)| {
+                        last_confirmed_block
+                            .height
+                            .map(|height| tx.block_height <= height)
+                            .unwrap_or(false)
+                    })
+                    .collect::<Vec<_>>()
+            };
+
+            if unprocessed_confirmed_batch.is_empty() {
+                // No new data, emit cursor from latest confirmed block and sleep
+                tracing::debug!(last_confirmed_block_height=?last_confirmed_block.height, ?current_page, processed=?processed_tx_of_page.len(), "no more confirmed transaction to process");
+                if let Ok(block_time) = BlockTimeProjection::try_from(&last_confirmed_block) {
+                    Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
+                };
+                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                continue;
+            }
+
+            for (tx_content, metadata) in unprocessed_confirmed_batch {
                 let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
                 if let Err(e) = handle_result {
                     tracing::error!("error handling event from blockfrost source");
@@ -362,7 +374,10 @@ impl BlockfrostStreamWorker {
                 processed_tx_of_page.insert(tx_content.hash);
             }
 
-            if batch_len == PAGE_SIZE {
+            // stay on the same page until all transactions are confirmed and processed.
+            // transactions are guaranteed to eventually be confirmed, so we don't
+            // advance to the next page until processed_tx_of_page reaches PAGE_SIZE.
+            if processed_tx_of_page.len() >= PAGE_SIZE {
                 current_page += 1;
                 processed_tx_of_page.clear();
             }
