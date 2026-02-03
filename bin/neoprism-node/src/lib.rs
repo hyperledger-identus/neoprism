@@ -13,7 +13,7 @@ use clap::Parser;
 use cli::Cli;
 use dirs::data_dir;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
-use identus_did_prism_indexer::dlt::blockfrost::BlockfrostSource;
+use identus_did_prism_indexer::dlt::blockfrost::{BlockfrostConfig, BlockfrostSource};
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
 use identus_did_prism_submitter::DltSink;
@@ -325,13 +325,17 @@ async fn init_dlt_source(
         Some(cursor_rx)
     } else if let Some(api_key) = dlt_args.blockfrost_api_key.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from Blockfrost", network);
+        let blockfrost_config = BlockfrostConfig {
+            confirmation_blocks: dlt_args.confirmation_blocks,
+            poll_interval: dlt_args.blockfrost_poll_interval,
+            concurrency_limit: dlt_args.blockfrost_concurrency_limit,
+            api_delay_ms: dlt_args.blockfrost_api_delay,
+        };
         let source = BlockfrostSource::since_persisted_cursor(
             db.clone(),
             api_key,
             &dlt_args.blockfrost_base_url,
-            dlt_args.confirmation_blocks,
-            dlt_args.blockfrost_poll_interval,
-            dlt_args.blockfrost_concurrency_limit,
+            blockfrost_config,
         )
         .await
         .expect("Failed to create Blockfrost source");

@@ -144,15 +144,21 @@ mod models {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct BlockfrostConfig {
+    pub confirmation_blocks: u16,
+    pub poll_interval: u64,
+    pub concurrency_limit: usize,
+    pub api_delay_ms: u64,
+}
+
 pub struct BlockfrostSource<Store: DltCursorRepo + Send + 'static> {
     store: Store,
     api_key: String,
     base_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     from_page: u32,
-    confirmation_blocks: u16,
-    poll_interval: u64,
-    concurrency_limit: usize,
+    config: BlockfrostConfig,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store> {
@@ -160,41 +166,22 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
         store: Store,
         api_key: &str,
         base_url: &str,
-        confirmation_blocks: u16,
-        poll_interval: u64,
-        concurrency_limit: usize,
+        config: BlockfrostConfig,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
-        Ok(Self::new(
-            store,
-            api_key,
-            base_url,
-            cursor.and_then(|i| i.blockfrost_page).unwrap_or(1),
-            confirmation_blocks,
-            poll_interval,
-            concurrency_limit,
-        ))
+        let from_page = cursor.and_then(|i| i.blockfrost_page).unwrap_or(1);
+        Ok(Self::new(store, api_key, base_url, from_page, config))
     }
 
-    pub fn new(
-        store: Store,
-        api_key: &str,
-        base_url: &str,
-        from_page: u32,
-        confirmation_blocks: u16,
-        poll_interval: u64,
-        concurrency_limit: usize,
-    ) -> Self {
+    pub fn new(store: Store, api_key: &str, base_url: &str, from_page: u32, config: BlockfrostConfig) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
             store,
             api_key: api_key.to_string(),
             base_url: base_url.to_string(),
             sync_cursor_tx: cursor_tx,
+            config,
             from_page,
-            confirmation_blocks,
-            poll_interval,
-            concurrency_limit,
         }
     }
 }
@@ -214,9 +201,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for Blockfro
             sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
             from_page: self.from_page,
-            confirmation_blocks: self.confirmation_blocks,
-            poll_interval: self.poll_interval,
-            concurrency_limit: self.concurrency_limit,
+            config: self.config,
         };
 
         cursor_persist_worker.spawn();
@@ -232,9 +217,7 @@ struct BlockfrostStreamWorker {
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
     from_page: u32,
-    confirmation_blocks: u16,
-    poll_interval: u64,
-    concurrency_limit: usize,
+    config: BlockfrostConfig,
 }
 
 impl BlockfrostStreamWorker {
@@ -258,9 +241,7 @@ impl BlockfrostStreamWorker {
                     event_tx.clone(),
                     sync_cursor_tx.clone(),
                     self.from_page,
-                    self.confirmation_blocks,
-                    self.poll_interval,
-                    self.concurrency_limit,
+                    &self.config,
                 )
                 .await
                 {
@@ -298,9 +279,7 @@ impl BlockfrostStreamWorker {
         event_tx: mpsc::Sender<PublishedPrismObject>,
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
         from_page: u32,
-        confirmation_blocks: u16,
-        poll_interval: u64,
-        concurrency_limit: usize,
+        config: &BlockfrostConfig,
     ) -> Result<(), DltError> {
         const PAGE_SIZE: usize = 100;
 
@@ -312,9 +291,10 @@ impl BlockfrostStreamWorker {
             .unwrap_or(from_page);
 
         loop {
-            let Some(last_confirmed_block) = Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
+            let Some(last_confirmed_block) =
+                Self::fetch_latest_confirmed_block(&api, config.confirmation_blocks).await?
             else {
-                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(config.poll_interval)).await;
                 continue;
             };
 
@@ -330,12 +310,13 @@ impl BlockfrostStreamWorker {
                     .map(|metadata| {
                         let api = api.clone();
                         async move {
+                            tokio::time::sleep(tokio::time::Duration::from_millis(config.api_delay_ms)).await;
                             let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
                             tracing::debug!(tx=?tx_content.hash, block_height=?tx_content.block_height, slot=?tx_content.slot, "fetched transaction successfully");
                             Ok::<_, DltError>((tx_content, metadata))
                         }
                     })
-                    .buffered(concurrency_limit.max(1))
+                    .buffered(config.concurrency_limit.max(1))
                     .try_collect::<Vec<_>>()
                     .await?;
 
@@ -355,7 +336,7 @@ impl BlockfrostStreamWorker {
                 if let Ok(block_time) = BlockTimeProjection::try_from(&last_confirmed_block) {
                     Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
                 };
-                tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                tokio::time::sleep(tokio::time::Duration::from_secs(config.poll_interval)).await;
                 continue;
             }
 
