@@ -229,9 +229,9 @@ impl DbSyncStreamWorker {
             }
             let row_count = metadata_rows.len();
             for row in metadata_rows {
-                let handle_result = Self::handle_prism_row(row.clone(), &event_tx).await;
+                let process_result = Self::process_prism_object(row.clone(), &event_tx).await;
                 Self::emit_cursor_progress(row.into(), &sync_cursor_tx);
-                if let Err(e) = handle_result {
+                if let Err(e) = process_result {
                     tracing::error!("error handling event from dbsync source");
                     let report = std::error::Report::new(&e).pretty(true);
                     tracing::error!("{}", report);
@@ -254,7 +254,7 @@ impl DbSyncStreamWorker {
         }
     }
 
-    async fn handle_prism_row(
+    async fn process_prism_object(
         row: MetadataProjection,
         event_tx: &mpsc::Sender<PublishedPrismObject>,
     ) -> Result<(), DltError> {

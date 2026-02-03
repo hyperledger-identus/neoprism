@@ -360,8 +360,8 @@ impl BlockfrostStreamWorker {
             }
 
             for (tx_content, metadata) in unprocessed_confirmed_batch {
-                let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
-                if let Err(e) = handle_result {
+                let process_result = Self::process_prism_object(&tx_content, metadata, &event_tx).await;
+                if let Err(e) = process_result {
                     tracing::error!("error handling event from blockfrost source");
                     let report = std::error::Report::new(&e).pretty(true);
                     tracing::error!("{}", report);
@@ -384,7 +384,7 @@ impl BlockfrostStreamWorker {
         }
     }
 
-    async fn handle_metadata(
+    async fn process_prism_object(
         tx_content: &TxContent,
         metadata: TxMetadataLabelJsonInner,
         event_tx: &mpsc::Sender<PublishedPrismObject>,

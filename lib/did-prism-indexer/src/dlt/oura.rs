@@ -314,11 +314,11 @@ impl OuraStreamWorker {
     fn stream_loop(&self, receiver: StageReceiver) -> DltError {
         const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(20 * 60);
         loop {
-            let handle_result = match receiver.recv_timeout(TIMEOUT) {
+            let process_result = match receiver.recv_timeout(TIMEOUT) {
                 Ok(event) => {
-                    let handle_result = self.handle_prism_event(event.clone());
+                    let event_result = self.process_prism_object(event.clone());
                     self.emit_cursor_progress(&event);
-                    handle_result
+                    event_result
                 }
                 Err(RecvTimeoutError::Timeout) => Err(DltError::EventRecvTimeout { location: location!() }),
                 Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection {
@@ -326,7 +326,7 @@ impl OuraStreamWorker {
                     location: location!(),
                 }),
             };
-            if let Err(e) = handle_result {
+            if let Err(e) = process_result {
                 tracing::error!("error handling event from oura source");
                 let report = std::error::Report::new(&e).pretty(true);
                 tracing::error!("{}", report);
@@ -357,7 +357,7 @@ impl OuraStreamWorker {
         let _ = self.sync_cursor_tx.send(Some(cursor));
     }
 
-    fn handle_prism_event(&self, event: Event) -> Result<(), DltError> {
+    fn process_prism_object(&self, event: Event) -> Result<(), DltError> {
         let EventData::Metadata(meta) = event.data else {
             return Ok(());
         };
