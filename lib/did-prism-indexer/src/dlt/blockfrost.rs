@@ -404,6 +404,9 @@ impl BlockfrostStreamWorker {
         let Some(latest_confirmed_block_no) = latest_block.height.map(|h| h - (confirmation_blocks as i32)) else {
             return Ok(None);
         };
+        if latest_confirmed_block_no <= 0 {
+            return Ok(None);
+        }
         let latest_confirmed_block = api
             .blocks_by_id(&latest_confirmed_block_no.to_string())
             .await
