@@ -1,15 +1,16 @@
-use std::str::FromStr;
+use std::collections::HashSet;
 use std::sync::Arc;
 
-use blockfrost::{BlockfrostAPI, Order, Pagination};
-use blockfrost_openapi::models::{BlockContent, TxMetadataLabelJsonInner};
-use identus_apollo::hex::HexStr;
+use blockfrost::BlockfrostAPI;
+use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
+use futures::{StreamExt, TryStreamExt};
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use identus_did_prism::location;
 use tokio::sync::{mpsc, watch};
 use tokio::task::JoinHandle;
 
 use crate::DltSource;
+use crate::dlt::blockfrost::models::BlockTimeProjection;
 use crate::dlt::common::CursorPersistWorker;
 use crate::dlt::error::DltError;
 use crate::repo::DltCursorRepo;
@@ -17,68 +18,124 @@ use crate::repo::DltCursorRepo;
 mod models {
     use std::str::FromStr;
 
-    use chrono::DateTime;
+    use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
+    use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
+    use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
 
     use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
     #[derive(Debug, Clone)]
-    pub struct BlockfrostBlock {
-        pub hash: String,
-        pub height: u64,
-        pub slot: u64,
-        pub time: i64,
+    pub(crate) struct BlockTimeProjection {
+        pub time: DateTime<Utc>,
+        pub slot_no: i64,
+        pub block_hash: Vec<u8>,
     }
 
-    #[derive(Debug, Clone)]
-    pub struct BlockfrostMetadata {
-        pub tx_hash: String,
-        pub tx_index: u32,
-        pub json_metadata: serde_json::Value,
+    impl TryFrom<&TxContent> for BlockTimeProjection {
+        type Error = MetadataReadError;
+
+        fn try_from(tx: &TxContent) -> Result<Self, Self::Error> {
+            let block_hash_hex = HexStr::from_str(&tx.block).map_err(|e| MetadataReadError::PrismBlockHexDecode {
+                source: e,
+                block_hash: Some(tx.block.clone()),
+                tx_idx: Some(tx.index as usize),
+            })?;
+            let time =
+                parse_blockfrost_timestamp(tx.block_time as i64, &Some(tx.block.clone()), &Some(tx.index as usize))?;
+
+            Ok(BlockTimeProjection {
+                time,
+                slot_no: tx.slot as i64,
+                block_hash: block_hash_hex.to_bytes(),
+            })
+        }
     }
 
-    pub fn parse_blockfrost_metadata(
-        block: BlockfrostBlock,
-        metadata: BlockfrostMetadata,
-    ) -> Result<PublishedPrismObject, MetadataReadError> {
-        let tx_idx = Some(metadata.tx_index as usize);
-        let block_hash = HexStr::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
+    impl TryFrom<&BlockContent> for BlockTimeProjection {
+        type Error = MetadataReadError;
+
+        fn try_from(block: &BlockContent) -> Result<Self, Self::Error> {
+            let block_hash_hex = HexStr::from_str(&block.hash).map_err(|e| MetadataReadError::PrismBlockHexDecode {
+                source: e,
+                block_hash: Some(block.hash.clone()),
+                tx_idx: None,
+            })?;
+            let Some(slot_no) = block.slot else {
+                Err(MetadataReadError::MissingBlockProperty {
+                    block_hash: Some(block.hash.clone()),
+                    tx_idx: None,
+                    name: "slot",
+                })?
+            };
+            let time = parse_blockfrost_timestamp(block.time as i64, &Some(block.hash.clone()), &None)?;
+
+            Ok(BlockTimeProjection {
+                time,
+                slot_no: slot_no as i64,
+                block_hash: block_hash_hex.to_bytes(),
+            })
+        }
+    }
+
+    pub fn parse_blockfrost_timestamp(
+        block_time: i64,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<DateTime<chrono::Utc>, MetadataReadError> {
+        DateTime::from_timestamp(block_time, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
+            block_hash: block_hash.clone(),
+            tx_idx: *tx_idx,
+            timestamp: block_time,
+        })
+    }
+
+    fn parse_block_metadata(
+        block: &TxContent,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<BlockMetadata, MetadataReadError> {
+        let cbt = parse_blockfrost_timestamp(block.block_time as i64, block_hash, tx_idx)?;
+
+        let tx_id = TxId::from_str(&block.hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.into(),
-            block_hash: None,
-            tx_idx,
-        })?;
-        let block_hash_string = block_hash.to_string();
-
-        let tx_id = TxId::from_str(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
-            source: e.into(),
-            block_hash: Some(block_hash_string.clone()),
-            tx_idx,
+            block_hash: block_hash.clone(),
+            tx_idx: *tx_idx,
         })?;
 
-        let cbt = DateTime::from_timestamp(block.time, 0).ok_or(MetadataReadError::InvalidBlockTimestamp {
-            block_hash: Some(block_hash_string.clone()),
-            tx_idx,
-            timestamp: block.time,
-        })?;
-
-        let block_metadata = BlockMetadata {
-            slot_number: block.slot.into(),
-            block_number: block.height.into(),
+        Ok(BlockMetadata {
+            slot_number: SlotNo::from(block.slot as u64),
+            block_number: BlockNo::from(block.block_height as u64),
             cbt,
-            absn: metadata.tx_index,
+            absn: block.index as u32,
             tx_id,
-        };
+        })
+    }
 
-        let metadata_json: MetadataMapJson =
-            serde_json::from_value(metadata.json_metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
+    pub fn parse_published_prism_object(
+        block: &TxContent,
+        metadata: TxMetadataLabelJsonInner,
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash = Some(block.block.clone());
+        let tx_idx = Some(block.index as usize);
+
+        let block_metadata = parse_block_metadata(block, &block_hash, &tx_idx)?;
+
+        let json_metadata = metadata.json_metadata.ok_or(MetadataReadError::MissingBlockProperty {
+            block_hash: block_hash.clone(),
+            tx_idx,
+            name: "json_metadata",
+        })?;
+
+        let metadata_map: MetadataMapJson =
+            serde_json::from_value(json_metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
                 source: e.into(),
-                block_hash: Some(block_hash_string.clone()),
+                block_hash: block_hash.clone(),
                 tx_idx,
             })?;
 
-        let prism_object = metadata_json.parse_prism_object(&block_hash_string, tx_idx)?;
+        let prism_object = metadata_map.parse_prism_object(&block.block, tx_idx)?;
 
         Ok(PublishedPrismObject {
             block_metadata,
@@ -87,78 +144,15 @@ mod models {
     }
 }
 
-async fn fetch_latest_confirmed_block(api: &BlockfrostAPI, confirmation_blocks: u16) -> Result<BlockContent, DltError> {
-    let block = api
-        .blocks_latest()
-        .await
-        .map_err(|_| DltError::Connection { location: location!() })?;
-
-    let tip_height = block
-        .height
-        .ok_or_else(|| DltError::Connection { location: location!() })? as i64;
-
-    let confirmed_height = tip_height - confirmation_blocks as i64;
-
-    if confirmed_height < 0 {
-        return Err(DltError::Connection { location: location!() });
-    }
-
-    if confirmed_height == tip_height {
-        Ok(block)
-    } else {
-        api.blocks_by_id(&confirmed_height.to_string())
-            .await
-            .map_err(|_| DltError::Connection { location: location!() })
-    }
-}
-
-async fn fetch_prism_metadata_pages(api: &BlockfrostAPI) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
-    let mut results = Vec::new();
-    let mut page = 1;
-
-    loop {
-        let pagination = Pagination::new(Order::Asc, page, 100);
-        let page_results = api
-            .metadata_txs_by_label("21325", pagination)
-            .await
-            .map_err(|_| DltError::Connection { location: location!() })?;
-
-        if page_results.is_empty() {
-            break;
-        }
-
-        results.extend(page_results);
-        page += 1;
-    }
-
-    Ok(results)
-}
-
-async fn get_block_for_tx(api: &BlockfrostAPI, tx_hash: &str) -> Result<(models::BlockfrostBlock, u32), DltError> {
-    let tx = api
-        .transaction_by_hash(tx_hash)
-        .await
-        .map_err(|_| DltError::Connection { location: location!() })?;
-
-    let block = models::BlockfrostBlock {
-        hash: tx.block,
-        height: tx.block_height as u64,
-        slot: tx.slot as u64,
-        time: tx.block_time as i64,
-    };
-    let tx_index = tx.index as u32;
-
-    Ok((block, tx_index))
-}
-
 pub struct BlockfrostSource<Store: DltCursorRepo + Send + 'static> {
     store: Store,
     api_key: String,
     base_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
-    from_slot: u64,
+    from_page: u32,
     confirmation_blocks: u16,
     poll_interval: u64,
+    concurrency_limit: usize,
 }
 
 impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store> {
@@ -168,15 +162,17 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
         base_url: &str,
         confirmation_blocks: u16,
         poll_interval: u64,
+        concurrency_limit: usize,
     ) -> Result<Self, E> {
         let cursor = store.get_cursor().await?;
         Ok(Self::new(
             store,
             api_key,
             base_url,
-            cursor.map(|i| i.slot).unwrap_or_default(),
+            cursor.and_then(|i| i.blockfrost_page).unwrap_or(1),
             confirmation_blocks,
             poll_interval,
+            concurrency_limit,
         ))
     }
 
@@ -184,9 +180,10 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
         store: Store,
         api_key: &str,
         base_url: &str,
-        from_slot: u64,
+        from_page: u32,
         confirmation_blocks: u16,
         poll_interval: u64,
+        concurrency_limit: usize,
     ) -> Self {
         let (cursor_tx, _) = watch::channel::<Option<DltCursor>>(None);
         Self {
@@ -194,9 +191,10 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> BlockfrostSource<Store
             api_key: api_key.to_string(),
             base_url: base_url.to_string(),
             sync_cursor_tx: cursor_tx,
-            from_slot,
+            from_page,
             confirmation_blocks,
             poll_interval,
+            concurrency_limit,
         }
     }
 }
@@ -215,9 +213,10 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> DltSource for Blockfro
             base_url: self.base_url,
             sync_cursor_tx: self.sync_cursor_tx,
             event_tx,
-            from_slot: self.from_slot,
+            from_page: self.from_page,
             confirmation_blocks: self.confirmation_blocks,
             poll_interval: self.poll_interval,
+            concurrency_limit: self.concurrency_limit,
         };
 
         cursor_persist_worker.spawn();
@@ -232,9 +231,10 @@ struct BlockfrostStreamWorker {
     base_url: String,
     sync_cursor_tx: watch::Sender<Option<DltCursor>>,
     event_tx: mpsc::Sender<PublishedPrismObject>,
-    from_slot: u64,
+    from_page: u32,
     confirmation_blocks: u16,
     poll_interval: u64,
+    concurrency_limit: usize,
 }
 
 impl BlockfrostStreamWorker {
@@ -247,7 +247,7 @@ impl BlockfrostStreamWorker {
             let sync_cursor_tx = self.sync_cursor_tx;
 
             loop {
-                tracing::info!("Starting Blockfrost stream worker");
+                tracing::info!("starting blockfrost stream worker");
 
                 let mut settings = blockfrost::BlockFrostSettings::default();
                 settings.base_url = Some(base_url.clone());
@@ -257,17 +257,20 @@ impl BlockfrostStreamWorker {
                     api.clone(),
                     event_tx.clone(),
                     sync_cursor_tx.clone(),
-                    self.from_slot,
+                    self.from_page,
                     self.confirmation_blocks,
                     self.poll_interval,
+                    self.concurrency_limit,
                 )
                 .await
                 {
-                    tracing::error!("Blockfrost stream loop terminated with error: {}", e);
+                    tracing::error!("stream loop terminated with error");
+                    let report = std::error::Report::new(&e).pretty(true);
+                    tracing::error!("{}", report);
                 }
 
                 tracing::error!(
-                    "Blockfrost pipeline terminated, restarting in {} seconds",
+                    "blockfrost pipeline terminated, restarting in {}s",
                     RESTART_DELAY.as_secs()
                 );
 
@@ -276,109 +279,161 @@ impl BlockfrostStreamWorker {
         })
     }
 
-    fn persist_cursor(block: &models::BlockfrostBlock, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
-        let hex_str = match HexStr::from_str(&block.hash) {
-            Ok(h) => h,
-            Err(e) => {
-                tracing::error!("Failed to parse block hash for cursor: {}, error: {}", block.hash, e);
-                return;
-            }
-        };
-        let block_hash_bytes = hex_str.to_bytes();
-        let Some(cbt) = chrono::DateTime::from_timestamp(block.time, 0) else {
-            return;
-        };
+    fn emit_cursor_progress(
+        block_time: BlockTimeProjection,
+        page: u32,
+        sync_cursor_tx: &watch::Sender<Option<DltCursor>>,
+    ) {
         let cursor = DltCursor {
-            slot: block.slot,
-            block_hash: block_hash_bytes,
-            cbt: Some(cbt),
+            slot: block_time.slot_no as u64,
+            block_hash: block_time.block_hash,
+            cbt: Some(block_time.time),
+            blockfrost_page: Some(page),
         };
         let _ = sync_cursor_tx.send(Some(cursor));
-        tracing::debug!("Cursor persisted to slot={}, height={}", block.slot, block.height);
     }
 
     async fn stream_loop(
         api: Arc<BlockfrostAPI>,
         event_tx: mpsc::Sender<PublishedPrismObject>,
         sync_cursor_tx: watch::Sender<Option<DltCursor>>,
-        from_slot: u64,
+        from_page: u32,
         confirmation_blocks: u16,
         poll_interval: u64,
+        concurrency_limit: usize,
     ) -> Result<(), DltError> {
-        let initial_cursor = sync_cursor_tx.borrow().as_ref().map(|c| c.slot).unwrap_or(from_slot);
-        let mut current_slot = initial_cursor;
+        const PAGE_SIZE: usize = 100;
+
+        let mut processed_tx_of_page: HashSet<String> = HashSet::new();
+        let mut current_page = sync_cursor_tx
+            .borrow()
+            .as_ref()
+            .and_then(|c| c.blockfrost_page)
+            .unwrap_or(from_page);
 
         loop {
-            let confirmed_block = fetch_latest_confirmed_block(&api, confirmation_blocks).await?;
-            let confirmed_height = confirmed_block
-                .height
-                .ok_or_else(|| DltError::Connection { location: location!() })?
-                as u64;
-            let confirmed_slot = confirmed_block
-                .slot
-                .ok_or_else(|| DltError::Connection { location: location!() })? as u64;
-            let confirmed_time = confirmed_block.time as i64;
+            let batch = Self::fetch_metadata_page(&api, current_page, PAGE_SIZE).await?;
+            let batch_len = batch.len();
+            let unprocessed_batch = batch
+                .into_iter()
+                .filter(|metadata| !processed_tx_of_page.contains(&metadata.tx_hash))
+                .collect::<Vec<_>>();
 
-            let prism_txs = fetch_prism_metadata_pages(&api).await?;
-
-            let mut new_prism_blocks = false;
-
-            for tx_meta in prism_txs {
-                let (block, tx_index) = get_block_for_tx(&api, &tx_meta.tx_hash).await?;
-
-                if block.slot > current_slot && block.height <= confirmed_height {
-                    let json_metadata = tx_meta
-                        .json_metadata
-                        .ok_or_else(|| DltError::Connection { location: location!() })?;
-                    let metadata = models::BlockfrostMetadata {
-                        tx_hash: tx_meta.tx_hash.clone(),
-                        tx_index,
-                        json_metadata,
-                    };
-
-                    match models::parse_blockfrost_metadata(block.clone(), metadata) {
-                        Ok(prism_object) => {
-                            tracing::info!(
-                                "Detected PRISM metadata in tx={}, slot={}, index={}",
-                                tx_meta.tx_hash,
-                                block.slot,
-                                tx_index
-                            );
-
-                            event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
-                                source: e.to_string().into(),
-                                location: location!(),
-                            })?;
-
-                            Self::persist_cursor(&block, &sync_cursor_tx);
-
-                            current_slot = block.slot;
-                            new_prism_blocks = true;
-                        }
-                        Err(e) => {
-                            tracing::warn!(
-                                "Failed to parse PRISM metadata in tx={}, slot={}, index={}: {}",
-                                tx_meta.tx_hash,
-                                block.slot,
-                                tx_index,
-                                e
-                            );
-                        }
-                    }
-                }
-            }
-
-            if !new_prism_blocks {
-                let block_for_cursor = models::BlockfrostBlock {
-                    hash: confirmed_block.hash,
-                    height: confirmed_height,
-                    slot: confirmed_slot,
-                    time: confirmed_time,
+            if unprocessed_batch.is_empty() {
+                // No new data, emit cursor from latest confirmed block and sleep
+                if let Some(latest_confirmed_block) =
+                    Self::fetch_latest_confirmed_block(&api, confirmation_blocks).await?
+                    && let Ok(block_time) = BlockTimeProjection::try_from(&latest_confirmed_block)
+                {
+                    Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
                 };
-                Self::persist_cursor(&block_for_cursor, &sync_cursor_tx);
 
                 tokio::time::sleep(tokio::time::Duration::from_secs(poll_interval)).await;
+                continue;
+            }
+
+            // Fetch all transaction details concurrently while maintaining order
+            let tx_contents: Vec<(TxContent, TxMetadataLabelJsonInner)> =
+                futures::stream::iter(unprocessed_batch.into_iter())
+                    .map(|metadata| {
+                        let api = api.clone();
+                        async move {
+                            let tx_content = Self::fetch_tx_by_id(&api, &metadata.tx_hash).await?;
+                            tracing::debug!(tx=?tx_content.hash, block_height=?tx_content.block_height, slot=?tx_content.slot, "fetched transaction successfully");
+                            Ok::<_, DltError>((tx_content, metadata))
+                        }
+                    })
+                    .buffered(concurrency_limit.max(1))
+                    .try_collect::<Vec<_>>()
+                    .await?;
+
+            for (tx_content, metadata) in tx_contents {
+                let handle_result = Self::handle_metadata(&tx_content, metadata, &event_tx).await;
+                if let Err(e) = handle_result {
+                    tracing::error!("error handling event from blockfrost source");
+                    let report = std::error::Report::new(&e).pretty(true);
+                    tracing::error!("{}", report);
+                    return Err(e);
+                }
+
+                if let Ok(block_time) = BlockTimeProjection::try_from(&tx_content) {
+                    Self::emit_cursor_progress(block_time, current_page, &sync_cursor_tx);
+                }
+                processed_tx_of_page.insert(tx_content.hash);
+            }
+
+            if batch_len == PAGE_SIZE {
+                current_page += 1;
+                processed_tx_of_page.clear();
             }
         }
+    }
+
+    async fn handle_metadata(
+        tx_content: &TxContent,
+        metadata: TxMetadataLabelJsonInner,
+        event_tx: &mpsc::Sender<PublishedPrismObject>,
+    ) -> Result<(), DltError> {
+        tracing::info!(
+            "detected a new prism_block on slot ({}, {})",
+            tx_content.slot,
+            tx_content.block
+        );
+
+        let parsed_prism_object = models::parse_published_prism_object(tx_content, metadata);
+        match parsed_prism_object {
+            Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
+                source: e.to_string().into(),
+                location: location!(),
+            })?,
+            Err(e) => {
+                tracing::warn!("unable to parse blockfrost metadata into PrismObject: {}", e);
+            }
+        }
+        Ok(())
+    }
+
+    async fn fetch_latest_confirmed_block(
+        api: &BlockfrostAPI,
+        confirmation_blocks: u16,
+    ) -> Result<Option<BlockContent>, DltError> {
+        let latest_block = api.blocks_latest().await.map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
+        let Some(latest_confirmed_block_no) = latest_block.height.map(|h| h - (confirmation_blocks as i32)) else {
+            return Ok(None);
+        };
+        let latest_confirmed_block = api
+            .blocks_by_id(&latest_confirmed_block_no.to_string())
+            .await
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })?;
+        Ok(Some(latest_confirmed_block))
+    }
+
+    async fn fetch_tx_by_id(api: &BlockfrostAPI, tx_hash: &str) -> Result<TxContent, DltError> {
+        api.transaction_by_hash(tx_hash)
+            .await
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })
+    }
+
+    async fn fetch_metadata_page(
+        api: &BlockfrostAPI,
+        page: u32,
+        page_size: usize,
+    ) -> Result<Vec<TxMetadataLabelJsonInner>, DltError> {
+        let pagination = blockfrost::Pagination::new(blockfrost::Order::Asc, page as usize, page_size);
+        api.metadata_txs_by_label("21325", pagination)
+            .await
+            .map_err(|e| DltError::Connection {
+                source: e.into(),
+                location: location!(),
+            })
     }
 }

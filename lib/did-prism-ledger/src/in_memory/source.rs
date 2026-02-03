@@ -41,6 +41,7 @@ impl DltSource for InMemoryDltSource {
                         .to_le_bytes()
                         .to_vec(),
                     cbt: Some(published_object.block_metadata.cbt),
+                    blockfrost_page: None,
                 };
                 let _ = sync_cursor_tx.send(Some(cursor));
 

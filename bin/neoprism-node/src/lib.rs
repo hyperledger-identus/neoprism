@@ -331,6 +331,7 @@ async fn init_dlt_source(
             &dlt_args.blockfrost_base_url,
             dlt_args.confirmation_blocks,
             dlt_args.blockfrost_poll_interval,
+            dlt_args.blockfrost_concurrency_limit,
         )
         .await
         .expect("Failed to create Blockfrost source");

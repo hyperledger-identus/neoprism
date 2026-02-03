@@ -129,6 +129,9 @@ pub struct DltSourceArgs {
         group = "dlt-source"
     )]
     pub blockfrost_base_url: String,
+    /// Blockfrost concurrency limit
+    #[arg(long, env = "NPRISM_BLOCKFROST_CONCURRENCY_LIMIT", default_value_t = 4)]
+    pub blockfrost_concurrency_limit: usize,
     /// Number of seconds to wait before polling Blockfrost for the next update.
     #[arg(long, env = "NPRISM_BLOCKFROST_POLL_INTERVAL", default_value_t = 10)]
     pub blockfrost_poll_interval: u64,

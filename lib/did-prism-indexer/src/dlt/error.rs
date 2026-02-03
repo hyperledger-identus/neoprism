@@ -8,8 +8,8 @@ pub enum DltError {
     InitSource { source: StdError },
     #[display("timeout receiving event from DLT source {location}")]
     EventRecvTimeout { location: Location },
-    #[display("event source has connectivity issue {location}")]
-    Connection { location: Location },
+    #[display("event source has connectivity issue at {location}: {source}")]
+    Connection { source: StdError, location: Location },
     #[display("handling DLT event failed {location}")]
     EventHandling { source: StdError, location: Location },
 }

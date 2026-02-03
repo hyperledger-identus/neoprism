@@ -11,6 +11,7 @@ pub struct DltCursor {
     pub id: Uuid,
     pub slot: i64,
     pub block_hash: Vec<u8>,
+    pub blockfrost_page: Option<i64>,
 }
 
 #[derive(Entity, sqlx::FromRow)]

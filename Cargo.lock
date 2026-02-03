@@ -1888,6 +1888,7 @@ dependencies = [
  "blockfrost-openapi",
  "chrono",
  "derive_more",
+ "futures",
  "identus-apollo",
  "identus-did-prism",
  "oura",

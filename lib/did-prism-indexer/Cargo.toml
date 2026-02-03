@@ -10,6 +10,7 @@ blockfrost         = { workspace = true, optional = true }
 blockfrost-openapi = { workspace = true, optional = true }
 chrono             = { workspace = true }
 derive_more        = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
+futures            = { workspace = true, optional = true }
 oura               = { workspace = true, optional = true }
 pallas-primitives  = { workspace = true, optional = true }
 protobuf           = { workspace = true }
@@ -27,4 +28,4 @@ identus-did-prism = { workspace = true }
 default    = [  ]
 oura       = [ "dep:oura", "dep:pallas-primitives" ]
 dbsync     = [ "dep:sqlx", "dep:serde_json" ]
-blockfrost = [ "dep:blockfrost", "dep:blockfrost-openapi", "dep:serde_json" ]
+blockfrost = [ "dep:blockfrost", "dep:blockfrost-openapi", "dep:serde_json", "dep:futures" ]

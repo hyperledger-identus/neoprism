@@ -15,7 +15,7 @@ use crate::repo::DltCursorRepo;
 mod models {
     use chrono::{DateTime, Utc};
     use identus_apollo::hex::HexStr;
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
+    use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
     use sqlx::FromRow;
 
     use crate::dlt::common::metadata_map::MetadataMapJson;
@@ -49,30 +49,43 @@ mod models {
         }
     }
 
-    pub fn parse_metadata_projection(metadata: MetadataProjection) -> Result<PublishedPrismObject, MetadataReadError> {
-        let block_hash = HexStr::from(&metadata.block_hash).to_string();
-        let tx_idx = Some(metadata.tx_idx as usize);
+    fn parse_block_metadata(
+        metadata: &MetadataProjection,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<BlockMetadata, MetadataReadError> {
         let tx_id = TxId::from_bytes(&metadata.tx_hash).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.to_string().into(),
-            block_hash: Some(block_hash.clone()),
-            tx_idx,
+            block_hash: block_hash.clone(),
+            tx_idx: *tx_idx,
         })?;
-        let block_metadata = BlockMetadata {
-            slot_number: (metadata.slot_no as u64).into(),
-            block_number: (metadata.block_no as u64).into(),
+
+        Ok(BlockMetadata {
+            slot_number: SlotNo::from(metadata.slot_no as u64),
+            block_number: BlockNo::from(metadata.block_no as u64),
             cbt: metadata.time,
             absn: metadata.tx_idx as u32,
             tx_id,
-        };
+        })
+    }
+
+    pub fn parse_published_prism_object(
+        metadata: MetadataProjection,
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash_str = HexStr::from(&metadata.block_hash).to_string();
+        let block_hash = Some(block_hash_str.clone());
+        let tx_idx = Some(metadata.tx_idx as usize);
+
+        let block_metadata = parse_block_metadata(&metadata, &block_hash, &tx_idx)?;
 
         let metadata_json: MetadataMapJson =
             serde_json::from_value(metadata.metadata).map_err(|e| MetadataReadError::InvalidMetadataType {
                 source: e.into(),
-                block_hash: Some(block_hash.clone()),
+                block_hash,
                 tx_idx,
             })?;
 
-        let prism_object = metadata_json.parse_prism_object(&block_hash, tx_idx)?;
+        let prism_object = metadata_json.parse_prism_object(&block_hash_str, tx_idx)?;
 
         Ok(PublishedPrismObject {
             block_metadata,
@@ -162,6 +175,7 @@ impl DbSyncStreamWorker {
             let event_tx = self.event_tx;
             let sync_cursor_tx = self.sync_cursor_tx;
             loop {
+                tracing::info!("starting dbsync stream worker");
                 let pool = PgPoolOptions::new().max_connections(1).connect(&db_url).await;
                 match pool {
                     Ok(pool) => {
@@ -175,18 +189,19 @@ impl DbSyncStreamWorker {
                         )
                         .await
                         {
-                            tracing::error!("DbSync stream loop termitated with error {}", e);
+                            tracing::error!("stream loop terminated with error");
+                            let report = std::error::Report::new(&e).pretty(true);
+                            tracing::error!("{}", report);
                         }
                     }
                     Err(e) => {
-                        tracing::error!("Unable to connect to dbsync database: {}", e);
+                        tracing::error!("unable to connect to dbsync database");
+                        let report = std::error::Report::new(&e).pretty(true);
+                        tracing::error!("{}", report);
                     }
                 }
 
-                tracing::error!(
-                    "DbSync pipeline terminated, Restarting in {} seconds",
-                    RESTART_DELAY.as_secs()
-                );
+                tracing::error!("dbsync pipeline terminated, restarting in {}s", RESTART_DELAY.as_secs());
 
                 tokio::time::sleep(RESTART_DELAY).await;
             }
@@ -215,9 +230,9 @@ impl DbSyncStreamWorker {
             let row_count = metadata_rows.len();
             for row in metadata_rows {
                 let handle_result = Self::handle_prism_row(row.clone(), &event_tx).await;
-                Self::persist_cursor(row.into(), &sync_cursor_tx);
+                Self::emit_cursor_progress(row.into(), &sync_cursor_tx);
                 if let Err(e) = handle_result {
-                    tracing::error!("Error handling event from DbSync source");
+                    tracing::error!("error handling event from dbsync source");
                     let report = std::error::Report::new(&e).pretty(true);
                     tracing::error!("{}", report);
                     return Err(e);
@@ -226,11 +241,11 @@ impl DbSyncStreamWorker {
 
             if row_count == 0 {
                 // get latest block if we don't find any prism block just to know where we are
-                if let Ok(block_time) = Self::fetch_latest_block(&pool, confirmation_blocks)
+                if let Ok(block_time) = Self::fetch_latest_confirmed_block(&pool, confirmation_blocks)
                     .await
-                    .inspect_err(|e| tracing::error!("Unable to get the latest block: {}", e))
+                    .inspect_err(|e| tracing::error!("unable to get the latest block: {}", e))
                 {
-                    Self::persist_cursor(block_time, &sync_cursor_tx);
+                    Self::emit_cursor_progress(block_time, &sync_cursor_tx);
                 }
 
                 // sleep if we don't find a new block to avoid spamming db sync
@@ -244,27 +259,25 @@ impl DbSyncStreamWorker {
         event_tx: &mpsc::Sender<PublishedPrismObject>,
     ) -> Result<(), DltError> {
         tracing::info!(
-            "Detected a new prism_block on slot ({}, {})",
+            "detected a new prism_block on slot ({}, {})",
             row.slot_no,
-            HexStr::from(&row.block_hash).to_string(),
+            HexStr::from(&row.block_hash).to_string()
         );
 
-        let parsed_prism_object = models::parse_metadata_projection(row);
+        let parsed_prism_object = models::parse_published_prism_object(row);
         match parsed_prism_object {
             Ok(prism_object) => event_tx.send(prism_object).await.map_err(|e| DltError::EventHandling {
                 source: e.to_string().into(),
                 location: location!(),
             })?,
             Err(e) => {
-                // TODO: add debug level error report
-                tracing::warn!("Unable to parse dbsync row into PrismObject. ({})", e);
+                tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
             }
         }
-
         Ok(())
     }
 
-    fn persist_cursor(block_time: BlockTimeProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
+    fn emit_cursor_progress(block_time: BlockTimeProjection, sync_cursor_tx: &watch::Sender<Option<DltCursor>>) {
         let slot = block_time.slot_no as u64;
         let block_hash = HexStr::from(block_time.block_hash);
         let timestamp = block_time.time;
@@ -272,11 +285,15 @@ impl DbSyncStreamWorker {
             slot,
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
+            blockfrost_page: None,
         };
         let _ = sync_cursor_tx.send(Some(cursor));
     }
 
-    async fn fetch_latest_block(pool: &PgPool, confirmation_blocks: u16) -> Result<BlockTimeProjection, DltError> {
+    async fn fetch_latest_confirmed_block(
+        pool: &PgPool,
+        confirmation_blocks: u16,
+    ) -> Result<BlockTimeProjection, DltError> {
         let row = sqlx::query_as(
             r#"
 SELECT
@@ -292,8 +309,11 @@ LIMIT 1
         .bind(i64::from(confirmation_blocks))
         .fetch_one(pool)
         .await
-        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
-        .map_err(|_| DltError::Connection { location: location!() })?;
+        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {}", e))
+        .map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
 
         Ok(row)
     }
@@ -325,8 +345,11 @@ LIMIT 1000
         .bind(i64::from(confirmation_blocks))
         .fetch_all(pool)
         .await
-        .inspect_err(|e| tracing::error!("Failed to get data from dbsync: {}", e))
-        .map_err(|_| DltError::Connection { location: location!() })?;
+        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {}", e))
+        .map_err(|e| DltError::Connection {
+            source: e.into(),
+            location: location!(),
+        })?;
         Ok(rows)
     }
 }

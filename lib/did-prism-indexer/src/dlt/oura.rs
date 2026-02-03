@@ -21,7 +21,7 @@ mod models {
     use std::str::FromStr;
 
     use chrono::{DateTime, Utc};
-    use identus_did_prism::dlt::{BlockMetadata, PublishedPrismObject, TxId};
+    use identus_did_prism::dlt::{BlockMetadata, BlockNo, PublishedPrismObject, SlotNo, TxId};
     use identus_did_prism::prelude::*;
     use identus_did_prism::proto::prism::PrismObject;
     use oura::model::{EventContext, MetadataRecord};
@@ -43,52 +43,56 @@ mod models {
         })
     }
 
-    pub fn parse_oura_event(
-        context: EventContext,
-        metadata: MetadataRecord,
-    ) -> Result<PublishedPrismObject, MetadataReadError> {
-        // parse metadata
-        let block_hash = &context.block_hash;
-        let tx_idx = context.tx_idx;
-        let timestamp = parse_oura_timestamp(&context)?;
+    fn parse_block_metadata(
+        context: &EventContext,
+        block_hash: &Option<String>,
+        tx_idx: &Option<usize>,
+    ) -> Result<BlockMetadata, MetadataReadError> {
+        let timestamp = parse_oura_timestamp(context)?;
+
         let tx_hash_hex = context
             .tx_hash
             .as_ref()
             .ok_or(MetadataReadError::MissingBlockProperty {
                 block_hash: block_hash.clone(),
-                tx_idx,
+                tx_idx: *tx_idx,
                 name: "tx_hash",
             })?;
         let tx_id = TxId::from_str(tx_hash_hex).map_err(|e| MetadataReadError::InvalidMetadataType {
             source: e.into(),
             block_hash: block_hash.clone(),
-            tx_idx,
+            tx_idx: *tx_idx,
         })?;
-        let block_metadata = BlockMetadata {
+
+        Ok(BlockMetadata {
             cbt: timestamp,
             absn: context.tx_idx.ok_or(MetadataReadError::MissingBlockProperty {
                 block_hash: block_hash.clone(),
-                tx_idx,
+                tx_idx: *tx_idx,
                 name: "tx_idx",
             })? as u32,
-            block_number: context
-                .block_number
-                .ok_or(MetadataReadError::MissingBlockProperty {
-                    block_hash: block_hash.clone(),
-                    tx_idx,
-                    name: "block_number",
-                })?
-                .into(),
-            slot_number: context
-                .slot
-                .ok_or(MetadataReadError::MissingBlockProperty {
-                    block_hash: block_hash.clone(),
-                    tx_idx,
-                    name: "slot",
-                })?
-                .into(),
+            block_number: BlockNo::from(context.block_number.ok_or(MetadataReadError::MissingBlockProperty {
+                block_hash: block_hash.clone(),
+                tx_idx: *tx_idx,
+                name: "block_number",
+            })?),
+            slot_number: SlotNo::from(context.slot.ok_or(MetadataReadError::MissingBlockProperty {
+                block_hash: block_hash.clone(),
+                tx_idx: *tx_idx,
+                name: "slot",
+            })?),
             tx_id,
-        };
+        })
+    }
+
+    pub fn parse_published_prism_object(
+        context: EventContext,
+        metadata: MetadataRecord,
+    ) -> Result<PublishedPrismObject, MetadataReadError> {
+        let block_hash = context.block_hash.clone();
+        let tx_idx = context.tx_idx;
+
+        let block_metadata = parse_block_metadata(&context, &block_hash, &tx_idx)?;
 
         // parse prism_block
         let byte_group = match metadata.metadatum {
@@ -128,7 +132,7 @@ mod models {
         let prism_object =
             PrismObject::decode(bytes.as_slice()).map_err(|e| MetadataReadError::PrismBlockProtoDecode {
                 source: e,
-                block_hash: block_hash.clone(),
+                block_hash,
                 tx_idx,
             })?;
 
@@ -186,7 +190,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
             Some(cursor) => {
                 let blockhash_hex = HexStr::from(cursor.block_hash).to_string();
                 tracing::info!(
-                    "Persisted cursor found, starting syncing from ({}, {})",
+                    "persisted cursor found, resuming sync from slot ({}, {})",
                     cursor.slot,
                     blockhash_hex
                 );
@@ -194,7 +198,7 @@ impl<E, Store: DltCursorRepo<Error = E> + Send + 'static> OuraN2NSource<Store> {
                 Ok(Self::new(store, remote_addr, chain, intersect, confirmation_blocks))
             }
             None => {
-                tracing::info!("Persisted cursor not found, staring syncing from PRISM genesis slot");
+                tracing::info!("persisted cursor not found, starting sync from PRISM genesis slot");
                 Ok(Self::since_genesis(store, remote_addr, chain, confirmation_blocks))
             }
         }
@@ -270,7 +274,7 @@ impl OuraStreamWorker {
         std::thread::spawn(move || {
             loop {
                 let with_utils = self.build_with_util();
-                tracing::info!("Bootstraping oura pipeline thread");
+                tracing::info!("starting oura stream worker");
                 let (handle, oura_rx) = with_utils.bootstrap().map_err(|e| DltError::InitSource {
                     source: e.to_string().into(),
                 })?;
@@ -286,10 +290,7 @@ impl OuraStreamWorker {
                     }
                 };
 
-                tracing::error!(
-                    "Oura pipeline terminated. Restarting in {} seconds",
-                    RESTART_DELAY.as_secs()
-                );
+                tracing::error!("oura pipeline terminated, restarting in {}s", RESTART_DELAY.as_secs());
                 std::thread::sleep(RESTART_DELAY);
             }
         })
@@ -316,14 +317,17 @@ impl OuraStreamWorker {
             let handle_result = match receiver.recv_timeout(TIMEOUT) {
                 Ok(event) => {
                     let handle_result = self.handle_prism_event(event.clone());
-                    self.persist_cursor(&event);
+                    self.emit_cursor_progress(&event);
                     handle_result
                 }
                 Err(RecvTimeoutError::Timeout) => Err(DltError::EventRecvTimeout { location: location!() }),
-                Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection { location: location!() }),
+                Err(RecvTimeoutError::Disconnected) => Err(DltError::Connection {
+                    source: RecvTimeoutError::Disconnected.into(),
+                    location: location!(),
+                }),
             };
             if let Err(e) = handle_result {
-                tracing::error!("Error handling event from oura source");
+                tracing::error!("error handling event from oura source");
                 let report = std::error::Report::new(&e).pretty(true);
                 tracing::error!("{}", report);
                 return e;
@@ -331,7 +335,7 @@ impl OuraStreamWorker {
         }
     }
 
-    fn persist_cursor(&self, event: &Event) {
+    fn emit_cursor_progress(&self, event: &Event) {
         let Some(slot) = event.context.slot else {
             return;
         };
@@ -348,6 +352,7 @@ impl OuraStreamWorker {
             slot,
             block_hash: block_hash.to_bytes(),
             cbt: Some(timestamp),
+            blockfrost_page: None,
         };
         let _ = self.sync_cursor_tx.send(Some(cursor));
     }
@@ -362,12 +367,12 @@ impl OuraStreamWorker {
 
         let context = event.context;
         tracing::info!(
-            "Detected a new prism_block on slot ({}, {})",
+            "detected a new prism_block on slot ({}, {})",
             context.slot.unwrap_or_default(),
-            context.block_hash.as_deref().unwrap_or_default(),
+            context.block_hash.as_deref().unwrap_or_default()
         );
 
-        let parsed_prism_object = models::parse_oura_event(context, meta);
+        let parsed_prism_object = models::parse_published_prism_object(context, meta);
         match parsed_prism_object {
             Ok(prism_object) => self
                 .event_tx
@@ -377,8 +382,7 @@ impl OuraStreamWorker {
                     location: location!(),
                 })?,
             Err(e) => {
-                // TODO: add debug level error report
-                tracing::warn!("Unable to parse oura event into PrismObject. ({})", e);
+                tracing::warn!("unable to parse oura metadata into PrismObject: {}", e);
             }
         }
 
