@@ -398,12 +398,13 @@ impl BlockfrostStreamWorker {
             source: e.into(),
             location: location!(),
         })?;
-        let Some(latest_confirmed_block_no) = latest_block.height.map(|h| h - (confirmation_blocks as i32)) else {
+        let latest_confirmed_block_no = latest_block
+            .height
+            .and_then(|h| h.checked_sub(confirmation_blocks as i32))
+            .filter(|&h| h > 0);
+        let Some(latest_confirmed_block_no) = latest_confirmed_block_no else {
             return Ok(None);
         };
-        if latest_confirmed_block_no <= 0 {
-            return Ok(None);
-        }
         let latest_confirmed_block = api
             .blocks_by_id(&latest_confirmed_block_no.to_string())
             .await
