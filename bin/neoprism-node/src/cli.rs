@@ -126,8 +126,7 @@ pub struct DltSourceArgs {
     #[arg(
         long,
         env = "NPRISM_BLOCKFROST_BASE_URL",
-        default_value = "https://cardano-mainnet.blockfrost.io/api/v0",
-        group = "dlt-source"
+        default_value = "https://cardano-mainnet.blockfrost.io/api/v0"
     )]
     pub blockfrost_base_url: String,
     /// Duration to wait before polling Blockfrost for the next update.

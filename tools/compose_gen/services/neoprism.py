@@ -17,6 +17,15 @@ class DbSyncDltSource(BaseModel):
     poll_interval: str = "10s"
 
 
+class BlockfrostDltSource(BaseModel):
+    source_type: Literal["blockfrost"] = "blockfrost"
+    api_key: str
+    base_url: str
+    poll_interval: str = "10s"
+    api_delay: str | None = None
+    concurrency_limit: int | None = None
+
+
 class DltSink(BaseModel):
     wallet_host: str
     wallet_port: int
@@ -27,12 +36,12 @@ class DltSink(BaseModel):
 
 class IndexerCommand(BaseModel):
     command: Literal["indexer"] = "indexer"
-    dlt_source: OuraDltSource | DbSyncDltSource
+    dlt_source: OuraDltSource | DbSyncDltSource | BlockfrostDltSource
 
 
 class StandaloneCommand(BaseModel):
     command: Literal["standalone"] = "standalone"
-    dlt_source: OuraDltSource | DbSyncDltSource
+    dlt_source: OuraDltSource | DbSyncDltSource | BlockfrostDltSource
     dlt_sink: DltSink
 
 
@@ -96,45 +105,13 @@ def mk_service(options: Options) -> Service:
     if options.external_url is not None:
         environment["NPRISM_EXTERNAL_URL"] = str(options.external_url)
 
-    # Add Indexer configuration
-    if isinstance(options.command, IndexerCommand):
-        # Add source configuration
-        if isinstance(options.command.dlt_source, OuraDltSource):
-            environment["NPRISM_CARDANO_RELAY_ADDR"] = (
-                options.command.dlt_source.address
-            )
-        else:
-            environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
-            environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
-                options.command.dlt_source.poll_interval
-            )
+    # DLT source - both indexer and standalone need this
+    if isinstance(options.command, (IndexerCommand, StandaloneCommand)):
+        _add_dlt_source_env(environment, options.command.dlt_source)
 
-    # Add standalone configuration
-    elif isinstance(options.command, StandaloneCommand):
-        # Add source configuration
-        if isinstance(options.command.dlt_source, OuraDltSource):
-            environment["NPRISM_CARDANO_RELAY_ADDR"] = (
-                options.command.dlt_source.address
-            )
-        else:
-            environment["NPRISM_CARDANO_DBSYNC_URL"] = options.command.dlt_source.url
-            environment["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(
-                options.command.dlt_source.poll_interval
-            )
-
-        # Add sink configuration
-        sink = options.command.dlt_sink
-        environment.update(
-            {
-                "NPRISM_CARDANO_WALLET_BASE_URL": f"http://{sink.wallet_host}:{sink.wallet_port}/v2",
-                "NPRISM_CARDANO_WALLET_WALLET_ID": sink.wallet_id,
-                "NPRISM_CARDANO_WALLET_PASSPHRASE": sink.wallet_passphrase,
-                "NPRISM_CARDANO_WALLET_PAYMENT_ADDR": sink.wallet_payment_address,
-            }
-        )
-
-    # Build depends_on
+    # DLT sink - only standalone needs this
     if isinstance(options.command, StandaloneCommand):
+        _add_dlt_sink_env(environment, options.command.dlt_sink)
         depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
             condition="service_healthy"
         )
@@ -155,4 +132,36 @@ def mk_service(options: Options) -> Service:
             test=["CMD", "curl", "-f", "http://localhost:8080/api/_system/health"]
         ),
         volumes=options.volumes,
+    )
+
+
+def _add_dlt_source_env(
+    env: dict[str, str], source: OuraDltSource | DbSyncDltSource | BlockfrostDltSource
+) -> None:
+    """Add DLT source-specific environment variables."""
+    if isinstance(source, OuraDltSource):
+        env["NPRISM_CARDANO_RELAY_ADDR"] = source.address
+    elif isinstance(source, DbSyncDltSource):
+        env["NPRISM_CARDANO_DBSYNC_URL"] = source.url
+        env["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(source.poll_interval)
+    else:
+        # BlockfrostDltSource is the only remaining option in the union
+        env["NPRISM_BLOCKFROST_API_KEY"] = source.api_key
+        env["NPRISM_BLOCKFROST_BASE_URL"] = source.base_url
+        env["NPRISM_BLOCKFROST_POLL_INTERVAL"] = source.poll_interval
+        if source.api_delay is not None:
+            env["NPRISM_BLOCKFROST_API_DELAY"] = source.api_delay
+        if source.concurrency_limit is not None:
+            env["NPRISM_BLOCKFROST_CONCURRENCY_LIMIT"] = str(source.concurrency_limit)
+
+
+def _add_dlt_sink_env(env: dict[str, str], sink: DltSink) -> None:
+    """Add DLT sink-specific environment variables."""
+    env.update(
+        {
+            "NPRISM_CARDANO_WALLET_BASE_URL": f"http://{sink.wallet_host}:{sink.wallet_port}/v2",
+            "NPRISM_CARDANO_WALLET_WALLET_ID": sink.wallet_id,
+            "NPRISM_CARDANO_WALLET_PASSPHRASE": sink.wallet_passphrase,
+            "NPRISM_CARDANO_WALLET_PAYMENT_ADDR": sink.wallet_payment_address,
+        }
     )
