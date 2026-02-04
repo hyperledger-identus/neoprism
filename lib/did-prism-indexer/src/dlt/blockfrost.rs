@@ -384,7 +384,7 @@ impl BlockfrostStreamWorker {
                 location: location!(),
             })?,
             Err(e) => {
-                tracing::warn!("unable to parse blockfrost metadata into PrismObject: {}", e);
+                tracing::warn!("unable to parse blockfrost metadata into PrismObject: {:?}", e);
             }
         }
         Ok(())

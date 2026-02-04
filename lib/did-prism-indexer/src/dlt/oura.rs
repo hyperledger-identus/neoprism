@@ -382,7 +382,7 @@ impl OuraStreamWorker {
                     location: location!(),
                 })?,
             Err(e) => {
-                tracing::warn!("unable to parse oura metadata into PrismObject: {}", e);
+                tracing::warn!("unable to parse oura metadata into PrismObject: {:?}", e);
             }
         }
 

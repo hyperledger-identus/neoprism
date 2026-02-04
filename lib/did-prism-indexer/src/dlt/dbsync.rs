@@ -251,7 +251,7 @@ impl DbSyncStreamWorker {
                 // get latest block if we don't find any prism block just to know where we are
                 if let Ok(block_time) = Self::fetch_latest_confirmed_block(&pool, confirmation_blocks)
                     .await
-                    .inspect_err(|e| tracing::error!("unable to get the latest block: {}", e))
+                    .inspect_err(|e| tracing::error!("unable to get the latest block: {:?}", e))
                 {
                     Self::emit_cursor_progress(block_time, &sync_cursor_tx);
                 }
@@ -279,7 +279,7 @@ impl DbSyncStreamWorker {
                 location: location!(),
             })?,
             Err(e) => {
-                tracing::warn!("unable to parse dbsync row into PrismObject: {}", e);
+                tracing::warn!("unable to parse dbsync row into PrismObject: {:?}", e);
             }
         }
         Ok(())
@@ -317,7 +317,7 @@ LIMIT 1
         .bind(i64::from(confirmation_blocks))
         .fetch_one(pool)
         .await
-        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {}", e))
+        .inspect_err(|e| tracing::error!("failed to get data from dbsync: {:?}", e))
         .map_err(|e| DltError::Connection {
             source: e.into(),
             location: location!(),
