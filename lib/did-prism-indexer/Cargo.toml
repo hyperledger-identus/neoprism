@@ -4,24 +4,28 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-anyhow            = { workspace = true }
-async-trait       = { workspace = true }
-chrono            = { workspace = true }
-derive_more       = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
-oura              = { workspace = true, optional = true }
-pallas-primitives = { workspace = true, optional = true }
-protobuf          = { workspace = true }
-serde             = { workspace = true, features = [ "derive" ] }
-serde_json        = { workspace = true, optional = true }
-sqlx              = { workspace = true, optional = true, features = [ "postgres", "chrono" ] }
-tokio             = { workspace = true, features = [ "sync", "time", "rt" ] }
-tracing           = { workspace = true }
-uuid              = { workspace = true }
+anyhow             = { workspace = true }
+async-trait        = { workspace = true }
+blockfrost         = { workspace = true, optional = true }
+blockfrost-openapi = { workspace = true, optional = true }
+chrono             = { workspace = true }
+derive_more        = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
+futures            = { workspace = true, optional = true }
+oura               = { workspace = true, optional = true }
+pallas-primitives  = { workspace = true, optional = true }
+protobuf           = { workspace = true }
+serde              = { workspace = true, features = [ "derive" ] }
+serde_json         = { workspace = true, optional = true }
+sqlx               = { workspace = true, optional = true, features = [ "postgres", "chrono" ] }
+tokio              = { workspace = true, features = [ "sync", "time", "rt" ] }
+tracing            = { workspace = true }
+uuid               = { workspace = true }
 
 identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 identus-did-prism = { workspace = true }
 
 [features]
-default = [  ]
-oura    = [ "dep:oura", "dep:pallas-primitives" ]
-dbsync  = [ "dep:sqlx", "dep:serde_json" ]
+default    = [  ]
+oura       = [ "dep:oura", "dep:pallas-primitives" ]
+dbsync     = [ "dep:sqlx", "dep:serde_json" ]
+blockfrost = [ "dep:blockfrost", "dep:blockfrost-openapi", "dep:serde_json", "dep:futures" ]

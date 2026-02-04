@@ -5,6 +5,8 @@
   cargoLock,
   stdenv,
   buildPackages,
+  openssl,
+  pkg-config,
 }:
 
 let
@@ -38,11 +40,15 @@ rustPlatform.buildRustPackage {
     with buildPackages;
     [
       protobuf
+      pkg-config
     ]
     ++ lib.optionals stdenv.buildPlatform.isDarwin [
       buildPackages.libiconv
       buildPackages.apple-sdk
     ];
+  buildInputs = [
+    openssl
+  ];
   doCheck = false;
   PROTOC = "${buildPackages.protobuf}/bin/protoc";
 }

@@ -17,10 +17,10 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
   Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.
   - Key options: 
     - DB-Sync URL: `--db-sync-url` or `NPRISM_DB_SYNC_URL`
-    - Poll interval: `--db-sync-poll-interval` or `NPRISM_DB_SYNC_POLL_INTERVAL`
+    - Poll interval: `--db-sync-poll-interval` or `NPRISM_DB_SYNC_POLL_INTERVAL` (duration format, e.g., `10s`, `1m`)
 
 - **Common DLT Source Options:**  
-  - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL`
+  - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL` (duration format, e.g., `10s`, `1m`)
   - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
 
 ---

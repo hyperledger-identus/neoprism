@@ -22,11 +22,16 @@ class Options(BaseModel):
     enable_blockfrost: bool = False
     neoprism_backend: Literal["postgres", "sqlite"] = "postgres"
     neoprism_mode: Literal["standalone", "dev"] = "standalone"
+    neoprism_dlt_source: Literal["dbsync", "blockfrost"] = "dbsync"
 
     @model_validator(mode="after")
     def validate_blockfrost_compatibility(self) -> "Options":
         if self.enable_blockfrost and self.neoprism_mode == "dev":
             raise ValueError("blockfrost cannot be enabled when neoprism mode is dev")
+        if self.neoprism_dlt_source == "blockfrost" and not self.enable_blockfrost:
+            raise ValueError(
+                "neoprism_dlt_source='blockfrost' requires enable_blockfrost=True"
+            )
         return self
 
     @property
@@ -116,11 +121,26 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
 
     if options.neoprism_mode == "dev":
         neoprism_command = neoprism.DevCommand()
+    elif options.neoprism_dlt_source == "blockfrost":
+        neoprism_command = neoprism.StandaloneCommand(
+            dlt_source=neoprism.BlockfrostDltSource(
+                api_key="",
+                base_url="http://bf-proxy:3000",
+                poll_interval="1s",
+            ),
+            dlt_sink=neoprism.DltSink(
+                wallet_host="cardano-wallet",
+                wallet_port=8090,
+                wallet_id=wallet_id,
+                wallet_passphrase=wallet_passphrase,
+                wallet_payment_address=wallet_payment_address,
+            ),
+        )
     else:
         neoprism_command = neoprism.StandaloneCommand(
             dlt_source=neoprism.DbSyncDltSource(
                 url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
-                poll_interval=1,
+                poll_interval="1s",
             ),
             dlt_sink=neoprism.DltSink(
                 wallet_host="cardano-wallet",
@@ -146,7 +166,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
         storage_backend=neoprism_storage_backend,
         external_url="http://localhost:18080",
         confirmation_blocks=0,
-        index_interval=1,
+        index_interval="1s",
         command=neoprism_command,
     )
 

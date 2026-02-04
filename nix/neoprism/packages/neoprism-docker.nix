@@ -7,6 +7,7 @@
   neoprism-ui-assets,
   version,
   extraPackages ? [ ],
+  openssl,
 }:
 
 dockerTools.buildLayeredImage {
@@ -21,6 +22,7 @@ dockerTools.buildLayeredImage {
     curl
     neoprism-bin
     neoprism-ui-assets
+    openssl
   ]
   ++ extraPackages;
   config = {

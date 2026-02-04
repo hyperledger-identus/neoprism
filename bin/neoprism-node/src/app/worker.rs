@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 
 use identus_did_prism::dlt::DltCursor;
 use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
@@ -31,11 +32,11 @@ where
 
 pub struct DltIndexWorker {
     store: SharedStorage,
-    index_interval: u64,
+    index_interval: Duration,
 }
 
 impl DltIndexWorker {
-    pub fn new(store: SharedStorage, index_interval: u64) -> Self {
+    pub fn new(store: SharedStorage, index_interval: Duration) -> Self {
         Self { store, index_interval }
     }
 
@@ -45,7 +46,7 @@ impl DltIndexWorker {
             if let Err(e) = result {
                 tracing::error!("{:?}", e);
             }
-            tokio::time::sleep(tokio::time::Duration::from_secs(self.index_interval)).await;
+            tokio::time::sleep(self.index_interval).await;
         }
     }
 }

@@ -98,6 +98,13 @@ def build_test_configs() -> dict[str, ComposeConfig]:
                 neoprism_backend="sqlite",
             )
         ),
+        "prism-test/compose-ci-blockfrost": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override="identus-neoprism:latest",
+                enable_blockfrost=True,
+                neoprism_dlt_source="blockfrost",
+            )
+        ),
     }
 
 

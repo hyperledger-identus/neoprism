@@ -1,5 +1,6 @@
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
 use identus_did_prism::dlt::NetworkIdentifier;
@@ -114,12 +115,33 @@ pub struct DltSourceArgs {
     /// (e.g. postgres://user:pass@host:5432/db)
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
     pub cardano_dbsync_url: Option<String>,
-    /// Number of seconds to wait before polling DB Sync for the next update.
-    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value_t = 10)]
-    pub cardano_dbsync_poll_interval: u64,
-    /// Number of seconds to wait before checking for unindexed operations.
-    #[arg(long, env = "NPRISM_INDEX_INTERVAL", default_value_t = 10)]
-    pub index_interval: u64,
+    /// Duration to wait before polling DB Sync for the next update.
+    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
+    pub cardano_dbsync_poll_interval: Duration,
+    /// Blockfrost API key.
+    /// If provided, the node will sync events from Blockfrost API.
+    #[arg(long, env = "NPRISM_BLOCKFROST_API_KEY", group = "dlt-source")]
+    pub blockfrost_api_key: Option<String>,
+    /// Blockfrost base URL.
+    #[arg(
+        long,
+        env = "NPRISM_BLOCKFROST_BASE_URL",
+        default_value = "https://cardano-mainnet.blockfrost.io/api/v0"
+    )]
+    pub blockfrost_base_url: String,
+    /// Duration to wait before polling Blockfrost for the next update.
+    #[arg(long, env = "NPRISM_BLOCKFROST_POLL_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
+    pub blockfrost_poll_interval: Duration,
+    /// Delay between Blockfrost API calls.
+    /// Set this to throttle requests and stay within Blockfrost API limits (e.g., "500ms", "1s").
+    #[arg(long, env = "NPRISM_BLOCKFROST_API_DELAY", default_value = "0ms", value_parser = humantime::parse_duration)]
+    pub blockfrost_api_delay: Duration,
+    /// Blockfrost API calls concurrency limit
+    #[arg(long, env = "NPRISM_BLOCKFROST_CONCURRENCY_LIMIT", default_value_t = 4)]
+    pub blockfrost_concurrency_limit: usize,
+    /// Duration to wait before checking for unindexed operations.
+    #[arg(long, env = "NPRISM_INDEX_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
+    pub index_interval: Duration,
     /// Number of confirmation blocks to wait before considering the block valid.
     #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
     pub confirmation_blocks: u16,

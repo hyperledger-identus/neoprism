@@ -13,6 +13,7 @@ clap               = { workspace = true, features = [ "derive", "env" ] }
 chrono             = { workspace = true }
 derive_more        = { workspace = true, features = [ "as_ref", "from", "into", "debug", "display", "error" ] }
 dirs               = { workspace = true }
+humantime          = { workspace = true }
 lazybe             = { workspace = true, features = [ "openapi" ] }
 maud               = { workspace = true, features = [ "axum" ] }
 serde              = { workspace = true, features = [ "derive" ] }
@@ -29,7 +30,7 @@ utoipa-swagger-ui = { version = "9", features = [ "axum", "vendored" ] }
 identus-apollo              = { workspace = true, features = [ "hex", "jwk" ] }
 identus-did-core            = { workspace = true, features = [ "openapi" ] }
 identus-did-prism           = { workspace = true, features = [ "openapi" ] }
-identus-did-prism-indexer   = { workspace = true, features = [ "oura", "dbsync" ] }
+identus-did-prism-indexer   = { workspace = true, features = [ "oura", "dbsync", "blockfrost" ] }
 identus-did-prism-ledger    = { workspace = true, features = [ "in-memory" ] }
 identus-did-prism-submitter = { workspace = true, features = [ "cardano-wallet" ] }
 identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
