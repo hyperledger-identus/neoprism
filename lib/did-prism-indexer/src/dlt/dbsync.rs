@@ -333,20 +333,39 @@ LIMIT 1
     ) -> Result<Vec<MetadataProjection>, DltError> {
         let rows = sqlx::query_as(
             r#"
+WITH eligible AS (
+    SELECT
+        b."time" AT TIME ZONE 'UTC' AS "time",
+        b.slot_no,
+        b.block_no,
+        b.hash AS block_hash,
+        tx.block_index AS tx_idx,
+        tx.hash AS tx_hash,
+        tx_meta.json AS metadata,
+        ROW_NUMBER() OVER (ORDER BY b.slot_no, tx.block_index) as rn
+    FROM tx_metadata AS tx_meta
+    LEFT JOIN tx ON tx_meta.tx_id = tx.id
+    LEFT JOIN block AS b ON block_id = b.id
+    WHERE tx_meta.key = 21325
+      AND b.slot_no > $1
+      AND b.block_no <= (SELECT max(block_no) - $2 FROM block)
+),
+boundary AS (
+    SELECT MAX(slot_no) as cutoff_slot
+    FROM eligible
+    WHERE rn <= 1000
+)
 SELECT
-    b."time" AT TIME ZONE 'UTC' AS "time",
-    b.slot_no,
-    b.block_no,
-    b.hash AS block_hash,
-    tx.block_index AS tx_idx,
-    tx.hash AS tx_hash,
-    tx_meta.json AS metadata
-FROM tx_metadata AS tx_meta
-LEFT JOIN tx ON tx_meta.tx_id = tx.id
-LEFT JOIN block AS b ON block_id = b.id
-WHERE tx_meta.key = 21325 AND b.slot_no > $1 AND b.block_no <= (SELECT max(block_no) - $2 FROM block)
-ORDER BY b.block_no, tx.block_index
-LIMIT 1000
+    "time",
+    slot_no,
+    block_no,
+    block_hash,
+    tx_idx,
+    tx_hash,
+    metadata
+FROM eligible
+WHERE slot_no <= (SELECT cutoff_slot FROM boundary)
+ORDER BY slot_no, tx_idx
             "#,
         )
         .bind(from_slot)

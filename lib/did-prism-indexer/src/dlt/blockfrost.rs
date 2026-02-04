@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Duration;
 
-use blockfrost::BlockfrostAPI;
+use blockfrost::{BlockfrostAPI, BlockfrostError};
 use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
 use futures::{StreamExt, TryStreamExt};
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
@@ -432,6 +432,16 @@ impl BlockfrostStreamWorker {
         let pagination = blockfrost::Pagination::new(blockfrost::Order::Asc, page as usize, page_size);
         api.metadata_txs_by_label("21325", pagination)
             .await
+            .or_else(|e| match e {
+                BlockfrostError::Response { url, reason } => {
+                    if reason.status_code == 404 {
+                        Ok(Vec::new())
+                    } else {
+                        Err(BlockfrostError::Response { url, reason })
+                    }
+                }
+                e => Err(e),
+            })
             .map_err(|e| DltError::Connection {
                 source: e.into(),
                 location: location!(),
