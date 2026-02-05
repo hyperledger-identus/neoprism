@@ -133,8 +133,8 @@ pub struct DltSourceArgs {
     #[arg(long, env = "NPRISM_BLOCKFROST_POLL_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
     pub blockfrost_poll_interval: Duration,
     /// Delay between Blockfrost API calls.
-    /// Set this to throttle requests and stay within Blockfrost API limits (e.g., "500ms", "1s").
-    #[arg(long, env = "NPRISM_BLOCKFROST_API_DELAY", default_value = "0ms", value_parser = humantime::parse_duration)]
+    /// Set this to throttle requests and stay within Blockfrost API limits.
+    #[arg(long, env = "NPRISM_BLOCKFROST_API_DELAY", default_value = "100ms", value_parser = humantime::parse_duration)]
     pub blockfrost_api_delay: Duration,
     /// Blockfrost API calls concurrency limit
     #[arg(long, env = "NPRISM_BLOCKFROST_CONCURRENCY_LIMIT", default_value_t = 4)]
