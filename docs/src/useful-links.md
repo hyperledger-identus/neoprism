@@ -22,3 +22,4 @@
 - [Universal Resolver GitHub](https://github.com/decentralized-identity/universal-resolver)
 - [Cardano DB Sync](https://github.com/input-output-hk/cardano-db-sync)
 - [Cardano Wallet](https://github.com/input-output-hk/cardano-wallet)
+- [Blockfrost](https://blockfrost.io/)

@@ -32,7 +32,7 @@ By running a PRISM node, organizations and individuals can independently manage 
     - **Standalone:** Combines indexing and submission capabilities into a single process.
 
 - **🔗 Cardano Data Source Integration**
-  - Ingests DID operations from various Cardano data sources, including [Oura](https://github.com/txpipe/oura) and [DBSync](https://github.com/input-output-hk/cardano-db-sync).
+  - Ingests DID operations from various Cardano data sources, including [Oura](https://github.com/txpipe/oura), [DBSync](https://github.com/input-output-hk/cardano-db-sync), and [Blockfrost](https://blockfrost.io/).
 
 - **🆔 W3C-Compliant DID Resolution**
   - Provides a universal-resolver compatible HTTP endpoint.
@@ -352,26 +352,27 @@ Assuming you are in the development shell, here are some frequently used command
 
 The following justfile commands are available to automate the local development workflow:
 
-| command                                   | description                                                                   |
-|-------------------------------------------|-------------------------------------------------------------------------------|
-| `just format`                             | Run the formatter on everything (Rust, Nix, TOML, Python, SQL, Hurl)          |
-| `just build`                              | Build the whole project (assets + cargo)                                      |
-| `just build-assets`                       | Build the Web UI assets (CSS, JavaScript, static assets)                      |
-| `just build-config`                       | Generate Docker Compose configs from the Python sources in `tools/`           |
-| `just test`                               | Run all tests with all features enabled                                       |
-| `just check`                              | Run the full Nix checks suite (format, lint, test, clippy)                    |
-| `just clean`                              | Clean all build artifacts                                                     |
-| `just postgres-up`                        | Spin up the local PostgreSQL database (Docker)                                |
-| `just postgres-down`                      | Tear down the local PostgreSQL database                                       |
-| `just postgres-dump`                      | Dump the local PostgreSQL database to the `postgres.dump` file                |
-| `just postgres-restore`                   | Restore the local PostgreSQL database from the `postgres.dump` file           |
-| `just sqlite-init`                        | Create or migrate the embedded SQLite database (default path)                 |
-| `just sqlite-clean`                       | Delete the embedded SQLite database file                                      |
-| `just run indexer`                        | Run the indexer node, connecting to the local database                        |
-| `just run indexer --cardano-addr <ADDR>`  | Run the indexer node, connecting to the Cardano relay at `<ADDR>`             |
-| `just run indexer --dbsync-url <URL>`     | Run the indexer node, connecting to the DB Sync instance at `<URL>`           |
-| `just tools format`                       | Format the Python code in `tools/`                                            |
-| `just tools check`                        | Type-check and validate the Python tooling code                               |
-| `just e2e::build`                         | Build the PRISM conformance (end-to-end) test suite                           |
-| `just e2e::run`                           | Run the PRISM conformance (end-to-end) test suite                             |
+| command                                       | description                                                          |
+|-----------------------------------------------|----------------------------------------------------------------------|
+| `just format`                                 | Run the formatter on everything (Rust, Nix, TOML, Python, SQL, Hurl) |
+| `just build`                                  | Build the whole project (assets + cargo)                             |
+| `just build-assets`                           | Build the Web UI assets (CSS, JavaScript, static assets)             |
+| `just build-config`                           | Generate Docker Compose configs from the Python sources in `tools/`  |
+| `just test`                                   | Run all tests with all features enabled                              |
+| `just check`                                  | Run the full Nix checks suite (format, lint, test, clippy)           |
+| `just clean`                                  | Clean all build artifacts                                            |
+| `just postgres-up`                            | Spin up the local PostgreSQL database (Docker)                       |
+| `just postgres-down`                          | Tear down the local PostgreSQL database                              |
+| `just postgres-dump`                          | Dump the local PostgreSQL database to the `postgres.dump` file       |
+| `just postgres-restore`                       | Restore the local PostgreSQL database from the `postgres.dump` file  |
+| `just sqlite-init`                            | Create or migrate the embedded SQLite database (default path)        |
+| `just sqlite-clean`                           | Delete the embedded SQLite database file                             |
+| `just run indexer`                            | Run the indexer node, connecting to the local database               |
+| `just run indexer --cardano-addr <ADDR>`      | Run the indexer node, connecting to the Cardano relay at `<ADDR>`    |
+| `just run indexer --dbsync-url <URL>`         | Run the indexer node, connecting to the DB Sync instance at `<URL>`  |
+| `just run indexer --blockfrost-api-key <KEY>` | Run the indexer node, connecting to Blockfrost API with your API key |
+| `just tools format`                           | Format the Python code in `tools/`                                   |
+| `just tools check`                            | Type-check and validate the Python tooling code                      |
+| `just e2e::build`                             | Build the PRISM conformance (end-to-end) test suite                  |
+| `just e2e::run`                               | Run the PRISM conformance (end-to-end) test suite                    |
 

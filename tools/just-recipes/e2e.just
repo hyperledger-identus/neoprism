@@ -23,7 +23,7 @@ run: docker-publish-local
     #!/usr/bin/env bash
     set -euo pipefail
 
-    for cfg in sqlite-dev ci ci-sqlite; do
+    for cfg in sqlite-dev ci ci-sqlite ci-blockfrost; do
         cowsay "Testing ${cfg} configuration"
         just e2e::up ${cfg}
         (cd tests/prism-test && sbt test)

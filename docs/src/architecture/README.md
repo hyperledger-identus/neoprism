@@ -37,7 +37,7 @@ internal: "Deployment" {
   cardano-wallet -> cardano-blockproducer: submit transactions
 }
 
-internal.neoprism <- cardano-node: stream operations using Oura
+internal.neoprism <- cardano-node: stream operations using Oura, DB-Sync, or Blockfrost
 did-controller -> internal.neoprism: submit signed PRISM operations
 verifier -> internal.neoprism: resolve DID documents
 internal.cardano-blockproducer -> cardano-node: propagate blocks
@@ -68,7 +68,7 @@ indexer-deployment: "Indexer Deployment" {
   indexer <-> db: read / write indexed operations
 }
 
-indexer-deployment.indexer <- cardano-node: stream operations using Oura
+indexer-deployment.indexer <- cardano-node: stream operations using Oura, DB-Sync, or Blockfrost
 verifier -> indexer-deployment.indexer: resolve DID documents
 
 submitter-deployment: "Submitter Deployment" {
