@@ -8,17 +8,15 @@
   version,
   extraPackages ? [ ],
   openssl,
+  cacert,
 }:
 
 dockerTools.buildLayeredImage {
   name = "identus-neoprism";
   tag = "${version}${tagSuffix}";
-  extraCommands = ''
-    install -d -m 700 var/lib/neoprism/sqlite
-    touch var/lib/neoprism/sqlite/.keep
-  '';
   contents = [
     bash
+    cacert
     curl
     neoprism-bin
     neoprism-ui-assets
@@ -29,12 +27,10 @@ dockerTools.buildLayeredImage {
     Env = [
       "RUST_LOG=info,oura=warn"
       "NPRISM_ASSETS_PATH=/assets"
+      "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
     ];
     Entrypoint = [ "/bin/neoprism-node" ];
     Cmd = [ ];
     WorkingDir = "/";
-    Volumes = {
-      "/var/lib/neoprism/sqlite" = { };
-    };
   };
 }
