@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.10.1) - 2026-02-05
+
+### 🐛 Bug Fixes
+
+- Add CA certificates to Docker image ([#212](https://github.com/hyperledger-identus/neoprism/pull/212))
+
 ## [0.10.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.10.0) - 2026-02-05
 
 ### 🚀 Features
