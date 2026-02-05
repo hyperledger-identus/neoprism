@@ -79,6 +79,15 @@ Identical to compose-ci.yml but uses in-memory SQLite backend instead of Postgre
 | **cardano-wallet** | 18081 | Cardano Wallet HTTP API |
 | **db-dbsync** | - | PostgreSQL database for db-sync |
 
+### compose-ci-blockfrost.yml - CI Testing Environment (Blockfrost)
+
+Lightweight CI testing stack that uses Blockfrost API as the DLT source instead of direct DB-Sync connection. Uses locally built `identus-neoprism:latest` image with PostgreSQL backend. Tests Blockfrost integration without requiring full Cardano infrastructure (no local cardano-node, cardano-wallet, or db-sync). Requires a Blockfrost API key to be configured.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (PostgreSQL backend, Blockfrost DLT source) |
+| **db-neoprism** | - | PostgreSQL database for NeoPRISM |
+
 ### compose-sqlite-dev.yml - Minimal Development Environment
 
 Lightweight setup with only NeoPRISM standalone service running in dev mode. Uses in-memory SQLite backend with no external dependencies. Uses locally built `identus-neoprism:latest` image. Ideal for quick local development and testing NeoPRISM features in isolation without full infrastructure overhead.

@@ -19,6 +19,16 @@ The Indexer node supports multiple DLT sources for ingesting DID operations:
     - DB-Sync URL: `--db-sync-url` or `NPRISM_DB_SYNC_URL`
     - Poll interval: `--db-sync-poll-interval` or `NPRISM_DB_SYNC_POLL_INTERVAL` (duration format, e.g., `10s`, `1m`)
 
+- **Blockfrost:**  
+  Connects to the Blockfrost API for hosted Cardano blockchain data access.
+  Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.
+  - Key options:
+    - API key: `--blockfrost-api-key` or `NPRISM_BLOCKFROST_API_KEY`
+    - Base URL: `--blockfrost-base-url` or `NPRISM_BLOCKFROST_BASE_URL`
+    - Poll interval: `--blockfrost-poll-interval` or `NPRISM_BLOCKFROST_POLL_INTERVAL` (duration format, e.g., `10s`, `1m`)
+    - API delay: `--blockfrost-api-delay` or `NPRISM_BLOCKFROST_API_DELAY` (throttling to respect rate limits)
+    - Concurrency limit: `--blockfrost-concurrency-limit` or `NPRISM_BLOCKFROST_CONCURRENCY_LIMIT`
+
 - **Common DLT Source Options:**  
   - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL` (duration format, e.g., `10s`, `1m`)
   - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
@@ -41,6 +51,14 @@ DBSync is a service that syncs the Cardano blockchain and writes the data to a P
 DBSync is known to be resource-heavy and requires significant disk space.
 The advantage is that sync speed is very fast, since NeoPRISM only needs to read the database tables and parse the operations.
 If you can afford to run DBSync, it is recommended to use this option, as the initial sync is much faster compared to Oura.
+
+**Blockfrost**
+
+Blockfrost is a hosted API service that provides access to Cardano blockchain data without requiring you to run your own infrastructure.
+This is the easiest option to get started with as it requires no Cardano node, DB-Sync instance, or relay connections.
+
+To use Blockfrost, you need to obtain an API key from [blockfrost.io](https://blockfrost.io/).
+The free tier is sufficient for most development and testing use cases.
 
 ---
 
