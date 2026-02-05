@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.10.0) - 2026-02-05
+
+### 🚀 Features
+
+- Add Blockfrost DLT source support ([#208](https://github.com/hyperledger-identus/neoprism/pull/208))
+
+### 🚜 Refactor
+
+- Migrate Nix configuration to flake-parts module system ([#200](https://github.com/hyperledger-identus/neoprism/pull/200))
+
+### 📚 Documentation
+
+- Add Blockfrost integration documentation ([#210](https://github.com/hyperledger-identus/neoprism/pull/210))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.23 to 2.1.24 ([#194](https://github.com/hyperledger-identus/neoprism/pull/194))
+- Update sbt, scripted-plugin from 1.11.7 to 1.12.0 ([#195](https://github.com/hyperledger-identus/neoprism/pull/195))
+- Improve documentation and remove unused dependencies ([#196](https://github.com/hyperledger-identus/neoprism/pull/196))
+- Update scalafmt-core from 3.10.3 to 3.10.4 ([#197](https://github.com/hyperledger-identus/neoprism/pull/197))
+- Update zio-http from 3.7.4 to 3.8.0 ([#202](https://github.com/hyperledger-identus/neoprism/pull/202))
+- Update sbt, scripted-plugin from 1.12.0 to 1.12.1 ([#203](https://github.com/hyperledger-identus/neoprism/pull/203))
+- Update scalafmt-core from 3.10.4 to 3.10.5 ([#204](https://github.com/hyperledger-identus/neoprism/pull/204))
+- Update scalafmt-core from 3.10.5 to 3.10.6 ([#205](https://github.com/hyperledger-identus/neoprism/pull/205))
+- Update zio-http from 3.8.0 to 3.8.1 ([#206](https://github.com/hyperledger-identus/neoprism/pull/206))
+- Update grpc-netty-shaded from 1.78.0 to 1.79.0 ([#207](https://github.com/hyperledger-identus/neoprism/pull/207))
+- Update sbt, scripted-plugin from 1.12.1 to 1.12.2 ([#209](https://github.com/hyperledger-identus/neoprism/pull/209))
+
 ## [0.9.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.9.1) - 2025-12-24
 
 ### 🐛 Bug Fixes
