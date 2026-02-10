@@ -48,7 +48,7 @@ services:
       NPRISM_CARDANO_DBSYNC_URL: ${DBSYNC_URL}
       NPRISM_CARDANO_NETWORK: ${NETWORK:-mainnet}
       NPRISM_DB_URL: postgres://postgres:postgres@db-neoprism:5432/postgres
-      RUST_LOG: oura=warn,tracing::span=warn,info
+      RUST_LOG: info,oura=warn,tracing::span=warn
     healthcheck:
       interval: 2s
       retries: 30

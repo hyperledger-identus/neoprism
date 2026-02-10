@@ -63,6 +63,22 @@ def build_example_configs() -> dict[str, ComposeConfig]:
                 ),
             }
         ),
+        "mainnet-blockfrost/compose": ComposeConfig(
+            services={
+                "db": services.db.mk_service(services.db.Options(host_port=5432)),
+                "neoprism-indexer": services.neoprism.mk_service(
+                    services.neoprism.Options(
+                        host_port=8080,
+                        command=services.neoprism.IndexerCommand(
+                            dlt_source=services.neoprism.BlockfrostDltSource(
+                                api_key="${BLOCKFROST_API_KEY}",
+                                base_url="https://cardano-mainnet.blockfrost.io/api/v0",
+                            ),
+                        ),
+                    ),
+                ),
+            }
+        ),
         "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(),
         "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
     }

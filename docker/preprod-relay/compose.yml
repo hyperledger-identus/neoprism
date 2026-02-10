@@ -28,7 +28,7 @@ services:
       NPRISM_CARDANO_NETWORK: preprod
       NPRISM_CARDANO_RELAY_ADDR: preprod-node.play.dev.cardano.org:3001
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
-      RUST_LOG: oura=warn,tracing::span=warn,info
+      RUST_LOG: info,oura=warn,tracing::span=warn
     healthcheck:
       interval: 2s
       retries: 30
