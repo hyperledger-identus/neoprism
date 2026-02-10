@@ -193,7 +193,7 @@ services:
       NPRISM_DB_URL: postgres://postgres:postgres@db-neoprism:5432/postgres
       NPRISM_EXTERNAL_URL: http://localhost:18080
       NPRISM_INDEX_INTERVAL: 1s
-      RUST_LOG: oura=warn,tracing::span=warn,info
+      RUST_LOG: info,oura=warn,tracing::span=warn
     healthcheck:
       interval: 2s
       retries: 30

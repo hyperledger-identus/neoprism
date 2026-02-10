@@ -82,7 +82,7 @@ def mk_service(options: Options) -> Service:
 
     # Build environment variables
     environment = {
-        "RUST_LOG": "oura=warn,tracing::span=warn,info",
+        "RUST_LOG": "info,oura=warn,tracing::span=warn",
         "NPRISM_CARDANO_NETWORK": options.network,
     }
     depends_on: dict[str, ServiceDependency] = {}

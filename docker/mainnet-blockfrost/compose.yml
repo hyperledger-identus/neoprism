@@ -25,8 +25,9 @@ services:
       db:
         condition: service_healthy
     environment:
-      NPRISM_CARDANO_DBSYNC_POLL_INTERVAL: 10s
-      NPRISM_CARDANO_DBSYNC_URL: ${DBSYNC_URL}
+      NPRISM_BLOCKFROST_API_KEY: ${BLOCKFROST_API_KEY}
+      NPRISM_BLOCKFROST_BASE_URL: https://cardano-mainnet.blockfrost.io/api/v0
+      NPRISM_BLOCKFROST_POLL_INTERVAL: 10s
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
       RUST_LOG: info,oura=warn,tracing::span=warn
