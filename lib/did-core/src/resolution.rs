@@ -39,6 +39,17 @@ impl ResolutionResult {
         }
     }
 
+    pub fn deactivated() -> Self {
+        ResolutionResult {
+            did_document: None,
+            did_resolution_metadata: Default::default(),
+            did_document_metadata: DidDocumentMetadata {
+                deactivated: Some(true),
+                ..Default::default()
+            },
+        }
+    }
+
     pub fn invalid_did(error: super::Error) -> Self {
         let error = DidResolutionError {
             r#type: DidResolutionErrorCode::InvalidDid,
