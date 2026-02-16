@@ -76,6 +76,7 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
             (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = NOT_FOUND, description = "The DID does not exist or not found.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = GONE, description = "The DID has been deactivated.", body = ResolutionResult, content_type = "application/did-resolution"),
+            (status = NOT_ACCEPTABLE, description = "The requested representation is not supported.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during resolution.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", body = ResolutionResult, content_type = "application/did-resolution"),
         ),
