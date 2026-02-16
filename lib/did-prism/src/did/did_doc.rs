@@ -1,8 +1,8 @@
 use identus_apollo::hex::HexStr;
 use identus_apollo::jwk::EncodeJwk;
 use identus_did_core::{
-    Did, DidDocument, DidDocumentMetadata, DidResolutionMetadata, ResolutionResult, Service, ServiceEndpoint,
-    ServiceType, StringOrMap, VerificationMethod, VerificationMethodOrRef,
+    Did, DidDocument, DidDocumentMetadata, ResolutionResult, Service, ServiceEndpoint, ServiceType, StringOrMap,
+    VerificationMethod, VerificationMethodOrRef,
 };
 
 use crate::did::operation::KeyUsage;
@@ -15,20 +15,22 @@ impl DidState {
             PrismDid::LongForm(did) if self.is_published => Some(did.clone().into_canonical().to_did()),
             _ => None,
         };
-        ResolutionResult {
-            did_document: Some(did_document).filter(|_| !self.is_deactivated()),
-            did_resolution_metadata: DidResolutionMetadata {
-                content_type: Some("application/did-resolution".to_string()),
-                ..Default::default()
-            },
-            did_document_metadata: DidDocumentMetadata {
-                created: Some(self.created_at),
-                updated: Some(self.updated_at),
-                deactivated: Some(self.is_deactivated()),
-                canonical_id,
-                version_id: Some(HexStr::from(self.last_operation_hash.as_bytes()).to_string()),
-            },
-        }
+
+        let did_document_metadata = DidDocumentMetadata {
+            created: Some(self.created_at),
+            updated: Some(self.updated_at),
+            deactivated: Some(self.is_deactivated()),
+            canonical_id,
+            version_id: Some(HexStr::from(self.last_operation_hash.as_bytes()).to_string()),
+        };
+
+        let mut result = if self.is_deactivated() {
+            ResolutionResult::deactivated()
+        } else {
+            ResolutionResult::success(did_document)
+        };
+        result.did_document_metadata = did_document_metadata;
+        result
     }
 
     pub fn to_did_document(&self, did: &Did) -> DidDocument {

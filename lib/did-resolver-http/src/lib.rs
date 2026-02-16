@@ -68,19 +68,20 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
         responses(
             (status = OK, description = "Successfully resolved the DID.",
                 content(
-                    (ResolutionResult = "application/did-resolution"),
+                    (DidDocument = "application/json"),
                     (DidDocument = "application/did"),
-                    (DidDocument = "application/json")
+                    (ResolutionResult = "application/did-resolution")
                 )
             ),
             (status = BAD_REQUEST, description = "The provided DID is invalid.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = NOT_FOUND, description = "The DID does not exist or not found.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = GONE, description = "The DID has been deactivated.", body = ResolutionResult, content_type = "application/did-resolution"),
+            (status = NOT_ACCEPTABLE, description = "The requested representation is not supported.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred during resolution.", body = ResolutionResult, content_type = "application/did-resolution"),
             (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", body = ResolutionResult, content_type = "application/did-resolution"),
         ),
         params(
-            ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve."),
+            ("did" = String, Path, description = "The Decentralized Identifier (DID) to resolve.", example = "did:example:123456789abcdefghi"),
         ),
     )
 )]
@@ -105,12 +106,17 @@ pub async fn did_resolver(state: State<DidResolverStateDyn>, Path(did): Path<Str
     let result = resolver.resolve(&parsed_did, &options).await;
 
     match accept {
+        _ if result.did_resolution_metadata.error.is_some()
+            || result.did_document_metadata.deactivated == Some(true) =>
+        {
+            ResolverResponse::<ApplicationDidResolution>::from(result).into_response()
+        }
         Some(c) if c.contains("application/json") => ResolverResponse::<ApplicationJson>::from(result).into_response(),
         Some(c) if c.contains("application/did") => ResolverResponse::<ApplicationDid>::from(result).into_response(),
         Some(c) if c.contains("application/did-resolution") => {
             ResolverResponse::<ApplicationDidResolution>::from(result).into_response()
         }
-        _ => ResolverResponse::<ApplicationDidResolution>::from(result).into_response(),
+        _ => ResolverResponse::<ApplicationDid>::from(result).into_response(),
     }
 }
 
