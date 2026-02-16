@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.11.0) - 2026-02-16
+
+### 🚀 Features
+
+- Add blockfrost docker example ([#214](https://github.com/hyperledger-identus/neoprism/pull/214))
+- Handle missing or wildcard accept header in DID resolver ([#218](https://github.com/hyperledger-identus/neoprism/pull/218))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update scalafmt-core from 3.10.6 to 3.10.7 ([#215](https://github.com/hyperledger-identus/neoprism/pull/215))
+- Update sbt, scripted-plugin from 1.12.2 to 1.12.3 ([#217](https://github.com/hyperledger-identus/neoprism/pull/217))
+
 ## [0.10.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.10.1) - 2026-02-05
 
 ### 🐛 Bug Fixes
