@@ -81,7 +81,7 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
             (status = NOT_IMPLEMENTED, description = "A functionality is not implemented.", body = ResolutionResult, content_type = "application/did-resolution"),
         ),
         params(
-            ("did" = Did, Path, description = "The Decentralized Identifier (DID) to resolve."),
+            ("did" = String, Path, description = "The Decentralized Identifier (DID) to resolve.", example = "did:example:123456789abcdefghi"),
         ),
     )
 )]
