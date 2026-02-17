@@ -9,6 +9,9 @@ service NodeService {
     rpc GetDidDocument(GetDidDocumentRequest) returns (GetDidDocumentResponse) {}
     rpc ScheduleOperations(ScheduleOperationsRequest) returns (ScheduleOperationsResponse) {}
     rpc GetOperationInfo(GetOperationInfoRequest) returns (GetOperationInfoResponse) {}
+
+    // prism-node specific
+    rpc GetVdrEntry(GetVdrEntryRequest) returns (GetVdrEntryResponse) {}
 }
 
 message GetDidDocumentRequest {
@@ -65,3 +68,33 @@ enum OperationStatus {
     CONFIRMED_AND_APPLIED = 3; // The operation has been successfully applied to the PRISM.
     CONFIRMED_AND_REJECTED = 4; // The operation has been processed by PRISM, but rejected because of some error.
 }
+
+//-------------------------------
+// prism-node specific
+//-------------------------------
+message GetVdrEntryRequest {
+    bytes event_hash = 1;
+    bytes entry_id = 2;
+    bool latest = 3;
+}
+
+message VdrEntry {
+    bytes event_hash = 1;
+    string did_suffix = 2;
+    StorageData data = 3;
+    bytes previous_event_hash = 4;
+    bool deactivated = 5;
+    bytes nonce = 6;
+    VdrEntryStatus status = 7;
+}
+
+message GetVdrEntryResponse {
+    VdrEntry entry = 1;
+}
+
+enum VdrEntryStatus {
+    ACTIVE = 0;
+    DEACTIVATED = 1;
+    UNKNOWN_STATUS = 2;
+}
+
