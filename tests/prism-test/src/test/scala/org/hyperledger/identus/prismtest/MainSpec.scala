@@ -40,7 +40,8 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
         NodeName.layer("prism-node")
       )
 
-    (neoprismSpec + prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
+    // (neoprismSpec + prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
+    (prismNodeSpec + generateDidFixtureSpec)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)

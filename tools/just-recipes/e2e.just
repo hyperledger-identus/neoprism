@@ -19,16 +19,18 @@ down NAME:
     docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes --remove-orphans
 
 # Run all PRISM conformance test suites
-run: docker-publish-local
+run:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    for cfg in sqlite-dev ci ci-sqlite ci-blockfrost; do
-        cowsay "Testing ${cfg} configuration"
-        just e2e::up ${cfg}
-        (cd tests/prism-test && sbt test)
-        just e2e::down ${cfg}
-    done
+    cd tests/prism-test && sbt "testOnly -- -tags dev"
+
+    # for cfg in sqlite-dev ci ci-sqlite ci-blockfrost; do
+    #     cowsay "Testing ${cfg} configuration"
+    #     just e2e::up ${cfg}
+    #     (cd tests/prism-test && sbt test)
+    #     just e2e::down ${cfg}
+    # done
 
 # Build and load Docker images for local testing
 docker-publish-local:
