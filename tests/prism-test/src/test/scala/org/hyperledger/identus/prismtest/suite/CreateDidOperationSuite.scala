@@ -107,7 +107,7 @@ object CreateDidOperationSuite extends TestUtils:
         assert(didData.services)(isEmpty) &&
         assert(didData.publicKeys)(hasSize(equalTo(8))) &&
         assert(didData.publicKeys.map(_.usage).distinct)(hasSize(equalTo(8)))
-    } @@ NodeName.skipIf("prism-node"),
+    },
     test("should reject missing master key") {
       for
         seed <- newSeed
@@ -404,5 +404,5 @@ object CreateDidOperationSuite extends TestUtils:
         _ <- scheduleOperations(Seq(spo))
         didData <- getDidDocument(spo.getDid.get)
       yield assert(didData)(isNone)
-    } @@ NodeName.skipIf("prism-node")
+    }
   )
