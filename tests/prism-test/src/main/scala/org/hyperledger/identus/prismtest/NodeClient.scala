@@ -147,7 +147,7 @@ private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, Cry
       .flatMap(resp =>
         resp.status match
           case Status.NotFound => ZIO.succeed(None)
-          case Status.Ok       => resp.body.asString.map(_.decodeHex).map(Some(_))
+          case Status.Ok       => resp.body.asArray.asSome
           case _               => ZIO.dieMessage("Could not get VDR entry")
       )
       .orDie

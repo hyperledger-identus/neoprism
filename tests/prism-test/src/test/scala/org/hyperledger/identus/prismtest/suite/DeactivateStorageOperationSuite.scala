@@ -29,13 +29,13 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2))
-        storage1 <- getDidDocument(did).map(_.get).map(extractStorageHex)
+        storage1 <- getVdrEntryHex(spo2.getOperationHash.get)
         spo3 = builder(seed)
           .deactivateStorage(spo2.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo3, spo2))
-        storage2 <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage1)(hasSameElements(Seq("00"))) && assert(storage2)(isEmpty)
+        storage2 <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage1)(isSome(equalTo("00"))) && assert(storage2)(isNone)
     }
   )
 
@@ -60,7 +60,8 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage1 <- getDidDocument(did).map(_.get).map(extractStorageHex)
+        storage1_1 <- getVdrEntryHex(spo2.getOperationHash.get)
+        storage1_2 <- getVdrEntryHex(spo3.getOperationHash.get)
         spo4 = builder(seed)
           .deactivateStorage(spo2.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
@@ -74,11 +75,14 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         _ <- scheduleOperations(Seq(spo4, spo5, spo6))
-        didData <- getDidDocument(did).map(_.get)
-        storage2 = extractStorageHex(didData)
-      yield assert(storage1)(hasSameElements(Seq("00", "10"))) &&
-        assert(storage2)(isEmpty) &&
-        assert(didData.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
+        storage2_1 <- getVdrEntryHex(spo2.getOperationHash.get)
+        storage2_2 <- getVdrEntryHex(spo3.getOperationHash.get)
+        didData <- getDidDocument(did)
+      yield assert(storage1_1)(isSome(equalTo("00"))) &&
+        assert(storage1_2)(isSome(equalTo("10"))) &&
+        assert(storage2_1)(isNone) &&
+        assert(storage2_2)(isNone) &&
+        assert(didData.get.publicKeys.map(_.id))(hasSameElements(Seq("master-0")))
     },
     test("should reject with invalid operation hash") {
       for
@@ -98,8 +102,8 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .deactivateStorage(spo1.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     }
   )
 
@@ -122,9 +126,9 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .deactivateStorage(spo2.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        didData <- getDidDocument(did).map(_.get)
-        storage = extractStorageHex(didData)
-      yield assert(storage)(isEmpty) && assert(didData.publicKeys)(hasSize(equalTo(2)))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+        didData <- getDidDocument(did)
+      yield assert(storage)(isNone) && assert(didData.get.publicKeys)(hasSize(equalTo(2)))
     },
     test("should reject when signed with non-existing VDR key") {
       for
@@ -144,8 +148,8 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .deactivateStorage(spo2.getOperationHash.get)
           .signWith("vdr-1", deriveSecp256k1(seed)("m/0'/8'/1'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     },
     test("should reject when signed with removed VDR key") {
       for
@@ -170,7 +174,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .deactivateStorage(spo2.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3, spo4))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     }
   )

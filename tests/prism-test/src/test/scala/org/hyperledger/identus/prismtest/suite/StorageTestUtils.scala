@@ -1,10 +1,11 @@
 package org.hyperledger.identus.prismtest.suite
 
-import io.iohk.atala.prism.protos.node_api.DIDData
 import org.hyperledger.identus.prismtest.utils.TestUtils
+import org.hyperledger.identus.prismtest.NodeClient
+import zio.URIO
 
 trait StorageTestUtils extends TestUtils:
-  protected def extractStorageHex(didData: DIDData): Seq[String] =
-    didData.storageData
-      .flatMap(_.data.bytes)
-      .map(_.toByteArray().toHexString)
+  protected def getVdrEntryHex(initOperationHash: Array[Byte]): URIO[NodeClient, Option[String]] =
+    zio.ZIO
+      .serviceWithZIO[NodeClient](_.getVdrEntry(initOperationHash))
+      .map(_.map(_.toHexString))

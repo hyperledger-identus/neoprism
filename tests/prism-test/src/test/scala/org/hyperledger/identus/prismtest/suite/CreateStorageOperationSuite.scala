@@ -1,6 +1,5 @@
 package org.hyperledger.identus.prismtest.suite
 
-import io.iohk.atala.prism.protos.node_api.DIDData
 import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
@@ -33,8 +32,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(isEmpty)
+        storage <- getVdrEntryHex(spo3.getOperationHash.get)
+      yield assert(storage)(isNone)
     },
     test("should remove storage on DID deactivation") {
       for
@@ -54,8 +53,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .deactivateDid(spo2.getOperationHash.get, did)
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(isEmpty)
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isNone)
     }
   )
 
@@ -80,8 +79,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     },
     test("should accept duplicate storage with different nonce") {
       for
@@ -103,8 +102,9 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00", "00")))
+        storage1 <- getVdrEntryHex(spo2.getOperationHash.get)
+        storage2 <- getVdrEntryHex(spo3.getOperationHash.get)
+      yield assert(storage1)(isSome(equalTo("00"))) && assert(storage2)(isSome(equalTo("00")))
     },
     test("should accept different storage with same nonce") {
       for
@@ -126,8 +126,9 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00", "01")))
+        storage1 <- getVdrEntryHex(spo2.getOperationHash.get)
+        storage2 <- getVdrEntryHex(spo3.getOperationHash.get)
+      yield assert(storage1)(isSome(equalTo("00"))) && assert(storage2)(isSome(equalTo("01")))
     }
   )
 
@@ -147,8 +148,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     },
     test("should reject signature by non-matching VDR key") {
       for
@@ -165,8 +166,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/1'"))
         _ <- scheduleOperations(Seq(spo1, spo2))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(isEmpty)
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isNone)
     },
     test("should reject signature by non-VDR key") {
       for
@@ -182,8 +183,8 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(isEmpty)
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isNone)
     },
     test("should reject signature by removed VDR key") {
       for
@@ -205,7 +206,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(isEmpty)
+        storage <- getVdrEntryHex(spo3.getOperationHash.get)
+      yield assert(storage)(isNone)
     }
   )

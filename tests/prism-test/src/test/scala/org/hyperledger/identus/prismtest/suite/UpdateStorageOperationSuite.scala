@@ -1,6 +1,5 @@
 package org.hyperledger.identus.prismtest.suite
 
-import io.iohk.atala.prism.protos.node_api.DIDData
 import org.hyperledger.identus.prismtest.NodeName
 import proto.prism.SignedPrismOperation
 import proto.prism_ssi.KeyUsage
@@ -39,8 +38,8 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         spo3 = updateStorage(spo2, "01")
         spo4 = updateStorage(spo3, "02")
         _ <- scheduleOperations(Seq(spo1, spo2, spo3, spo4))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("02")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("02")))
     },
     test("should reject update storage with invalid operation hash") {
       for
@@ -65,11 +64,11 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
         spo3 = updateStorage(spo2, "01")
         spo4 = updateStorage(spo2, "02") // invalid operation hash
         _ <- scheduleOperations(Seq(spo1, spo2, spo3, spo4))
-        storage1 <- getDidDocument(did).map(_.get).map(extractStorageHex)
+        storage1 <- getVdrEntryHex(spo2.getOperationHash.get)
         spo5 = updateStorage(spo3, "03") // points to spo3 as spo4 is invalid
         _ <- scheduleOperations(Seq(spo5))
-        storage2 <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage1)(hasSameElements(Seq("01"))) && assert(storage2)(hasSameElements(Seq("03")))
+        storage2 <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage1)(isSome(equalTo("01"))) && assert(storage2)(isSome(equalTo("03")))
     },
     test("should accept update storage with multiple storage entries") {
       for
@@ -101,8 +100,9 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3, spo4, spo5))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("01", "11")))
+        storage1 <- getVdrEntryHex(spo2.getOperationHash.get)
+        storage2 <- getVdrEntryHex(spo3.getOperationHash.get)
+      yield assert(storage1)(isSome(equalTo("01"))) && assert(storage2)(isSome(equalTo("11")))
     }
   )
 
@@ -127,8 +127,8 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     },
     test("should reject update storage signed with non-existing key") {
       for
@@ -150,8 +150,8 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-1", deriveSecp256k1(seed)("m/0'/8'/1'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     },
     test("should reject update storage signed with removed VDR key") {
       for
@@ -178,7 +178,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3, spo4))
-        storage <- getDidDocument(did).map(_.get).map(extractStorageHex)
-      yield assert(storage)(hasSameElements(Seq("00")))
+        storage <- getVdrEntryHex(spo2.getOperationHash.get)
+      yield assert(storage)(isSome(equalTo("00")))
     }
   )
