@@ -121,6 +121,12 @@ def build_test_configs() -> dict[str, ComposeConfig]:
                 neoprism_dlt_source="blockfrost",
             )
         ),
+        "prism-test/compose-ci-prismnode": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override="identus-neoprism:latest",
+                enable_prism_node=True,
+            )
+        ),
     }
 
 
