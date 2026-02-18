@@ -2,7 +2,8 @@ from pydantic import BaseModel
 
 from ..models import Service, ServiceDependency
 
-IMAGE = "ghcr.io/input-output-hk/prism-node:2.6.1"
+# IMAGE = "ghcr.io/input-output-hk/prism-node:2.6.1"
+IMAGE = "inputoutput/prism-node:2.6.1-SNAPSHOT" # TODO: revert back
 
 
 class Options(BaseModel):
