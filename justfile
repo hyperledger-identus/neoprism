@@ -16,7 +16,7 @@ sqlite_db_path := "data/sqlite/neoprism-dev.sqlite"
 sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
 
 # Show available commands
-default:
+_default:
     @just --list --list-submodules
 
 # Install npm dependencies
