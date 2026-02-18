@@ -105,12 +105,10 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
       .fromFuture(_ => nodeService.getVdrEntry(GetVdrEntryRequest(entryId = ByteString.copyFrom(ref), latest = true)))
       .flatMap(response =>
         response.entry match
-          case None => ZIO.succeed(None)
+          case None           => ZIO.succeed(None)
           case Some(vdrEntry) =>
-            if vdrEntry.deactivated || vdrEntry.status == VdrEntryStatus.DEACTIVATED then
-              ZIO.succeed(None)
-            else
-              ZIO.succeed(vdrEntry.data.map(_.getBytes.toByteArray).filter(!_.isEmpty))
+            if vdrEntry.deactivated || vdrEntry.status == VdrEntryStatus.DEACTIVATED then ZIO.succeed(None)
+            else ZIO.succeed(vdrEntry.data.map(_.getBytes.toByteArray).filter(!_.isEmpty))
       )
       .orDie
 
@@ -142,7 +140,17 @@ private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, Cry
         case _               => ZIO.dieMessage("Could not get DIDData")
     yield didData
 
-  override def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]] = ???
+  override def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]] =
+    val entryHash = ref.toHexString
+    neoprismClient.batched
+      .get(url"/api/vdr-data/$entryHash".toString)
+      .flatMap(resp =>
+        resp.status match
+          case Status.NotFound => ZIO.succeed(None)
+          case Status.Ok       => resp.body.asString.map(_.decodeHex).map(Some(_))
+          case _               => ZIO.dieMessage("Could not get VDR entry")
+      )
+      .orDie
 
 private object NeoprismNodeClient:
 
