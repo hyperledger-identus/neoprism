@@ -1,15 +1,18 @@
 package org.hyperledger.identus.prismtest
 
+import com.google.protobuf.ByteString
 import io.grpc.ManagedChannelBuilder
 import io.grpc.StatusRuntimeException
 import io.iohk.atala.prism.protos.node_api.DIDData
 import io.iohk.atala.prism.protos.node_api.GetDidDocumentRequest
 import io.iohk.atala.prism.protos.node_api.GetOperationInfoRequest
+import io.iohk.atala.prism.protos.node_api.GetVdrEntryRequest
 import io.iohk.atala.prism.protos.node_api.NodeServiceGrpc
 import io.iohk.atala.prism.protos.node_api.NodeServiceGrpc.NodeService
 import io.iohk.atala.prism.protos.node_api.OperationOutput.OperationMaybe
 import io.iohk.atala.prism.protos.node_api.OperationStatus
 import io.iohk.atala.prism.protos.node_api.ScheduleOperationsRequest
+import io.iohk.atala.prism.protos.node_api.VdrEntryStatus
 import monocle.syntax.all.*
 import org.hyperledger.identus.prismtest.utils.CryptoUtils
 import org.hyperledger.identus.prismtest.utils.ProtoUtils
@@ -30,6 +33,7 @@ trait NodeClient:
   def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]]
   def isOperationConfirmed(ref: OperationRef): UIO[Boolean]
   def getDidDocument(did: String): UIO[Option[DIDData]]
+  def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]]
 
 object NodeClient:
 
@@ -96,6 +100,20 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
         )
       )
 
+  override def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]] =
+    ZIO
+      .fromFuture(_ => nodeService.getVdrEntry(GetVdrEntryRequest(entryId = ByteString.copyFrom(ref), latest = true)))
+      .flatMap(response =>
+        response.entry match
+          case None => ZIO.succeed(None)
+          case Some(vdrEntry) =>
+            if vdrEntry.deactivated || vdrEntry.status == VdrEntryStatus.DEACTIVATED then
+              ZIO.succeed(None)
+            else
+              ZIO.succeed(vdrEntry.data.map(_.getBytes.toByteArray).filter(!_.isEmpty))
+      )
+      .orDie
+
 private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, CryptoUtils:
 
   import NeoprismNodeClient.*
@@ -123,6 +141,8 @@ private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, Cry
         case Status.Ok       => ZIO.some(DIDData.parseFrom(body.decodeHex))
         case _               => ZIO.dieMessage("Could not get DIDData")
     yield didData
+
+  override def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]] = ???
 
 private object NeoprismNodeClient:
 
