@@ -38,6 +38,7 @@
           cargo-edit
           cargo-expand
           cargo-license
+          cargo-llvm-cov
           cargo-udeps
           rust
           # js
@@ -60,6 +61,8 @@
         # envs
         LANG = "C.utf8";
         RUST_LOG = "info,oura=warn,tower_http::trace=debug";
+        LLVM_COV = "${pkgs.llvmPackages_19.llvm}/bin/llvm-cov";
+        LLVM_PROFDATA = "${pkgs.llvmPackages_19.llvm}/bin/llvm-profdata";
 
         JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
         SBT_OPTS = "-Xmx4G";
