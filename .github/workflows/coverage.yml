@@ -1,0 +1,37 @@
+name: Coverage
+
+concurrency:
+  group: ${{ github.head_ref }}${{ github.ref }}-coverage
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@2126ae7fc54c9df00dd18f7f18754393182c73cd # v31.9.1
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Run tests with coverage
+        run: nix develop -c cargo llvm-cov test --all-features --lcov --output-path lcov.info
+
+      - name: Upload to Coveralls
+        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b # v2.3.6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: lcov.info
+          format: lcov
