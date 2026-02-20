@@ -25,7 +25,7 @@ tower              = { workspace = true }
 tower-http         = { workspace = true, features = [ "fs", "trace", "cors" ] }
 
 utoipa            = { workspace = true, features = [ "chrono" ] }
-utoipa-swagger-ui = { version = "9", features = [ "axum", "vendored" ] }
+utoipa-scalar = { version = "0.3", features = [ "axum" ] }
 
 identus-apollo              = { workspace = true, features = [ "hex", "jwk" ] }
 identus-did-core            = { workspace = true, features = [ "openapi" ] }
