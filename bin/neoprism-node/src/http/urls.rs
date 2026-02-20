@@ -9,7 +9,7 @@ typed_uri!(AssetStyleSheet, "assets" / "styles.css");
 
 // misc
 typed_uri!(Home, "");
-typed_uri!(Swagger, "swagger-ui");
+typed_uri!(OpenApi, "openapi");
 
 // UI resolver
 typed_uri!(Resolver, "resolver" ? Option<DidQuery>);
