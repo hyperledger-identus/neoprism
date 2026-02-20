@@ -1,5 +1,7 @@
 set working-directory := '../..'
 
+prism_node_dir := "/home/pat/Desktop/workspace/iog/atala-prism"
+
 # Build PRISM conformance test suite
 [working-directory('./tests/prism-test')]
 build:
@@ -19,19 +21,40 @@ down NAME:
     docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes --remove-orphans
 
 # Run all PRISM conformance test suites
-run:
+run: docker-publish-local
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    for cfg in sqlite-dev ci ci-sqlite ci-blockfrost; do
+        cowsay "Testing ${cfg} configuration"
+        just e2e::up ${cfg}
+        (cd tests/prism-test && sbt test)
+        just e2e::down ${cfg}
+    done
+
+# Build and load Docker images for local testing
+docker-publish-local:
+    nix build .#neoprism-docker-latest && docker load < ./result
+
+# Build and publish PRISM node Docker image locally
+[group("temp")]
+node-docker-publish-local:
+    cd {{ prism_node_dir }} && sbt clean docker:publishLocal
+
+# Run PRISM node conformance tests with dev tag
+[group("temp")]
+node-run:
     #!/usr/bin/env bash
     set -euo pipefail
 
     cd tests/prism-test && sbt "testOnly -- -tags dev"
 
-    # for cfg in sqlite-dev ci ci-sqlite ci-blockfrost; do
-    #     cowsay "Testing ${cfg} configuration"
-    #     just e2e::up ${cfg}
-    #     (cd tests/prism-test && sbt test)
-    #     just e2e::down ${cfg}
-    # done
+# Restart PRISM node and rebuild Docker image for testing
+[group("temp")]
+node-reload-system-under-test:
+    #!/usr/bin/env bash
+    set -euo pipefail
 
-# Build and load Docker images for local testing
-docker-publish-local:
-    nix build .#neoprism-docker-latest && docker load < ./result
+    just e2e::down ci-prismnode
+    just e2e::node-docker-publish-local
+    just e2e::up ci-prismnode
