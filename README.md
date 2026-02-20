@@ -1,21 +1,26 @@
-# NeoPRISM
+<p align="center">
+    <a href="https://www.lfdecentralizedtrust.org/projects/identus">
+        <img src="https://raw.githubusercontent.com/hyperledger-identus/docs/refs/heads/main/static/img/graphics/identus-hero.svg" alt="identus-logo" height="99px" />
+    </a>
+</p>
 
-![Rust Edition](https://img.shields.io/badge/edition-2024-blue)
-[![Unit tests](https://github.com/hyperledger-identus/neoprism/actions/workflows/checks.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions)
-[![PRISM tests](https://github.com/hyperledger-identus/neoprism/actions/workflows/conformance-test.yml/badge.svg)](https://github.com/hyperledger-identus/neoprism/actions/workflows/conformance-test.yml)
+[![Checks](https://img.shields.io/github/actions/workflow/status/hyperledger-identus/neoprism/checks.yml?branch=main&label=checks)](https://github.com/hyperledger-identus/neoprism/actions/workflows/checks.yml)
+[![PRISM Conformance](https://img.shields.io/github/actions/workflow/status/hyperledger-identus/neoprism/conformance-test.yml?branch=main&label=prism%20conformance)](https://github.com/hyperledger-identus/neoprism/actions/workflows/conformance-test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/hyperledger-identus/neoprism/badge.svg?branch=main)](https://coveralls.io/github/hyperledger-identus/neoprism?branch=main)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=hyperledger-identus_neoprism&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=hyperledger-identus_neoprism)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/hyperledger-identus/neoprism/badge)](https://scorecard.dev/viewer/?uri=github.com/hyperledger-identus/neoprism)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11736/badge)](https://www.bestpractices.dev/projects/11736)
+
 [![GitHub release](https://img.shields.io/github/release/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/releases)
-[![GitHub tag](https://img.shields.io/github/tag/hyperledger-identus/neoprism.svg)](https://github.com/hyperledger-identus/neoprism/tags)
-[![License](https://img.shields.io/github/license/hyperledger-identus/neoprism.svg)](./LICENSE)
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 [![Discord](https://img.shields.io/discord/905194001349627914?label=discord)](https://discord.com/channels/905194001349627914/1230596020790886490)
 
----
+
+# NeoPRISM
 
 **📚 [Documentation](https://hyperledger-identus.github.io/neoprism/)**
 
----
-
-# Overview
+## Overview
 
 NeoPRISM is an open-source implementation of a PRISM node, providing a robust and extensible platform for managing [PRISM Decentralized Identifiers (DIDs)](https://www.w3.org/TR/did-core/) anchored on the Cardano blockchain.
 
@@ -23,7 +28,7 @@ A PRISM node continuously monitors the Cardano blockchain for DID operations, va
 It also allows users to create, update, or deactivate DIDs by submitting operations, ensuring all protocol rules and security checks are enforced.
 By running a PRISM node, organizations and individuals can independently manage and verify DIDs, supporting a decentralized identity system without reliance on a central authority.
 
-## Features
+### Features
 
 - **🛠️ Multiple Deployment Modes**
   - Supports three operational modes:
@@ -52,7 +57,7 @@ By running a PRISM node, organizations and individuals can independently manage 
 - **🦀 Rust Implementation**
   - Developed in Rust for efficient resource usage and reliable performance.
 
-## Introduction to PRISM DID
+### Introduction to PRISM DID
 
 The [PRISM DID method](https://github.com/input-output-hk/prism-did-method-spec) (`did:prism`) is a protocol for creating and managing Decentralized Identifiers (DIDs) built on the Cardano blockchain.
 This specification defines the operations, serialization formats, and rules for managing the lifecycle of DIDs and their associated DID documents.
@@ -78,9 +83,9 @@ Long-form DID:
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU
 ```
 
-# Quickstart
+## Quickstart
 
-## Try It Now
+### Try It Now
 
 Quickly experiment with NeoPRISM using an in-memory database and in-memory blockchain:
 
@@ -120,14 +125,14 @@ Then navigate to [http://localhost:8080/explorer](http://localhost:8080/explorer
 
 </details>
 
-## Public Demo Instance
+### Public Demo Instance
 
 Try NeoPRISM without any setup using these hosted instances connected to live Cardano networks:
 
 - Mainnet: [https://neoprism.patlo.dev](https://neoprism.patlo.dev)
 - Preprod: [https://neoprism-preprod.patlo.dev](https://neoprism-preprod.patlo.dev)
 
-## Docker Compose
+### Docker Compose
 
 This example setup runs a NeoPRISM node that connects to the Cardano mainnet public relay using Oura.
 It fetches DID operations from the blockchain, synchronizes and indexes them into a local PostgreSQL database.
@@ -156,7 +161,7 @@ Once operations are indexed, you can browse them using the Explorer page in the 
    curl http://localhost:8080/api/dids/<did>
    ```
 
-# Development guide
+## Development guide
 
 This project uses Nix to provide a consistent local development environment and to package build artifacts.
 To get started, install Nix by following the instructions [here](https://nixos.org/download/#download-nix).
@@ -186,7 +191,7 @@ nix develop --unset PATH
 This disables all binaries available on the host `PATH`.
 
 
-## Development quickstart
+### Development quickstart
 
 To set up and run NeoPRISM for development, follow these steps:
 
@@ -221,7 +226,7 @@ To set up and run NeoPRISM for development, follow these steps:
 - You can run `just build-assets` separately if you only want to generate web UI assets without starting the node.
 - All `docker/*/compose*.yml` files are auto-generated from Python sources in `tools/compose_gen/`. Do not edit these YAML files directly. Instead, modify the Python sources and run `just build-config` to regenerate them.
 
-## Running E2E Tests
+### Running E2E Tests
 
 NeoPRISM includes end-to-end conformance tests that verify the PRISM DID protocol implementation. These tests validate DID operations (create, update, deactivate) against a local Cardano testnet.
 
@@ -256,7 +261,7 @@ To compile the test suite without running it:
 just e2e::build
 ```
 
-### Running specific E2E stacks
+#### Running specific E2E stacks
 
 The e2e harness now ships four compose variants that differ by backend (PostgreSQL or SQLite) and target audience (developer-friendly vs CI-hardening). You can exercise any stack individually by combining the `up`, `down`, and `run` recipes:
 
@@ -271,7 +276,7 @@ just e2e::down sqlite-dev
 
 `just e2e::run` iterates over every stack in sequence—`sqlite-dev`, `ci`, and `ci-sqlite`—so that both backends are covered automatically.
 
-### Configuration matrix
+#### Configuration matrix
 
 | Mode | Backend | Compose file | `just` target | Recommended usage | Pros | Trade-offs |
 |------|---------|--------------|---------------|-------------------|------|------------|
@@ -281,7 +286,7 @@ just e2e::down sqlite-dev
 
 Pick the stack that matches your goal; for example, run `sqlite-dev` while iterating on backend logic, and keep `ci` or `ci-sqlite` in nightly pipelines for extra safety.
 
-### Full QA helper script
+#### Full QA helper script
 
 The justfile provides a `full-check` recipe that strings the common QA steps together:
 
@@ -291,7 +296,7 @@ just full-check
 
 This recipe performs `cargo clean`, `cargo build --all-features`, regenerates compose files, runs `just test`, builds the Docker artifacts, and executes `just e2e::run`. Use it right before sending a PR to replicate the checks we run manually.
 
-### SQLx schema checks
+#### SQLx schema checks
 
 The development shell now bundles `sqlx-cli`, `sqlite`, and all required headers. Whenever you change migrations or entity definitions, run both backends to ensure they stay valid:
 
@@ -305,7 +310,7 @@ nix develop -c 'DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite sqlx migra
 
 Remove the temporary SQLite file afterwards if you do not need it anymore.
 
-#### Offline sqlx metadata (optional)
+##### Offline sqlx metadata (optional)
 
 If you rely on `cargo sqlx prepare` for offline builds, regenerate metadata for each backend:
 
@@ -321,7 +326,7 @@ DATABASE_URL=sqlite://$(pwd)/.tmp/neoprism-dev.sqlite \
 
 The generated `sqlx-data.json` reflects the currently enabled features, so keep both variants in sync if you commit the file.
 
-### Database backends
+#### Database backends
 
 NeoPRISM supports both PostgreSQL and embedded SQLite storage. The backend is inferred from `--db-url` / `NPRISM_DB_URL`: use a `postgres://` URL for Postgres or a `sqlite://` URL for SQLite. If you omit the flag entirely, the node falls back to an embedded SQLite file in your platform's application-data directory (for example `~/Library/Application Support/NeoPRISM/<network>/neoprism.db` on macOS or `$XDG_DATA_HOME/NeoPRISM/<network>/neoprism.db` on Linux).
 
@@ -331,7 +336,7 @@ SQLite is great for local development, demos, and CI smoke tests, but remember:
 - WAL mode is enforced automatically to keep reads non-blocking.
 - Long running readers can delay checkpointing and grow the file; run `VACUUM` occasionally if you prune data manually.
 
-## Frequently used commands
+### Frequently used commands
 
 These are commands you can run outside the development shell:
 

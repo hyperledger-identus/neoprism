@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Install Nix
         uses: cachix/install-nix-action@v31
@@ -43,7 +43,7 @@ jobs:
           docker images
 
       - name: Start prism-test services
-        uses: hoverkraft-tech/compose-action@v2.3.0
+        uses: hoverkraft-tech/compose-action@v2.5.0
         with:
           compose-file: "./docker/prism-test/compose-ci.yml"
           up-flags: "--wait"
