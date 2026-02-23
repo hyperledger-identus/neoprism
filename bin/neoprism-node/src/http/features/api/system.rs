@@ -44,6 +44,7 @@ mod models {
 
 #[utoipa::path(
     get,
+    summary = "Health check",
     path = urls::ApiHealth::AXUM_PATH,
     tags = [tags::SYSTEM],
     responses(
@@ -56,6 +57,7 @@ pub async fn health() -> &'static str {
 
 #[utoipa::path(
     get,
+    summary = "Get app metadata",
     path = urls::ApiAppMeta::AXUM_PATH,
     tags = [tags::SYSTEM],
     responses(

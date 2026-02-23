@@ -35,6 +35,8 @@ mod models {
 
 #[utoipa::path(
     post,
+    summary = "Submit signed operations",
+    description = "Submits one or more signed PRISM operations to the blockchain. Accepts an array of hex-encoded SignedPrismOperation protobuf messages and returns the transaction ID along with the computed operation IDs for tracking.",
     path = urls::ApiSignedOpSubmissions::AXUM_PATH,
     tags = [tags::OP_SUBMIT],
     request_body = SignedOperationSubmissionRequest,

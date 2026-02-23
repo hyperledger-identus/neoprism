@@ -24,8 +24,8 @@ tracing-subscriber = { workspace = true }
 tower              = { workspace = true }
 tower-http         = { workspace = true, features = [ "fs", "trace", "cors" ] }
 
-utoipa            = { workspace = true, features = [ "chrono" ] }
-utoipa-scalar = { version = "0.3", features = [ "axum" ] }
+utoipa        = { workspace = true, features = [ "chrono" ] }
+utoipa-scalar = { workspace = true, features = [ "axum" ] }
 
 identus-apollo              = { workspace = true, features = [ "hex", "jwk" ] }
 identus-did-core            = { workspace = true, features = [ "openapi" ] }
