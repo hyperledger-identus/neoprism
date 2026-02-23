@@ -71,7 +71,7 @@ mod models {
 
 #[utoipa::path(
     get,
-    summary = "Resolve a VDR entry and return its blob data.",
+    summary = "Resolve VDR entry",
     description = "Returns the raw blob data for a VDR entry, using PrismDidService::resolve_vdr. The response is application/octet-stream.",
     path = ApiVdrBlob::AXUM_PATH,
     tags = [tags::OP_INDEX],
@@ -98,7 +98,7 @@ pub async fn resolve_vdr_blob(
 
 #[utoipa::path(
     get,
-    summary = "Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.",
+    summary = "Get DIDData protobuf",
     description = "The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.",
     path = ApiDidData::AXUM_PATH,
     tags = [tags::OP_INDEX],
@@ -126,7 +126,7 @@ pub async fn did_data(Path(did): Path<String>, State(state): State<IndexerState>
 
 #[utoipa::path(
     get,
-    summary = "Retrieves statistics about the indexer's latest processed slot and block.",
+    summary = "Get indexer statistics",
     path = ApiIndexerStats::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
@@ -154,7 +154,7 @@ pub async fn indexer_stats(State(state): State<IndexerState>) -> Result<Json<Ind
 
 #[utoipa::path(
     get,
-    summary = "Returns transaction details and all operations within the transaction",
+    summary = "Get transaction details",
     path = ApiTransaction::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
@@ -209,7 +209,7 @@ pub async fn transaction_details(
 
 #[utoipa::path(
     get,
-    summary = "Returns operation details for a specific operation ID",
+    summary = "Get operation details",
     path = ApiOperation::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(

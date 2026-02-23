@@ -62,7 +62,7 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
     feature = "openapi",
     utoipa::path(
         get,
-        summary = "Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.",
+        summary = "Resolve DID",
         description = "This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.\n\nOptional resolution options may be provided as query parameters, but are not yet supported in this implementation.",
         path = PLACEHOLDER_RESOLVER_PATH,
         responses(

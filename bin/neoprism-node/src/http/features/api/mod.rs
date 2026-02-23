@@ -2,7 +2,7 @@ use axum::Router;
 use axum::routing::{get, post};
 use identus_did_resolver_http::{HttpBindingOptions, did_resolver_http_binding};
 use utoipa::OpenApi;
-use utoipa_swagger_ui::SwaggerUi;
+use utoipa_scalar::{Scalar, Servable};
 
 use crate::RunMode;
 use crate::http::features::api::indexer::IndexerOpenApiDoc;
@@ -82,7 +82,7 @@ pub fn router(mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
     let oas = build_openapi(&mode, port, external_url);
 
     let app_router = Router::new()
-        .merge(SwaggerUi::new(urls::Swagger::AXUM_PATH).url("/api/openapi.json", oas))
+        .merge(Scalar::with_url(urls::OpenApi::AXUM_PATH, oas))
         .route(urls::ApiHealth::AXUM_PATH, get(system::health))
         .route(urls::ApiAppMeta::AXUM_PATH, get(system::app_meta));
 

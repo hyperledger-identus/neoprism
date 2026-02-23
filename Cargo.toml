@@ -56,6 +56,7 @@ tracing-subscriber = { version = "0.3" }
 ts-rs              = { version = "11.0" }
 uriparse           = { version = "0.6" }
 utoipa             = { version = "5" }
+utoipa-scalar      = { version = "0.3" }
 uuid               = { version = "1" }
 # db
 sqlx      = { version = "0.8" }

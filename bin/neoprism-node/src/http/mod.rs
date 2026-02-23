@@ -37,7 +37,7 @@ pub fn router(assets_dir: &Path, mode: RunMode, port: u16, external_url: Option<
     let home_router = match mode {
         RunMode::Submitter => Router::new().route(
             urls::Home::AXUM_PATH,
-            get(Redirect::temporary(&urls::Swagger::new_uri())),
+            get(Redirect::temporary(&urls::OpenApi::new_uri())),
         ),
         RunMode::Indexer | RunMode::Standalone => Router::new().route(
             urls::Home::AXUM_PATH,
