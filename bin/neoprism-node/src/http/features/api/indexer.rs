@@ -16,7 +16,7 @@ use crate::http::features::api::indexer::models::{
     IndexerStats, OperationDetails, OperationSummary, TransactionDetails,
 };
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDidData, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob};
+use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob};
 
 #[derive(OpenApi)]
 #[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, transaction_details, operation_details))]
@@ -100,7 +100,7 @@ pub async fn resolve_vdr_blob(
     get,
     summary = "Get DIDData protobuf",
     description = "The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.",
-    path = ApiDidData::AXUM_PATH,
+    path = ApiDidProtobuf::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.", body = String),
