@@ -116,7 +116,7 @@ private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, Cry
 
   override def getDidDocument(did: String): UIO[Option[DIDData]] =
     for
-      resp <- neoprismClient.batched.get(url"/api/did-data/$did".toString).orDie
+      resp <- neoprismClient.batched.get(url"/api/dids/$did/protobuf".toString).orDie
       body <- resp.body.asString.orDie
       didData <- resp.status match
         case Status.NotFound => ZIO.none
