@@ -44,6 +44,11 @@ async fn publish_operations(
     state: &SubmitterState,
     signed_operations: Vec<SignedPrismOperation>,
 ) -> Result<(TxId, Vec<OperationId>), ApiError> {
+    if signed_operations.is_empty() {
+        return Err(ApiError::BadRequest {
+            message: "submission batch is empty".to_string(),
+        });
+    }
     let operation_ids: Vec<_> = signed_operations.iter().map(|op| op.operation_id()).collect();
 
     let tx_id = state
