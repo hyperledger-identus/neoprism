@@ -103,7 +103,7 @@ private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, Cry
   override def scheduleOperations(operations: Seq[SignedPrismOperation]): IO[Errors.BadRequest, Seq[OperationRef]] =
     val requestBody = ScheduleOperationRequest(signed_operations = operations.map(_.toByteArray.toHexString))
     neoprismClient.batched
-      .post("/api/signed-operation-submissions")(Body.from(requestBody).contentType(MediaType.application.json))
+      .post("/api/submissions/signed-operations")(Body.from(requestBody).contentType(MediaType.application.json))
       .flatMap(resp => resp.body.to[ScheduleOperationResponse])
       .map(resp => Seq(resp.tx_id))
       .orDie
