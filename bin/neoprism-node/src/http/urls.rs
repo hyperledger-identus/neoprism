@@ -24,7 +24,11 @@ typed_uri!(ApiHealth, "api" / "_system" / "health");
 typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
 
 // API submitter
-typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
+typed_uri!(
+    ApiSubmissionsSignedOperations,
+    "api" / "submissions" / "signed-operations"
+);
+typed_uri!(ApiSubmissionsObjects, "api" / "submissions" / "objects");
 
 // API indexer
 typed_uri!(ApiDid, "api" / "dids" / (did: String));

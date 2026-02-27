@@ -93,10 +93,12 @@ pub fn router(mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
         .route(urls::ApiTransaction::AXUM_PATH, get(indexer::transaction_details))
         .route(urls::ApiOperation::AXUM_PATH, get(indexer::operation_details));
 
-    let submitter_router = Router::new().route(
-        urls::ApiSignedOpSubmissions::AXUM_PATH,
-        post(submitter::submit_signed_operations),
-    );
+    let submitter_router = Router::new()
+        .route(
+            urls::ApiSubmissionsSignedOperations::AXUM_PATH,
+            post(submitter::submit_signed_operations),
+        )
+        .route(urls::ApiSubmissionsObjects::AXUM_PATH, post(submitter::submit_object));
 
     let did_resolver_router = did_resolver_http_binding(urls::ApiDid::AXUM_PATH, Default::default()).router;
 
