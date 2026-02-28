@@ -38,10 +38,10 @@ object MainSpec extends ZIOSpecDefault, TestUtils:
       .provide(
         NodeClient.grpc("localhost", 50053),
         NodeName.layer("prism-node")
-      )
+      ) @@ TestAspect.tag("dev")
 
     // (neoprismSpec + prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
-    (prismNodeSpec + generateDidFixtureSpec)
+    (prismNodeSpec + generateDidFixtureSpec).provide(Runtime.removeDefaultLoggers)
       @@ TestAspect.timed
       @@ TestAspect.withLiveEnvironment
       @@ TestAspect.parallelN(1)

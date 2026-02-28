@@ -208,4 +208,4 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getVdrEntryHex(spo3.getOperationHash.get)
       yield assert(storage)(isNone)
     }
-  ) @@ TestAspect.tag("dev")
+  )

@@ -1,6 +1,5 @@
 package org.hyperledger.identus.prismtest.suite
 
-import org.hyperledger.identus.prismtest.NodeName
 import proto.prism.SignedPrismOperation
 import proto.prism_ssi.KeyUsage
 import zio.test.*
@@ -12,7 +11,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
   def allSpecs = suite("UpdateStorageOperation")(
     signatureSpec,
     prevOperationHashSpec
-  ) @@ NodeName.skipIf("prism-node")
+  )
 
   private def prevOperationHashSpec = suite("PreviousOperationHash")(
     test("should accept update storage with valid operation hash") {

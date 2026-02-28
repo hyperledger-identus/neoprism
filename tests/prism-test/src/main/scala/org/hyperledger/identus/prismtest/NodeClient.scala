@@ -110,7 +110,10 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
             if vdrEntry.status == VdrEntryStatus.DEACTIVATED then ZIO.succeed(None)
             else ZIO.succeed(vdrEntry.data.map(_.getBytes.toByteArray).filter(!_.isEmpty))
       )
-      .orDie
+      .catchAll {
+        case e: StatusRuntimeException if e.getMessage.contains("Unknown vdr entry") => ZIO.succeed(None)
+        case e                                                                       => ZIO.die(e)
+      }
 
 private class NeoprismNodeClient(neoprismClient: Client) extends NodeClient, CryptoUtils:
 

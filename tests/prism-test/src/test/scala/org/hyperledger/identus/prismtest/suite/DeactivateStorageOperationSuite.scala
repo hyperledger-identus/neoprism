@@ -1,6 +1,5 @@
 package org.hyperledger.identus.prismtest.suite
 
-import org.hyperledger.identus.prismtest.NodeName
 import proto.prism_ssi.KeyUsage
 import zio.test.*
 import zio.test.Assertion.*
@@ -11,7 +10,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
     signatureSpec,
     prevOperationHashSpec,
     deactivatedStorageSpec
-  ) @@ NodeName.skipIf("prism-node")
+  )
 
   private def deactivatedStorageSpec = suite("Deactivated storage")(
     test("should reject resubmitting same create storage operation after deactivation") {
