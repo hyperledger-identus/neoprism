@@ -30,14 +30,6 @@ message DIDData {
     repeated StorageData storage_data = 5;
 }
 
-message StorageData {
-    bytes init_operation_hash = 1;
-    bytes prev_operation_hash = 2;
-    oneof data {
-        bytes bytes = 100;
-    }
-}
-
 message ScheduleOperationsRequest {
     repeated proto.SignedPrismOperation signed_operations = 1; // a list of signed operations
 }
@@ -74,8 +66,6 @@ enum OperationStatus {
 //-------------------------------
 message GetVdrEntryRequest {
     bytes event_hash = 1;
-    bytes entry_id = 2;
-    bool latest = 3;
 }
 
 message VdrEntry {
@@ -83,7 +73,6 @@ message VdrEntry {
     string did_suffix = 2;
     StorageData data = 3;
     bytes previous_event_hash = 4;
-    bool deactivated = 5;
     bytes nonce = 6;
     VdrEntryStatus status = 7;
 }
@@ -98,3 +87,16 @@ enum VdrEntryStatus {
     UNKNOWN_STATUS = 2;
 }
 
+message StorageData {
+    oneof content {
+        bytes bytes = 1; // raw payload
+        string ipfs = 2; // optional IPFS reference
+        StatusListEntry status_list_entry = 3; // optional status list payload
+    }
+}
+
+message StatusListEntry {
+    int64 state = 1;
+    string name = 2;
+    string details = 3;
+}

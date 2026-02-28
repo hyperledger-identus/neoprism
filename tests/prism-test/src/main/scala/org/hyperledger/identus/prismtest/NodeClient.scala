@@ -102,12 +102,12 @@ private class GrpcNodeClient(nodeService: NodeService) extends NodeClient, Crypt
 
   override def getVdrEntry(ref: Array[Byte]): UIO[Option[Array[Byte]]] =
     ZIO
-      .fromFuture(_ => nodeService.getVdrEntry(GetVdrEntryRequest(entryId = ByteString.copyFrom(ref), latest = true)))
+      .fromFuture(_ => nodeService.getVdrEntry(GetVdrEntryRequest(eventHash = ByteString.copyFrom(ref))))
       .flatMap(response =>
         response.entry match
           case None           => ZIO.succeed(None)
           case Some(vdrEntry) =>
-            if vdrEntry.deactivated || vdrEntry.status == VdrEntryStatus.DEACTIVATED then ZIO.succeed(None)
+            if vdrEntry.status == VdrEntryStatus.DEACTIVATED then ZIO.succeed(None)
             else ZIO.succeed(vdrEntry.data.map(_.getBytes.toByteArray).filter(!_.isEmpty))
       )
       .orDie
