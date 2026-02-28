@@ -149,7 +149,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         _ <- scheduleOperations(Seq(spo1, spo2))
         storage <- getVdrEntryHex(spo2.getOperationHash.get)
       yield assert(storage)(isSome(equalTo("00")))
-    } @@ TestAspect.tag("dev"),
+    },
     test("should reject signature by non-matching VDR key") {
       for
         seed <- newSeed
@@ -208,4 +208,4 @@ object CreateStorageOperationSuite extends StorageTestUtils:
         storage <- getVdrEntryHex(spo3.getOperationHash.get)
       yield assert(storage)(isNone)
     }
-  )
+  ) @@ TestAspect.tag("dev")
