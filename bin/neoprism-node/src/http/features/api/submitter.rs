@@ -98,7 +98,7 @@ pub async fn submit_signed_operations(
     )
 )]
 pub async fn submit_object(
-    state: State<SubmitterState>,
+    State(state): State<SubmitterState>,
     Json(req): Json<ObjectSubmissionRequest>,
 ) -> Result<Json<SubmissionResponse>, ApiError> {
     let signed_operations = req.object.signed_operations();
