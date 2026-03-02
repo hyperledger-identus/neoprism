@@ -69,7 +69,7 @@ impl SignedPrismOperationHexStr {
 
 #[derive(Debug, Clone, Serialize, Deserialize, derive_more::From, derive_more::Into)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
-#[cfg_attr(feature = "openapi", schema(description = "A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.", value_type = String))]
+#[cfg_attr(feature = "openapi", schema(description = "A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.", value_type = String, example = "22d60112d3010a086d61737465722d3012463044022036393f3602cc2c17552cf72a6af1d12dc45cdf549707e76491b06d0becbd2ece02203ff703fabf4db876059aaf1ffb7803e40f5c707695ad215fd562b2f418aaded11a7f0a7d0a7b123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123b0a0769737375652d3010024a2e0a09736563703235366b311221037ee52f2a266aa874dc83feb8fcb15ab96282f67132bc7821c08ac524955114f1"))]
 pub struct PrismObjectHexStr(
     #[serde(
         serialize_with = "PrismObjectHexStr::serialize",
