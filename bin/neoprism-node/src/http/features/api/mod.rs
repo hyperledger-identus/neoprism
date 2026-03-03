@@ -90,6 +90,7 @@ pub fn router(mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
         .route(urls::ApiDidProtobuf::AXUM_PATH, get(indexer::did_data))
         .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats))
         .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob))
+        .route(urls::ApiVdrEntries::AXUM_PATH, get(indexer::vdr_entry_metadata))
         .route(urls::ApiTransaction::AXUM_PATH, get(indexer::transaction_details))
         .route(urls::ApiOperation::AXUM_PATH, get(indexer::operation_details));
 

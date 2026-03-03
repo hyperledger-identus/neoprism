@@ -13,13 +13,13 @@ use utoipa::OpenApi;
 use crate::IndexerState;
 use crate::http::features::api::error::{ApiError, ApiErrorResponseBody};
 use crate::http::features::api::indexer::models::{
-    IndexerStats, OperationDetails, OperationSummary, TransactionDetails,
+    IndexerStats, OperationDetails, OperationSummary, TransactionDetails, VdrEntryMetadataResponse,
 };
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob};
+use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob, ApiVdrEntries};
 
 #[derive(OpenApi)]
-#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, transaction_details, operation_details))]
+#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, vdr_entry_metadata, transaction_details, operation_details))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
@@ -53,6 +53,13 @@ mod models {
         pub signed_operation_data: SignedPrismOperationHexStr,
         pub operation_id: OperationId,
         pub did: Did,
+    }
+
+    #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+    pub struct VdrEntryMetadataResponse {
+        pub entry_hash: String,
+        pub latest_event_hash: String,
+        pub status: String,
     }
 
     #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
@@ -93,6 +100,38 @@ pub async fn resolve_vdr_blob(
         Ok(Some(blob)) => Ok(Bytes::from(blob)),
         Ok(None) => Err(ApiError::NotFound)?,
         Err(e) => Err(ApiError::Internal { source: e })?,
+    }
+}
+
+#[utoipa::path(
+    get,
+    summary = "Get VDR entry metadata",
+    description = "Returns metadata for a VDR entry including the latest event hash and status. This is used by VDR clients to obtain the previous event hash required for update and delete operations.",
+    path = ApiVdrEntries::AXUM_PATH,
+    tags = [tags::OP_INDEX],
+    responses(
+        (status = OK, description = "Successfully retrieved VDR entry metadata.", body = VdrEntryMetadataResponse),
+        (status = NOT_FOUND, description = "The VDR entry was not found.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = BAD_REQUEST, description = "The provided entry hash is invalid.", body = ApiErrorResponseBody, content_type = "application/json"),
+        (status = INTERNAL_SERVER_ERROR, description = "An unexpected error occurred.", body = ApiErrorResponseBody, content_type = "application/json"),
+    ),
+    params(
+        ("entry_hash" = String, Path, description = "The hex-encoded entry hash.")
+    ),
+)]
+pub async fn vdr_entry_metadata(
+    Path(entry_hash): Path<String>,
+    State(state): State<IndexerState>,
+) -> Result<Json<VdrEntryMetadataResponse>, ApiError> {
+    let service = &state.prism_did_service;
+    match service.resolve_vdr_entry_metadata(&entry_hash).await {
+        Ok(Some(meta)) => Ok(Json(VdrEntryMetadataResponse {
+            entry_hash: meta.entry_hash,
+            latest_event_hash: meta.latest_event_hash,
+            status: meta.status,
+        })),
+        Ok(None) => Err(ApiError::NotFound),
+        Err(e) => Err(ApiError::Internal { source: e }),
     }
 }
 

@@ -14,6 +14,14 @@ use node_storage::StorageBackend;
 
 use super::error::{InvalidDid, ResolutionError};
 
+/// Metadata about a VDR entry, including the latest event hash and status.
+#[derive(Debug, Clone)]
+pub struct VdrEntryMetadata {
+    pub entry_hash: String,
+    pub latest_event_hash: String,
+    pub status: String,
+}
+
 #[derive(Clone)]
 pub struct PrismDidService {
     db: Arc<dyn StorageBackend>,
@@ -52,6 +60,35 @@ impl PrismDidService {
             StorageData::Bytes(items) => Ok(Some(items.clone())),
             _ => anyhow::bail!("vdr storage data types other than bytes are not yet supported"),
         }
+    }
+
+    pub async fn resolve_vdr_entry_metadata(
+        &self,
+        entry_hash_hex: &str,
+    ) -> anyhow::Result<Option<VdrEntryMetadata>> {
+        let entry_hash_hex: HexStr = entry_hash_hex.parse()?;
+        let entry_hash = Sha256Digest::from_bytes(&entry_hash_hex.to_bytes())?;
+        let Some(owner) = self.db.get_did_by_vdr_entry(&entry_hash).await? else {
+            return Ok(None);
+        };
+
+        let mut debug_acc = vec![];
+        let (_, did_state) = self.resolve_did_logic(&owner.to_string(), &mut debug_acc).await?;
+
+        let storage = did_state
+            .storage
+            .into_iter()
+            .find(|i| *i.init_operation_hash == entry_hash);
+
+        Ok(storage.map(|s| VdrEntryMetadata {
+            entry_hash: entry_hash_hex.to_string(),
+            latest_event_hash: HexStr::from(s.last_operation_hash.to_vec()).to_string(),
+            status: if did_state.is_published {
+                "active".to_string()
+            } else {
+                "deactivated".to_string()
+            },
+        }))
     }
 
     pub async fn resolve_did(&self, did: &str) -> (Result<(PrismDid, DidState), ResolutionError>, ResolutionDebug) {
