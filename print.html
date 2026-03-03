@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-0af36205.js";
+            window.path_to_searchindex_js = "searchindex-e5089008.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ddbda910.js"></script>
@@ -1009,7 +1009,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.11.0
+  version: 0.12.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -1022,6 +1022,7 @@ paths:
     get:
       tags:
         - System API
+      summary: Health check
       operationId: health
       responses:
         "200":
@@ -1035,6 +1036,7 @@ paths:
     get:
       tags:
         - System API
+      summary: Get app metadata
       operationId: app_meta
       responses:
         "200":
@@ -1049,56 +1051,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponseBody'
-  /api/did-data/{did}:
-    get:
-      tags:
-        - Indexer API
-      summary: Returns the DIDData protobuf message for a given DID, encoded in hexadecimal.
-      description: The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.
-      operationId: did_data
-      parameters:
-        - name: did
-          in: path
-          description: The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message.
-          required: true
-          schema:
-            $ref: '#/components/schemas/Did'
-      responses:
-        "200":
-          description: Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.
-          content:
-            text/plain:
-              schema:
-                type: string
-        "400":
-          description: The provided DID is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiErrorResponseBody'
-        "404":
-          description: The DID does not exist in the index.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiErrorResponseBody'
-        "500":
-          description: An unexpected error occurred while retrieving DIDData.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiErrorResponseBody'
-        "501":
-          description: A functionality is not implemented.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ApiErrorResponseBody'
   /api/dids/{did}:
     get:
       tags:
         - Indexer API
-      summary: Resolves a W3C Decentralized Identifier (DID) according to the DID Resolution specification.
+      summary: Resolve DID
       description: |-
         This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
 
@@ -1161,11 +1118,56 @@ paths:
             application/did-resolution:
               schema:
                 $ref: '#/components/schemas/ResolutionResult'
+  /api/dids/{did}/protobuf:
+    get:
+      tags:
+        - Indexer API
+      summary: Get DIDData protobuf
+      description: The returned data is a protobuf message compatible with the legacy prism-node implementation. The object is encoded in hexadecimal format. This endpoint is useful for testing and verifying compatibility with existing operations already anchored on the blockchain.
+      operationId: did_data
+      parameters:
+        - name: did
+          in: path
+          description: The Decentralized Identifier (DID) for which to retrieve the DIDData protobuf message.
+          required: true
+          schema:
+            $ref: '#/components/schemas/Did'
+      responses:
+        "200":
+          description: Successfully retrieved the DIDData protobuf message, encoded as a hexadecimal string.
+          content:
+            text/plain:
+              schema:
+                type: string
+        "400":
+          description: The provided DID is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "404":
+          description: The DID does not exist in the index.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred while retrieving DIDData.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "501":
+          description: A functionality is not implemented.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
   /api/indexer-stats:
     get:
       tags:
         - Indexer API
-      summary: Retrieves statistics about the indexer's latest processed slot and block.
+      summary: Get indexer statistics
       operationId: indexer_stats
       responses:
         "200":
@@ -1186,7 +1188,7 @@ paths:
     get:
       tags:
         - Indexer API
-      summary: Returns operation details for a specific operation ID
+      summary: Get operation details
       operationId: operation_details
       parameters:
         - name: operation_id
@@ -1220,10 +1222,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ApiErrorResponseBody'
-  /api/signed-operation-submissions:
+  /api/submissions/objects:
     post:
       tags:
         - Submitter API
+      summary: Submit a PRISM object
+      description: Submits a PRISM object containing signed operations to the blockchain. Accepts a hex-encoded PrismObject protobuf message containing a PrismBlock with SignedPrismOperation messages and returns the transaction ID along with the computed operation IDs for tracking.
+      operationId: submit_object
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ObjectSubmissionRequest'
+        required: true
+      responses:
+        "200":
+          description: Object submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubmissionResponse'
+        "400":
+          description: Malformed request or invalid object
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred during submission
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+  /api/submissions/signed-operations:
+    post:
+      tags:
+        - Submitter API
+      summary: Submit signed operations
+      description: Submits one or more signed PRISM operations to the blockchain. Accepts an array of hex-encoded SignedPrismOperation protobuf messages and returns the transaction ID along with the computed operation IDs for tracking.
       operationId: submit_signed_operations
       requestBody:
         content:
@@ -1237,7 +1273,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SignedOperationSubmissionResponse'
+                $ref: '#/components/schemas/SubmissionResponse'
         "400":
           description: Malformed request or invalid operations
           content:
@@ -1254,7 +1290,7 @@ paths:
     get:
       tags:
         - Indexer API
-      summary: Returns transaction details and all operations within the transaction
+      summary: Get transaction details
       operationId: transaction_details
       parameters:
         - name: tx_id
@@ -1292,7 +1328,7 @@ paths:
     get:
       tags:
         - Indexer API
-      summary: Resolve a VDR entry and return its blob data.
+      summary: Resolve VDR entry
       description: Returns the raw blob data for a VDR entry, using PrismDidService::resolve_vdr. The response is application/octet-stream.
       operationId: resolve_vdr_blob
       parameters:
@@ -1522,6 +1558,13 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/Base64UrlStrNoPad'
+    ObjectSubmissionRequest:
+      type: object
+      required:
+        - object
+      properties:
+        object:
+          $ref: '#/components/schemas/PrismObjectHexStr'
     OperationDetails:
       type: object
       required:
@@ -1579,6 +1622,10 @@ components:
           minimum: 0
         signed_operation_data:
           $ref: '#/components/schemas/SignedPrismOperationHexStr'
+    PrismObjectHexStr:
+      type: string
+      description: 'A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.'
+      example: 22d60112d3010a086d61737465722d3012463044022036393f3602cc2c17552cf72a6af1d12dc45cdf549707e76491b06d0becbd2ece02203ff703fabf4db876059aaf1ffb7803e40f5c707695ad215fd562b2f418aaded11a7f0a7d0a7b123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123b0a0769737375652d3010024a2e0a09736563703235366b311221037ee52f2a266aa874dc83feb8fcb15ab96282f67132bc7821c08ac524955114f1
     ResolutionResult:
       type: object
       required:
@@ -1627,21 +1674,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SignedPrismOperationHexStr'
-    SignedOperationSubmissionResponse:
-      type: object
-      required:
-        - tx_id
-        - operation_ids
-      properties:
-        operation_ids:
-          type: array
-          items:
-            $ref: '#/components/schemas/OperationId'
-        tx_id:
-          $ref: '#/components/schemas/TxId'
     SignedPrismOperationHexStr:
       type: string
-      description: A hexadecimal string representing a SignedPrismOperation
+      description: 'A hexadecimal string representing a SignedPrismOperation protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.'
       example: 0a086d61737465722d30124630440220442eec28ec60464acd8df155e73f88a1c7faf4549975582ff0601449525aba31022019257250071818066b377b83a8b1765df1b7dc21d9bccfc7d5da036801d3ba0e1a420a400a3e123c0a086d61737465722d3010014a2e0a09736563703235366b3112210398e61c14328a6a844eec6dc084b825ae8525f10204e9244aaf61260bd221a457
     SlotNo:
       type: integer
@@ -1655,6 +1690,18 @@ components:
           additionalProperties: {}
           propertyNames:
             type: string
+    SubmissionResponse:
+      type: object
+      required:
+        - tx_id
+        - operation_ids
+      properties:
+        operation_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationId'
+        tx_id:
+          $ref: '#/components/schemas/TxId'
     TransactionDetails:
       type: object
       required:
