@@ -111,7 +111,7 @@ Once the container is running, you can submit a sample DID operation from anothe
 
 ```bash
 curl -X 'POST' \
-  'http://localhost:8080/api/signed-operation-submissions' \
+  'http://localhost:8080/api/submissions/signed-operations' \
   -H 'accept: application/json' \
   -H 'Content-Type: application/json' \
   -d '{

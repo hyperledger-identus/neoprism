@@ -11,6 +11,7 @@ pub use storage::*;
 
 use crate::prelude::SignedPrismOperation;
 use crate::proto::MessageExt;
+use crate::proto::prism::PrismObject;
 
 #[derive(Debug, Clone)]
 pub struct OperationParameters {
@@ -59,10 +60,53 @@ impl SignedPrismOperationHexStr {
     {
         let hex_str = String::deserialize(deserializer)?;
         let bytes = HexStr::from_str(&hex_str)
-            .map_err(|e| serde::de::Error::custom(format!("Value is not a valid hex: {e}")))?;
+            .map_err(|e| serde::de::Error::custom(format!("value is not a valid hex: {e}")))?;
         let op = SignedPrismOperation::decode(&bytes.to_bytes())
-            .map_err(|e| serde::de::Error::custom(format!("Value cannot be decoded to SignedPrismOperation: {e}")))?;
+            .map_err(|e| serde::de::Error::custom(format!("value cannot be decoded to signed prism operation: {e}")))?;
         Ok(op)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, derive_more::From, derive_more::Into)]
+#[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "openapi", schema(description = "A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.", value_type = String, example = "22d60112d3010a086d61737465722d3012463044022036393f3602cc2c17552cf72a6af1d12dc45cdf549707e76491b06d0becbd2ece02203ff703fabf4db876059aaf1ffb7803e40f5c707695ad215fd562b2f418aaded11a7f0a7d0a7b123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123b0a0769737375652d3010024a2e0a09736563703235366b311221037ee52f2a266aa874dc83feb8fcb15ab96282f67132bc7821c08ac524955114f1"))]
+pub struct PrismObjectHexStr(
+    #[serde(
+        serialize_with = "PrismObjectHexStr::serialize",
+        deserialize_with = "PrismObjectHexStr::deserialize"
+    )]
+    PrismObject,
+);
+
+impl PrismObjectHexStr {
+    fn serialize<S>(obj: &PrismObject, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let hex_str = HexStr::from(&obj.encode_to_vec());
+        serializer.serialize_str(&hex_str.to_string())
+    }
+
+    fn deserialize<'de, D>(deserializer: D) -> Result<PrismObject, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let hex_str = String::deserialize(deserializer)?;
+        let bytes = HexStr::from_str(&hex_str)
+            .map_err(|e| serde::de::Error::custom(format!("value is not a valid hex: {e}")))?;
+        let obj = PrismObject::decode(&bytes.to_bytes())
+            .map_err(|e| serde::de::Error::custom(format!("value cannot be decoded to prism object: {e}")))?;
+        Ok(obj)
+    }
+}
+
+impl PrismObjectHexStr {
+    pub fn signed_operations(&self) -> Vec<SignedPrismOperation> {
+        self.0
+            .block_content
+            .as_ref()
+            .map(|block| block.operations.clone())
+            .unwrap_or_default()
     }
 }
 

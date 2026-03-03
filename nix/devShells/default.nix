@@ -63,6 +63,7 @@
         RUST_LOG = "info,oura=warn,tower_http::trace=debug";
         LLVM_COV = "${pkgs.llvmPackages_19.llvm}/bin/llvm-cov";
         LLVM_PROFDATA = "${pkgs.llvmPackages_19.llvm}/bin/llvm-profdata";
+        PROTOC = "${pkgs.protobuf}/bin/protoc";
 
         JAVA_HOME = "${pkgs.jdk}/lib/openjdk";
         SBT_OPTS = "-Xmx4G";

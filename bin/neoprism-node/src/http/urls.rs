@@ -24,11 +24,15 @@ typed_uri!(ApiHealth, "api" / "_system" / "health");
 typed_uri!(ApiAppMeta, "api" / "_system" / "metadata");
 
 // API submitter
-typed_uri!(ApiSignedOpSubmissions, "api" / "signed-operation-submissions");
+typed_uri!(
+    ApiSubmissionsSignedOperations,
+    "api" / "submissions" / "signed-operations"
+);
+typed_uri!(ApiSubmissionsObjects, "api" / "submissions" / "objects");
 
 // API indexer
 typed_uri!(ApiDid, "api" / "dids" / (did: String));
-typed_uri!(ApiDidData, "api" / "did-data" / (did: String));
+typed_uri!(ApiDidProtobuf, "api" / "dids" / (did: String) / "protobuf");
 typed_uri!(ApiIndexerStats, "api" / "indexer-stats");
 typed_uri!(ApiVdrBlob, "api" / "vdr-data" / (entry_hash: String));
 typed_uri!(ApiTransaction, "api" / "transactions" / (tx_id: String));

@@ -87,16 +87,18 @@ pub fn router(mode: RunMode, port: u16, external_url: Option<&str>) -> Routers {
         .route(urls::ApiAppMeta::AXUM_PATH, get(system::app_meta));
 
     let indexer_router = Router::new()
-        .route(urls::ApiDidData::AXUM_PATH, get(indexer::did_data))
+        .route(urls::ApiDidProtobuf::AXUM_PATH, get(indexer::did_data))
         .route(urls::ApiIndexerStats::AXUM_PATH, get(indexer::indexer_stats))
         .route(urls::ApiVdrBlob::AXUM_PATH, get(indexer::resolve_vdr_blob))
         .route(urls::ApiTransaction::AXUM_PATH, get(indexer::transaction_details))
         .route(urls::ApiOperation::AXUM_PATH, get(indexer::operation_details));
 
-    let submitter_router = Router::new().route(
-        urls::ApiSignedOpSubmissions::AXUM_PATH,
-        post(submitter::submit_signed_operations),
-    );
+    let submitter_router = Router::new()
+        .route(
+            urls::ApiSubmissionsSignedOperations::AXUM_PATH,
+            post(submitter::submit_signed_operations),
+        )
+        .route(urls::ApiSubmissionsObjects::AXUM_PATH, post(submitter::submit_object));
 
     let did_resolver_router = did_resolver_http_binding(urls::ApiDid::AXUM_PATH, Default::default()).router;
 
