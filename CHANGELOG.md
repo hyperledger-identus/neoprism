@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.12.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.12.0) - 2026-03-03
+
+### 🚀 Features
+
+- Replace Swagger UI with Scalar API docs ([#223](https://github.com/hyperledger-identus/neoprism/pull/223))
+- Add submission endpoint for PRISM objects ([#229](https://github.com/hyperledger-identus/neoprism/pull/229))
+
+### ⚙️ Miscellaneous Tasks
+
+- Adds coverage + badges ([#220](https://github.com/hyperledger-identus/neoprism/pull/220))
+- Update codeowners and dependabot rules ([#221](https://github.com/hyperledger-identus/neoprism/pull/221))
+- Update sbt, scripted-plugin from 1.12.3 to 1.12.4 ([#225](https://github.com/hyperledger-identus/neoprism/pull/225))
+- Update sbt, scripted-plugin from 1.12.4 to 1.12.5 ([#226](https://github.com/hyperledger-identus/neoprism/pull/226))
+
 ## [0.11.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.11.0) - 2026-02-16
 
 ### 🚀 Features
