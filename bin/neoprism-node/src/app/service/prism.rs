@@ -4,7 +4,7 @@ use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_core::{Did, DidResolver, ResolutionOptions, ResolutionResult};
 use identus_did_prism::did::operation::{OperationId, StorageData};
-use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps};
+use identus_did_prism::did::{CanonicalPrismDid, DidState, PrismDid, PrismDidOps, StorageState};
 use identus_did_prism::dlt::{BlockNo, OperationMetadata, SlotNo, TxId};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::resolver::{ResolutionDebug, resolve_published, resolve_unpublished};
@@ -37,56 +37,48 @@ impl PrismDidService {
         Ok(result)
     }
 
-    pub async fn resolve_vdr(&self, entry_hash_hex: &str) -> anyhow::Result<Option<Vec<u8>>> {
+    /// Resolve VDR storage state by entry hash.
+    /// Returns the parsed hex, the DID state, and the matching storage entry if found.
+    async fn resolve_vdr_storage(
+        &self,
+        entry_hash_hex: &str,
+    ) -> anyhow::Result<Option<(HexStr, DidState, StorageState)>> {
         let entry_hash_hex: HexStr = entry_hash_hex.parse()?;
         let entry_hash = Sha256Digest::from_bytes(&entry_hash_hex.to_bytes())?;
         let Some(owner) = self.db.get_did_by_vdr_entry(&entry_hash).await? else {
             return Ok(None);
         };
-
         let mut debug_acc = vec![];
         let (_, did_state) = self.resolve_did_logic(&owner.to_string(), &mut debug_acc).await?;
-
-        let storage_data = did_state
+        let storage = did_state
             .storage
-            .into_iter()
-            .find(|i| *i.init_operation_hash == entry_hash);
+            .iter()
+            .find(|i| *i.init_operation_hash == entry_hash)
+            .cloned();
+        Ok(storage.map(|s| (entry_hash_hex, did_state, s)))
+    }
 
-        let Some(data) = storage_data.map(|i| i.data) else {
+    pub async fn resolve_vdr(&self, entry_hash_hex: &str) -> anyhow::Result<Option<Vec<u8>>> {
+        let Some((_, _, storage)) = self.resolve_vdr_storage(entry_hash_hex).await? else {
             return Ok(None);
         };
-
-        match &*data {
+        match &*storage.data {
             StorageData::Bytes(items) => Ok(Some(items.clone())),
             _ => anyhow::bail!("vdr storage data types other than bytes are not yet supported"),
         }
     }
 
-    pub async fn resolve_vdr_entry_metadata(
-        &self,
-        entry_hash_hex: &str,
-    ) -> anyhow::Result<Option<VdrEntryMetadata>> {
-        let entry_hash_hex: HexStr = entry_hash_hex.parse()?;
-        let entry_hash = Sha256Digest::from_bytes(&entry_hash_hex.to_bytes())?;
-        let Some(owner) = self.db.get_did_by_vdr_entry(&entry_hash).await? else {
+    pub async fn resolve_vdr_entry_metadata(&self, entry_hash_hex: &str) -> anyhow::Result<Option<VdrEntryMetadata>> {
+        let Some((hex, did_state, storage)) = self.resolve_vdr_storage(entry_hash_hex).await? else {
             return Ok(None);
         };
-
-        let mut debug_acc = vec![];
-        let (_, did_state) = self.resolve_did_logic(&owner.to_string(), &mut debug_acc).await?;
-
-        let storage = did_state
-            .storage
-            .into_iter()
-            .find(|i| *i.init_operation_hash == entry_hash);
-
-        Ok(storage.map(|s| VdrEntryMetadata {
-            entry_hash: entry_hash_hex.to_string(),
-            latest_event_hash: HexStr::from(s.last_operation_hash.to_vec()).to_string(),
-            status: if did_state.is_published {
-                "active".to_string()
-            } else {
+        Ok(Some(VdrEntryMetadata {
+            entry_hash: hex.to_string(),
+            latest_event_hash: HexStr::from(storage.last_operation_hash.to_vec()).to_string(),
+            status: if did_state.is_deactivated() {
                 "deactivated".to_string()
+            } else {
+                "active".to_string()
             },
         }))
     }

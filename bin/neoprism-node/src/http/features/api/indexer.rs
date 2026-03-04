@@ -19,7 +19,14 @@ use crate::http::features::api::tags;
 use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob, ApiVdrEntries};
 
 #[derive(OpenApi)]
-#[openapi(paths(did_data, indexer_stats, resolve_vdr_blob, vdr_entry_metadata, transaction_details, operation_details))]
+#[openapi(paths(
+    did_data,
+    indexer_stats,
+    resolve_vdr_blob,
+    vdr_entry_metadata,
+    transaction_details,
+    operation_details
+))]
 pub struct IndexerOpenApiDoc;
 
 mod models {
