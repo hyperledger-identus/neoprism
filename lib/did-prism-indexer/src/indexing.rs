@@ -43,13 +43,15 @@ where
             let intermediate_indexed_op = index_from_signed_operation(signed_operation);
             let indexed_op = match intermediate_indexed_op {
                 Ok(IntermediateIndexedOperation::Ssi { did }) => IndexedOperation::Ssi { raw_operation_id, did },
-                Ok(IntermediateIndexedOperation::VdrRoot { operation_hash, did }) => IndexedOperation::Vdr {
-                    raw_operation_id,
-                    init_operation_hash: operation_hash.clone(),
-                    operation_hash,
-                    did,
-                    prev_operation_hash: None,
-                },
+                Ok(IntermediateIndexedOperation::VdrRoot { operation_hash, did }) => {
+                    IndexedOperation::Vdr {
+                        raw_operation_id,
+                        init_operation_hash: operation_hash.clone(),
+                        operation_hash,
+                        did,
+                        prev_operation_hash: None,
+                    }
+                }
                 Ok(IntermediateIndexedOperation::VdrChild {
                     prev_operation_hash,
                     operation_hash,
