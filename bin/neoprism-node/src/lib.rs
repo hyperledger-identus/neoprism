@@ -21,6 +21,7 @@ use identus_did_prism_submitter::DltSink;
 use identus_did_prism_submitter::dlt::cardano_wallet::CardanoWalletSink;
 use identus_did_resolver_http::DidResolverStateDyn;
 use node_storage::{PostgresDb, SqliteDb, StorageBackend};
+use tokio::task::JoinSet;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
@@ -32,6 +33,19 @@ mod app;
 mod cli;
 mod http;
 
+/// Return type of [`init_memory_ledger`]: cursor receiver, sink, and worker set.
+type MemoryLedger = (
+    tokio::sync::watch::Receiver<Option<DltCursor>>,
+    Arc<dyn DltSink + Send + Sync + 'static>,
+    JoinSet<anyhow::Result<()>>,
+);
+
+/// Return type of [`init_dlt_source`]: optional cursor receiver and worker set.
+type DltSourceOutput = (
+    Option<tokio::sync::watch::Receiver<Option<DltCursor>>>,
+    JoinSet<anyhow::Result<()>>,
+);
+
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Clone, Copy)]
@@ -41,7 +55,7 @@ enum RunMode {
     Standalone,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 enum DbBackend {
     Postgres,
     Sqlite,
@@ -111,7 +125,7 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.cardano_network.clone().into();
     let db = init_database(&args.db, Some(&network)).await;
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
+    let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let app_state = AppState {
         run_mode: RunMode::Indexer,
     };
@@ -129,7 +143,9 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
         None,
         &args.server,
     )
-    .await
+    .await?;
+    handles.abort_all();
+    Ok(())
 }
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
@@ -144,7 +160,7 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.cardano_network.clone().into();
     let db = init_database(&args.db, Some(&network)).await;
-    let cursor_rx = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
+    let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink);
     let app_state = AppState {
         run_mode: RunMode::Standalone,
@@ -164,12 +180,14 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
         Some(submitter_state),
         &args.server,
     )
-    .await
+    .await?;
+    handles.abort_all();
+    Ok(())
 }
 
 async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
     let db = init_database(&args.db, Some(&NetworkIdentifier::Custom)).await;
-    let (cursor_rx, dlt_sink) = init_memory_ledger(db.clone());
+    let (cursor_rx, dlt_sink, mut handles) = init_memory_ledger(db.clone());
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
@@ -191,7 +209,9 @@ async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
         Some(submitter_state),
         &args.server,
     )
-    .await
+    .await?;
+    handles.abort_all();
+    Ok(())
 }
 
 async fn run_server(
@@ -237,8 +257,40 @@ async fn run_server(
     let bind_addr = format!("{}:{}", server_args.address, server_args.port);
     let listener = tokio::net::TcpListener::bind(&bind_addr).await?;
     tracing::info!("Server is listening on {}", bind_addr);
-    axum::serve(listener, router).await?;
+    axum::serve(listener, router)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
     Ok(())
+}
+
+/// Waits for SIGINT (Ctrl-C) or SIGTERM and returns, allowing the server to
+/// drain in-flight connections before exiting.
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        tokio::signal::ctrl_c()
+            .await
+            .expect("failed to install CTRL+C signal handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("failed to install SIGTERM signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {
+            tracing::info!("Received SIGINT (Ctrl-C), shutting down");
+        },
+        _ = terminate => {
+            tracing::info!("Received SIGTERM, shutting down");
+        },
+    }
 }
 
 async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> SharedStorage {
@@ -266,26 +318,18 @@ async fn init_postgres_database(db_url: &str, db_args: &DbArgs) -> SharedStorage
     Arc::new(db)
 }
 
-fn init_memory_ledger(
-    db: SharedStorage,
-) -> (
-    tokio::sync::watch::Receiver<Option<DltCursor>>,
-    Arc<dyn DltSink + Send + Sync + 'static>,
-) {
+fn init_memory_ledger(db: SharedStorage) -> MemoryLedger {
     let (dlt_source, dlt_sink) = identus_did_prism_ledger::in_memory::create_ledger();
     let sync_worker = DltSyncWorker::new(db.clone(), dlt_source);
     let index_worker = DltIndexWorker::new(db.clone(), Duration::from_secs(1));
     let cursor_rx = sync_worker.sync_cursor();
-    tokio::spawn(sync_worker.run());
-    tokio::spawn(index_worker.run());
-    (cursor_rx, dlt_sink)
+    let mut handles = JoinSet::new();
+    handles.spawn(sync_worker.run());
+    handles.spawn(index_worker.run());
+    (cursor_rx, dlt_sink, handles)
 }
 
-async fn init_dlt_source(
-    dlt_args: &DltSourceArgs,
-    network: &NetworkIdentifier,
-    db: SharedStorage,
-) -> Option<tokio::sync::watch::Receiver<Option<DltCursor>>> {
+async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, db: SharedStorage) -> DltSourceOutput {
     if let Some(address) = &dlt_args.cardano_relay_addr {
         tracing::info!(
             "Starting DLT sync worker on {} from cardano address {}",
@@ -304,9 +348,10 @@ async fn init_dlt_source(
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
         let cursor_rx = sync_worker.sync_cursor();
-        tokio::spawn(sync_worker.run());
-        tokio::spawn(index_worker.run());
-        Some(cursor_rx)
+        let mut handles = JoinSet::new();
+        handles.spawn(sync_worker.run());
+        handles.spawn(index_worker.run());
+        (Some(cursor_rx), handles)
     } else if let Some(dbsync_url) = dlt_args.cardano_dbsync_url.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
         let source = DbSyncSource::since_persisted_cursor(
@@ -321,9 +366,10 @@ async fn init_dlt_source(
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
         let cursor_rx = sync_worker.sync_cursor();
-        tokio::spawn(sync_worker.run());
-        tokio::spawn(index_worker.run());
-        Some(cursor_rx)
+        let mut handles = JoinSet::new();
+        handles.spawn(sync_worker.run());
+        handles.spawn(index_worker.run());
+        (Some(cursor_rx), handles)
     } else if let Some(api_key) = dlt_args.blockfrost_api_key.as_ref() {
         tracing::info!("Starting DLT sync worker on {} from Blockfrost", network);
         let blockfrost_config = BlockfrostConfig {
@@ -344,11 +390,12 @@ async fn init_dlt_source(
         let sync_worker = DltSyncWorker::new(db.clone(), source);
         let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
         let cursor_rx = sync_worker.sync_cursor();
-        tokio::spawn(sync_worker.run());
-        tokio::spawn(index_worker.run());
-        Some(cursor_rx)
+        let mut handles = JoinSet::new();
+        handles.spawn(sync_worker.run());
+        handles.spawn(index_worker.run());
+        (Some(cursor_rx), handles)
     } else {
-        None
+        (None, JoinSet::new())
     }
 }
 
@@ -463,5 +510,133 @@ fn network_identifier_slug(network: &NetworkIdentifier) -> &'static str {
         NetworkIdentifier::Preprod => "preprod",
         NetworkIdentifier::Preview => "preview",
         NetworkIdentifier::Custom => "custom",
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- sqlite_path_from_url ---
+
+    #[test]
+    fn sqlite_path_from_url_returns_path_for_absolute_url() {
+        let path = sqlite_path_from_url("sqlite:///tmp/neoprism.db");
+        assert_eq!(path, Some(PathBuf::from("/tmp/neoprism.db")));
+    }
+
+    #[test]
+    fn sqlite_path_from_url_strips_query_string() {
+        let path = sqlite_path_from_url("sqlite:///tmp/neoprism.db?mode=rwc");
+        assert_eq!(path, Some(PathBuf::from("/tmp/neoprism.db")));
+    }
+
+    #[test]
+    fn sqlite_path_from_url_returns_none_for_in_memory() {
+        assert!(sqlite_path_from_url("sqlite://:memory:").is_none());
+    }
+
+    #[test]
+    fn sqlite_path_from_url_returns_none_for_empty_path() {
+        assert!(sqlite_path_from_url("sqlite://").is_none());
+    }
+
+    #[test]
+    fn sqlite_path_from_url_returns_none_for_non_sqlite_scheme() {
+        assert!(sqlite_path_from_url("postgres://localhost/db").is_none());
+    }
+
+    // --- infer_db_backend ---
+
+    #[test]
+    fn infer_db_backend_detects_postgres_scheme() {
+        assert_eq!(infer_db_backend("postgres://localhost/test"), DbBackend::Postgres);
+    }
+
+    #[test]
+    fn infer_db_backend_detects_postgresql_scheme() {
+        assert_eq!(infer_db_backend("postgresql://localhost/test"), DbBackend::Postgres);
+    }
+
+    #[test]
+    fn infer_db_backend_detects_sqlite_scheme() {
+        assert_eq!(infer_db_backend("sqlite:///tmp/test.db"), DbBackend::Sqlite);
+    }
+
+    #[test]
+    fn infer_db_backend_detects_sqlite_short_scheme() {
+        assert_eq!(infer_db_backend("sqlite:/tmp/test.db"), DbBackend::Sqlite);
+    }
+
+    #[test]
+    #[should_panic(expected = "NPRISM_DB_URL must start with postgres:// or sqlite://")]
+    fn infer_db_backend_panics_on_unknown_scheme() {
+        infer_db_backend("mysql://localhost/test");
+    }
+
+    // --- network_identifier_slug ---
+
+    #[test]
+    fn network_slug_mainnet() {
+        assert_eq!(network_identifier_slug(&NetworkIdentifier::Mainnet), "mainnet");
+    }
+
+    #[test]
+    fn network_slug_preprod() {
+        assert_eq!(network_identifier_slug(&NetworkIdentifier::Preprod), "preprod");
+    }
+
+    #[test]
+    fn network_slug_preview() {
+        assert_eq!(network_identifier_slug(&NetworkIdentifier::Preview), "preview");
+    }
+
+    #[test]
+    fn network_slug_custom() {
+        assert_eq!(network_identifier_slug(&NetworkIdentifier::Custom), "custom");
+    }
+
+    // --- ensure_sqlite_parent / prepare_sqlite_destination ---
+
+    #[test]
+    fn ensure_sqlite_parent_creates_missing_directory() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("sub").join("neoprism.db");
+        let parent = db_path.parent().unwrap();
+        assert!(!parent.exists());
+        ensure_sqlite_parent(&db_path).unwrap();
+        assert!(parent.exists());
+        // On Unix the directory must be private (mode 700).
+        #[cfg(unix)]
+        {
+            use std::os::unix::fs::PermissionsExt;
+            let mode = fs::metadata(parent).unwrap().permissions().mode();
+            assert_eq!(mode & 0o777, 0o700, "DB parent directory should be owner-only (0700)");
+        }
+    }
+
+    #[test]
+    fn ensure_sqlite_parent_is_ok_when_directory_already_exists() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("neoprism.db");
+        let entry_count_before = fs::read_dir(dir.path()).unwrap().count();
+        // Parent already exists — should be a no-op (no new sub-dirs created).
+        ensure_sqlite_parent(&db_path).unwrap();
+        let entry_count_after = fs::read_dir(dir.path()).unwrap().count();
+        assert_eq!(entry_count_before, entry_count_after);
+    }
+
+    #[test]
+    fn prepare_sqlite_destination_creates_parent_for_sqlite_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_url = format!("sqlite://{}/sub/neoprism.db", dir.path().display());
+        prepare_sqlite_destination(&db_url).unwrap();
+        assert!(dir.path().join("sub").exists());
+    }
+
+    #[test]
+    fn prepare_sqlite_destination_is_noop_for_non_sqlite_url() {
+        // Should succeed without touching the filesystem.
+        prepare_sqlite_destination("postgres://localhost/test").unwrap();
     }
 }
