@@ -769,6 +769,147 @@ fn multiple_storage_entries_independent_hash_chains() {
     assert_eq!(entry_2.data.deref(), &StorageData::Bytes(vec![4, 5, 6]));
 }
 
+/// Test that creating a new storage entry fails after DID deactivation.
+/// DID deactivation revokes all keys (including VDR keys), so check_signature()
+/// rejects the operation with SignedPrismOperationSignedWithRevokedKey.
+#[test]
+fn create_storage_entry_after_did_deactivation() {
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (deactivate_did_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
+            previous_operation_hash: create_did_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            special_fields: Default::default(),
+        }),
+    );
+    // Attempt to create a storage entry after DID is deactivated
+    let (create_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, deactivate_did_op, create_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // DID is deactivated and no storage entry was created
+    assert!(state.is_deactivated());
+    assert!(state.storage.is_empty());
+}
+
+/// Test that updating a storage entry fails after DID deactivation.
+/// The VDR key used to sign the update was revoked during DID deactivation.
+#[test]
+fn update_storage_entry_after_did_deactivation() {
+    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    let (deactivate_did_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
+            previous_operation_hash: create_storage_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            special_fields: Default::default(),
+        }),
+    );
+    // Attempt to update the storage entry after DID is deactivated
+    let (update_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
+            previous_event_hash: create_storage_op_hash.to_vec(),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                4, 5, 6,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![
+        create_did_op,
+        create_storage_op,
+        deactivate_did_op,
+        update_storage_op,
+    ]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // DID is deactivated and storage was revoked (not updated)
+    assert!(state.is_deactivated());
+    assert!(state.storage.is_empty());
+}
+
+/// Test that deactivating a storage entry fails after DID deactivation.
+/// Even though the storage was already revoked by DID deactivation, the explicit
+/// deactivate operation is also rejected because the signing key is revoked.
+#[test]
+fn deactivate_storage_entry_after_did_deactivation() {
+    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    let (deactivate_did_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
+            previous_operation_hash: create_storage_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            special_fields: Default::default(),
+        }),
+    );
+    // Attempt to deactivate the storage entry after DID is already deactivated
+    let (deactivate_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::DeactivateStorageEntry(
+            proto::prism_storage::ProtoDeactivateStorageEntry {
+                previous_event_hash: create_storage_op_hash.to_vec(),
+                special_fields: Default::default(),
+            },
+        ),
+    );
+
+    let operations = test_utils::populate_metadata(vec![
+        create_did_op,
+        create_storage_op,
+        deactivate_did_op,
+        deactivate_storage_op,
+    ]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // DID is deactivated and storage was already revoked by DID deactivation
+    assert!(state.is_deactivated());
+    assert!(state.storage.is_empty());
+}
+
 fn create_did_with_vdr_key() -> (
     proto::prism::SignedPrismOperation,
     Sha256Digest,

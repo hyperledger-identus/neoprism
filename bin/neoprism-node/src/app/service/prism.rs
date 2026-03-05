@@ -69,17 +69,16 @@ impl PrismDidService {
     }
 
     pub async fn resolve_vdr_entry_metadata(&self, entry_hash_hex: &str) -> anyhow::Result<Option<VdrEntryMetadata>> {
-        let Some((hex, did_state, storage)) = self.resolve_vdr_storage(entry_hash_hex).await? else {
+        let Some((hex, _, storage)) = self.resolve_vdr_storage(entry_hash_hex).await? else {
             return Ok(None);
         };
         Ok(Some(VdrEntryMetadata {
             entry_hash: hex.to_string(),
             latest_event_hash: HexStr::from(storage.last_operation_hash.to_vec()).to_string(),
-            status: if did_state.is_deactivated() {
-                "deactivated".to_string()
-            } else {
-                "active".to_string()
-            },
+            // Status is always "active" here: deactivated DIDs have their storage entries
+            // revoked and filtered out during resolution, so resolve_vdr_storage() returns
+            // None (404) before we reach this point.
+            status: "active".to_string(),
         }))
     }
 
