@@ -16,7 +16,7 @@ use crate::http::features::api::indexer::models::{
     IndexerStats, OperationDetails, OperationSummary, TransactionDetails, VdrEntryMetadataResponse,
 };
 use crate::http::features::api::tags;
-use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob, ApiVdrEntries};
+use crate::http::urls::{ApiDidProtobuf, ApiIndexerStats, ApiOperation, ApiTransaction, ApiVdrBlob, ApiVdrMetadata};
 
 #[derive(OpenApi)]
 #[openapi(paths(
@@ -114,7 +114,7 @@ pub async fn resolve_vdr_blob(
     get,
     summary = "Get VDR entry metadata",
     description = "Returns metadata for a VDR entry including the latest event hash and status. This is used by VDR clients to obtain the previous event hash required for update and delete operations.",
-    path = ApiVdrEntries::AXUM_PATH,
+    path = ApiVdrMetadata::AXUM_PATH,
     tags = [tags::OP_INDEX],
     responses(
         (status = OK, description = "Successfully retrieved VDR entry metadata.", body = VdrEntryMetadataResponse),

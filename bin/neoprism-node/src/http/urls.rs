@@ -35,6 +35,6 @@ typed_uri!(ApiDid, "api" / "dids" / (did: String));
 typed_uri!(ApiDidProtobuf, "api" / "dids" / (did: String) / "protobuf");
 typed_uri!(ApiIndexerStats, "api" / "indexer-stats");
 typed_uri!(ApiVdrBlob, "api" / "vdr-data" / (entry_hash: String));
-typed_uri!(ApiVdrEntries, "api" / "vdr-entries" / (entry_hash: String));
+typed_uri!(ApiVdrMetadata, "api" / "vdr-data" / (entry_hash: String) / "metadata");
 typed_uri!(ApiTransaction, "api" / "transactions" / (tx_id: String));
 typed_uri!(ApiOperation, "api" / "operations" / (operation_id: String));
