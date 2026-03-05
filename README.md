@@ -57,6 +57,95 @@ By running a PRISM node, organizations and individuals can independently manage 
 - **🦀 Rust Implementation**
   - Developed in Rust for efficient resource usage and reliable performance.
 
+### Verifiable Data Registry (VDR)
+
+NeoPRISM implements a Verifiable Data Registry (VDR) that enables storing, updating, and deactivating arbitrary data entries anchored to the Cardano blockchain via PRISM DID transaction metadata. VDR entries are cryptographically bound to a DID — each operation must be signed by the DID's VDR key.
+
+#### VDR Key
+
+A **VDR key** is a special-purpose key (`KeyUsage::VDR_KEY`) added to a DID during creation or via an update operation. Only the holder of the VDR private key can create, update, or deactivate VDR entries associated with that DID.
+
+#### VDR Operations
+
+| Operation | Description |
+|-----------|-------------|
+| **CreateStorageEntry** | Stores new data (raw bytes, IPFS CID, or StatusListEntry) and returns a unique entry hash |
+| **UpdateStorageEntry** | Replaces the data of an existing entry; requires the `previous_event_hash` for optimistic concurrency |
+| **DeactivateStorageEntry** | Marks an entry as deactivated; subsequent resolution returns 404 |
+
+Each operation is a signed PRISM operation published to the Cardano blockchain as transaction metadata. NeoPRISM indexes these operations and maintains the current state of each VDR entry.
+
+#### REST API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/vdr-data/{entry_hash}` | GET | Resolve VDR entry data (returns `application/octet-stream`) |
+| `/api/vdr-entries/{entry_hash}` | GET | Get VDR entry metadata (`entry_hash`, `latest_event_hash`, `status`) |
+
+#### How External Applications Manage VDR Entries
+
+Any application that holds the VDR private key can manage VDR entries — not just Cloud Agent. The following diagram shows how an external application interacts with NeoPRISM:
+
+```mermaid
+sequenceDiagram
+    participant App as Application<br/>(VDR Key Holder)
+    participant Neo as NeoPRISM
+    participant Chain as Cardano<br/>Blockchain
+
+    Note over App: Holds VDR private key<br/>for did:prism:abc...
+
+    rect rgb(230, 245, 255)
+    Note right of App: Create VDR Entry
+    App->>App: Build CreateStorageEntry protobuf
+    App->>App: Sign with VDR private key
+    App->>Neo: POST /api/submissions/signed-operations
+    Neo->>Chain: Submit as Cardano tx metadata
+    Chain-->>Neo: Transaction confirmed
+    Neo->>Neo: Index operation, compute entry_hash
+    Neo-->>App: { operationId, txId }
+    end
+
+    rect rgb(230, 255, 230)
+    Note right of App: Resolve VDR Entry
+    App->>Neo: GET /api/vdr-data/{entry_hash}
+    Neo-->>App: Raw data bytes (200 OK)
+    App->>Neo: GET /api/vdr-entries/{entry_hash}
+    Neo-->>App: { entry_hash, latest_event_hash, status }
+    end
+
+    rect rgb(255, 245, 230)
+    Note right of App: Update VDR Entry
+    App->>Neo: GET /api/vdr-entries/{entry_hash}
+    Neo-->>App: { latest_event_hash }
+    App->>App: Build UpdateStorageEntry with<br/>previous_event_hash = latest_event_hash
+    App->>App: Sign with VDR private key
+    App->>Neo: POST /api/submissions/signed-operations
+    Neo->>Chain: Submit as Cardano tx metadata
+    Chain-->>Neo: Transaction confirmed
+    Neo-->>App: { operationId, txId }
+    end
+
+    rect rgb(255, 230, 230)
+    Note right of App: Deactivate VDR Entry
+    App->>Neo: GET /api/vdr-entries/{entry_hash}
+    Neo-->>App: { latest_event_hash }
+    App->>App: Build DeactivateStorageEntry with<br/>previous_event_hash = latest_event_hash
+    App->>App: Sign with VDR private key
+    App->>Neo: POST /api/submissions/signed-operations
+    Neo->>Chain: Submit as Cardano tx metadata
+    Chain-->>Neo: Transaction confirmed
+    Neo-->>App: { operationId, txId }
+    end
+```
+
+> **Note:** The `entry_hash` is deterministic — it is the SHA-256 hash of the inner (unsigned) PRISM operation. Both the application and NeoPRISM compute identical hashes, so the application knows the entry hash immediately after constructing the operation, without waiting for blockchain confirmation.
+
+#### Security Model
+
+- **DID deactivation revokes all keys** — once a DID is deactivated, all VDR operations are rejected because the signing key is revoked.
+- **Optimistic concurrency** — update and deactivate operations require the `previous_event_hash` to prevent out-of-order operations.
+- **Signature verification** — every VDR operation must be signed by a non-revoked VDR key of the associated DID.
+
 ### Introduction to PRISM DID
 
 The [PRISM DID method](https://github.com/input-output-hk/prism-did-method-spec) (`did:prism`) is a protocol for creating and managing Decentralized Identifiers (DIDs) built on the Cardano blockchain.
