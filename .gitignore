@@ -8,6 +8,3 @@ node_modules/
 result
 __pycache__
 lcov.info
-
-# Dolt database files (added by bd init)
-.dolt/
