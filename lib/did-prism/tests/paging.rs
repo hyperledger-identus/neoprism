@@ -1,80 +1,48 @@
 use identus_did_prism::utils::paging::Paginated;
 
-#[test]
-fn total_pages_exact_division() {
-    let p = Paginated::<i32> {
+/// Create a `Paginated` with just the fields that matter for `total_pages()`.
+fn paginated(page_size: u32, total_items: u32) -> Paginated<i32> {
+    Paginated {
         items: vec![],
         current_page: 0,
-        page_size: 10,
-        total_items: 30,
-    };
-    assert_eq!(p.total_pages(), 3);
+        page_size,
+        total_items,
+    }
+}
+
+#[test]
+fn total_pages_exact_division() {
+    assert_eq!(paginated(10, 30).total_pages(), 3);
 }
 
 #[test]
 fn total_pages_with_remainder() {
-    let p = Paginated::<i32> {
-        items: vec![],
-        current_page: 0,
-        page_size: 10,
-        total_items: 31,
-    };
-    assert_eq!(p.total_pages(), 4);
+    assert_eq!(paginated(10, 31).total_pages(), 4);
 }
 
 #[test]
 fn total_pages_zero_items() {
-    let p = Paginated::<i32> {
-        items: vec![],
-        current_page: 0,
-        page_size: 10,
-        total_items: 0,
-    };
-    assert_eq!(p.total_pages(), 0);
+    assert_eq!(paginated(10, 0).total_pages(), 0);
 }
 
 #[test]
 fn total_pages_one_item() {
-    let p = Paginated::<i32> {
-        items: vec![1],
-        current_page: 0,
-        page_size: 10,
-        total_items: 1,
-    };
-    assert_eq!(p.total_pages(), 1);
+    assert_eq!(paginated(10, 1).total_pages(), 1);
 }
 
 #[test]
 fn total_pages_page_size_one() {
-    let p = Paginated::<i32> {
-        items: vec![],
-        current_page: 0,
-        page_size: 1,
-        total_items: 5,
-    };
-    assert_eq!(p.total_pages(), 5);
+    assert_eq!(paginated(1, 5).total_pages(), 5);
 }
 
 #[test]
 fn total_pages_single_full_page() {
-    let p = Paginated::<i32> {
-        items: vec![],
-        current_page: 0,
-        page_size: 100,
-        total_items: 100,
-    };
-    assert_eq!(p.total_pages(), 1);
+    assert_eq!(paginated(100, 100).total_pages(), 1);
 }
 
 #[test]
 fn total_pages_items_less_than_page_size() {
-    let p = Paginated::<i32> {
-        items: vec![],
-        current_page: 0,
-        page_size: 100,
-        total_items: 3,
-    };
-    assert_eq!(p.total_pages(), 1);
+    assert_eq!(paginated(100, 3).total_pages(), 1);
 }
 
 #[test]

@@ -1,5 +1,3 @@
-#![allow(unused_variables)]
-
 use std::sync::Mutex;
 
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
@@ -51,26 +49,12 @@ impl InMemoryRepo {
             .lock()
             .unwrap()
             .iter()
-            .map(|op| match op {
-                IndexedOperation::Ssi { did, .. } => IndexedOperationKind::Ssi(did.clone()),
-                IndexedOperation::Vdr {
-                    did,
-                    init_operation_hash,
-                    operation_hash,
-                    prev_operation_hash,
-                    ..
-                } => IndexedOperationKind::Vdr {
-                    did: did.clone(),
-                    init_hash: init_operation_hash.clone(),
-                    op_hash: operation_hash.clone(),
-                    prev_hash: prev_operation_hash.clone(),
-                },
-                IndexedOperation::Ignored { .. } => IndexedOperationKind::Ignored,
-            })
+            .map(IndexedOperationKind::from)
             .collect()
     }
 }
 
+/// Simplified view of an indexed operation for test assertions.
 #[derive(Debug, Clone)]
 enum IndexedOperationKind {
     Ssi(CanonicalPrismDid),
@@ -81,6 +65,58 @@ enum IndexedOperationKind {
         prev_hash: Option<Vec<u8>>,
     },
     Ignored,
+}
+
+impl From<&IndexedOperation> for IndexedOperationKind {
+    fn from(op: &IndexedOperation) -> Self {
+        match op {
+            IndexedOperation::Ssi { did, .. } => Self::Ssi(did.clone()),
+            IndexedOperation::Vdr {
+                did,
+                init_operation_hash,
+                operation_hash,
+                prev_operation_hash,
+                ..
+            } => Self::Vdr {
+                did: did.clone(),
+                init_hash: init_operation_hash.clone(),
+                op_hash: operation_hash.clone(),
+                prev_hash: prev_operation_hash.clone(),
+            },
+            IndexedOperation::Ignored { .. } => Self::Ignored,
+        }
+    }
+}
+
+impl IndexedOperationKind {
+    /// Unwrap as SSI, panicking with a descriptive message if it's not.
+    fn expect_ssi(&self) -> &CanonicalPrismDid {
+        match self {
+            Self::Ssi(did) => did,
+            other => panic!("expected Ssi, got {:?}", other),
+        }
+    }
+
+    /// Unwrap as VDR, panicking with a descriptive message if it's not.
+    fn expect_vdr(&self) -> (&CanonicalPrismDid, &[u8], &[u8], Option<&[u8]>) {
+        match self {
+            Self::Vdr {
+                did,
+                init_hash,
+                op_hash,
+                prev_hash,
+            } => (did, init_hash, op_hash, prev_hash.as_deref()),
+            other => panic!("expected Vdr, got {:?}", other),
+        }
+    }
+
+    /// Assert this is an Ignored operation.
+    fn expect_ignored(&self) {
+        match self {
+            Self::Ignored => {}
+            other => panic!("expected Ignored, got {:?}", other),
+        }
+    }
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
@@ -119,24 +155,23 @@ impl RawOperationRepo for InMemoryRepo {
         operation_hash: &Sha256Digest,
     ) -> Result<Option<RawOperationRecord>, Self::Error> {
         let raw = self.raw_operations.lock().unwrap();
-        let hash_bytes = operation_hash.to_vec();
-        for record in raw.iter() {
-            let op = record
+        let target = operation_hash.to_vec();
+        let found = raw.iter().find(|record| {
+            record
                 .signed_operation
                 .operation
                 .as_ref()
-                .and_then(|o| o.operation.as_ref());
-            if let Some(op) = op {
-                let prism_op = PrismOperation {
-                    operation: Some(op.clone()),
-                    special_fields: Default::default(),
-                };
-                if prism_op.operation_hash().to_vec() == hash_bytes {
-                    return Ok(Some(record.clone()));
-                }
-            }
-        }
-        Ok(None)
+                .and_then(|o| o.operation.as_ref())
+                .map(|op| {
+                    let prism_op = PrismOperation {
+                        operation: Some(op.clone()),
+                        special_fields: Default::default(),
+                    };
+                    prism_op.operation_hash().to_vec() == target
+                })
+                .unwrap_or(false)
+        });
+        Ok(found.cloned())
     }
 
     async fn get_raw_operations_by_tx_id(
@@ -175,7 +210,7 @@ impl IndexedOperationRepo for InMemoryRepo {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: create a DID with a VDR key (reuses test_utils)
+// Helpers: create a DID with a VDR key, build VDR operations
 // ---------------------------------------------------------------------------
 
 fn create_did_with_vdr_key() -> (
@@ -195,6 +230,59 @@ fn create_did_with_vdr_key() -> (
     (create_did_op, create_did_op_hash, did, master_sk, vdr_sk)
 }
 
+/// Build a signed CreateStorageEntry operation.
+fn new_create_storage_op(
+    did: &CanonicalPrismDid,
+    vdr_sk: &Secp256k1PrivateKey,
+    nonce: u8,
+    data: Vec<u8>,
+) -> (SignedPrismOperation, Sha256Digest) {
+    test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![nonce],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(data)),
+            special_fields: Default::default(),
+        }),
+    )
+}
+
+/// Build a signed UpdateStorageEntry operation.
+fn new_update_storage_op(
+    vdr_sk: &Secp256k1PrivateKey,
+    prev_hash: &Sha256Digest,
+    data: Vec<u8>,
+) -> (SignedPrismOperation, Sha256Digest) {
+    test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
+            previous_event_hash: prev_hash.to_vec(),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(data)),
+            special_fields: Default::default(),
+        }),
+    )
+}
+
+/// Build a signed DeactivateStorageEntry operation.
+fn new_deactivate_storage_op(
+    vdr_sk: &Secp256k1PrivateKey,
+    prev_hash: &Sha256Digest,
+) -> (SignedPrismOperation, Sha256Digest) {
+    test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        vdr_sk,
+        proto::prism::prism_operation::Operation::DeactivateStorageEntry(
+            proto::prism_storage::ProtoDeactivateStorageEntry {
+                previous_event_hash: prev_hash.to_vec(),
+                special_fields: Default::default(),
+            },
+        ),
+    )
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -209,10 +297,7 @@ async fn index_ssi_create_did_operation() {
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 1);
-    match &indexed[0] {
-        IndexedOperationKind::Ssi(indexed_did) => assert_eq!(indexed_did, &did),
-        other => panic!("expected Ssi, got {:?}", other),
-    }
+    assert_eq!(indexed[0].expect_ssi(), &did);
 }
 
 #[tokio::test]
@@ -236,12 +321,8 @@ async fn index_ssi_update_did_operation() {
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 2);
-    // Both operations should be indexed as SSI for the same DID
     for op in &indexed {
-        match op {
-            IndexedOperationKind::Ssi(indexed_did) => assert_eq!(indexed_did, &did),
-            other => panic!("expected Ssi, got {:?}", other),
-        }
+        assert_eq!(op.expect_ssi(), &did);
     }
 }
 
@@ -266,10 +347,7 @@ async fn index_ssi_deactivate_did_operation() {
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 2);
     for op in &indexed {
-        match op {
-            IndexedOperationKind::Ssi(indexed_did) => assert_eq!(indexed_did, &did),
-            other => panic!("expected Ssi, got {:?}", other),
-        }
+        assert_eq!(op.expect_ssi(), &did);
     }
 }
 
@@ -277,18 +355,7 @@ async fn index_ssi_deactivate_did_operation() {
 async fn index_vdr_create_storage_entry_as_root() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![0],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
-                1, 2, 3,
-            ])),
-            special_fields: Default::default(),
-        }),
-    );
+    let (create_storage_op, create_storage_hash) = new_create_storage_op(&did, &vdr_sk, 0, vec![1, 2, 3]);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
     repo.insert(test_utils::dummy_metadata(1), create_storage_op);
 
@@ -296,57 +363,21 @@ async fn index_vdr_create_storage_entry_as_root() {
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 2);
+    assert_eq!(indexed[0].expect_ssi(), &did);
 
-    // First should be SSI (CreateDid)
-    match &indexed[0] {
-        IndexedOperationKind::Ssi(indexed_did) => assert_eq!(indexed_did, &did),
-        other => panic!("expected Ssi, got {:?}", other),
-    }
-
-    // Second should be VDR root (CreateStorageEntry)
-    match &indexed[1] {
-        IndexedOperationKind::Vdr {
-            did: indexed_did,
-            init_hash,
-            op_hash,
-            prev_hash,
-        } => {
-            assert_eq!(indexed_did, &did);
-            assert_eq!(init_hash, &create_storage_op_hash.to_vec());
-            assert_eq!(op_hash, &create_storage_op_hash.to_vec());
-            assert!(prev_hash.is_none(), "root VDR entry should have no prev_hash");
-        }
-        other => panic!("expected Vdr root, got {:?}", other),
-    }
+    let (vdr_did, init_hash, op_hash, prev_hash) = indexed[1].expect_vdr();
+    assert_eq!(vdr_did, &did);
+    assert_eq!(init_hash, &create_storage_hash.to_vec());
+    assert_eq!(op_hash, &create_storage_hash.to_vec());
+    assert!(prev_hash.is_none(), "root VDR entry should have no prev_hash");
 }
 
 #[tokio::test]
 async fn index_vdr_update_storage_entry_links_to_root() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![0],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
-                1, 2, 3,
-            ])),
-            special_fields: Default::default(),
-        }),
-    );
-    let (update_storage_op, update_storage_op_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_event_hash: create_storage_op_hash.to_vec(),
-            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
-                4, 5, 6,
-            ])),
-            special_fields: Default::default(),
-        }),
-    );
+    let (create_storage_op, create_hash) = new_create_storage_op(&did, &vdr_sk, 0, vec![1, 2, 3]);
+    let (update_storage_op, update_hash) = new_update_storage_op(&vdr_sk, &create_hash, vec![4, 5, 6]);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
     repo.insert(test_utils::dummy_metadata(1), create_storage_op);
     repo.insert(test_utils::dummy_metadata(2), update_storage_op);
@@ -356,107 +387,41 @@ async fn index_vdr_update_storage_entry_links_to_root() {
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 3);
 
-    // Third should be VDR child (UpdateStorageEntry) linked to root
-    match &indexed[2] {
-        IndexedOperationKind::Vdr {
-            did: indexed_did,
-            init_hash,
-            op_hash,
-            prev_hash,
-        } => {
-            assert_eq!(indexed_did, &did);
-            // init_hash should point back to the root (create) operation
-            assert_eq!(init_hash, &create_storage_op_hash.to_vec());
-            assert_eq!(op_hash, &update_storage_op_hash.to_vec());
-            assert_eq!(prev_hash.as_ref().unwrap(), &create_storage_op_hash.to_vec());
-        }
-        other => panic!("expected Vdr child, got {:?}", other),
-    }
+    let (vdr_did, init_hash, op_hash, prev_hash) = indexed[2].expect_vdr();
+    assert_eq!(vdr_did, &did);
+    assert_eq!(init_hash, &create_hash.to_vec(), "init_hash should point to root");
+    assert_eq!(op_hash, &update_hash.to_vec());
+    assert_eq!(prev_hash.unwrap(), &create_hash.to_vec());
 }
 
 #[tokio::test]
 async fn index_vdr_deactivate_storage_entry_links_to_root() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![0],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
-                1, 2, 3,
-            ])),
-            special_fields: Default::default(),
-        }),
-    );
-    let (deactivate_storage_op, deactivate_storage_op_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::DeactivateStorageEntry(
-            proto::prism_storage::ProtoDeactivateStorageEntry {
-                previous_event_hash: create_storage_op_hash.to_vec(),
-                special_fields: Default::default(),
-            },
-        ),
-    );
+    let (create_storage_op, create_hash) = new_create_storage_op(&did, &vdr_sk, 0, vec![1, 2, 3]);
+    let (deactivate_op, _) = new_deactivate_storage_op(&vdr_sk, &create_hash);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
     repo.insert(test_utils::dummy_metadata(1), create_storage_op);
-    repo.insert(test_utils::dummy_metadata(2), deactivate_storage_op);
+    repo.insert(test_utils::dummy_metadata(2), deactivate_op);
 
     run_indexer_loop(&repo).await.unwrap();
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 3);
 
-    match &indexed[2] {
-        IndexedOperationKind::Vdr {
-            did: indexed_did,
-            init_hash,
-            prev_hash,
-            ..
-        } => {
-            assert_eq!(indexed_did, &did);
-            assert_eq!(init_hash, &create_storage_op_hash.to_vec());
-            assert_eq!(prev_hash.as_ref().unwrap(), &create_storage_op_hash.to_vec());
-        }
-        other => panic!("expected Vdr child, got {:?}", other),
-    }
+    let (vdr_did, init_hash, _, prev_hash) = indexed[2].expect_vdr();
+    assert_eq!(vdr_did, &did);
+    assert_eq!(init_hash, &create_hash.to_vec());
+    assert_eq!(prev_hash.unwrap(), &create_hash.to_vec());
 }
 
 #[tokio::test]
 async fn index_vdr_chain_update_then_deactivate() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![0],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![1])),
-            special_fields: Default::default(),
-        }),
-    );
-    let (update_op, update_hash) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_event_hash: create_hash.to_vec(),
-            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![2])),
-            special_fields: Default::default(),
-        }),
-    );
-    let (deactivate_op, _) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::DeactivateStorageEntry(
-            proto::prism_storage::ProtoDeactivateStorageEntry {
-                previous_event_hash: update_hash.to_vec(),
-                special_fields: Default::default(),
-            },
-        ),
-    );
+    let (create_storage_op, create_hash) = new_create_storage_op(&did, &vdr_sk, 0, vec![1]);
+    let (update_op, update_hash) = new_update_storage_op(&vdr_sk, &create_hash, vec![2]);
+    let (deactivate_op, _) = new_deactivate_storage_op(&vdr_sk, &update_hash);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
     repo.insert(test_utils::dummy_metadata(1), create_storage_op);
     repo.insert(test_utils::dummy_metadata(2), update_op);
@@ -467,15 +432,11 @@ async fn index_vdr_chain_update_then_deactivate() {
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 4);
 
-    // All VDR operations should trace back to the same init_hash (root)
+    // All VDR operations should trace back to the same root init_hash
     for op in &indexed[1..] {
-        match op {
-            IndexedOperationKind::Vdr { init_hash, did: d, .. } => {
-                assert_eq!(init_hash, &create_hash.to_vec());
-                assert_eq!(d, &did);
-            }
-            other => panic!("expected Vdr, got {:?}", other),
-        }
+        let (vdr_did, init_hash, _, _) = op.expect_vdr();
+        assert_eq!(init_hash, &create_hash.to_vec());
+        assert_eq!(vdr_did, &did);
     }
 }
 
@@ -484,39 +445,22 @@ async fn index_orphan_vdr_child_is_ignored() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, _, _, vdr_sk) = create_did_with_vdr_key();
 
-    // Create an UpdateStorageEntry that references a non-existent parent
-    let fake_parent_hash = vec![0xAA; 32];
-    let (orphan_update_op, _) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_event_hash: fake_parent_hash,
-            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
-                9, 9, 9,
-            ])),
-            special_fields: Default::default(),
-        }),
-    );
+    // UpdateStorageEntry referencing a non-existent parent
+    let fake_parent_hash = Sha256Digest::from_bytes(&[0xAA; 32]).unwrap();
+    let (orphan_op, _) = new_update_storage_op(&vdr_sk, &fake_parent_hash, vec![9, 9, 9]);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
-    repo.insert(test_utils::dummy_metadata(1), orphan_update_op);
+    repo.insert(test_utils::dummy_metadata(1), orphan_op);
 
     run_indexer_loop(&repo).await.unwrap();
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 2);
-
-    // The orphan child should be indexed as Ignored
-    match &indexed[1] {
-        IndexedOperationKind::Ignored => {}
-        other => panic!("expected Ignored for orphan VDR child, got {:?}", other),
-    }
+    indexed[1].expect_ignored();
 }
 
 #[tokio::test]
 async fn index_empty_operation_is_ignored() {
     let repo = InMemoryRepo::new();
-
-    // Create a SignedPrismOperation with no inner operation
     let empty_signed_op = SignedPrismOperation {
         signed_with: "master-0".to_string(),
         signature: vec![],
@@ -529,10 +473,7 @@ async fn index_empty_operation_is_ignored() {
 
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 1);
-    match &indexed[0] {
-        IndexedOperationKind::Ignored => {}
-        other => panic!("expected Ignored for empty operation, got {:?}", other),
-    }
+    indexed[0].expect_ignored();
 }
 
 #[tokio::test]
@@ -541,11 +482,10 @@ async fn index_loop_terminates_when_all_indexed() {
     let (create_did_op, _, _, _, _) = create_did_with_vdr_key();
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
 
-    // First run indexes all operations
     run_indexer_loop(&repo).await.unwrap();
     assert_eq!(repo.indexed_ops().len(), 1);
 
-    // Second run should be a no-op (terminates immediately)
+    // Second run should be a no-op
     run_indexer_loop(&repo).await.unwrap();
     assert_eq!(repo.indexed_ops().len(), 1);
 }
@@ -554,28 +494,8 @@ async fn index_loop_terminates_when_all_indexed() {
 async fn index_multiple_independent_vdr_entries() {
     let repo = InMemoryRepo::new();
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
-
-    let (storage1, hash1) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![1],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![10])),
-            special_fields: Default::default(),
-        }),
-    );
-    let (storage2, hash2) = test_utils::new_signed_operation(
-        VDR_KEY_NAME,
-        &vdr_sk,
-        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
-            did_prism_hash: did.suffix.to_vec(),
-            nonce: vec![2],
-            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![20])),
-            special_fields: Default::default(),
-        }),
-    );
-
+    let (storage1, _) = new_create_storage_op(&did, &vdr_sk, 1, vec![10]);
+    let (storage2, _) = new_create_storage_op(&did, &vdr_sk, 2, vec![20]);
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
     repo.insert(test_utils::dummy_metadata(1), storage1);
     repo.insert(test_utils::dummy_metadata(2), storage2);
@@ -585,17 +505,10 @@ async fn index_multiple_independent_vdr_entries() {
     let indexed = repo.indexed_ops();
     assert_eq!(indexed.len(), 3);
 
-    // Each VDR root should have its own init_hash
-    let vdr_ops: Vec<_> = indexed
-        .iter()
-        .filter_map(|op| match op {
-            IndexedOperationKind::Vdr { init_hash, .. } => Some(init_hash.clone()),
-            _ => None,
-        })
-        .collect();
-    assert_eq!(vdr_ops.len(), 2);
+    // Each VDR root should have its own distinct init_hash
+    let init_hashes: Vec<_> = indexed[1..].iter().map(|op| op.expect_vdr().1.to_vec()).collect();
     assert_ne!(
-        vdr_ops[0], vdr_ops[1],
-        "different VDR entries should have different init hashes"
+        init_hashes[0], init_hashes[1],
+        "independent VDR entries should have different init hashes"
     );
 }
