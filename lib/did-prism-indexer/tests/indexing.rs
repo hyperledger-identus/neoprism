@@ -1,4 +1,5 @@
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
@@ -11,6 +12,13 @@ use identus_did_prism_indexer::repo::{
 };
 use identus_did_prism_indexer::run_indexer_loop;
 use uuid::Uuid;
+
+/// Generate a unique UUID from a monotonic counter (avoids needing uuid/v4 feature).
+fn next_uuid() -> Uuid {
+    static COUNTER: AtomicU64 = AtomicU64::new(1);
+    let n = COUNTER.fetch_add(1, Ordering::Relaxed);
+    Uuid::from_u128(n as u128)
+}
 
 mod test_utils;
 
@@ -35,7 +43,7 @@ impl InMemoryRepo {
     }
 
     fn insert(&self, meta: OperationMetadata, signed_op: SignedPrismOperation) -> RawOperationId {
-        let id = RawOperationId::from(Uuid::new_v4());
+        let id = RawOperationId::from(next_uuid());
         self.raw_operations.lock().unwrap().push(RawOperationRecord {
             id,
             metadata: meta,
