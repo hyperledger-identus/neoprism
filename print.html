@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-e5089008.js";
+            window.path_to_searchindex_js = "searchindex-d1ff7a8f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ddbda910.js"></script>
@@ -1009,7 +1009,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.12.0
+  version: 0.13.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -1351,6 +1351,45 @@ paths:
                 $ref: '#/components/schemas/ApiErrorResponseBody'
         "500":
           description: An unexpected error occurred during VDR resolution.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+  /api/vdr-data/{entry_hash}/metadata:
+    get:
+      tags:
+        - Indexer API
+      summary: Get VDR entry metadata
+      description: Returns metadata for a VDR entry including the latest event hash and status. This is used by VDR clients to obtain the previous event hash required for update and delete operations.
+      operationId: vdr_entry_metadata
+      parameters:
+        - name: entry_hash
+          in: path
+          description: The hex-encoded entry hash.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successfully retrieved VDR entry metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VdrEntryMetadataResponse'
+        "400":
+          description: The provided entry hash is invalid.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "404":
+          description: The VDR entry was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiErrorResponseBody'
+        "500":
+          description: An unexpected error occurred.
           content:
             application/json:
               schema:
@@ -1740,6 +1779,19 @@ components:
     Uri:
       type: string
       example: http://example.com
+    VdrEntryMetadataResponse:
+      type: object
+      required:
+        - entry_hash
+        - latest_event_hash
+        - status
+      properties:
+        entry_hash:
+          type: string
+        latest_event_hash:
+          type: string
+        status:
+          type: string
     VerificationMethod:
       type: object
       required:
