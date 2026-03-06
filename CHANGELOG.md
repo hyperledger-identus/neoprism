@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.13.0) - 2026-03-06
+
+### 🚀 Features
+
+- Add VDR entry metadata endpoint for cloud-agent integration ([#231](https://github.com/hyperledger-identus/neoprism/pull/231))
+
+### 💼 Other
+
+- Backup 2026-03-04 22:10
+
 ## [0.12.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.12.0) - 2026-03-03
 
 ### 🚀 Features
