@@ -57,6 +57,17 @@ By running a PRISM node, organizations and individuals can independently manage 
 - **🦀 Rust Implementation**
   - Developed in Rust for efficient resource usage and reliable performance.
 
+### Verifiable Data Registry (VDR)
+
+NeoPRISM implements a [Verifiable Data Registry (VDR)](https://hyperledger-identus.github.io/docs/documentation/learn/advanced-explainers/neoprism/) that enables storing, updating, and deactivating arbitrary data entries anchored to the Cardano blockchain. VDR entries are cryptographically bound to a DID — each operation must be signed by the DID's VDR key.
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/vdr-data/{entry_hash}` | GET | Resolve VDR entry data (returns raw bytes) |
+| `/api/vdr-data/{entry_hash}/metadata` | GET | Get VDR entry metadata (`entry_hash`, `latest_event_hash`, `status`) |
+
+Any application holding the VDR private key can manage VDR entries directly through the NeoPRISM API, not only via Cloud Agent. For detailed VDR operations, security model, and integration diagrams, see the [Identus VDR documentation](https://hyperledger-identus.github.io/docs/documentation/learn/advanced-explainers/neoprism/).
+
 ### Introduction to PRISM DID
 
 The [PRISM DID method](https://github.com/input-output-hk/prism-did-method-spec) (`did:prism`) is a protocol for creating and managing Decentralized Identifiers (DIDs) built on the Cardano blockchain.
