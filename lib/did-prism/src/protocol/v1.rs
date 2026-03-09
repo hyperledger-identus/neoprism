@@ -197,7 +197,8 @@ impl OperationProcessorOps for V1Processor {
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.add_storage(&operation_hash, parsed_operation.data, &metadata)?;
-        candidate_state.with_last_operation_hash(operation_hash);
+        // NOTE: Storage operations do NOT update the DID's prev_operation_hash.
+        // SSI chain (CreateDID/UpdateDID/DeactivateDID) and storage chains are independent per spec.
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)
@@ -224,7 +225,7 @@ impl OperationProcessorOps for V1Processor {
             &operation_hash,
             parsed_operation.data,
         )?;
-        candidate_state.with_last_operation_hash(operation_hash);
+        // NOTE: Storage operations do NOT update the DID's prev_operation_hash.
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)
@@ -247,7 +248,7 @@ impl OperationProcessorOps for V1Processor {
         };
         let operation_hash = prism_operation.operation_hash();
         candidate_state.revoke_storage(&parsed_operation.prev_operation_hash, &operation_hash, &metadata)?;
-        candidate_state.with_last_operation_hash(operation_hash);
+        // NOTE: Storage operations do NOT update the DID's prev_operation_hash.
 
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)

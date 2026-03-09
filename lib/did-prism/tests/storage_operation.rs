@@ -264,7 +264,7 @@ fn update_storage_entry_with_non_vdr_key() {
 
 #[test]
 fn update_storage_entry_with_revoked_key() {
-    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
     let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
@@ -277,11 +277,11 @@ fn update_storage_entry_with_revoked_key() {
             special_fields: Default::default(),
         }),
     );
-    let (revoke_key_op, revoke_key_op_hash) = test_utils::new_signed_operation(
+    let (revoke_key_op, _revoke_key_op_hash) = test_utils::new_signed_operation(
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::UpdateDid(proto::prism_ssi::ProtoUpdateDID {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_operation_hash: create_did_op_hash.to_vec(),
             id: did.suffix_hex().to_string(),
             actions: vec![proto::prism_ssi::UpdateDIDAction {
                 action: Some(proto::prism_ssi::update_didaction::Action::RemoveKey(
@@ -299,7 +299,7 @@ fn update_storage_entry_with_revoked_key() {
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
-            previous_event_hash: revoke_key_op_hash.to_vec(),
+            previous_event_hash: create_storage_op_hash.to_vec(),
             data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
                 4, 5, 6,
             ])),
@@ -390,8 +390,8 @@ fn deactivate_storage_entry_with_invalid_prev_operation_hash() {
 
 #[test]
 fn storage_revoked_after_deactivate_did() {
-    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, _) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
@@ -407,7 +407,7 @@ fn storage_revoked_after_deactivate_did() {
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_operation_hash: create_did_op_hash.to_vec(),
             id: did.suffix_hex().to_string(),
             special_fields: Default::default(),
         }),
@@ -550,8 +550,8 @@ fn storage_entry_hash_hex_round_trip() {
 /// which is the correct behavior since the storage is no longer accessible.
 #[test]
 fn deactivated_did_has_empty_storage_and_no_public_keys() {
-    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
-    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, _) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
         proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
@@ -567,7 +567,7 @@ fn deactivated_did_has_empty_storage_and_no_public_keys() {
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_operation_hash: create_did_op_hash.to_vec(),
             id: did.suffix_hex().to_string(),
             special_fields: Default::default(),
         }),
@@ -810,7 +810,7 @@ fn create_storage_entry_after_did_deactivation() {
 /// The VDR key used to sign the update was revoked during DID deactivation.
 #[test]
 fn update_storage_entry_after_did_deactivation() {
-    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
     let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
@@ -827,7 +827,7 @@ fn update_storage_entry_after_did_deactivation() {
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_operation_hash: create_did_op_hash.to_vec(),
             id: did.suffix_hex().to_string(),
             special_fields: Default::default(),
         }),
@@ -863,7 +863,7 @@ fn update_storage_entry_after_did_deactivation() {
 /// deactivate operation is also rejected because the signing key is revoked.
 #[test]
 fn deactivate_storage_entry_after_did_deactivation() {
-    let (create_did_op, _, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
     let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
         VDR_KEY_NAME,
         &vdr_sk,
@@ -880,7 +880,7 @@ fn deactivate_storage_entry_after_did_deactivation() {
         "master-0",
         &master_sk,
         proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
-            previous_operation_hash: create_storage_op_hash.to_vec(),
+            previous_operation_hash: create_did_op_hash.to_vec(),
             id: did.suffix_hex().to_string(),
             special_fields: Default::default(),
         }),
@@ -908,6 +908,172 @@ fn deactivate_storage_entry_after_did_deactivation() {
     // DID is deactivated and storage was already revoked by DID deactivation
     assert!(state.is_deactivated());
     assert!(state.storage.is_empty());
+}
+
+/// Issue #227: Storage operations should NOT update the DID's SSI chain `prev_operation_hash`.
+/// DeactivateDID must reference the last SSI event (CreateDID or UpdateDID), not storage ops.
+/// This test verifies that CreateDID → CreateStorage → DeactivateDID(prev=CreateDID_hash) succeeds.
+#[test]
+fn deactivate_did_after_storage_op_references_ssi_chain() {
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, _create_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    // DeactivateDID references the CreateDID hash (last SSI op), NOT the CreateStorage hash
+    let (deactivate_did_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
+            previous_operation_hash: create_did_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            special_fields: Default::default(),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, deactivate_did_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    assert!(state.is_deactivated());
+    assert!(state.storage.is_empty());
+}
+
+/// Issue #227: UpdateDID after a storage operation must reference the last SSI event.
+/// CreateDID → CreateStorage → UpdateDID(prev=CreateDID_hash) should succeed.
+#[test]
+fn update_did_after_storage_op_references_ssi_chain() {
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    // Add a new service via UpdateDID, referencing CreateDID hash (last SSI op)
+    let (update_did_op, _update_did_op_hash) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::UpdateDid(proto::prism_ssi::ProtoUpdateDID {
+            previous_operation_hash: create_did_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            actions: vec![proto::prism_ssi::UpdateDIDAction {
+                action: Some(proto::prism_ssi::update_didaction::Action::AddService(
+                    proto::prism_ssi::AddServiceAction {
+                        service: Some(proto::prism_ssi::Service {
+                            id: "service-0".to_string(),
+                            type_: "LinkedDomains".to_string(),
+                            service_endpoint: "https://example.com".to_string(),
+                            special_fields: Default::default(),
+                        })
+                        .into(),
+                        special_fields: Default::default(),
+                    },
+                )),
+                special_fields: Default::default(),
+            }],
+            special_fields: Default::default(),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, update_did_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    assert!(!state.is_deactivated());
+    assert_eq!(state.storage.len(), 1);
+    assert!(!state.services.is_empty());
+}
+
+/// Issue #227: Full interleaved SSI and storage chain.
+/// CreateDID → CreateStorage → UpdateStorage → UpdateDID(prev=CreateDID_hash) → DeactivateDID(prev=UpdateDID_hash)
+/// Verifies SSI chain and storage chains are completely independent.
+#[test]
+fn interleaved_ssi_and_storage_chains_are_independent() {
+    let (create_did_op, create_did_op_hash, did, master_sk, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    let (update_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
+            previous_event_hash: create_storage_op_hash.to_vec(),
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                4, 5, 6,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    // UpdateDID references CreateDID hash (last SSI op), not any storage hash
+    let (update_did_op, update_did_op_hash) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::UpdateDid(proto::prism_ssi::ProtoUpdateDID {
+            previous_operation_hash: create_did_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            actions: vec![proto::prism_ssi::UpdateDIDAction {
+                action: Some(proto::prism_ssi::update_didaction::Action::AddService(
+                    proto::prism_ssi::AddServiceAction {
+                        service: Some(proto::prism_ssi::Service {
+                            id: "service-0".to_string(),
+                            type_: "LinkedDomains".to_string(),
+                            service_endpoint: "https://example.com".to_string(),
+                            special_fields: Default::default(),
+                        })
+                        .into(),
+                        special_fields: Default::default(),
+                    },
+                )),
+                special_fields: Default::default(),
+            }],
+            special_fields: Default::default(),
+        }),
+    );
+    // DeactivateDID references UpdateDID hash (last SSI op), not any storage hash
+    let (deactivate_did_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::DeactivateDid(proto::prism_ssi::ProtoDeactivateDID {
+            previous_operation_hash: update_did_op_hash.to_vec(),
+            id: did.suffix_hex().to_string(),
+            special_fields: Default::default(),
+        }),
+    );
+
+    let operations = test_utils::populate_metadata(vec![
+        create_did_op,
+        create_storage_op,
+        update_storage_op,
+        update_did_op,
+        deactivate_did_op,
+    ]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    assert!(state.is_deactivated());
+    assert!(state.storage.is_empty());
+    assert!(state.public_keys.is_empty());
 }
 
 fn create_did_with_vdr_key() -> (
