@@ -67,9 +67,10 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
         spo5 = builder(seed)
           .deactivateStorage(spo3.getOperationHash.get)
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
-        // for assertion that prevOperationHash is the latest one (spo5)
+        // SSI chain: prevOperationHash should reference the last DID operation (spo1 = CreateDID),
+        // not the last storage operation, because SSI and storage chains are independent.
         spo6 = builder(seed)
-          .updateDid(spo5.getOperationHash.get, did)
+          .updateDid(spo1.getOperationHash.get, did)
           .removeKey("vdr-0")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
@@ -162,7 +163,7 @@ object DeactivateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         spo3 = builder(seed)
-          .updateDid(spo2.getOperationHash.get, did)
+          .updateDid(spo1.getOperationHash.get, did)
           .removeKey("vdr-0")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))

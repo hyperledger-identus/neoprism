@@ -51,7 +51,7 @@ object CreateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         spo3 = builder(seed)
-          .deactivateDid(spo2.getOperationHash.get, did)
+          .deactivateDid(spo1.getOperationHash.get, did)
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
         _ <- scheduleOperations(Seq(spo1, spo2, spo3))
         storage <- getDidDocument(did).map(_.get).map(extractStorageHex)

@@ -168,7 +168,7 @@ object UpdateStorageOperationSuite extends StorageTestUtils:
           .build
           .signWith("vdr-0", deriveSecp256k1(seed)("m/0'/8'/0'"))
         spo3 = builder(seed)
-          .updateDid(spo2.getOperationHash.get, did)
+          .updateDid(spo1.getOperationHash.get, did)
           .removeKey("vdr-0")
           .build
           .signWith("master-0", deriveSecp256k1(seed)("m/0'/1'/0'"))
