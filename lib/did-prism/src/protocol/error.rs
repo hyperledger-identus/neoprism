@@ -27,6 +27,8 @@ pub enum ProcessError {
     #[from]
     #[display("applied operation has conflict with the current did state")]
     DidStateConflict { source: DidStateConflictError },
+    #[display("vdr operation is invalid: contains unknown protobuf fields")]
+    VdrOperationContainsUnknownFields,
 }
 
 #[derive(Debug, derive_more::Display, derive_more::Error)]
