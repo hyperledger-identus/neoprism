@@ -35,3 +35,6 @@ identus-did-prism-ledger    = { workspace = true, features = [ "in-memory" ] }
 identus-did-prism-submitter = { workspace = true, features = [ "cardano-wallet" ] }
 identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true, features = [ "sqlite-storage" ] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
