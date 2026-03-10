@@ -91,6 +91,24 @@ pub fn new_public_key(
     }
 }
 
+pub fn add_service_action(id: &str) -> proto::prism_ssi::UpdateDIDAction {
+    proto::prism_ssi::UpdateDIDAction {
+        action: Some(proto::prism_ssi::update_didaction::Action::AddService(
+            proto::prism_ssi::AddServiceAction {
+                service: Some(proto::prism_ssi::Service {
+                    id: id.to_string(),
+                    type_: "LinkedDomains".to_string(),
+                    service_endpoint: "https://example.com".to_string(),
+                    special_fields: Default::default(),
+                })
+                .into(),
+                special_fields: Default::default(),
+            },
+        )),
+        special_fields: Default::default(),
+    }
+}
+
 pub fn populate_metadata(
     operations: Vec<proto::prism::SignedPrismOperation>,
 ) -> Vec<(OperationMetadata, proto::prism::SignedPrismOperation)> {
