@@ -114,23 +114,34 @@ pub enum Error {
 
 - **Tone**: short, factual, lowercase start, no trailing period (e.g., "did is not found")
 - **Placeholders**: use named placeholders (`{id}`, `{did}`, `{limit}`, `{actual}`, `{expected}`, `{location}`)
-- Use `derive_more #[display("...")]` for enum/struct messages; prefer `{source}` when wrapping another error
-- **User-facing messages**: no debug formatting (`{:?}`), avoid internal hashes or binary blobs
-- **Developer-facing messages**: may include `{:?}` or internal IDs; keep them marked/internal (logs or debug-only)
+
+**User-facing errors** (HTTP API and service layers):
+- Use `derive_more #[display("...")]` with descriptive placeholders
+- Applies to: `ApiError`, `ResolutionError`, and any error that propagates to HTTP responses
+- BadRequest (400): preserve error message to help users fix their input, debug formmating (`{:?}`) allowed
+- Internal (500): show generic "internal server error", log full error chain via `tracing::error!`
+
+**Developer-facing errors** (library layer, internal processing):
+- Debug formatting (`{:?}`) allowed for hashes, binary data, internal IDs
+- These appear in logs but are masked before reaching HTTP clients
+- Applies to: `did-prism/*`, `did-core`, `did-prism-indexer`, `node-storage`, `apollo`
+
+**Examples**:
+```rust
+// User-facing (ApiError, ResolutionError)
+#[display("public key id {id} is invalid")]           // ✅ descriptive placeholder
+#[display("did {did} is not found")]                   // ✅ descriptive placeholder
+
+// Developer-facing (library errors, logged only)
+#[display("entry with hash {initial_hash:?} exists")] // ✅ {:?} ok for hashes in logs
+#[display("block {block_hash:?} tx {tx_idx:?}")]       // ✅ {:?} ok for internal IDs
+```
 
 **Quick checklist**:
 - starts lowercase
 - no trailing period
 - placeholder names are descriptive
-- no `{:?}` in user-facing messages
-
-**Examples**:
-- ✅ `#[display("public key id {id} is invalid")]`
-- ❌ `#[display("entry with hash {initial_hash:?} already exists")]` (avoid in API responses)
-
-**Lint suggestions**:
-- Detect display attributes that start with uppercase or end with period
-- Detect `{:?}` inside displays
+- `{:?}` only in developer-facing errors (library layer)
 
 #### Logging
 Use structured logging via `tracing`:
