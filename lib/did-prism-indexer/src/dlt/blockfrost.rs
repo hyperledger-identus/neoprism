@@ -307,7 +307,7 @@ impl BlockfrostStreamWorker {
 
             // Fetch all transaction details concurrently while filtering out unconfirmed transactions
             let unprocessed_confirmed_batch: Vec<(TxContent, TxMetadataLabelJsonInner)> = {
-                let txs = futures::stream::iter(unprocessed_batch.into_iter())
+                let txs = futures::stream::iter(unprocessed_batch)
                     .map(|metadata| {
                         let api = api.clone();
                         async move {
