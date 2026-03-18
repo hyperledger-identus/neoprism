@@ -1,4 +1,7 @@
-#![feature(error_reporter)]
+#![cfg_attr(
+    any(feature = "oura", feature = "dbsync", feature = "blockfrost"),
+    feature(error_reporter)
+)]
 
 use identus_did_prism::dlt::{DltCursor, PublishedPrismObject};
 use tokio::sync::{mpsc, watch};
