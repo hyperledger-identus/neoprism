@@ -96,22 +96,22 @@ mod models {
 
         // parse prism_block
         let byte_group = match metadata.metadatum {
-            pallas_primitives::alonzo::Metadatum::Map(kv) => kv
+            pallas_primitives_v0::alonzo::Metadatum::Map(kv) => kv
                 .to_vec()
                 .into_iter()
                 .find(|(k, _)| match k {
-                    pallas_primitives::alonzo::Metadatum::Text(k) => k == "c",
+                    pallas_primitives_v0::alonzo::Metadatum::Text(k) => k == "c",
                     _ => false,
                 })
                 .and_then(|(_, v)| match v {
-                    pallas_primitives::alonzo::Metadatum::Array(ms) => Some(ms),
+                    pallas_primitives_v0::alonzo::Metadatum::Array(ms) => Some(ms),
                     _ => None,
                 })
                 .and_then(|byte_group| {
                     byte_group
                         .into_iter()
                         .map(|b| match b {
-                            pallas_primitives::alonzo::Metadatum::Bytes(bytes) => Some(bytes.to_vec()),
+                            pallas_primitives_v0::alonzo::Metadatum::Bytes(bytes) => Some(bytes.to_vec()),
                             _ => None,
                         })
                         .collect::<Option<Vec<_>>>()
