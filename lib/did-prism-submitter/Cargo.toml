@@ -23,6 +23,8 @@ ed25519-bip32        = { workspace = true, optional = true }
 hmac                 = { workspace = true, optional = true }
 sha2                 = { workspace = true, optional = true }
 hex                  = { workspace = true, optional = true }
+blockfrost           = { workspace = true, optional = true }
+blockfrost-openapi   = { workspace = true, optional = true }
 
 [features]
 default = [  ]
@@ -37,4 +39,6 @@ embedded-wallet = [
   "dep:hmac",
   "dep:sha2",
   "dep:hex",
+  "dep:blockfrost",
+  "dep:blockfrost-openapi",
 ]
