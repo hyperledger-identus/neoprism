@@ -66,13 +66,13 @@ futures   = { version = "0.3" }
 humantime = { version = "2" }
 tempfile  = { version = "3" }
 # cardano
-oura                  = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
-pallas-primitives-v0  = { package = "pallas-primitives", version = "0.30" }
-pallas-primitives-v1  = { package = "pallas-primitives", version = "1.0.0-alpha.5" }
-pallas-txbuilder      = { version = "1.0.0-alpha.5" }
-pallas-addresses      = { version = "1.0.0-alpha.5" }
-bip39                 = { version = "2.0", features = ["rand_core"] }
-ed25519-bip32         = { version = "0.4" }
+oura                 = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
+pallas-primitives-v0 = { package = "pallas-primitives", version = "0.30" }
+pallas-primitives-v1 = { package = "pallas-primitives", version = "1.0.0-alpha.5" }
+pallas-txbuilder     = { version = "1.0.0-alpha.5" }
+pallas-addresses     = { version = "1.0.0-alpha.5" }
+bip39                = { version = "2.0", features = [ "rand_core" ] }
+ed25519-bip32        = { version = "0.4" }
 # proto
 protobuf         = { version = "3" }
 protobuf-codegen = { version = "3" }
