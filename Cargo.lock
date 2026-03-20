@@ -1949,6 +1949,8 @@ dependencies = [
  "bip39",
  "derive_more",
  "ed25519-bip32",
+ "hex",
+ "hmac",
  "identus-apollo",
  "identus-did-prism",
  "pallas-addresses 1.0.0-alpha.5",
@@ -1957,6 +1959,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]

@@ -7,6 +7,5 @@
 #[cfg(feature = "cardano-wallet")]
 pub mod cardano_wallet;
 
-// TODO: US-008 will add embedded_wallet module
-// #[cfg(feature = "embedded-wallet")]
-// pub mod embedded_wallet;
+#[cfg(feature = "embedded-wallet")]
+pub mod embedded_wallet;
