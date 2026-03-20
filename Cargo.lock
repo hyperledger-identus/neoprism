@@ -1947,6 +1947,7 @@ version = "0.13.0"
 dependencies = [
  "async-trait",
  "bip39",
+ "cryptoxide",
  "derive_more",
  "ed25519-bip32",
  "hex",
