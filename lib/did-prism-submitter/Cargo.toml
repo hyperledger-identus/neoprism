@@ -13,6 +13,20 @@ reqwest     = { workspace = true, optional = true, features = [ "native-tls", "j
 identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 identus-did-prism = { workspace = true }
 
+# Embedded wallet dependencies
+pallas-primitives-v1 = { workspace = true, optional = true }
+pallas-txbuilder     = { workspace = true, optional = true }
+pallas-addresses     = { workspace = true, optional = true }
+bip39                = { workspace = true, optional = true }
+ed25519-bip32        = { workspace = true, optional = true }
+
 [features]
-default        = [  ]
+default = [  ]
 cardano-wallet = [ "dep:reqwest" ]
+embedded-wallet = [
+  "dep:pallas-primitives-v1",
+  "dep:pallas-txbuilder",
+  "dep:pallas-addresses",
+  "dep:bip39",
+  "dep:ed25519-bip32",
+]
