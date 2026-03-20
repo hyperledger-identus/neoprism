@@ -210,13 +210,13 @@ impl DerivedKeyPair {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dlt::embedded_wallet::mnemonic::WalletMnemonic;
 
     fn test_seed() -> [u8; 64] {
         // Standard BIP39 test vector (12 words)
         let phrase = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-        // Parse and get seed
-        let mnemonic = bip39::Mnemonic::parse(phrase).unwrap();
-        mnemonic.to_seed("")
+        // Parse and get seed using Cardano-compatible derivation (4096 iterations)
+        WalletMnemonic::parse(phrase, None).unwrap().to_seed(None)
     }
 
     #[test]
