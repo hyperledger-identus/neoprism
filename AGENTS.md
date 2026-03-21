@@ -15,15 +15,6 @@ Workspace members:
 - `lib/did-resolver-http/` — HTTP DID resolver
 - `lib/node-storage/` — PostgreSQL and SQLite storage layer
 
-## Development Environment
-
-**Nix is required.** All commands must be run inside `nix develop`:
-
-```bash
-nix develop                    # Enter dev shell
-nix develop --unset PATH       # Enter pure dev shell
-```
-
 ## Documentation
 
 Documentation is built using [mdBook](https://rust-lang.github.io/mdBook/).

@@ -15,8 +15,11 @@ identus-did-prism = { workspace = true }
 
 # Embedded wallet dependencies
 pallas-primitives-v1 = { workspace = true, optional = true }
-pallas-txbuilder     = { workspace = true, optional = true }
-pallas-addresses     = { workspace = true, optional = true }
+pallas-txbuilder-v1  = { workspace = true, optional = true }
+pallas-addresses-v1  = { workspace = true, optional = true }
+pallas-codec-v1      = { workspace = true, optional = true }
+pallas-crypto-v1     = { workspace = true, optional = true }
+pallas-traverse-v1   = { workspace = true, optional = true }
 bip39                = { workspace = true, optional = true }
 cryptoxide           = { workspace = true, optional = true }
 ed25519-bip32        = { workspace = true, optional = true }
@@ -31,8 +34,11 @@ default = [  ]
 cardano-wallet = [ "dep:reqwest" ]
 embedded-wallet = [
   "dep:pallas-primitives-v1",
-  "dep:pallas-txbuilder",
-  "dep:pallas-addresses",
+  "dep:pallas-txbuilder-v1",
+  "dep:pallas-addresses-v1",
+  "dep:pallas-codec-v1",
+  "dep:pallas-crypto-v1",
+  "dep:pallas-traverse-v1",
   "dep:bip39",
   "dep:cryptoxide",
   "dep:ed25519-bip32",

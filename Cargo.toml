@@ -69,8 +69,11 @@ tempfile  = { version = "3" }
 oura                 = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
 pallas-primitives-v0 = { package = "pallas-primitives", version = "0.30" }
 pallas-primitives-v1 = { package = "pallas-primitives", version = "1.0.0-alpha.5" }
-pallas-txbuilder     = { version = "1.0.0-alpha.5" }
-pallas-addresses     = { version = "1.0.0-alpha.5" }
+pallas-txbuilder-v1  = { package = "pallas-txbuilder", version = "1.0.0-alpha.5" }
+pallas-addresses-v1  = { package = "pallas-addresses", version = "1.0.0-alpha.5" }
+pallas-codec-v1      = { package = "pallas-codec", version = "1.0.0-alpha.5" }
+pallas-crypto-v1     = { package = "pallas-crypto", version = "1.0.0-alpha.5" }
+pallas-traverse-v1   = { package = "pallas-traverse", version = "1.0.0-alpha.5" }
 bip39                = { version = "2.0", features = [ "rand_core" ] }
 cryptoxide           = { version = "0.4" }
 ed25519-bip32        = { version = "0.4" }

@@ -10,6 +10,7 @@
 //! - Support for BIP39 passphrase (optional password)
 //! - Fetch UTXOs from Blockfrost API for transaction building
 //! - Largest-first UTXO selection algorithm
+//! - Build Cardano transactions with PRISM metadata
 //!
 //! # Derivation Paths
 //!
@@ -53,10 +54,16 @@
 mod error;
 mod key_derivation;
 mod mnemonic;
+mod tx_builder;
 mod utxo;
 mod wallet;
 
 pub use error::Error;
+pub use tx_builder::{
+    ESTIMATED_FEE_LOVELACE, MINIMUM_UTXO_LOVELACE, PRISM_METADATA_LABEL, PRISM_METADATA_VERSION,
+    PrismTransactionBuilder, TransactionBuilder, encode_metadata_to_cbor, encode_prism_metadata,
+    estimate_transaction_fee, validate_output_minimum_ada,
+};
 pub use utxo::{
     BlockfrostUtxoConfig, Utxo, create_blockfrost_api, fetch_utxos, has_sufficient_balance, select_largest_first,
     sort_by_value_descending, total_balance,
