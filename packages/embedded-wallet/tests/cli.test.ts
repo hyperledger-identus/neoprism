@@ -1,6 +1,6 @@
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { spawn } from "child_process";
-import { join } from "path";
+import { describe, test, expect } from "bun:test";
+import { spawn } from "node:child_process";
+import { join } from "node:path";
 
 const CLI_PATH = join(import.meta.dir, "../src/cli.ts");
 
