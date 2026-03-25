@@ -8,10 +8,6 @@ export interface BuildOptions {
   network: Network;
 }
 
-export interface Metadata21325 {
-  [key: string]: unknown;
-}
-
 export const VALID_NETWORKS: readonly Network[] = ["mainnet", "preprod", "preview", "custom"] as const;
 
 export function isValidNetwork(value: string): value is Network {
