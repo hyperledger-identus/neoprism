@@ -1,6 +1,7 @@
 mod e2e 'tools/just-recipes/e2e.just'
 mod tools 'tools/just-recipes/tools.just'
 mod release 'tools/just-recipes/release.just'
+mod embedded-wallet 'tools/just-recipes/embedded-wallet.just'
 
 # PostgreSQL configuration
 
@@ -19,10 +20,10 @@ sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
 default:
     @just --list --list-submodules
 
-# Install npm dependencies
+# Install bun dependencies
 [group('neoprism')]
 init:
-    npm install
+    bun install
 
 # Build the entire project
 [group('neoprism')]

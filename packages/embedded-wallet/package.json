@@ -1,0 +1,20 @@
+{
+  "name": "embedded-wallet",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "bun build ./src/cli.ts --compile --outfile embedded-wallet",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@meshsdk/core": "1.9.0-beta.101",
+    "@meshsdk/wallet": "1.9.0-beta.101",
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.2.10",
+    "bun-types": "^1.2.10",
+    "typescript": "^5.8.2"
+  }
+}

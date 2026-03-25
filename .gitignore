@@ -8,3 +8,6 @@ node_modules/
 result
 __pycache__
 lcov.info
+
+# bv (beads viewer) local config and caches
+.bv/
