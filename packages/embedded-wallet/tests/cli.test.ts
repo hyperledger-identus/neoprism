@@ -204,6 +204,22 @@ describe("prism object hex parsing", () => {
     expect(result.stderr).toContain("invalid hex");
   });
 
+  test("--prism-object-hex rejects odd-length hex string", async () => {
+    const result = await runCli(
+      [
+        "build",
+        "--blockfrost-api-key",
+        "test-key",
+        "--prism-object-hex",
+        "abc", // 3 chars - odd length
+        "--mnemonic-stdin",
+      ],
+      "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n"
+    );
+    expect(result.exitCode).toBe(1);
+    expect(result.stderr).toContain("odd length");
+  });
+
   test("--prism-object-hex accepts long hex string (multiple chunks)", async () => {
     // Create a hex string longer than 128 characters (64 bytes) to test chunking
     const longHex = "a".repeat(256);

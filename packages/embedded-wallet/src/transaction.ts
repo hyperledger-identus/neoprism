@@ -21,9 +21,7 @@ const NETWORK_IDS: Record<Network, 0 | 1> = {
   custom: 0,  // Custom testnets always use testnet addresses (network_id=0)
 };
 
-/**
- * Converts a hex string to Uint8Array.
- */
+/** Converts a hex string to Uint8Array. */
 function hexToBytes(hex: string): Uint8Array {
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
@@ -38,12 +36,14 @@ function hexToBytes(hex: string): Uint8Array {
  * Returns a Map suitable for passing to MeshSDK's metadataValue function.
  */
 function encodePrismObjectToMetadata(prismObjectHex: string): Map<string, unknown> {
-  // Remove 0x prefix if present
   const hex = prismObjectHex.startsWith("0x") ? prismObjectHex.slice(2) : prismObjectHex;
 
-  // Validate hex string
   if (!/^[0-9a-fA-F]*$/.test(hex)) {
     throw new Error("Invalid hex string: contains non-hex characters");
+  }
+
+  if (hex.length % 2 !== 0) {
+    throw new Error(`Invalid hex string: odd length (${hex.length} characters)`);
   }
 
   // Split into 64-byte (128 hex character) chunks and convert to Uint8Array
@@ -64,10 +64,12 @@ function encodePrismObjectToMetadata(prismObjectHex: string): Map<string, unknow
 export async function buildTransaction(params: BuildTransactionParams): Promise<BuiltTransaction> {
   const { mnemonic, network, blockfrostUrl, blockfrostApiKey, prismObjectHex } = params;
 
-  // Use API key for public Blockfrost, URL for private instance
-  const provider = blockfrostApiKey
-    ? new BlockfrostProvider(blockfrostApiKey)
-    : new BlockfrostProvider(blockfrostUrl!);
+  const cardanoMetadata = encodePrismObjectToMetadata(prismObjectHex);
+
+  // BlockfrostProvider accepts either an API key (for public Blockfrost) or a URL
+  // (for self-hosted/private instances). We use ?? to prefer the API key if provided,
+  // falling back to the URL for private deployments where no API key is needed.
+  const provider = new BlockfrostProvider(blockfrostApiKey ?? blockfrostUrl!);
 
   const networkId: 0 | 1 = NETWORK_IDS[network];
 
@@ -91,8 +93,6 @@ export async function buildTransaction(params: BuildTransactionParams): Promise<
   if (utxos.length === 0) {
     throw new Error(`no UTXOs found at address ${address}`);
   }
-
-  const cardanoMetadata = encodePrismObjectToMetadata(prismObjectHex);
 
   const txBuilder = new MeshTxBuilder({
     fetcher: provider,
