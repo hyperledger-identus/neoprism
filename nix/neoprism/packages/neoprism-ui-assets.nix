@@ -1,16 +1,25 @@
 {
-  buildNpmPackage,
   stdenv,
   tailwindcss_4,
+  bun,
 }:
 
 let
-  npmDeps = buildNpmPackage {
-    name = "assets-nodemodules";
+  bunDepsHash = "sha256-RuHGcTAg1QqZQ2nSJ4SjQXGow/qz3k8eFedqaQkYn0s=";
+
+  bunDeps = stdenv.mkDerivation {
+    name = "neoprism-ui-deps";
+    nativeBuildInputs = [ bun ];
+
     src = ./../../..;
-    npmDepsHash = "sha256-snC2EOnV3200x4fziwcj/1o9KoqSJkTFgJgAh9TWNpE=";
-    dontNpmBuild = true;
+
+    outputHash = bunDepsHash;
+    outputHashAlgo = "sha256";
+    outputHashMode = "recursive";
+
     installPhase = ''
+      export HOME=$TMPDIR
+      bun install --frozen-lockfile
       cp -r ./node_modules $out
     '';
   };
@@ -19,9 +28,9 @@ stdenv.mkDerivation {
   name = "neoprism-ui-assets";
   src = ./../../..;
   buildInputs = [ tailwindcss_4 ];
+
   installPhase = ''
-    mkdir -p ./node_modules
-    cp -r ${npmDeps}/* ./node_modules
+    cp -r ${bunDeps} ./node_modules
     cd ./bin/neoprism-node
     mkdir -p $out/assets
     tailwindcss -i ./tailwind.css -o $out/assets/styles.css

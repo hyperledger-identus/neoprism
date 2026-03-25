@@ -41,6 +41,8 @@ pub struct SubmitterArgs {
     #[clap(flatten)]
     pub server: ServerArgs,
     #[clap(flatten)]
+    pub network: NetworkArgs,
+    #[clap(flatten)]
     pub dlt_sink: DltSinkArgs,
 }
 
@@ -72,6 +74,7 @@ pub struct GenerateOpenApiArgs {
 }
 
 #[derive(Args)]
+#[command(next_help_heading = "Server")]
 pub struct ServerArgs {
     /// Node HTTP server binding address
     #[arg(long, env = "NPRISM_ADDRESS", default_value = "0.0.0.0")]
@@ -91,6 +94,7 @@ pub struct ServerArgs {
 }
 
 #[derive(Args)]
+#[command(next_help_heading = "Database")]
 pub struct DbArgs {
     /// Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted.
     #[arg(long, env = "NPRISM_DB_URL")]
@@ -101,26 +105,48 @@ pub struct DbArgs {
 }
 
 #[derive(Args)]
-pub struct DltSourceArgs {
-    /// The Cardano network the node is syncing from.
+#[command(next_help_heading = "Network")]
+pub struct NetworkArgs {
+    /// The Cardano network (mainnet, preprod, preview, or custom).
     #[arg(long, env = "NPRISM_CARDANO_NETWORK", default_value = "mainnet")]
     pub cardano_network: NetworkIdentifierCliOption,
-    /// Address of the Cardano relay node to sync from.
-    /// If provided, the node will sync events from the Cardano relay node.
-    /// (e.g. backbone.mainnet.cardanofoundation.org:3001)
-    #[arg(long, env = "NPRISM_CARDANO_RELAY_ADDR", group = "dlt-source")]
+}
+
+/// Type of DLT source to use for event synchronization.
+#[derive(Clone, Debug, ValueEnum)]
+pub enum DltSourceType {
+    #[value(name = "oura")]
+    Oura,
+    #[value(name = "dbsync")]
+    Dbsync,
+    #[value(name = "blockfrost")]
+    Blockfrost,
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "Oura")]
+pub struct OuraArgs {
+    /// Address of the Cardano relay node (e.g. backbone.mainnet.cardanofoundation.org:3001)
+    #[arg(long, env = "NPRISM_CARDANO_RELAY_ADDR")]
     pub cardano_relay_addr: Option<String>,
-    /// DB-Sync URL.
-    /// If provided, the node will sync events from DB Sync.
-    /// (e.g. postgres://user:pass@host:5432/db)
-    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL", group = "dlt-source")]
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "DB-Sync")]
+pub struct DbSyncArgs {
+    /// DB-Sync URL (e.g. postgres://user:pass@host:5432/db)
+    #[arg(long, env = "NPRISM_CARDANO_DBSYNC_URL")]
     pub cardano_dbsync_url: Option<String>,
     /// Duration to wait before polling DB Sync for the next update.
     #[arg(long, env = "NPRISM_CARDANO_DBSYNC_POLL_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
     pub cardano_dbsync_poll_interval: Duration,
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "Blockfrost")]
+pub struct BlockfrostArgs {
     /// Blockfrost API key.
-    /// If provided, the node will sync events from Blockfrost API.
-    #[arg(long, env = "NPRISM_BLOCKFROST_API_KEY", group = "dlt-source")]
+    #[arg(long, env = "NPRISM_BLOCKFROST_API_KEY")]
     pub blockfrost_api_key: Option<String>,
     /// Blockfrost base URL.
     #[arg(
@@ -139,28 +165,90 @@ pub struct DltSourceArgs {
     /// Blockfrost API calls concurrency limit
     #[arg(long, env = "NPRISM_BLOCKFROST_CONCURRENCY_LIMIT", default_value_t = 4)]
     pub blockfrost_concurrency_limit: usize,
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "DLT Source")]
+pub struct DltSourceArgs {
+    /// Type of DLT source to use for event synchronization.
+    #[arg(long, env = "NPRISM_DLT_SOURCE_TYPE", value_enum)]
+    pub dlt_source_type: DltSourceType,
     /// Duration to wait before checking for unindexed operations.
     #[arg(long, env = "NPRISM_INDEX_INTERVAL", default_value = "10s", value_parser = humantime::parse_duration)]
     pub index_interval: Duration,
     /// Number of confirmation blocks to wait before considering the block valid.
     #[arg(long, env = "NPRISM_CONFIRMATION_BLOCKS", default_value_t = 112)]
     pub confirmation_blocks: u16,
+    #[clap(flatten)]
+    pub network: NetworkArgs,
+    #[clap(flatten)]
+    pub cardano_relay: OuraArgs,
+    #[clap(flatten)]
+    pub dbsync: DbSyncArgs,
+    #[clap(flatten)]
+    pub blockfrost: BlockfrostArgs,
+}
+
+/// Type of DLT sink to use for transaction submission.
+#[derive(Clone, Debug, ValueEnum)]
+pub enum DltSinkType {
+    #[value(name = "cardano-wallet")]
+    CardanoWallet,
+    #[value(name = "embedded-wallet")]
+    EmbeddedWallet,
 }
 
 #[derive(Args)]
-pub struct DltSinkArgs {
-    /// Base URL of the Cardano wallet
-    #[arg(long, env = "NPRISM_CARDANO_WALLET_BASE_URL")]
-    pub cardano_wallet_base_url: String,
-    /// Wallet ID to use for making transactions.
+#[command(next_help_heading = "Cardano Wallet")]
+pub struct CardanoWalletArgs {
+    /// Base URL of the Cardano wallet. Required when --dlt-sink-type=cardano-wallet.
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_URL")]
+    pub cardano_wallet_url: Option<String>,
+    /// Wallet ID to use for making transactions. Required when --dlt-sink-type=cardano-wallet.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_WALLET_ID")]
-    pub cardano_wallet_wallet_id: String,
-    /// Passphrase for the wallet
+    pub cardano_wallet_wallet_id: Option<String>,
+    /// Passphrase for the wallet. Required when --dlt-sink-type=cardano-wallet.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_PASSPHRASE")]
-    pub cardano_wallet_passphrase: String,
-    /// Payment address for making transactions.
+    pub cardano_wallet_passphrase: Option<String>,
+    /// Payment address for making transactions. Required when --dlt-sink-type=cardano-wallet.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_PAYMENT_ADDR")]
-    pub cardano_wallet_payment_addr: String,
+    pub cardano_wallet_payment_addr: Option<String>,
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "Embedded Wallet")]
+pub struct EmbeddedWalletArgs {
+    /// Path to the embedded wallet binary. Required when --dlt-sink-type=embedded-wallet.
+    #[arg(long, env = "NPRISM_EMBEDDED_WALLET_BIN")]
+    pub embedded_wallet_bin: Option<PathBuf>,
+    /// Base URL of the Cardano submit API. Required when --dlt-sink-type=embedded-wallet.
+    #[arg(long, env = "NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL")]
+    pub embedded_wallet_submit_api_url: Option<String>,
+    /// Blockfrost API URL. Defaults to mainnet Blockfrost.
+    #[arg(
+        long,
+        env = "NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL",
+        default_value = "https://cardano-mainnet.blockfrost.io/api/v0"
+    )]
+    pub embedded_wallet_blockfrost_url: String,
+    /// Blockfrost API key for public Blockfrost. Mutually exclusive with --embedded-wallet-blockfrost-url.
+    #[arg(long, env = "NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY")]
+    pub embedded_wallet_blockfrost_api_key: Option<String>,
+    /// Mnemonic phrase for the embedded wallet. Required when --dlt-sink-type=embedded-wallet.
+    #[arg(long, env = "NPRISM_EMBEDDED_WALLET_MNEMONIC")]
+    pub embedded_wallet_mnemonic: Option<String>,
+}
+
+#[derive(Args)]
+#[command(next_help_heading = "DLT Sink")]
+pub struct DltSinkArgs {
+    /// Type of DLT sink to use for transaction submission.
+    #[arg(long, env = "NPRISM_DLT_SINK_TYPE", value_enum)]
+    pub dlt_sink_type: DltSinkType,
+    #[clap(flatten)]
+    pub cardano_wallet: CardanoWalletArgs,
+    #[clap(flatten)]
+    pub embedded_wallet: EmbeddedWalletArgs,
 }
 
 #[derive(Clone, ValueEnum)]

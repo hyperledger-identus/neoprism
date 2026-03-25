@@ -3,6 +3,7 @@
   curl,
   dockerTools,
   neoprism-bin,
+  embedded-wallet,
   tagSuffix ? "",
   neoprism-ui-assets,
   version,
@@ -18,6 +19,7 @@ dockerTools.buildLayeredImage {
     bash
     cacert
     curl
+    embedded-wallet
     neoprism-bin
     neoprism-ui-assets
     openssl
@@ -27,6 +29,7 @@ dockerTools.buildLayeredImage {
     Env = [
       "RUST_LOG=info,oura=warn"
       "NPRISM_ASSETS_PATH=/assets"
+      "NPRISM_EMBEDDED_WALLET_BIN=/bin/embedded-wallet"
       "SSL_CERT_FILE=/etc/ssl/certs/ca-bundle.crt"
     ];
     Entrypoint = [ "/bin/neoprism-node" ];

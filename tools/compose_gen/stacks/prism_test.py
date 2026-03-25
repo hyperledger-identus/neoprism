@@ -23,6 +23,7 @@ class Options(BaseModel):
     neoprism_backend: Literal["postgres", "sqlite"] = "postgres"
     neoprism_mode: Literal["standalone", "dev"] = "standalone"
     neoprism_dlt_source: Literal["dbsync", "blockfrost"] = "dbsync"
+    neoprism_dlt_sink: Literal["cardano-wallet", "embedded-wallet"] = "cardano-wallet"
 
     @model_validator(mode="after")
     def validate_blockfrost_compatibility(self) -> "Options":
@@ -31,6 +32,10 @@ class Options(BaseModel):
         if self.neoprism_dlt_source == "blockfrost" and not self.enable_blockfrost:
             raise ValueError(
                 "neoprism_dlt_source='blockfrost' requires enable_blockfrost=True"
+            )
+        if self.neoprism_dlt_sink == "embedded-wallet" and not self.enable_blockfrost:
+            raise ValueError(
+                "neoprism_dlt_sink='embedded-wallet' requires enable_blockfrost=True"
             )
         return self
 
@@ -47,6 +52,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
     wallet_id = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
     wallet_passphrase = "super_secret"
     wallet_payment_address = "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"  # noqa: E501
+    wallet_mnemonic = "mimic candy diamond virus hospital dragon culture price emotion tell update give faint resist faculty soup demand window dignity capital bullet purity practice fossil"  # noqa: E501
 
     # Blockfrost services
     bf_services = {
@@ -119,6 +125,26 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
     # NeoPRISM services
     neoprism_services = {}
 
+    # Build DLT sink based on configuration
+    if options.neoprism_dlt_sink == "embedded-wallet":
+        dlt_sink: neoprism.CardanoWalletSink | neoprism.EmbeddedWalletSink = (
+            neoprism.EmbeddedWalletSink(
+                bin_path="/bin/embedded-wallet",
+                submit_api_url="http://cardano-submit-api:8090",
+                blockfrost_url="http://bf-proxy:3000",
+                blockfrost_api_key="",
+                mnemonic=wallet_mnemonic,
+            )
+        )
+    else:
+        dlt_sink = neoprism.CardanoWalletSink(
+            wallet_host="cardano-wallet",
+            wallet_port=8090,
+            wallet_id=wallet_id,
+            wallet_passphrase=wallet_passphrase,
+            wallet_payment_address=wallet_payment_address,
+        )
+
     if options.neoprism_mode == "dev":
         neoprism_command = neoprism.DevCommand()
     elif options.neoprism_dlt_source == "blockfrost":
@@ -128,13 +154,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
                 base_url="http://bf-proxy:3000",
                 poll_interval="1s",
             ),
-            dlt_sink=neoprism.DltSink(
-                wallet_host="cardano-wallet",
-                wallet_port=8090,
-                wallet_id=wallet_id,
-                wallet_passphrase=wallet_passphrase,
-                wallet_payment_address=wallet_payment_address,
-            ),
+            dlt_sink=dlt_sink,
         )
     else:
         neoprism_command = neoprism.StandaloneCommand(
@@ -142,13 +162,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
                 url="postgresql://postgres:postgres@db-dbsync:5432/postgres",
                 poll_interval="1s",
             ),
-            dlt_sink=neoprism.DltSink(
-                wallet_host="cardano-wallet",
-                wallet_port=8090,
-                wallet_id=wallet_id,
-                wallet_passphrase=wallet_passphrase,
-                wallet_payment_address=wallet_payment_address,
-            ),
+            dlt_sink=dlt_sink,
         )
 
     if options.neoprism_backend == "postgres":

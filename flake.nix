@@ -35,6 +35,7 @@
         ./nix/devShells
         ./nix/checks
         ./nix/docs
+        ./nix/embedded-wallet
         ./nix/neoprism
         ./nix/cardano
         ./nix/prism-test

@@ -25,7 +25,7 @@ object CreateDidOperationSuite extends TestUtils:
       yield assert(didData.context)(
         hasSameElements(Seq("https://www.w3.org/ns/did/v1", "https://example.com/custom-context"))
       )
-    },
+    } @@ TestAspect.tag("dev"),
     test("should reject duplicate context values") {
       for
         seed <- newSeed

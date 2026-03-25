@@ -26,12 +26,23 @@ class BlockfrostDltSource(BaseModel):
     concurrency_limit: int | None = None
 
 
-class DltSink(BaseModel):
+class CardanoWalletSink(BaseModel):
     wallet_host: str
     wallet_port: int
     wallet_id: str
     wallet_passphrase: str
     wallet_payment_address: str
+
+
+class EmbeddedWalletSink(BaseModel):
+    bin_path: str
+    submit_api_url: str
+    blockfrost_url: str
+    blockfrost_api_key: str
+    mnemonic: str
+
+
+DltSink = CardanoWalletSink | EmbeddedWalletSink
 
 
 class IndexerCommand(BaseModel):
@@ -112,9 +123,11 @@ def mk_service(options: Options) -> Service:
     # DLT sink - only standalone needs this
     if isinstance(options.command, StandaloneCommand):
         _add_dlt_sink_env(environment, options.command.dlt_sink)
-        depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
-            condition="service_healthy"
-        )
+        if isinstance(options.command.dlt_sink, CardanoWalletSink):
+            # CardanoWalletSink requires wallet service to be healthy
+            depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
+                condition="service_healthy"
+            )
 
     # Determine command based on mode
     command = [options.command.command]
@@ -140,12 +153,15 @@ def _add_dlt_source_env(
 ) -> None:
     """Add DLT source-specific environment variables."""
     if isinstance(source, OuraDltSource):
+        env["NPRISM_DLT_SOURCE_TYPE"] = "oura"
         env["NPRISM_CARDANO_RELAY_ADDR"] = source.address
     elif isinstance(source, DbSyncDltSource):
+        env["NPRISM_DLT_SOURCE_TYPE"] = "dbsync"
         env["NPRISM_CARDANO_DBSYNC_URL"] = source.url
         env["NPRISM_CARDANO_DBSYNC_POLL_INTERVAL"] = str(source.poll_interval)
     else:
         # BlockfrostDltSource is the only remaining option in the union
+        env["NPRISM_DLT_SOURCE_TYPE"] = "blockfrost"
         env["NPRISM_BLOCKFROST_API_KEY"] = source.api_key
         env["NPRISM_BLOCKFROST_BASE_URL"] = source.base_url
         env["NPRISM_BLOCKFROST_POLL_INTERVAL"] = source.poll_interval
@@ -157,11 +173,18 @@ def _add_dlt_source_env(
 
 def _add_dlt_sink_env(env: dict[str, str], sink: DltSink) -> None:
     """Add DLT sink-specific environment variables."""
-    env.update(
-        {
-            "NPRISM_CARDANO_WALLET_BASE_URL": f"http://{sink.wallet_host}:{sink.wallet_port}/v2",
-            "NPRISM_CARDANO_WALLET_WALLET_ID": sink.wallet_id,
-            "NPRISM_CARDANO_WALLET_PASSPHRASE": sink.wallet_passphrase,
-            "NPRISM_CARDANO_WALLET_PAYMENT_ADDR": sink.wallet_payment_address,
-        }
-    )
+    if isinstance(sink, CardanoWalletSink):
+        env["NPRISM_DLT_SINK_TYPE"] = "cardano-wallet"
+        env["NPRISM_CARDANO_WALLET_URL"] = (
+            f"http://{sink.wallet_host}:{sink.wallet_port}/v2"
+        )
+        env["NPRISM_CARDANO_WALLET_WALLET_ID"] = sink.wallet_id
+        env["NPRISM_CARDANO_WALLET_PASSPHRASE"] = sink.wallet_passphrase
+        env["NPRISM_CARDANO_WALLET_PAYMENT_ADDR"] = sink.wallet_payment_address
+    else:
+        # EmbeddedWalletSink
+        env["NPRISM_DLT_SINK_TYPE"] = "embedded-wallet"
+        env["NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL"] = sink.submit_api_url
+        env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL"] = sink.blockfrost_url
+        env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY"] = sink.blockfrost_api_key
+        env["NPRISM_EMBEDDED_WALLET_MNEMONIC"] = sink.mnemonic

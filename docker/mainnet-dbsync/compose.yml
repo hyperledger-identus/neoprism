@@ -29,6 +29,7 @@ services:
       NPRISM_CARDANO_DBSYNC_URL: ${DBSYNC_URL}
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
+      NPRISM_DLT_SOURCE_TYPE: dbsync
       RUST_LOG: info,oura=warn,tracing::span=warn
     healthcheck:
       interval: 2s

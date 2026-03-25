@@ -23,7 +23,7 @@
           inherit (neoprismLib.rustTools) cargoLock;
         };
 
-        # cross built binaries
+        # cross built binaries (for Docker multi-arch support)
         neoprism-bin-x86_64-linux = pkgs.pkgsCross.gnu64.callPackage ./packages/neoprism-bin.nix {
           rust = rust-gnu64;
           inherit (neoprismLib.rustTools) cargoLock;

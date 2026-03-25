@@ -14,6 +14,7 @@ use clap::Parser;
 use cli::Cli;
 use dirs::data_dir;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
+use identus_did_prism_indexer::DltSource;
 use identus_did_prism_indexer::dlt::blockfrost::{BlockfrostConfig, BlockfrostSource};
 use identus_did_prism_indexer::dlt::dbsync::DbSyncSource;
 use identus_did_prism_indexer::dlt::oura::OuraN2NSource;
@@ -27,7 +28,10 @@ use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::app::worker::{DltIndexWorker, DltSyncWorker};
-use crate::cli::{DbArgs, DevArgs, DltSinkArgs, DltSourceArgs, IndexerArgs, ServerArgs, StandaloneArgs, SubmitterArgs};
+use crate::cli::{
+    DbArgs, DevArgs, DltSinkArgs, DltSinkType, DltSourceArgs, DltSourceType, IndexerArgs, ServerArgs, StandaloneArgs,
+    SubmitterArgs,
+};
 
 mod app;
 mod cli;
@@ -123,7 +127,7 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
 }
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
-    let network = args.dlt_source.cardano_network.clone().into();
+    let network = args.dlt_source.network.cardano_network.clone().into();
     let db = init_database(&args.db, Some(&network)).await;
     let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let app_state = AppState {
@@ -149,7 +153,8 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
 }
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
-    let dlt_sink = init_dlt_sink(&args.dlt_sink);
+    let network: NetworkIdentifier = args.network.cardano_network.clone().into();
+    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network);
     let app_state = AppState {
         run_mode: RunMode::Submitter,
     };
@@ -158,10 +163,10 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
 }
 
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
-    let network = args.dlt_source.cardano_network.clone().into();
+    let network = args.dlt_source.network.cardano_network.clone().into();
     let db = init_database(&args.db, Some(&network)).await;
     let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
-    let dlt_sink = init_dlt_sink(&args.dlt_sink);
+    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network);
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
@@ -329,83 +334,184 @@ fn init_memory_ledger(db: SharedStorage) -> MemoryLedger {
     (cursor_rx, dlt_sink, handles)
 }
 
+/// Helper to spawn sync and index workers from a DLT source.
+fn spawn_dlt_workers<Src: DltSource + Send + 'static>(
+    db: SharedStorage,
+    source: Src,
+    index_interval: Duration,
+) -> DltSourceOutput {
+    let sync_worker = DltSyncWorker::new(db.clone(), source);
+    let index_worker = DltIndexWorker::new(db, index_interval);
+    let cursor_rx = sync_worker.sync_cursor();
+    let mut handles = JoinSet::new();
+    handles.spawn(sync_worker.run());
+    handles.spawn(index_worker.run());
+    (Some(cursor_rx), handles)
+}
+
 async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, db: SharedStorage) -> DltSourceOutput {
-    if let Some(address) = &dlt_args.cardano_relay_addr {
-        tracing::info!(
-            "Starting DLT sync worker on {} from cardano address {}",
-            network,
-            address
-        );
-        let source = OuraN2NSource::since_persisted_cursor_or_genesis(
-            db.clone(),
-            address,
-            network,
-            dlt_args.confirmation_blocks,
-        )
-        .await
-        .expect("Failed to create DLT source");
+    match dlt_args.dlt_source_type {
+        DltSourceType::Oura => {
+            let address = dlt_args
+                .cardano_relay
+                .cardano_relay_addr
+                .as_ref()
+                .cloned()
+                .expect("--cardano-relay-addr is required when --dlt-source-type=oura");
 
-        let sync_worker = DltSyncWorker::new(db.clone(), source);
-        let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
-        let cursor_rx = sync_worker.sync_cursor();
-        let mut handles = JoinSet::new();
-        handles.spawn(sync_worker.run());
-        handles.spawn(index_worker.run());
-        (Some(cursor_rx), handles)
-    } else if let Some(dbsync_url) = dlt_args.cardano_dbsync_url.as_ref() {
-        tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
-        let source = DbSyncSource::since_persisted_cursor(
-            db.clone(),
-            dbsync_url,
-            dlt_args.confirmation_blocks,
-            dlt_args.cardano_dbsync_poll_interval,
-        )
-        .await
-        .expect("Failed to create DLT source");
+            tracing::info!(
+                "Starting DLT sync worker on {} from cardano address {}",
+                network,
+                address
+            );
+            let source = OuraN2NSource::since_persisted_cursor_or_genesis(
+                db.clone(),
+                &address,
+                network,
+                dlt_args.confirmation_blocks,
+            )
+            .await
+            .expect("Failed to create DLT source");
 
-        let sync_worker = DltSyncWorker::new(db.clone(), source);
-        let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
-        let cursor_rx = sync_worker.sync_cursor();
-        let mut handles = JoinSet::new();
-        handles.spawn(sync_worker.run());
-        handles.spawn(index_worker.run());
-        (Some(cursor_rx), handles)
-    } else if let Some(api_key) = dlt_args.blockfrost_api_key.as_ref() {
-        tracing::info!("Starting DLT sync worker on {} from Blockfrost", network);
-        let blockfrost_config = BlockfrostConfig {
-            confirmation_blocks: dlt_args.confirmation_blocks,
-            poll_interval: dlt_args.blockfrost_poll_interval,
-            concurrency_limit: dlt_args.blockfrost_concurrency_limit,
-            api_delay: dlt_args.blockfrost_api_delay,
-        };
-        let source = BlockfrostSource::since_persisted_cursor(
-            db.clone(),
-            api_key,
-            &dlt_args.blockfrost_base_url,
-            blockfrost_config,
-        )
-        .await
-        .expect("Failed to create Blockfrost source");
+            spawn_dlt_workers(db, source, dlt_args.index_interval)
+        }
+        DltSourceType::Dbsync => {
+            let dbsync_url = dlt_args
+                .dbsync
+                .cardano_dbsync_url
+                .as_ref()
+                .cloned()
+                .expect("--cardano-dbsync-url is required when --dlt-source-type=dbsync");
 
-        let sync_worker = DltSyncWorker::new(db.clone(), source);
-        let index_worker = DltIndexWorker::new(db.clone(), dlt_args.index_interval);
-        let cursor_rx = sync_worker.sync_cursor();
-        let mut handles = JoinSet::new();
-        handles.spawn(sync_worker.run());
-        handles.spawn(index_worker.run());
-        (Some(cursor_rx), handles)
-    } else {
-        (None, JoinSet::new())
+            tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
+            let source = DbSyncSource::since_persisted_cursor(
+                db.clone(),
+                &dbsync_url,
+                dlt_args.confirmation_blocks,
+                dlt_args.dbsync.cardano_dbsync_poll_interval,
+            )
+            .await
+            .expect("Failed to create DLT source");
+
+            spawn_dlt_workers(db, source, dlt_args.index_interval)
+        }
+        DltSourceType::Blockfrost => {
+            let api_key = dlt_args
+                .blockfrost
+                .blockfrost_api_key
+                .as_ref()
+                .cloned()
+                .expect("--blockfrost-api-key is required when --dlt-source-type=blockfrost");
+
+            tracing::info!("Starting DLT sync worker on {} from Blockfrost", network);
+            let source = BlockfrostSource::since_persisted_cursor(
+                db.clone(),
+                &api_key,
+                &dlt_args.blockfrost.blockfrost_base_url,
+                BlockfrostConfig {
+                    confirmation_blocks: dlt_args.confirmation_blocks,
+                    poll_interval: dlt_args.blockfrost.blockfrost_poll_interval,
+                    concurrency_limit: dlt_args.blockfrost.blockfrost_concurrency_limit,
+                    api_delay: dlt_args.blockfrost.blockfrost_api_delay,
+                },
+            )
+            .await
+            .expect("Failed to create Blockfrost source");
+
+            spawn_dlt_workers(db, source, dlt_args.index_interval)
+        }
     }
 }
 
-fn init_dlt_sink(dlt_args: &DltSinkArgs) -> Arc<dyn DltSink + Send + Sync> {
-    Arc::new(CardanoWalletSink::new(
-        dlt_args.cardano_wallet_base_url.to_string(),
-        dlt_args.cardano_wallet_wallet_id.to_string(),
-        dlt_args.cardano_wallet_passphrase.to_string(),
-        dlt_args.cardano_wallet_payment_addr.to_string(),
-    ))
+fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn DltSink + Send + Sync> {
+    match dlt_args.dlt_sink_type {
+        DltSinkType::CardanoWallet => {
+            let cardano_wallet_url = dlt_args
+                .cardano_wallet
+                .cardano_wallet_url
+                .as_ref()
+                .cloned()
+                .expect("--cardano-wallet-url is required when --dlt-sink-type=cardano-wallet");
+
+            let cardano_wallet_wallet_id = dlt_args
+                .cardano_wallet
+                .cardano_wallet_wallet_id
+                .as_ref()
+                .cloned()
+                .expect("--cardano-wallet-wallet-id is required when --dlt-sink-type=cardano-wallet");
+
+            let cardano_wallet_passphrase = dlt_args
+                .cardano_wallet
+                .cardano_wallet_passphrase
+                .as_ref()
+                .cloned()
+                .expect("--cardano-wallet-passphrase is required when --dlt-sink-type=cardano-wallet");
+
+            let cardano_wallet_payment_addr = dlt_args
+                .cardano_wallet
+                .cardano_wallet_payment_addr
+                .as_ref()
+                .cloned()
+                .expect("--cardano-wallet-payment-addr is required when --dlt-sink-type=cardano-wallet");
+
+            Arc::new(CardanoWalletSink::new(
+                cardano_wallet_url,
+                cardano_wallet_wallet_id,
+                cardano_wallet_passphrase,
+                cardano_wallet_payment_addr,
+            ))
+        }
+        DltSinkType::EmbeddedWallet => {
+            use identus_did_prism_submitter::dlt::embedded_wallet::{
+                EmbeddedWalletSink, EmbeddedWalletSinkConfig, Network,
+            };
+
+            let embedded_wallet_bin = dlt_args
+                .embedded_wallet
+                .embedded_wallet_bin
+                .clone()
+                .expect("--embedded-wallet-bin is required when --dlt-sink-type=embedded-wallet");
+
+            let submit_api_url = dlt_args
+                .embedded_wallet
+                .embedded_wallet_submit_api_url
+                .as_ref()
+                .cloned();
+
+            let blockfrost_url = dlt_args.embedded_wallet.embedded_wallet_blockfrost_url.clone();
+
+            let blockfrost_api_key = dlt_args
+                .embedded_wallet
+                .embedded_wallet_blockfrost_api_key
+                .clone()
+                .filter(|s| !s.is_empty());
+
+            let mnemonic = dlt_args
+                .embedded_wallet
+                .embedded_wallet_mnemonic
+                .as_ref()
+                .cloned()
+                .expect("--embedded-wallet-mnemonic is required when --dlt-sink-type=embedded-wallet");
+
+            let network = match network {
+                NetworkIdentifier::Mainnet => Network::Mainnet,
+                NetworkIdentifier::Preprod => Network::Preprod,
+                NetworkIdentifier::Preview => Network::Preview,
+                NetworkIdentifier::Custom => Network::Custom,
+            };
+
+            let config = EmbeddedWalletSinkConfig {
+                embedded_wallet_bin,
+                submit_api_url,
+                blockfrost_url,
+                blockfrost_api_key,
+                network,
+                mnemonic: Arc::from(mnemonic),
+            };
+
+            Arc::new(EmbeddedWalletSink::new(config))
+        }
+    }
 }
 
 async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
