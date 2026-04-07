@@ -5,33 +5,63 @@ It is typically used for DID resolution and verification services.
 
 ## DLT Source
 
-The Indexer node supports multiple DLT sources for ingesting DID operations:
+The Indexer node requires a DLT source to ingest DID operations from the Cardano blockchain.  
+Select the source type with the `--dlt-source-type` flag:
 
-- **Oura:**  
-  Connects to a Cardano relay node and streams block data in real time.
-  - Key options: 
-    - Cardano network: `--cardano-network` or `NPRISM_CARDANO_NETWORK`
-    - Relay address: `--cardano-relay-addr` or `NPRISM_CARDANO_RELAY_ADDR`
+```
+--dlt-source-type <TYPE>    or    NPRISM_DLT_SOURCE_TYPE=<TYPE>
+```
 
-- **DB-Sync:**  
-  Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.
-  - Key options: 
-    - DB-Sync URL: `--db-sync-url` or `NPRISM_DB_SYNC_URL`
-    - Poll interval: `--db-sync-poll-interval` or `NPRISM_DB_SYNC_POLL_INTERVAL` (duration format, e.g., `10s`, `1m`)
+Supported values:
 
-- **Blockfrost:**  
-  Connects to the Blockfrost API for hosted Cardano blockchain data access.
-  Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.
-  - Key options:
-    - API key: `--blockfrost-api-key` or `NPRISM_BLOCKFROST_API_KEY`
-    - Base URL: `--blockfrost-base-url` or `NPRISM_BLOCKFROST_BASE_URL`
-    - Poll interval: `--blockfrost-poll-interval` or `NPRISM_BLOCKFROST_POLL_INTERVAL` (duration format, e.g., `10s`, `1m`)
-    - API delay: `--blockfrost-api-delay` or `NPRISM_BLOCKFROST_API_DELAY` (throttling to respect rate limits)
-    - Concurrency limit: `--blockfrost-concurrency-limit` or `NPRISM_BLOCKFROST_CONCURRENCY_LIMIT`
+| Value | Description |
+|-------|-------------|
+| `oura` | Connects to a Cardano relay node and streams block data in real time |
+| `dbsync` | Connects to a Cardano DB-Sync instance and polls for new blocks |
+| `blockfrost` | Connects to the Blockfrost API for hosted Cardano blockchain data access |
 
-- **Common DLT Source Options:**  
-  - Index interval: `--index-interval` or `NPRISM_INDEX_INTERVAL` (duration format, e.g., `10s`, `1m`)
-  - Confirmation blocks: `--confirmation-blocks` or `NPRISM_CONFIRMATION_BLOCKS`
+In addition to source-specific options, all DLT sources share a common network setting and indexing configuration (see [Common Options](#common-dlt-source-options)).
+
+---
+
+## Oura
+
+Connects to a Cardano relay node and streams block data in real time using the chainsync protocol.
+
+| Flag | Environment Variable | Description |
+|------|---------------------|-------------|
+| `--cardano-relay-addr` | `NPRISM_CARDANO_RELAY_ADDR` | Address of the Cardano relay node (e.g. `backbone.mainnet.cardanofoundation.org:3001`) |
+
+## DB-Sync
+
+Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.
+
+| Flag | Environment Variable | Description |
+|------|---------------------|-------------|
+| `--cardano-dbsync-url` | `NPRISM_CARDANO_DBSYNC_URL` | DB-Sync URL (e.g. `postgres://user:pass@host:5432/db`) |
+| `--cardano-dbsync-poll-interval` | `NPRISM_CARDANO_DBSYNC_POLL_INTERVAL` | Duration to wait before polling (e.g. `10s`, `1m`) |
+
+## Blockfrost
+
+Connects to the Blockfrost API for hosted Cardano blockchain data access. Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.
+
+| Flag | Environment Variable | Description |
+|------|---------------------|-------------|
+| `--blockfrost-api-key` | `NPRISM_BLOCKFROST_API_KEY` | Blockfrost API key |
+| `--blockfrost-base-url` | `NPRISM_BLOCKFROST_BASE_URL` | Blockfrost base URL |
+| `--blockfrost-poll-interval` | `NPRISM_BLOCKFROST_POLL_INTERVAL` | Duration to wait between polls (e.g. `10s`, `1m`) |
+| `--blockfrost-api-delay` | `NPRISM_BLOCKFROST_API_DELAY` | Throttling delay to respect rate limits |
+| `--blockfrost-concurrency-limit` | `NPRISM_BLOCKFROST_CONCURRENCY_LIMIT` | API calls concurrency limit |
+
+## Common DLT Source Options
+
+These options apply regardless of the selected DLT source type:
+
+| Flag | Environment Variable | Description |
+|------|---------------------|-------------|
+| `--cardano-network` | `NPRISM_CARDANO_NETWORK` | Cardano network (`mainnet`, `preprod`, `preview`, or `custom`; default: `mainnet`) |
+| `--index-interval` | `NPRISM_INDEX_INTERVAL` | Duration between indexing cycles (e.g. `10s`, `1m`) |
+| `--confirmation-blocks` | `NPRISM_CONFIRMATION_BLOCKS` | Number of confirmation blocks before considering a block valid (default: `112`) |
 
 ---
 

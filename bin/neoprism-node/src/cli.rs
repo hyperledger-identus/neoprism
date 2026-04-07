@@ -221,7 +221,7 @@ pub struct EmbeddedWalletArgs {
     /// Path to the embedded wallet binary. Required when --dlt-sink-type=embedded-wallet.
     #[arg(long, env = "NPRISM_EMBEDDED_WALLET_BIN")]
     pub embedded_wallet_bin: Option<PathBuf>,
-    /// Base URL of the Cardano submit API. Required when --dlt-sink-type=embedded-wallet.
+    /// Base URL of the Cardano submit API. When omitted, transactions are submitted via Blockfrost.
     #[arg(long, env = "NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL")]
     pub embedded_wallet_submit_api_url: Option<String>,
     /// Blockfrost API URL. Defaults to mainnet Blockfrost.
@@ -231,7 +231,7 @@ pub struct EmbeddedWalletArgs {
         default_value = "https://cardano-mainnet.blockfrost.io/api/v0"
     )]
     pub embedded_wallet_blockfrost_url: String,
-    /// Blockfrost API key for public Blockfrost. Mutually exclusive with --embedded-wallet-blockfrost-url.
+    /// Blockfrost API key for public Blockfrost. Takes precedence over --embedded-wallet-blockfrost-url when set.
     #[arg(long, env = "NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY")]
     pub embedded_wallet_blockfrost_api_key: Option<String>,
     /// Mnemonic phrase for the embedded wallet. Required when --dlt-sink-type=embedded-wallet.
