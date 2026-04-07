@@ -38,6 +38,25 @@ async function runCli(args: string[], stdin?: string): Promise<CliResult> {
   });
 }
 
+/** Shared base args for most "build" command tests */
+function buildArgs(extra: string[] = []): string[] {
+  return ["build", "--blockfrost-api-key", "test-key", "--prism-object-hex", "deadbeef", ...extra];
+}
+
+/** Assert that a CLI invocation fails with the given stderr substring */
+async function expectBuildError(extraArgs: string[], expectedStderr: string, stdin?: string) {
+  const result = await runCli(buildArgs(extraArgs), stdin);
+  expect(result.exitCode).not.toBe(0);
+  expect(result.stderr).toContain(expectedStderr);
+  return result;
+}
+
+/** Assert errors went to stderr only (stdout is clean) */
+function expectStderrOnly(result: CliResult) {
+  expect(result.stderr).not.toBe("");
+  expect(result.stdout).toBe("");
+}
+
 describe("CLI argument parsing", () => {
   test("--help flag shows help message", async () => {
     const result = await runCli(["--help"]);
@@ -51,27 +70,17 @@ describe("CLI argument parsing", () => {
   });
 
   test("missing required options exits with error", async () => {
-    const result = await runCli(["build"]);
-    expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).toContain("required");
+    const result = await expectBuildError([], "required");
   });
 
   test("missing --prism-object-hex exits with error", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-    ]);
+    const result = await runCli(["build", "--blockfrost-api-key", "test-key"]);
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain("--prism-object-hex");
   });
 
   test("neither --blockfrost-url nor --blockfrost-api-key exits with error", async () => {
-    const result = await runCli([
-      "build",
-      "--prism-object-hex",
-      "deadbeef",
-    ]);
+    const result = await runCli(["build", "--prism-object-hex", "deadbeef"]);
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("either --blockfrost-url or --blockfrost-api-key is required");
   });
@@ -91,47 +100,21 @@ describe("CLI argument parsing", () => {
   });
 
   test("invalid network exits with error", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-      "--prism-object-hex",
-      "deadbeef",
-      "--network",
-      "invalid-network",
-    ]);
+    const result = await runCli(buildArgs(["--network", "invalid-network"]));
     expect(result.exitCode).toBe(1);
     expect(result.stderr).toContain("invalid network");
   });
 
   test("valid network is accepted", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-      "--prism-object-hex",
-      "deadbeef",
-      "--network",
-      "preprod",
-    ]);
-    expect(result.stderr).toContain("--mnemonic-stdin is required");
+    await expectBuildError(["--network", "preprod"], "--mnemonic-stdin is required");
   });
 });
 
 describe("network validation", () => {
-  test.each([["mainnet"], ["preprod"], ["preview"], ["custom"]])(
+  test.each([["mainnet"], ["preprod"], ["preview"], ["custom"]] as const)(
     "network=%s is valid",
     async (network) => {
-      const result = await runCli([
-        "build",
-        "--blockfrost-api-key",
-        "test-key",
-        "--prism-object-hex",
-        "deadbeef",
-        "--network",
-        network,
-      ]);
-      expect(result.stderr).toContain("--mnemonic-stdin is required");
+      await expectBuildError(["--network", network], "--mnemonic-stdin is required");
     }
   );
 });
@@ -139,14 +122,7 @@ describe("network validation", () => {
 describe("stdin mnemonic reading", () => {
   test("--mnemonic-stdin flag reads from stdin", async () => {
     const result = await runCli(
-      [
-        "build",
-        "--blockfrost-api-key",
-        "test-key",
-        "--prism-object-hex",
-        "deadbeef",
-        "--mnemonic-stdin",
-      ],
+      buildArgs(["--mnemonic-stdin"]),
       "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n"
     );
     expect(result.stderr).toContain("building transaction");
@@ -155,14 +131,7 @@ describe("stdin mnemonic reading", () => {
 
 describe("prism object hex parsing", () => {
   test("--prism-object-hex accepts valid hex string", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-      "--prism-object-hex",
-      "deadbeef",
-    ]);
-    expect(result.stderr).toContain("--mnemonic-stdin is required");
+    await expectBuildError([], "--mnemonic-stdin is required");
   });
 
   test("--prism-object-hex accepts valid hex string with 0x prefix", async () => {
@@ -190,14 +159,7 @@ describe("prism object hex parsing", () => {
 
   test("--prism-object-hex rejects invalid hex characters", async () => {
     const result = await runCli(
-      [
-        "build",
-        "--blockfrost-api-key",
-        "test-key",
-        "--prism-object-hex",
-        "notvalidhex!@#",
-        "--mnemonic-stdin",
-      ],
+      buildArgs(["--prism-object-hex", "notvalidhex!@#", "--mnemonic-stdin"]),
       "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n"
     );
     expect(result.exitCode).toBe(1);
@@ -206,14 +168,7 @@ describe("prism object hex parsing", () => {
 
   test("--prism-object-hex rejects odd-length hex string", async () => {
     const result = await runCli(
-      [
-        "build",
-        "--blockfrost-api-key",
-        "test-key",
-        "--prism-object-hex",
-        "abc", // 3 chars - odd length
-        "--mnemonic-stdin",
-      ],
+      buildArgs(["--prism-object-hex", "abc", "--mnemonic-stdin"]),
       "word1 word2 word3 word4 word5 word6 word7 word8 word9 word10 word11 word12\n"
     );
     expect(result.exitCode).toBe(1);
@@ -238,8 +193,7 @@ describe("stderr vs stdout output", () => {
   test("errors are written to stderr, not stdout", async () => {
     const result = await runCli(["build"]);
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).not.toBe("");
-    expect(result.stdout).toBe("");
+    expectStderrOnly(result);
   });
 
   test("missing required options writes error to stderr", async () => {
@@ -249,50 +203,27 @@ describe("stderr vs stdout output", () => {
       "https://example.com",
     ]);
     expect(result.exitCode).not.toBe(0);
-    expect(result.stderr).not.toBe("");
     expect(result.stderr).toContain("required");
-    expect(result.stdout).toBe("");
+    expectStderrOnly(result);
   });
 
   test("invalid network writes error to stderr", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-      "--prism-object-hex",
-      "deadbeef",
-      "--network",
-      "invalid",
-    ]);
+    const result = await runCli(buildArgs(["--network", "invalid"]));
     expect(result.exitCode).toBe(1);
-    expect(result.stderr).not.toBe("");
     expect(result.stderr).toContain("invalid network");
-    expect(result.stdout).toBe("");
+    expectStderrOnly(result);
   });
 
   test("--mnemonic-stdin required error goes to stderr", async () => {
-    const result = await runCli([
-      "build",
-      "--blockfrost-api-key",
-      "test-key",
-      "--prism-object-hex",
-      "deadbeef",
-    ]);
+    const result = await runCli(buildArgs());
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain("--mnemonic-stdin is required");
-    expect(result.stdout).toBe("");
+    expectStderrOnly(result);
   });
 
   test("error during transaction building writes to stderr, stdout remains clean", async () => {
     const result = await runCli(
-      [
-        "build",
-        "--blockfrost-api-key",
-        "test-key",
-        "--prism-object-hex",
-        "deadbeef",
-        "--mnemonic-stdin",
-      ],
+      buildArgs(["--mnemonic-stdin"]),
       "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about"
     );
     // The CLI logs "info: building transaction" to stderr before making the network call
