@@ -35,7 +35,6 @@ class CardanoWalletSink(BaseModel):
 
 
 class EmbeddedWalletSink(BaseModel):
-    bin_path: str
     submit_api_url: str
     blockfrost_url: str
     blockfrost_api_key: str

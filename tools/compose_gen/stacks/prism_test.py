@@ -129,7 +129,6 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
     if options.neoprism_dlt_sink == "embedded-wallet":
         dlt_sink: neoprism.CardanoWalletSink | neoprism.EmbeddedWalletSink = (
             neoprism.EmbeddedWalletSink(
-                bin_path="/bin/embedded-wallet",
                 submit_api_url="http://cardano-submit-api:8090",
                 blockfrost_url="http://bf-proxy:3000",
                 blockfrost_api_key="",
