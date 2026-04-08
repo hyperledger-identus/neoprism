@@ -1,6 +1,8 @@
 {
   stdenv,
   bun,
+  typescript,
+  biome,
   version,
   targetBun ? null,
   bunTarget ? null,
@@ -43,7 +45,11 @@ stdenv.mkDerivation {
 
   src = ./../..;
 
-  nativeBuildInputs = [ bun ];
+  nativeBuildInputs = [
+    bun
+    typescript
+    biome
+  ];
 
   # Disable stripping - it breaks bun-compiled executables by removing embedded bytecode
   dontStrip = true;
@@ -55,6 +61,11 @@ stdenv.mkDerivation {
     cd packages/embedded-wallet
     mkdir -p node_modules
     cp -r ${bunDeps}/. node_modules/
+
+    # Verify source code
+    biome format src/
+    tsc --noEmit
+    bun test
 
     # Build the binary
     # For cross-compilation: uses --target and --compile-executable-path with nixpkgs bun

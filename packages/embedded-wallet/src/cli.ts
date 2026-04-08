@@ -22,7 +22,9 @@ async function buildCommand(options: BuildOptions): Promise<void> {
       }
       mnemonic = mnemonicText.split(/\s+/);
       if (![12, 15, 18, 21, 24].includes(mnemonic.length)) {
-        console.error(`error: invalid mnemonic length ${mnemonic.length}, expected 12, 15, 18, 21, or 24 words`);
+        console.error(
+          `error: invalid mnemonic length ${mnemonic.length}, expected 12, 15, 18, 21, or 24 words`,
+        );
         process.exit(1);
       }
     } catch (e) {
@@ -72,29 +74,42 @@ program
 program
   .command("build")
   .description("Build a Cardano transaction from a PrismObject")
-  .option("--blockfrost-url <url>", "Blockfrost API URL (for private instances)")
-  .option("--blockfrost-api-key <key>", "Blockfrost API key (for public Blockfrost)")
+  .option(
+    "--blockfrost-url <url>",
+    "Blockfrost API URL (for private instances)",
+  )
+  .option(
+    "--blockfrost-api-key <key>",
+    "Blockfrost API key (for public Blockfrost)",
+  )
   .option("--mnemonic-stdin", "Read mnemonic from stdin", false)
-  .requiredOption("--prism-object-hex <hex>", "Hex-encoded PrismObject bytes (protobuf serialized)")
+  .requiredOption(
+    "--prism-object-hex <hex>",
+    "Hex-encoded PrismObject bytes (protobuf serialized)",
+  )
   .option(
     "--network <network>",
     `Network: ${VALID_NETWORKS.join(", ")}. Use 'custom' for custom testnets.`,
-    "preview"
+    "preview",
   )
   .action(async (rawOptions) => {
     // Validate mutual exclusion: exactly one of --blockfrost-url or --blockfrost-api-key must be provided
     if (!rawOptions.blockfrostUrl && !rawOptions.blockfrostApiKey) {
-      console.error("error: either --blockfrost-url or --blockfrost-api-key is required");
+      console.error(
+        "error: either --blockfrost-url or --blockfrost-api-key is required",
+      );
       process.exit(1);
     }
     if (rawOptions.blockfrostUrl && rawOptions.blockfrostApiKey) {
-      console.error("error: cannot use both --blockfrost-url and --blockfrost-api-key");
+      console.error(
+        "error: cannot use both --blockfrost-url and --blockfrost-api-key",
+      );
       process.exit(1);
     }
 
     if (!isValidNetwork(rawOptions.network)) {
       console.error(
-        `error: invalid network "${rawOptions.network}", must be one of: ${VALID_NETWORKS.join(", ")}`
+        `error: invalid network "${rawOptions.network}", must be one of: ${VALID_NETWORKS.join(", ")}`,
       );
       process.exit(1);
     }

@@ -19,7 +19,7 @@ const NETWORK_IDS: Record<Network, 0 | 1> = {
   mainnet: 1,
   preprod: 0,
   preview: 0,
-  custom: 0,  // Custom testnets always use testnet addresses (network_id=0)
+  custom: 0, // Custom testnets always use testnet addresses (network_id=0)
 };
 
 /**
@@ -27,7 +27,9 @@ const NETWORK_IDS: Record<Network, 0 | 1> = {
  * The PrismObject bytes are split into 64-byte chunks as per PRISM specification.
  * Returns a Map suitable for passing to MeshSDK's metadataValue function.
  */
-function encodePrismObjectToMetadata(prismObjectHex: string): Map<string, unknown> {
+function encodePrismObjectToMetadata(
+  prismObjectHex: string,
+): Map<string, unknown> {
   const hex = normalizeHex(prismObjectHex);
 
   // Split into 64-byte (128 hex character) chunks and convert to Uint8Array
@@ -45,8 +47,11 @@ function encodePrismObjectToMetadata(prismObjectHex: string): Map<string, unknow
   return metadataMap;
 }
 
-export async function buildTransaction(params: BuildTransactionParams): Promise<BuiltTransaction> {
-  const { mnemonic, network, blockfrostUrl, blockfrostApiKey, prismObjectHex } = params;
+export async function buildTransaction(
+  params: BuildTransactionParams,
+): Promise<BuiltTransaction> {
+  const { mnemonic, network, blockfrostUrl, blockfrostApiKey, prismObjectHex } =
+    params;
 
   const cardanoMetadata = encodePrismObjectToMetadata(prismObjectHex);
 

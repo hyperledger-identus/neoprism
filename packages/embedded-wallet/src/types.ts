@@ -8,7 +8,12 @@ export interface BuildOptions {
   network: Network;
 }
 
-export const VALID_NETWORKS: readonly Network[] = ["mainnet", "preprod", "preview", "custom"] as const;
+export const VALID_NETWORKS: readonly Network[] = [
+  "mainnet",
+  "preprod",
+  "preview",
+  "custom",
+] as const;
 
 export function isValidNetwork(value: string): value is Network {
   return VALID_NETWORKS.includes(value as Network);

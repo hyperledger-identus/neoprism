@@ -71,7 +71,7 @@ coverage-html: coverage
 clean:
     cargo clean
 
-# Format all source files (Nix, TOML, Rust, Python, SQL)
+# Format all source files (Nix, TOML, Rust, Python, SQL, TypeScript)
 [group('neoprism')]
 format: tools::format
     echo "Formatting Nix files..."
@@ -82,6 +82,9 @@ format: tools::format
 
     echo "Formatting Rust files..."
     cargo fmt
+
+    echo "Formatting TypeScript files (embedded-wallet)..."
+    cd packages/embedded-wallet && biome format --write src/
 
     echo "Formatting Hurl files..."
     find . -name '*.hurl' -type f -exec sh -c 'echo "  → {}" && hurlfmt --in-place {}' \;

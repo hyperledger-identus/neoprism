@@ -12,7 +12,9 @@ export function normalizeHex(input: string): string {
   }
 
   if (hex.length % 2 !== 0) {
-    throw new Error(`Invalid hex string: odd length (${hex.length} characters)`);
+    throw new Error(
+      `Invalid hex string: odd length (${hex.length} characters)`,
+    );
   }
 
   return hex;

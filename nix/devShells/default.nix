@@ -43,6 +43,7 @@
           rust
           # js
           bun
+          biome
           tailwindcss_4
           typescript-language-server
           # scala
