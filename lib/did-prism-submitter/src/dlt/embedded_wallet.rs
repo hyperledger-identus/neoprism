@@ -253,3 +253,125 @@ impl EmbeddedWalletSink {
         TxId::from_bytes(&tx_hash_bytes).map_err(|e| e.to_string())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ------------------------------------------------------------------
+    // Error Display variants
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn error_display() {
+        // SubprocessSpawn
+        let msg = Error::SubprocessSpawn { source: "spawn failed".into() }.to_string();
+        assert!(msg.contains("embedded-wallet subprocess"), "{msg}");
+        assert!(msg.contains("spawn failed"), "{msg}");
+
+        // StdinWrite
+        let msg = Error::StdinWrite { source: "write failed".into() }.to_string();
+        assert!(msg.contains("subprocess stdin"), "{msg}");
+        assert!(msg.contains("write failed"), "{msg}");
+
+        // SubprocessIo
+        let msg = Error::SubprocessIo { source: "io failed".into() }.to_string();
+        assert!(msg.contains("wait for embedded-wallet subprocess"), "{msg}");
+        assert!(msg.contains("io failed"), "{msg}");
+
+        // SubprocessFailed
+        let msg = Error::SubprocessFailed { stderr: "exit code 1".into() }.to_string();
+        assert!(msg.contains("subprocess failed"), "{msg}");
+        assert!(msg.contains("exit code 1"), "{msg}");
+
+        // SubprocessTimeout
+        assert_eq!(
+            Error::SubprocessTimeout.to_string(),
+            "embedded-wallet subprocess timed out after 30s",
+        );
+
+        // CborDecode
+        let msg = Error::CborDecode { source: "invalid hex".into() }.to_string();
+        assert!(msg.contains("decode CBOR"), "{msg}");
+        assert!(msg.contains("invalid hex"), "{msg}");
+
+        // SubmitFailed
+        let msg = Error::SubmitFailed { source: "connection refused".into() }.to_string();
+        assert!(msg.contains("submit transaction"), "{msg}");
+        assert!(msg.contains("connection refused"), "{msg}");
+
+        // SubmitApiError
+        let msg = Error::SubmitApiError { status: 503, body: "service unavailable".into() }.to_string();
+        assert!(msg.contains("503"), "{msg}");
+        assert!(msg.contains("non-success status"), "{msg}");
+        assert!(msg.contains("service unavailable"), "{msg}");
+
+        // TxHashParse
+        let msg = Error::TxHashParse { source: "bad hash".into() }.to_string();
+        assert!(msg.contains("transaction hash"), "{msg}");
+        assert!(msg.contains("bad hash"), "{msg}");
+    }
+
+    // ------------------------------------------------------------------
+    // Network::Display
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn network_display() {
+        assert_eq!(Network::Mainnet.to_string(), "mainnet");
+        assert_eq!(Network::Preprod.to_string(), "preprod");
+        assert_eq!(Network::Preview.to_string(), "preview");
+        assert_eq!(Network::Custom.to_string(), "custom");
+    }
+
+    // ------------------------------------------------------------------
+    // EmbeddedWalletSink::new()
+    // ------------------------------------------------------------------
+
+    fn sample_config() -> EmbeddedWalletSinkConfig {
+        EmbeddedWalletSinkConfig {
+            embedded_wallet_bin: PathBuf::from("/usr/local/bin/embedded-wallet"),
+            blockfrost_url: "https://cardano-mainnet.blockfrost.io/api/v0".to_string(),
+            blockfrost_api_key: Some("test-api-key".to_string()),
+            network: Network::Mainnet,
+            submit_api_url: Some("http://localhost:8090".to_string()),
+            mnemonic: Arc::from("test mnemonic twelve words here for unit test"),
+        }
+    }
+
+    #[test]
+    fn embedded_wallet_sink_new_initializes_fields() {
+        let config = sample_config();
+        let sink = EmbeddedWalletSink::new(config);
+        // Verify the semaphore starts with 1 permit
+        let permit = sink.semaphore.try_acquire();
+        assert!(
+            permit.is_ok(),
+            "expected semaphore to have 1 permit available"
+        );
+        drop(permit);
+        // Verify config is stored (check a representative field)
+        assert_eq!(
+            sink.config.embedded_wallet_bin,
+            PathBuf::from("/usr/local/bin/embedded-wallet")
+        );
+        assert!(matches!(sink.config.network, Network::Mainnet));
+    }
+
+    // ------------------------------------------------------------------
+    // is_retryable_error()
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn is_retryable_error() {
+        // Retryable patterns
+        assert!(EmbeddedWalletSink::is_retryable_error("BadInputsUTxO at index 0"));
+        assert!(EmbeddedWalletSink::is_retryable_error("ValueNotConservedUTxO mismatch"));
+        assert!(EmbeddedWalletSink::is_retryable_error("BadInputsUTxO and ValueNotConservedUTxO"));
+
+        // Non-retryable
+        assert!(!EmbeddedWalletSink::is_retryable_error("some unrelated error message"));
+        assert!(!EmbeddedWalletSink::is_retryable_error(""));
+    }
+}
+
