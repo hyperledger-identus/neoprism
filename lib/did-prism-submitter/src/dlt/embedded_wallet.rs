@@ -121,7 +121,7 @@ impl DltSink for EmbeddedWalletSink {
             match result {
                 Ok(tx_id) => return Ok(tx_id),
                 Err(e) => {
-                    if !Self::is_retryable_error(&e) || attempt >= MAX_RETRIES - 1 {
+                    if !Self::is_retryable_error(&e) || attempt >= MAX_RETRIES {
                         return Err(e);
                     }
 
