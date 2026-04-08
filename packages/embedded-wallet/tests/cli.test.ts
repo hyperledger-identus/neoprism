@@ -70,7 +70,7 @@ describe("CLI argument parsing", () => {
   });
 
   test("missing required options exits with error", async () => {
-    const result = await expectBuildError([], "required");
+    await expectBuildError([], "required");
   });
 
   test("missing --prism-object-hex exits with error", async () => {
