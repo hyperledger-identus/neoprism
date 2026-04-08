@@ -355,8 +355,7 @@ async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, 
             let address = dlt_args
                 .cardano_relay
                 .cardano_relay_addr
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-relay-addr is required when --dlt-source-type=oura");
 
             tracing::info!(
@@ -379,8 +378,7 @@ async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, 
             let dbsync_url = dlt_args
                 .dbsync
                 .cardano_dbsync_url
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-dbsync-url is required when --dlt-source-type=dbsync");
 
             tracing::info!("Starting DLT sync worker on {} from cardano dbsync", network);
@@ -399,8 +397,7 @@ async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, 
             let api_key = dlt_args
                 .blockfrost
                 .blockfrost_api_key
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--blockfrost-api-key is required when --dlt-source-type=blockfrost");
 
             tracing::info!("Starting DLT sync worker on {} from Blockfrost", network);
@@ -429,29 +426,25 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
             let cardano_wallet_url = dlt_args
                 .cardano_wallet
                 .cardano_wallet_url
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-wallet-url is required when --dlt-sink-type=cardano-wallet");
 
             let cardano_wallet_wallet_id = dlt_args
                 .cardano_wallet
                 .cardano_wallet_wallet_id
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-wallet-wallet-id is required when --dlt-sink-type=cardano-wallet");
 
             let cardano_wallet_passphrase = dlt_args
                 .cardano_wallet
                 .cardano_wallet_passphrase
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-wallet-passphrase is required when --dlt-sink-type=cardano-wallet");
 
             let cardano_wallet_payment_addr = dlt_args
                 .cardano_wallet
                 .cardano_wallet_payment_addr
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--cardano-wallet-payment-addr is required when --dlt-sink-type=cardano-wallet");
 
             Arc::new(CardanoWalletSink::new(
@@ -472,11 +465,7 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
                 .clone()
                 .expect("--embedded-wallet-bin is required when --dlt-sink-type=embedded-wallet");
 
-            let submit_api_url = dlt_args
-                .embedded_wallet
-                .embedded_wallet_submit_api_url
-                .as_ref()
-                .cloned();
+            let submit_api_url = dlt_args.embedded_wallet.embedded_wallet_submit_api_url.clone();
 
             let blockfrost_url = dlt_args.embedded_wallet.embedded_wallet_blockfrost_url.clone();
 
@@ -489,8 +478,7 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
             let mnemonic = dlt_args
                 .embedded_wallet
                 .embedded_wallet_mnemonic
-                .as_ref()
-                .cloned()
+                .clone()
                 .expect("--embedded-wallet-mnemonic is required when --dlt-sink-type=embedded-wallet");
 
             let network = match network {
