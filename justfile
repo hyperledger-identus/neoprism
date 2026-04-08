@@ -57,13 +57,13 @@ test:
 [group('neoprism')]
 coverage:
     cargo llvm-cov test --all-features --lcov --output-path lcov.info
-    cargo llvm-cov report --all-features
+    cargo llvm-cov report
     echo "Coverage report: lcov.info (use 'cargo llvm-cov report --html' for HTML)"
 
 # Generate HTML coverage report
 [group('neoprism')]
 coverage-html: coverage
-    cargo llvm-cov report --all-features --html
+    cargo llvm-cov report --html
     echo "HTML report saved to target/llvm-cov/html/index.html"
 
 # Clean all build artifacts
