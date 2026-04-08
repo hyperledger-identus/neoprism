@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { BuildOptions, isValidNetwork, Network, VALID_NETWORKS } from "./types";
 import { buildTransaction } from "./transaction";
+import { normalizeHex } from "./hex";
 
 const VERSION = "0.0.1";
 
@@ -34,11 +35,11 @@ async function buildCommand(options: BuildOptions): Promise<void> {
   }
 
   // Validate hex string
-  const hex = options.prismObjectHex.startsWith("0x")
-    ? options.prismObjectHex.slice(2)
-    : options.prismObjectHex;
-  if (!/^[0-9a-fA-F]*$/.test(hex)) {
-    console.error("error: --prism-object-hex contains invalid hex characters");
+  let prismObjectHex: string;
+  try {
+    prismObjectHex = normalizeHex(options.prismObjectHex);
+  } catch (e) {
+    console.error(`error: --prism-object-hex ${(e as Error).message}`);
     process.exit(1);
   }
 
@@ -50,7 +51,7 @@ async function buildCommand(options: BuildOptions): Promise<void> {
       network: options.network,
       blockfrostUrl: options.blockfrostUrl,
       blockfrostApiKey: options.blockfrostApiKey,
-      prismObjectHex: options.prismObjectHex,
+      prismObjectHex,
     });
 
     console.log(result.cbor);

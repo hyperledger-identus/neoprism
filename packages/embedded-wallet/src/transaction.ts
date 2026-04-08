@@ -1,6 +1,7 @@
 import { MeshTxBuilder, BlockfrostProvider } from "@meshsdk/core";
 import { MeshWallet } from "@meshsdk/wallet";
 import type { Network } from "./types";
+import { normalizeHex, hexToBytes } from "./hex";
 
 export interface BuildTransactionParams {
   mnemonic: string[];
@@ -21,30 +22,13 @@ const NETWORK_IDS: Record<Network, 0 | 1> = {
   custom: 0,  // Custom testnets always use testnet addresses (network_id=0)
 };
 
-/** Converts a hex string to Uint8Array. */
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = Number.parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
-
 /**
  * Encodes a hex string to the Cardano metadata format for label 21325.
  * The PrismObject bytes are split into 64-byte chunks as per PRISM specification.
  * Returns a Map suitable for passing to MeshSDK's metadataValue function.
  */
 function encodePrismObjectToMetadata(prismObjectHex: string): Map<string, unknown> {
-  const hex = prismObjectHex.startsWith("0x") ? prismObjectHex.slice(2) : prismObjectHex;
-
-  if (!/^[0-9a-fA-F]*$/.test(hex)) {
-    throw new Error("Invalid hex string: contains non-hex characters");
-  }
-
-  if (hex.length % 2 !== 0) {
-    throw new Error(`Invalid hex string: odd length (${hex.length} characters)`);
-  }
+  const hex = normalizeHex(prismObjectHex);
 
   // Split into 64-byte (128 hex character) chunks and convert to Uint8Array
   const chunks: Uint8Array[] = [];
