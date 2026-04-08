@@ -265,22 +265,34 @@ mod tests {
     #[test]
     fn error_display() {
         // SubprocessSpawn
-        let msg = Error::SubprocessSpawn { source: "spawn failed".into() }.to_string();
+        let msg = Error::SubprocessSpawn {
+            source: "spawn failed".into(),
+        }
+        .to_string();
         assert!(msg.contains("embedded-wallet subprocess"), "{msg}");
         assert!(msg.contains("spawn failed"), "{msg}");
 
         // StdinWrite
-        let msg = Error::StdinWrite { source: "write failed".into() }.to_string();
+        let msg = Error::StdinWrite {
+            source: "write failed".into(),
+        }
+        .to_string();
         assert!(msg.contains("subprocess stdin"), "{msg}");
         assert!(msg.contains("write failed"), "{msg}");
 
         // SubprocessIo
-        let msg = Error::SubprocessIo { source: "io failed".into() }.to_string();
+        let msg = Error::SubprocessIo {
+            source: "io failed".into(),
+        }
+        .to_string();
         assert!(msg.contains("wait for embedded-wallet subprocess"), "{msg}");
         assert!(msg.contains("io failed"), "{msg}");
 
         // SubprocessFailed
-        let msg = Error::SubprocessFailed { stderr: "exit code 1".into() }.to_string();
+        let msg = Error::SubprocessFailed {
+            stderr: "exit code 1".into(),
+        }
+        .to_string();
         assert!(msg.contains("subprocess failed"), "{msg}");
         assert!(msg.contains("exit code 1"), "{msg}");
 
@@ -291,23 +303,36 @@ mod tests {
         );
 
         // CborDecode
-        let msg = Error::CborDecode { source: "invalid hex".into() }.to_string();
+        let msg = Error::CborDecode {
+            source: "invalid hex".into(),
+        }
+        .to_string();
         assert!(msg.contains("decode CBOR"), "{msg}");
         assert!(msg.contains("invalid hex"), "{msg}");
 
         // SubmitFailed
-        let msg = Error::SubmitFailed { source: "connection refused".into() }.to_string();
+        let msg = Error::SubmitFailed {
+            source: "connection refused".into(),
+        }
+        .to_string();
         assert!(msg.contains("submit transaction"), "{msg}");
         assert!(msg.contains("connection refused"), "{msg}");
 
         // SubmitApiError
-        let msg = Error::SubmitApiError { status: 503, body: "service unavailable".into() }.to_string();
+        let msg = Error::SubmitApiError {
+            status: 503,
+            body: "service unavailable".into(),
+        }
+        .to_string();
         assert!(msg.contains("503"), "{msg}");
         assert!(msg.contains("non-success status"), "{msg}");
         assert!(msg.contains("service unavailable"), "{msg}");
 
         // TxHashParse
-        let msg = Error::TxHashParse { source: "bad hash".into() }.to_string();
+        let msg = Error::TxHashParse {
+            source: "bad hash".into(),
+        }
+        .to_string();
         assert!(msg.contains("transaction hash"), "{msg}");
         assert!(msg.contains("bad hash"), "{msg}");
     }
@@ -345,10 +370,7 @@ mod tests {
         let sink = EmbeddedWalletSink::new(config);
         // Verify the semaphore starts with 1 permit
         let permit = sink.semaphore.try_acquire();
-        assert!(
-            permit.is_ok(),
-            "expected semaphore to have 1 permit available"
-        );
+        assert!(permit.is_ok(), "expected semaphore to have 1 permit available");
         drop(permit);
         // Verify config is stored (check a representative field)
         assert_eq!(
@@ -367,11 +389,12 @@ mod tests {
         // Retryable patterns
         assert!(EmbeddedWalletSink::is_retryable_error("BadInputsUTxO at index 0"));
         assert!(EmbeddedWalletSink::is_retryable_error("ValueNotConservedUTxO mismatch"));
-        assert!(EmbeddedWalletSink::is_retryable_error("BadInputsUTxO and ValueNotConservedUTxO"));
+        assert!(EmbeddedWalletSink::is_retryable_error(
+            "BadInputsUTxO and ValueNotConservedUTxO"
+        ));
 
         // Non-retryable
         assert!(!EmbeddedWalletSink::is_retryable_error("some unrelated error message"));
         assert!(!EmbeddedWalletSink::is_retryable_error(""));
     }
 }
-
