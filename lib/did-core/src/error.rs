@@ -12,8 +12,8 @@ pub struct InvalidUri {
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
 pub enum Error {
-    #[display("{_0}")]
-    InvalidDid(InvalidDid),
-    #[display("{_0}")]
-    InvalidUri(InvalidUri),
+    #[display("{error}")]
+    InvalidDid { error: InvalidDid },
+    #[display("{error}")]
+    InvalidUri { error: InvalidUri },
 }

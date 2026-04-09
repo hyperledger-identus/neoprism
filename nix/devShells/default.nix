@@ -42,10 +42,10 @@
           cargo-udeps
           rust
           # js
-          nodejs_20
+          bun
+          biome
           tailwindcss_4
           typescript-language-server
-          esbuild
           # scala
           jdk
           metals

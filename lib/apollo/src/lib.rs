@@ -1,4 +1,4 @@
-#![feature(split_array)]
+#![cfg_attr(feature = "secp256k1", feature(split_array))]
 
 pub mod crypto;
 

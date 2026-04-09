@@ -121,6 +121,14 @@ def build_test_configs() -> dict[str, ComposeConfig]:
                 neoprism_dlt_source="blockfrost",
             )
         ),
+        "prism-test/compose-ci-embedded-wallet": stacks.prism_test.mk_stack(
+            stacks.prism_test.Options(
+                neoprism_image_override="identus-neoprism:latest",
+                enable_blockfrost=True,
+                neoprism_dlt_source="blockfrost",
+                neoprism_dlt_sink="embedded-wallet",
+            )
+        ),
     }
 
 

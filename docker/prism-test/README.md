@@ -96,6 +96,17 @@ Lightweight setup with only NeoPRISM standalone service running in dev mode. Use
 |---------|------|-------------|
 | **neoprism-standalone** | 18080 | NeoPRISM HTTP API (in-memory SQLite, dev mode) |
 
+### compose-ci-embedded-wallet.yml - CI Testing Environment (Embedded Wallet)
+
+CI testing stack that uses the embedded wallet submitter instead of cardano-wallet service. Uses locally built `identus-neoprism:latest` image with PostgreSQL backend and Blockfrost DLT source. Tests the embedded wallet transaction submission path without a running wallet service. The embedded-wallet binary must be present in the Docker image at `/bin/embedded-wallet`.
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **neoprism-standalone** | 18080 | NeoPRISM HTTP API (PostgreSQL backend, embedded-wallet submitter) |
+| **bf-proxy** | 18082 | Blockfrost API proxy (DLT source) |
+| **cardano-submit-api** | 8090 | Cardano transaction submission API |
+| **db-neoprism** | - | PostgreSQL database for NeoPRISM |
+
 ## Running Tests
 
 Run normal conformance tests:

@@ -72,6 +72,7 @@ rustPlatform.buildRustPackage {
 
     echo "checking feature gate for identus-did-prism-submitter"
     cargo clippy -p identus-did-prism-submitter --all-targets --features cardano-wallet -- -D warnings
+    cargo clippy -p identus-did-prism-submitter --all-targets --features embedded-wallet -- -D warnings
 
     echo "checking feature gate for node-storage"
     cargo clippy -p node-storage --all-targets --features sqlite-storage -- -D warnings
