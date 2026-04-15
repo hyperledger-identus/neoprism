@@ -47,7 +47,8 @@ Transactions are submitted via a **Cardano Submit API** endpoint (`--embedded-wa
 | Flag | Environment Variable | Description |
 |------|---------------------|-------------|
 | `--embedded-wallet-bin` | `NPRISM_EMBEDDED_WALLET_BIN` | Path to the embedded wallet binary |
-| `--embedded-wallet-mnemonic` | `NPRISM_EMBEDDED_WALLET_MNEMONIC` | Mnemonic phrase for the wallet |
+| `--embedded-wallet-mnemonic` | `NPRISM_EMBEDDED_WALLET_MNEMONIC` | Mnemonic phrase for the wallet (mutually exclusive with `--embedded-wallet-mnemonic-file`) |
+| `--embedded-wallet-mnemonic-file` | `NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE` | Path to a file containing the mnemonic phrase (mutually exclusive with `--embedded-wallet-mnemonic`) |
 | `--embedded-wallet-submit-api-url` | `NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL` | Cardano Submit API URL (omit to submit via Blockfrost) |
 | `--embedded-wallet-blockfrost-url` | `NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL` | Blockfrost API URL for private instances (default: `https://cardano-mainnet.blockfrost.io/api/v0`) |
 | `--embedded-wallet-blockfrost-api-key` | `NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY` | Blockfrost API key for public instances (takes precedence over `--embedded-wallet-blockfrost-url` when set) |
@@ -55,6 +56,8 @@ Transactions are submitted via a **Cardano Submit API** endpoint (`--embedded-wa
 > **Note:** When `--embedded-wallet-blockfrost-api-key` is set, it takes precedence over `--embedded-wallet-blockfrost-url` for Blockfrost requests. The submitter uses the default public Blockfrost URL for both UTXO resolution and submission in this case. To submit via a Cardano Submit API endpoint instead of Blockfrost, set `--embedded-wallet-submit-api-url`.
 
 > **Note:** For network parameters (mainnet, preprod, etc.), use the shared `--cardano-network` flag documented in the [Indexer configuration](./indexer.md).
+
+> **Security recommendation:** Prefer `--embedded-wallet-mnemonic-file` over `--embedded-wallet-mnemonic` in production deployments. Environment variables can leak via `/proc/<pid>/environ`, process listings, crash dumps, or log output. Loading the mnemonic from a file allows you to restrict file permissions (e.g., `chmod 600`) and use container secret mounts (Docker/Kubernetes secrets). Supplying both flags simultaneously is treated as a configuration error and will prevent the node from starting.
 
 ---
 

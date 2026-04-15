@@ -235,8 +235,15 @@ pub struct EmbeddedWalletArgs {
     #[arg(long, env = "NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY")]
     pub embedded_wallet_blockfrost_api_key: Option<String>,
     /// Mnemonic phrase for the embedded wallet. Required when --dlt-sink-type=embedded-wallet.
+    /// Mutually exclusive with --embedded-wallet-mnemonic-file.
     #[arg(long, env = "NPRISM_EMBEDDED_WALLET_MNEMONIC")]
     pub embedded_wallet_mnemonic: Option<String>,
+    /// Path to a file containing the mnemonic phrase for the embedded wallet.
+    /// A safer alternative to --embedded-wallet-mnemonic for production deployments.
+    /// The file contents are trimmed of leading/trailing whitespace.
+    /// Mutually exclusive with --embedded-wallet-mnemonic.
+    #[arg(long, env = "NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE")]
+    pub embedded_wallet_mnemonic_file: Option<PathBuf>,
 }
 
 #[derive(Args)]

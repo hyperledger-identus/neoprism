@@ -189,9 +189,7 @@ services:
       NPRISM_DLT_SOURCE_TYPE: blockfrost
       NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY: ''
       NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL: http://bf-proxy:3000
-      NPRISM_EMBEDDED_WALLET_MNEMONIC: mimic candy diamond virus hospital dragon culture
-        price emotion tell update give faint resist faculty soup demand window dignity
-        capital bullet purity practice fossil
+      NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE: /run/secrets/mnemonic
       NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL: http://cardano-submit-api:8090
       NPRISM_EXTERNAL_URL: http://localhost:18080
       NPRISM_INDEX_INTERVAL: 1s
@@ -209,5 +207,7 @@ services:
     ports:
     - 18080:8080
     restart: always
+    volumes:
+    - ./mnemonic.txt:/run/secrets/mnemonic:ro
 volumes:
   node-testnet: {}

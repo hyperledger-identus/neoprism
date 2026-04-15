@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from ..metadata import VERSION
 from ..models import Healthcheck, Service, ServiceDependency
@@ -38,7 +38,21 @@ class EmbeddedWalletSink(BaseModel):
     submit_api_url: str
     blockfrost_url: str
     blockfrost_api_key: str
-    mnemonic: str
+    mnemonic: str | None = None
+    mnemonic_file: str | None = None
+
+    @model_validator(mode="after")
+    def validate_mnemonic_config(self) -> "EmbeddedWalletSink":
+        if self.mnemonic is not None and self.mnemonic_file is not None:
+            raise ValueError(
+                "EmbeddedWalletSink: 'mnemonic' and 'mnemonic_file'"
+                " are mutually exclusive"
+            )
+        if self.mnemonic is None and self.mnemonic_file is None:
+            raise ValueError(
+                "EmbeddedWalletSink: either 'mnemonic' or 'mnemonic_file' is required"
+            )
+        return self
 
 
 DltSink = CardanoWalletSink | EmbeddedWalletSink
@@ -90,22 +104,47 @@ class Options(BaseModel):
 def mk_service(options: Options) -> Service:
     image = options.image_override or f"hyperledgeridentus/identus-neoprism:{VERSION}"
 
-    # Build environment variables
-    environment = {
-        "RUST_LOG": "info,oura=warn,tracing::span=warn",
-        "NPRISM_CARDANO_NETWORK": options.network,
-    }
+    return Service(
+        image=image,
+        ports=[f"{options.host_port}:8080"] if options.host_port else None,
+        environment=_add_environment(options),
+        command=[options.command.command],
+        depends_on=_add_depends_on(options),
+        healthcheck=Healthcheck(
+            test=["CMD", "curl", "-f", "http://localhost:8080/api/_system/health"]
+        ),
+        volumes=_add_volumes(options),
+    )
+
+
+def _add_depends_on(options: Options) -> dict[str, ServiceDependency] | None:
+    """Build service dependencies based on storage backend and DLT sink."""
     depends_on: dict[str, ServiceDependency] = {}
 
-    if isinstance(options.storage_backend, SqliteStorageBackend):
-        environment["NPRISM_DB_URL"] = options.storage_backend.db_url
-    else:
-        environment["NPRISM_DB_URL"] = options.storage_backend.db_url
+    if isinstance(options.storage_backend, PostgresStorageBackend):
         depends_on[options.storage_backend.host] = ServiceDependency(
             condition="service_healthy"
         )
 
-    # Add optional configuration
+    if isinstance(options.command, StandaloneCommand) and isinstance(
+        options.command.dlt_sink, CardanoWalletSink
+    ):
+        depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
+            condition="service_healthy"
+        )
+
+    return depends_on or None
+
+
+def _add_environment(options: Options) -> dict[str, str]:
+    """Build environment variables for the neoprism service."""
+    environment = {
+        "RUST_LOG": "info,oura=warn,tracing::span=warn",
+        "NPRISM_CARDANO_NETWORK": options.network,
+        "NPRISM_DB_URL": options.storage_backend.db_url,
+    }
+
+    # Optional configuration
     if options.confirmation_blocks is not None:
         environment["NPRISM_CONFIRMATION_BLOCKS"] = str(options.confirmation_blocks)
 
@@ -122,29 +161,24 @@ def mk_service(options: Options) -> Service:
     # DLT sink - only standalone needs this
     if isinstance(options.command, StandaloneCommand):
         _add_dlt_sink_env(environment, options.command.dlt_sink)
-        if isinstance(options.command.dlt_sink, CardanoWalletSink):
-            # CardanoWalletSink requires wallet service to be healthy
-            depends_on[options.command.dlt_sink.wallet_host] = ServiceDependency(
-                condition="service_healthy"
-            )
 
-    # Determine command based on mode
-    command = [options.command.command]
+    return environment
 
-    # Build ports
-    ports = [f"{options.host_port}:8080"] if options.host_port else None
 
-    return Service(
-        image=image,
-        ports=ports,
-        environment=environment,
-        command=command,
-        depends_on=depends_on or None,
-        healthcheck=Healthcheck(
-            test=["CMD", "curl", "-f", "http://localhost:8080/api/_system/health"]
-        ),
-        volumes=options.volumes,
-    )
+def _add_volumes(options: Options) -> list[str] | None:
+    """Build volume mounts, including mnemonic file for embedded wallet."""
+    volumes = list(options.volumes or [])
+
+    if (
+        isinstance(options.command, StandaloneCommand)
+        and isinstance(options.command.dlt_sink, EmbeddedWalletSink)
+        and options.command.dlt_sink.mnemonic_file
+    ):
+        volumes.append(
+            f"{options.command.dlt_sink.mnemonic_file}:/run/secrets/mnemonic:ro"
+        )
+
+    return volumes or None
 
 
 def _add_dlt_source_env(
@@ -186,4 +220,7 @@ def _add_dlt_sink_env(env: dict[str, str], sink: DltSink) -> None:
         env["NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL"] = sink.submit_api_url
         env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL"] = sink.blockfrost_url
         env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY"] = sink.blockfrost_api_key
-        env["NPRISM_EMBEDDED_WALLET_MNEMONIC"] = sink.mnemonic
+        if sink.mnemonic is not None:
+            env["NPRISM_EMBEDDED_WALLET_MNEMONIC"] = sink.mnemonic
+        if sink.mnemonic_file is not None:
+            env["NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE"] = "/run/secrets/mnemonic"
