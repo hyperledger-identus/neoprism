@@ -100,6 +100,10 @@ Lightweight setup with only NeoPRISM standalone service running in dev mode. Use
 
 CI testing stack that uses the embedded wallet submitter instead of cardano-wallet service. Uses locally built `identus-neoprism:latest` image with PostgreSQL backend and Blockfrost DLT source. Tests the embedded wallet transaction submission path without a running wallet service. The embedded-wallet binary must be present in the Docker image at `/bin/embedded-wallet`.
 
+The mnemonic is loaded from the `mnemonic.txt` file via a read-only bind mount, rather than being passed as an environment variable. This mimics the recommended production pattern of using `--embedded-wallet-mnemonic-file` with a Docker/Kubernetes secret mount.
+
+> ⚠️ **WARNING:** The `mnemonic.txt` file contains a test-only mnemonic. Never use this mnemonic on mainnet or any network with real funds.
+
 | Service | Port | Description |
 |---------|------|-------------|
 | **neoprism-standalone** | 18080 | NeoPRISM HTTP API (PostgreSQL backend, embedded-wallet submitter) |

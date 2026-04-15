@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from ..metadata import VERSION
 from ..models import Healthcheck, Service, ServiceDependency
@@ -38,7 +38,21 @@ class EmbeddedWalletSink(BaseModel):
     submit_api_url: str
     blockfrost_url: str
     blockfrost_api_key: str
-    mnemonic: str
+    mnemonic: str | None = None
+    mnemonic_file: str | None = None
+
+    @model_validator(mode="after")
+    def validate_mnemonic_config(self) -> "EmbeddedWalletSink":
+        if self.mnemonic is not None and self.mnemonic_file is not None:
+            raise ValueError(
+                "EmbeddedWalletSink: 'mnemonic' and 'mnemonic_file'"
+                " are mutually exclusive"
+            )
+        if self.mnemonic is None and self.mnemonic_file is None:
+            raise ValueError(
+                "EmbeddedWalletSink: either 'mnemonic' or 'mnemonic_file' is required"
+            )
+        return self
 
 
 DltSink = CardanoWalletSink | EmbeddedWalletSink
@@ -134,6 +148,19 @@ def mk_service(options: Options) -> Service:
     # Build ports
     ports = [f"{options.host_port}:8080"] if options.host_port else None
 
+    # Build volumes
+    volumes = list(options.volumes or [])
+    if (
+        isinstance(options.command, StandaloneCommand)
+        and isinstance(options.command.dlt_sink, EmbeddedWalletSink)
+        and options.command.dlt_sink.mnemonic_file
+    ):
+        # Mount mnemonic file as read-only volume into the container
+        mnemonic_host_path = options.command.dlt_sink.mnemonic_file
+        volumes.append(f"{mnemonic_host_path}:/run/secrets/mnemonic:ro")
+        # Override the container path in environment
+        environment["NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE"] = "/run/secrets/mnemonic"
+
     return Service(
         image=image,
         ports=ports,
@@ -143,7 +170,7 @@ def mk_service(options: Options) -> Service:
         healthcheck=Healthcheck(
             test=["CMD", "curl", "-f", "http://localhost:8080/api/_system/health"]
         ),
-        volumes=options.volumes,
+        volumes=volumes or None,
     )
 
 
@@ -186,4 +213,7 @@ def _add_dlt_sink_env(env: dict[str, str], sink: DltSink) -> None:
         env["NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL"] = sink.submit_api_url
         env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL"] = sink.blockfrost_url
         env["NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY"] = sink.blockfrost_api_key
-        env["NPRISM_EMBEDDED_WALLET_MNEMONIC"] = sink.mnemonic
+        if sink.mnemonic is not None:
+            env["NPRISM_EMBEDDED_WALLET_MNEMONIC"] = sink.mnemonic
+        # When mnemonic_file is set, the container path is set by mk_service
+        # after the volume mount is configured.

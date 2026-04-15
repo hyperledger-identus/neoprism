@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::Duration;
 
+use anyhow::Context;
 use app::service::PrismDidService;
 use axum::Router;
 use clap::Parser;
@@ -154,7 +155,7 @@ async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
 
 async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
     let network: NetworkIdentifier = args.network.cardano_network.clone().into();
-    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network);
+    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network)?;
     let app_state = AppState {
         run_mode: RunMode::Submitter,
     };
@@ -166,7 +167,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.network.cardano_network.clone().into();
     let db = init_database(&args.db, Some(&network)).await;
     let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
-    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network);
+    let dlt_sink = init_dlt_sink(&args.dlt_sink, &network)?;
     let app_state = AppState {
         run_mode: RunMode::Standalone,
     };
@@ -420,7 +421,35 @@ async fn init_dlt_source(dlt_args: &DltSourceArgs, network: &NetworkIdentifier, 
     }
 }
 
-fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn DltSink + Send + Sync> {
+/// Resolves the mnemonic from either a direct value or a file path.
+///
+/// Returns an error if both sources are provided (mutually exclusive)
+/// or if neither is provided.
+fn resolve_mnemonic(mnemonic_value: Option<&str>, mnemonic_file: Option<&Path>) -> anyhow::Result<String> {
+    match (mnemonic_value, mnemonic_file) {
+        (Some(_), Some(_)) => {
+            anyhow::bail!(
+                "--embedded-wallet-mnemonic and --embedded-wallet-mnemonic-file are mutually exclusive; provide only one"
+            );
+        }
+        (Some(value), None) => Ok(value.to_string()),
+        (None, Some(path)) => {
+            let content =
+                fs::read_to_string(path).with_context(|| format!("failed to read mnemonic file {}", path.display()))?;
+            Ok(content.trim().to_string())
+        }
+        (None, None) => {
+            anyhow::bail!(
+                "either --embedded-wallet-mnemonic or --embedded-wallet-mnemonic-file is required when --dlt-sink-type=embedded-wallet"
+            );
+        }
+    }
+}
+
+fn init_dlt_sink(
+    dlt_args: &DltSinkArgs,
+    network: &NetworkIdentifier,
+) -> anyhow::Result<Arc<dyn DltSink + Send + Sync>> {
     match dlt_args.dlt_sink_type {
         DltSinkType::CardanoWallet => {
             let cardano_wallet_url = dlt_args
@@ -447,12 +476,12 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
                 .clone()
                 .expect("--cardano-wallet-payment-addr is required when --dlt-sink-type=cardano-wallet");
 
-            Arc::new(CardanoWalletSink::new(
+            Ok(Arc::new(CardanoWalletSink::new(
                 cardano_wallet_url,
                 cardano_wallet_wallet_id,
                 cardano_wallet_passphrase,
                 cardano_wallet_payment_addr,
-            ))
+            )))
         }
         DltSinkType::EmbeddedWallet => {
             use identus_did_prism_submitter::dlt::embedded_wallet::{
@@ -475,11 +504,10 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
                 .clone()
                 .filter(|s| !s.is_empty());
 
-            let mnemonic = dlt_args
-                .embedded_wallet
-                .embedded_wallet_mnemonic
-                .clone()
-                .expect("--embedded-wallet-mnemonic is required when --dlt-sink-type=embedded-wallet");
+            let mnemonic = resolve_mnemonic(
+                dlt_args.embedded_wallet.embedded_wallet_mnemonic.as_deref(),
+                dlt_args.embedded_wallet.embedded_wallet_mnemonic_file.as_deref(),
+            )?;
 
             let network = match network {
                 NetworkIdentifier::Mainnet => Network::Mainnet,
@@ -497,7 +525,7 @@ fn init_dlt_sink(dlt_args: &DltSinkArgs, network: &NetworkIdentifier) -> Arc<dyn
                 mnemonic: Arc::from(mnemonic),
             };
 
-            Arc::new(EmbeddedWalletSink::new(config))
+            Ok(Arc::new(EmbeddedWalletSink::new(config)))
         }
     }
 }
@@ -732,5 +760,60 @@ mod tests {
     fn prepare_sqlite_destination_is_noop_for_non_sqlite_url() {
         // Should succeed without touching the filesystem.
         prepare_sqlite_destination("postgres://localhost/test").unwrap();
+    }
+
+    // --- resolve_mnemonic ---
+
+    #[test]
+    fn resolve_mnemonic_from_direct_value() {
+        let result = resolve_mnemonic(Some("word1 word2 word3"), None);
+        assert_eq!(result.unwrap(), "word1 word2 word3");
+    }
+
+    #[test]
+    fn resolve_mnemonic_from_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("mnemonic.txt");
+        fs::write(&file_path, "word1 word2 word3\n").unwrap();
+        let result = resolve_mnemonic(None, Some(&file_path));
+        assert_eq!(result.unwrap(), "word1 word2 word3");
+    }
+
+    #[test]
+    fn resolve_mnemonic_from_file_trims_whitespace() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("mnemonic.txt");
+        fs::write(&file_path, "  word1 word2 word3  \n\n").unwrap();
+        let result = resolve_mnemonic(None, Some(&file_path));
+        assert_eq!(result.unwrap(), "word1 word2 word3");
+    }
+
+    #[test]
+    fn resolve_mnemonic_conflict_returns_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let file_path = dir.path().join("mnemonic.txt");
+        fs::write(&file_path, "word1 word2\n").unwrap();
+        let result = resolve_mnemonic(Some("direct mnemonic"), Some(&file_path));
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("mutually exclusive"),
+            "expected mutual-exclusion error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn resolve_mnemonic_neither_provided_returns_error() {
+        let result = resolve_mnemonic(None::<&str>, None::<&Path>);
+        let err = result.unwrap_err();
+        assert!(
+            err.to_string().contains("required"),
+            "expected required-error, got: {err}"
+        );
+    }
+
+    #[test]
+    fn resolve_mnemonic_missing_file_returns_error() {
+        let result = resolve_mnemonic(None, Some(Path::new("/nonexistent/mnemonic.txt")));
+        assert!(result.is_err(), "expected error for missing file");
     }
 }

@@ -52,7 +52,6 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
     wallet_id = "9263a1248b046fe9e1aabc4134b03dc5c3a7ee3d"
     wallet_passphrase = "super_secret"
     wallet_payment_address = "addr_test1qp83v2wq3z9mkcjj5ejlupgwt6tcly5mtmz36rpm8w4atvqd5jzpz23y8l4dwfd9l46fl2p86nmkkx5keewdevqxhlyslv99j3"  # noqa: E501
-    wallet_mnemonic = "mimic candy diamond virus hospital dragon culture price emotion tell update give faint resist faculty soup demand window dignity capital bullet purity practice fossil"  # WARNING: Test-only mnemonic. Never use on mainnet.  # noqa: E501
 
     # Blockfrost services
     bf_services = {
@@ -132,7 +131,7 @@ def mk_stack(options: Options | None = None) -> ComposeConfig:
                 submit_api_url="http://cardano-submit-api:8090",
                 blockfrost_url="http://bf-proxy:3000",
                 blockfrost_api_key="",
-                mnemonic=wallet_mnemonic,
+                mnemonic_file="./mnemonic.txt",
             )
         )
     else:
