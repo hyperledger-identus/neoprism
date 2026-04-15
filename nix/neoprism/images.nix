@@ -15,11 +15,13 @@
         x86_64-linux = {
           callPackage = pkgs.pkgsCross.gnu64.callPackage;
           neoprism-bin = self'.packages.neoprism-bin-x86_64-linux;
+          embedded-wallet = self'.packages.embedded-wallet-x86_64-linux;
         };
         aarch64-darwin = {
           # macOS builds Linux ARM64 containers
           callPackage = pkgs.pkgsCross.aarch64-multiplatform.callPackage;
           neoprism-bin = self'.packages.neoprism-bin-aarch64-linux;
+          embedded-wallet = self'.packages.embedded-wallet-aarch64-linux;
         };
       };
     in
@@ -29,15 +31,17 @@
         neoprism-docker = dockerBuildConfig.${system}.callPackage ./packages/neoprism-docker.nix {
           inherit version;
           neoprism-ui-assets = self'.packages.neoprism-ui-assets;
-          inherit (dockerBuildConfig.${system}) neoprism-bin;
+          inherit (dockerBuildConfig.${system}) neoprism-bin embedded-wallet;
         };
         neoprism-docker-latest = neoprism-docker.override { version = "latest"; };
 
-        # cross built images
+        # cross built images for multi-arch Docker support
+        # embedded-wallet uses nixpkgs bun runtimes for cross-compilation
         neoprism-docker-linux-amd64 = pkgs.pkgsCross.gnu64.callPackage ./packages/neoprism-docker.nix {
           inherit version;
           neoprism-ui-assets = self'.packages.neoprism-ui-assets;
           neoprism-bin = self'.packages.neoprism-bin-x86_64-linux;
+          embedded-wallet = self'.packages.embedded-wallet-x86_64-linux;
           tagSuffix = "-amd64";
         };
         neoprism-docker-linux-arm64 =
@@ -46,6 +50,7 @@
               inherit version;
               neoprism-ui-assets = self'.packages.neoprism-ui-assets;
               neoprism-bin = self'.packages.neoprism-bin-aarch64-linux;
+              embedded-wallet = self'.packages.embedded-wallet-aarch64-linux;
               tagSuffix = "-arm64";
             };
       };

@@ -383,12 +383,12 @@ The following justfile commands are available to automate the local development 
 | `just postgres-restore`                       | Restore the local PostgreSQL database from the `postgres.dump` file  |
 | `just sqlite-init`                            | Create or migrate the embedded SQLite database (default path)        |
 | `just sqlite-clean`                           | Delete the embedded SQLite database file                             |
-| `just run indexer`                            | Run the indexer node, connecting to the local database               |
+| `just run indexer`                            | Run indexer with in-memory database                                  |
 | `just run indexer --cardano-addr <ADDR>`      | Run the indexer node, connecting to the Cardano relay at `<ADDR>`    |
 | `just run indexer --dbsync-url <URL>`         | Run the indexer node, connecting to the DB Sync instance at `<URL>`  |
 | `just run indexer --blockfrost-api-key <KEY>` | Run the indexer node, connecting to Blockfrost API with your API key |
-| `just tools format`                           | Format the Python code in `tools/`                                   |
-| `just tools check`                            | Type-check and validate the Python tooling code                      |
+| `just tools::format`                          | Format the Python code in `tools/`                                   |
+| `just tools::check`                           | Type-check and validate the Python tooling code                      |
 | `just e2e::build`                             | Build the PRISM conformance (end-to-end) test suite                  |
 | `just e2e::run`                               | Run the PRISM conformance (end-to-end) test suite                    |
 

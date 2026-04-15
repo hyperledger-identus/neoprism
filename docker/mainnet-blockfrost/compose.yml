@@ -30,6 +30,7 @@ services:
       NPRISM_BLOCKFROST_POLL_INTERVAL: 10s
       NPRISM_CARDANO_NETWORK: mainnet
       NPRISM_DB_URL: postgres://postgres:postgres@db:5432/postgres
+      NPRISM_DLT_SOURCE_TYPE: blockfrost
       RUST_LOG: info,oura=warn,tracing::span=warn
     healthcheck:
       interval: 2s

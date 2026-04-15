@@ -89,17 +89,17 @@ impl DltSink for CardanoWalletSink {
             .json(&tx_request)
             .send()
             .await
-            .map_err(|e| format!("Unable to submit a transaction: {e}"))?;
+            .map_err(|e| format!("unable to submit transaction: {e}"))?;
 
         if resp.status().is_success() {
             let tx_resp = resp
                 .json::<TxResponse>()
                 .await
-                .map_err(|e| format!("Unable to decode a transaction submissions response: {e}"))?;
+                .map_err(|e| format!("unable to decode transaction submission response: {e}"))?;
             Ok(tx_resp.id)
         } else {
             Err(format!(
-                "Cardano wallet did not return a success status. (status: {}, body: {:?})",
+                "cardano wallet did not return success status (status: {}, body: {:?})",
                 resp.status().as_u16(),
                 resp.text().await
             ))

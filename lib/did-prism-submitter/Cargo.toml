@@ -5,14 +5,17 @@ edition.workspace = true
 
 [dependencies]
 async-trait = { workspace = true }
-derive_more = { workspace = true, features = [ "from", "debug", "display" ] }
+derive_more = { workspace = true, features = [ "from", "debug", "display", "error" ] }
 serde       = { workspace = true, features = [ "derive" ] }
 serde_json  = { workspace = true }
 reqwest     = { workspace = true, optional = true, features = [ "native-tls", "json" ] }
+tokio       = { workspace = true, optional = true, features = [ "process", "time", "io-util", "sync" ] }
+tracing     = { workspace = true }
 
 identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1", "ed25519", "x25519" ] }
 identus-did-prism = { workspace = true }
 
 [features]
-default        = [  ]
-cardano-wallet = [ "dep:reqwest" ]
+default         = [  ]
+cardano-wallet  = [ "dep:reqwest" ]
+embedded-wallet = [ "dep:reqwest", "dep:tokio" ]

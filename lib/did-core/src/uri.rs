@@ -29,7 +29,9 @@ impl FromStr for Uri {
         if is_uri(s) {
             Ok(Uri(s.to_string()))
         } else {
-            Err(Error::InvalidUri(InvalidUri { msg: "not a valid uri" }))
+            Err(Error::InvalidUri {
+                error: InvalidUri { msg: "not a valid uri" },
+            })
         }
     }
 }
@@ -92,7 +94,7 @@ mod tests {
         let s = "not a uri";
         let uri = Uri::from_str(s);
         assert!(uri.is_err());
-        if let Err(crate::Error::InvalidUri(_)) = uri {
+        if let Err(crate::Error::InvalidUri { error: _ }) = uri {
             // expected
         } else {
             panic!("Expected InvalidUri error");

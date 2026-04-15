@@ -1,6 +1,7 @@
 mod e2e 'tools/just-recipes/e2e.just'
 mod tools 'tools/just-recipes/tools.just'
 mod release 'tools/just-recipes/release.just'
+mod embedded-wallet 'tools/just-recipes/embedded-wallet.just'
 
 # PostgreSQL configuration
 
@@ -19,10 +20,10 @@ sqlite_db_url := "sqlite://data/sqlite/neoprism-dev.sqlite"
 default:
     @just --list --list-submodules
 
-# Install npm dependencies
+# Install bun dependencies
 [group('neoprism')]
 init:
-    npm install
+    bun install
 
 # Build the entire project
 [group('neoprism')]
@@ -56,13 +57,13 @@ test:
 [group('neoprism')]
 coverage:
     cargo llvm-cov test --all-features --lcov --output-path lcov.info
-    cargo llvm-cov report --all-features
+    cargo llvm-cov report
     echo "Coverage report: lcov.info (use 'cargo llvm-cov report --html' for HTML)"
 
 # Generate HTML coverage report
 [group('neoprism')]
 coverage-html: coverage
-    cargo llvm-cov report --all-features --html
+    cargo llvm-cov report --html
     echo "HTML report saved to target/llvm-cov/html/index.html"
 
 # Clean all build artifacts
@@ -70,7 +71,7 @@ coverage-html: coverage
 clean:
     cargo clean
 
-# Format all source files (Nix, TOML, Rust, Python, SQL)
+# Format all source files (Nix, TOML, Rust, Python, SQL, TypeScript)
 [group('neoprism')]
 format: tools::format
     echo "Formatting Nix files..."
@@ -81,6 +82,9 @@ format: tools::format
 
     echo "Formatting Rust files..."
     cargo fmt
+
+    echo "Formatting TypeScript files (embedded-wallet)..."
+    cd packages/embedded-wallet && biome format --write src/
 
     echo "Formatting Hurl files..."
     find . -name '*.hurl' -type f -exec sh -c 'echo "  → {}" && hurlfmt --in-place {}' \;

@@ -1887,6 +1887,8 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2428,6 +2430,7 @@ dependencies = [
  "node-storage",
  "serde",
  "sqlx",
+ "tempfile",
  "tokio",
  "tower",
  "tower-http",

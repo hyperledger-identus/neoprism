@@ -19,6 +19,7 @@
       // {
         inherit (self'.packages)
           docs-site
+          embedded-wallet
           neoprism-ui-assets
           neoprism-bin
           neoprism-docker
