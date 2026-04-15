@@ -85,6 +85,9 @@ impl EmbeddedWalletSink {
         Self {
             config,
             client: Client::new(),
+            // Semaphore limits concurrency to 1 because all transactions share a single
+            // UTXO set — concurrent submissions would encounter UTXO contention
+            // (double-spending the same inputs). Serializing submissions avoids this.
             semaphore: Semaphore::new(1),
         }
     }

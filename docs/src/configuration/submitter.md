@@ -66,7 +66,7 @@ The traditional approach that requires a full Cardano wallet service running alo
 
 **Embedded Wallet**
 
-A lightweight alternative that eliminates the need for an external wallet service. It uses a companion binary to construct and sign transactions in-process. By default, transactions are submitted via Blockfrost; a Cardano Submit API endpoint can be configured as an alternative. This is the recommended option for most deployments due to its simpler operational model.
+A lightweight alternative that eliminates the need for an external wallet service. It uses a companion binary to construct and sign transactions as a subprocess. By default, transactions are submitted via Blockfrost; a Cardano Submit API endpoint can be configured as an alternative. This is the recommended option for most deployments due to its simpler operational model.
 
 ---
 
