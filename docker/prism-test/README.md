@@ -129,6 +129,8 @@ The local Cardano testnet is configured with custom parameters for testing.
 
 ### Wallet
 
+> ⚠️ **WARNING:** The mnemonic below is for testing purposes only. Never use this mnemonic on mainnet or any network with real funds. Anyone with access to this mnemonic can control the associated funds.
+
 A pre-configured wallet is available on the **cardano-wallet** service for testing purposes.
 
 | Property | Value |
