@@ -15,7 +15,6 @@
 [![Docker Pulls](https://img.shields.io/docker/pulls/hyperledgeridentus/identus-neoprism)](https://hub.docker.com/r/hyperledgeridentus/identus-neoprism)
 [![Discord](https://img.shields.io/discord/905194001349627914?label=discord)](https://discord.com/channels/905194001349627914/1230596020790886490)
 
-
 # NeoPRISM
 
 **📚 [Documentation](https://hyperledger-identus.github.io/neoprism/)**
@@ -85,11 +84,13 @@ PRISM is designed to be scalable and secure, with support for various verificati
 **Examples:**
 
 Short-form DID:
+
 ```
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b
 ```
 
 Long-form DID:
+
 ```
 did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU
 ```
@@ -107,6 +108,7 @@ docker run --rm -p 8080:8080 -e NPRISM_DB_URL=sqlite::memory: hyperledgeridentus
 > **Note:** Replace `<VERSION>` with a specific release tag (e.g., `0.1.0`).
 
 This command starts a NeoPRISM node in development mode with:
+
 - In-memory SQLite database (data is lost when container stops)
 - Mock Cardano data source (no real blockchain connection)
 - Web UI and API server on port 8080
@@ -150,24 +152,31 @@ It fetches DID operations from the blockchain, synchronizes and indexes them int
 Once operations are indexed, you can browse them using the Explorer page in the Web UI.
 
 **Prerequisites:**
+
 - [Docker](https://docs.docker.com/get-docker/)
 
 **Supported Platforms:**
+
 - The official NeoPRISM Docker image supports both x86_64 and arm64 architectures.
 - Compatible with Linux, macOS, and Windows hosts that can run Docker.
 
 **Steps:**
 
 1. Clone the repository and navigate to the example directory:
+
    ```bash
    cd docker/mainnet-relay
    ```
+
 2. Start the node and sync block metadata:
+
    ```bash
    docker-compose up
    ```
+
 3. Access the Web UI at [http://localhost:8080](http://localhost:8080). The Explorer page allows you to browse indexed DID operations.
 4. Use the resolver endpoint to resolve DIDs:
+
    ```bash
    curl http://localhost:8080/api/dids/<did>
    ```
@@ -177,7 +186,7 @@ Once operations are indexed, you can browse them using the Explorer page in the 
 This project uses Nix to provide a consistent local development environment and to package build artifacts.
 To get started, install Nix by following the instructions [here](https://nixos.org/download/#download-nix).
 
-__Entering the development shell__
+**Entering the development shell**
 
 If you already have `cargo` and other required dependencies (such as `protoc`) installed, you can use your own environment.
 You can review the [nix shell](./nix/devShells/development.nix) file to see the required dependencies and adapt them to your setup.
@@ -190,6 +199,7 @@ nix develop
 
 # You can now run commands like "cargo version"
 ```
+
 Note: You may need to enable experimental flake commands. Please follow the instructions [here](https://nixos.wiki/wiki/Flakes).
 
 You can also use `--unset <ENV>` to disable host environment variables and make the development shell more pure.
@@ -201,37 +211,46 @@ nix develop --unset PATH
 
 This disables all binaries available on the host `PATH`.
 
-
 ### Development quickstart
 
 To set up and run NeoPRISM for development, follow these steps:
 
 1. **Enter the development shell:**
+
    ```bash
    nix develop --unset PATH
    ```
+
 2. **Install web UI dependencies** (only required the first time):
+
    ```bash
    just init
    ```
+
 3. **Start the local PostgreSQL database** (required for NeoPRISM to store data):
+
    ```bash
    just postgres-up
    ```
+
 4. **Run the NeoPRISM node** (this will automatically generate all required assets):
+
    ```bash
    just run
    ```
+
 5. **Access the Web UI and API** at [http://localhost:8080](http://localhost:8080).
 
 **Cleaning up services**
 
 - To stop and remove the local database:
+
   ```bash
   just postgres-down
   ```
 
 **Notes**
+
 - Default port used is `8080`.
 - No need to run `just build-assets` manually; `just run` handles asset generation automatically.
 - You can run `just build-assets` separately if you only want to generate web UI assets without starting the node.
@@ -242,6 +261,7 @@ To set up and run NeoPRISM for development, follow these steps:
 NeoPRISM includes end-to-end conformance tests that verify the PRISM DID protocol implementation. These tests validate DID operations (create, update, deactivate) against a local Cardano testnet.
 
 **Prerequisites:**
+
 - Nix with flakes enabled
 
 **Running the tests:**
@@ -255,12 +275,14 @@ just e2e::run
 ```
 
 This command will:
+
 1. Build the NeoPRISM and Cardano testnet Docker images
 2. Start a local test environment with a Cardano node
 3. Run the Scala-based conformance test suite
 4. Tear down the test environment
 
 **Important notes:**
+
 - The first run may take several minutes to build all Docker images. Subsequent runs will be faster as images are cached.
 - The Docker images are built using Nix, which only includes files tracked by git. If you add new files to the codebase, make sure to stage them with `git add` before running the tests, otherwise they won't be included in the Docker image build.
 
@@ -391,4 +413,3 @@ The following justfile commands are available to automate the local development 
 | `just tools::check`                           | Type-check and validate the Python tooling code                      |
 | `just e2e::build`                             | Build the PRISM conformance (end-to-end) test suite                  |
 | `just e2e::run`                               | Run the PRISM conformance (end-to-end) test suite                    |
-

@@ -52,11 +52,14 @@ It chains formatting, `cargo build`, `just test`, Docker image builds, and the f
 The compose files live in `docker/prism-test/` and are generated via `just build-config`. If you need to inspect or tweak them manually:
 
 1. Start the desired stack (for example the developer Postgres topology):
+
    ```bash
    cd docker/prism-test
    docker-compose -f compose-dev.yml up
    ```
+
 2. In another terminal, run the Scala suite:
+
    ```bash
    cd tests/prism-test
    sbt test
