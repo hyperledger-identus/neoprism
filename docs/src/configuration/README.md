@@ -13,4 +13,3 @@ To start NeoPRISM node in each mode, use one of the following subcommands:
 
 The standalone mode combines both indexer and submitter functionalities.
 You can refer to the configuration options for each mode and apply them together when using standalone.
-

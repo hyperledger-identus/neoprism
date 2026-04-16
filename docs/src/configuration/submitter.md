@@ -74,4 +74,5 @@ A lightweight alternative that eliminates the need for an external wallet servic
 ---
 
 **Next Steps:**
+
 - [CLI Options](../references/cli-options.md): Full list of flags and environment variables.

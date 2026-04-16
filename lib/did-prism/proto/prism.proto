@@ -10,11 +10,11 @@ import "prism-storage.proto";
  * Wraps an PrismBlock and its metadata.
  */
 message PrismObject {
-  reserved 1, 2, 3; 
+  reserved 1, 2, 3;
   reserved "block_hash";
   reserved "block_operation_count"; // Number of operations in the block.
   reserved "block_byte_length"; // Byte length of the block.
-  
+
   PrismBlock block_content = 4; // The block content.
 }
 

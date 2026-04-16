@@ -35,8 +35,8 @@ Services will be available at:
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **Unified API Gateway** | http://localhost:3000 | Single entry point for all requests |
-| **NeoPRISM API** | http://localhost:8080 | Direct access to DID resolver (internal) |
+| **Unified API Gateway** | <http://localhost:3000> | Single entry point for all requests |
+| **NeoPRISM API** | <http://localhost:8080> | Direct access to DID resolver (internal) |
 
 ### 3. Verify Deployment
 
@@ -57,6 +57,7 @@ curl http://localhost:3000/dids/did:prism:<did-suffix>
 ```
 
 Example response:
+
 ```json
 {
   "@context": "https://w3id.org/did-resolution/v1",
@@ -74,7 +75,7 @@ Example response:
 
 You can browse and discover example DIDs using the NeoPRISM web interface:
 
-1. Open the explorer in your browser: http://localhost:8080/explorer
+1. Open the explorer in your browser: <http://localhost:8080/explorer>
 2. Navigate through the indexed DIDs to find examples
 3. Copy any DID identifier to use in the resolution examples above
 
@@ -114,6 +115,7 @@ graph TB
 ### Components
 
 #### Caddy (Reverse Proxy)
+
 - **Port**: 3000
 - **Function**: Routes requests based on path patterns
 - **Routing Rules**:
@@ -121,20 +123,23 @@ graph TB
   - `/*` → Blockfrost Ryo (blockchain queries)
 
 #### NeoPRISM Indexer
+
 - **Port**: 8080 (internal), 3000 (via gateway)
 - **Mode**: Indexer (read-only DID resolution)
-- **Function**: 
+- **Function**:
   - Polls DBSync for PRISM DID operations
   - Validates and indexes DID state changes
   - Serves W3C-compliant DID resolution requests
 - **Storage**: Dedicated PostgreSQL database for DID state
 
 #### Blockfrost Ryo
+
 - **Port**: 3000 (internal)
 - **Function**: Provides Blockfrost-compatible API endpoints for blockchain queries
 - **Data Source**: Connects directly to DBSync database
 
 #### PostgreSQL (NeoPRISM)
+
 - **Port**: 5432 (internal)
 - **Function**: Stores indexed DID documents and operational state
 - **Note**: Separate from DBSync; only stores DID-specific data
@@ -168,11 +173,13 @@ graph TB
 ## Stopping Services
 
 Stop services while preserving data:
+
 ```sh
 docker compose down
 ```
 
 Stop services and remove all data (clean restart):
+
 ```sh
 docker compose down -v
 ```

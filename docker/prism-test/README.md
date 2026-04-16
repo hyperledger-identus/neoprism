@@ -17,9 +17,9 @@ The following services will be available:
 
 | Service                | URL                    | Remark                    |
 |------------------------|------------------------|---------------------------|
-| **NeoPRISM HTTP API**  | http://localhost:18080 |                           |
-| **Cardano Wallet API** | http://localhost:18081 |                           |
-| **Blockfrost API**     | http://localhost:18082 |                           |
+| **NeoPRISM HTTP API**  | <http://localhost:18080> |                           |
+| **Cardano Wallet API** | <http://localhost:18081> |                           |
+| **Blockfrost API**     | <http://localhost:18082> |                           |
 | **PRISM Node gRPC**    | localhost:50053        |                           |
 
 Stop the environment:

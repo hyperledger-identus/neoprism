@@ -8,4 +8,3 @@ NeoPRISM can be installed and run using either Docker or Nix. Choose the method 
 > **Note:** During development and testing, NeoPRISM typically uses between 10–100 MB of memory. No special hardware requirements are expected.
 
 NeoPRISM also supports advanced deployment modes and Cardano data sources (such as DB Sync and testnet environments). For details on advanced configurations, see the relevant documentation pages.
-
