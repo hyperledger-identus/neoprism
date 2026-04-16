@@ -26,6 +26,11 @@
           protobuf
           taplo
           which
+          # text linters
+          editorconfig-checker
+          markdownlint-cli2
+          shellcheck
+          yamllint
           # python
           pythonEnv
           pyright

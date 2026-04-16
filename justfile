@@ -92,6 +92,43 @@ format: tools::format
     echo "Formatting SQL files..."
     (cd lib/node-storage/migrations/postgres && sqlfluff fix . && sqlfluff lint .)
 
+# Lint text files (markdown, YAML, editorconfig, shell scripts)
+[group('checks')]
+lint-text:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    EXIT_CODE=0
+
+    echo "=== Markdown Lint ==="
+    markdownlint-cli2 "**/*.md" || EXIT_CODE=$?
+
+    echo ""
+    echo "=== YAML Lint ==="
+    yamllint -c .yamllint.yml . || EXIT_CODE=$?
+
+    echo ""
+    echo "=== EditorConfig Check ==="
+    editorconfig-checker || EXIT_CODE=$?
+
+    echo ""
+    echo "=== ShellCheck ==="
+    sh_files=$(find . -name "*.sh" \
+      -not -path "*/node_modules/*" \
+      -not -path "*/.git/*" \
+      -not -path "*/target/*")
+    if [[ -n "$sh_files" ]]; then
+      echo "$sh_files" | xargs shellcheck --severity=warning || EXIT_CODE=$?
+    else
+      echo "No .sh files found, skipping."
+    fi
+
+    exit $EXIT_CODE
+
+# Auto-fix markdown formatting issues
+[group('checks')]
+lint-text-fix:
+    markdownlint-cli2 "**/*.md" --fix
+
 # Run fast checks (tests, formatting, lints)
 [group('checks')]
 check: clean format build test tools::check

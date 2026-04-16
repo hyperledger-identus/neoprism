@@ -1,0 +1,8 @@
+{
+  "Exclude": [
+    "\\.git",
+    "node_modules",
+    "target",
+    "lib/did-prism-indexer/src/dlt/dbsync\\.rs"
+  ]
+}
