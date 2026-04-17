@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.0) - 2026-04-17
+
+### 🚀 Features
+
+- *(neoprism-node)* Add graceful shutdown on SIGINT/SIGTERM ([#236](https://github.com/hyperledger-identus/neoprism/pull/236))
+- Add embedded wallet support for Cardano transaction submission ([#245](https://github.com/hyperledger-identus/neoprism/pull/245))
+- Add --embedded-wallet-mnemonic-file CLI flag for file-based secret loading ([#255](https://github.com/hyperledger-identus/neoprism/pull/255))
+
+### 🐛 Bug Fixes
+
+- Storage operations no longer pollute DID SSI chain prev_operatio… ([#233](https://github.com/hyperledger-identus/neoprism/pull/233))
+- Revert cardano-wallet URL naming to use base-url consistently ([#256](https://github.com/hyperledger-identus/neoprism/pull/256))
+
+### 📚 Documentation
+
+- Add mnemonic warnings, semaphore comment, and fix subprocess wording ([#254](https://github.com/hyperledger-identus/neoprism/pull/254))
+
+### 🎨 Styling
+
+- Auto-fix and manually resolve all lint errors across the repo
+
+### ⚙️ Miscellaneous Tasks
+
+- Update zio-http from 3.8.1 to 3.9.0 ([#232](https://github.com/hyperledger-identus/neoprism/pull/232))
+- Update zio-http from 3.9.0 to 3.10.0 ([#235](https://github.com/hyperledger-identus/neoprism/pull/235))
+- Improve security by remove the pull_request_target trigger ([#238](https://github.com/hyperledger-identus/neoprism/pull/238))
+- Update zio-http from 3.10.0 to 3.10.1 ([#239](https://github.com/hyperledger-identus/neoprism/pull/239))
+- Update sbt, scripted-plugin from 1.12.5 to 1.12.6 ([#240](https://github.com/hyperledger-identus/neoprism/pull/240))
+- Update grpc-netty-shaded from 1.79.0 to 1.80.0 ([#241](https://github.com/hyperledger-identus/neoprism/pull/241))
+- Update sbt, scripted-plugin from 1.12.6 to 1.12.7 ([#243](https://github.com/hyperledger-identus/neoprism/pull/243))
+- Update sbt, scripted-plugin from 1.12.7 to 1.12.8 ([#244](https://github.com/hyperledger-identus/neoprism/pull/244))
+- Update sbt, scripted-plugin from 1.12.8 to 1.12.9 ([#248](https://github.com/hyperledger-identus/neoprism/pull/248))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.24 to 2.1.25 ([#246](https://github.com/hyperledger-identus/neoprism/pull/246))
+- Update sbt-scalafmt from 2.5.6 to 2.6.0 ([#252](https://github.com/hyperledger-identus/neoprism/pull/252))
+- Update scalafmt-core from 3.10.7 to 3.11.0 ([#249](https://github.com/hyperledger-identus/neoprism/pull/249))
+- Update apollo-jvm from 1.8.0 to 1.8.1-kt2.1.20 ([#247](https://github.com/hyperledger-identus/neoprism/pull/247))
+- Add file hygiene linters and just lint-text recipe
+- Add .git-blame-ignore-revs for formatting commit
+
 ## [0.13.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.13.0) - 2026-03-06
 
 ### 🚀 Features
