@@ -452,11 +452,11 @@ fn init_dlt_sink(
 ) -> anyhow::Result<Arc<dyn DltSink + Send + Sync>> {
     match dlt_args.dlt_sink_type {
         DltSinkType::CardanoWallet => {
-            let cardano_wallet_url = dlt_args
+            let cardano_wallet_base_url = dlt_args
                 .cardano_wallet
-                .cardano_wallet_url
+                .cardano_wallet_base_url
                 .clone()
-                .expect("--cardano-wallet-url is required when --dlt-sink-type=cardano-wallet");
+                .expect("--cardano-wallet-base-url is required when --dlt-sink-type=cardano-wallet");
 
             let cardano_wallet_wallet_id = dlt_args
                 .cardano_wallet
@@ -477,7 +477,7 @@ fn init_dlt_sink(
                 .expect("--cardano-wallet-payment-addr is required when --dlt-sink-type=cardano-wallet");
 
             Ok(Arc::new(CardanoWalletSink::new(
-                cardano_wallet_url,
+                cardano_wallet_base_url,
                 cardano_wallet_wallet_id,
                 cardano_wallet_passphrase,
                 cardano_wallet_payment_addr,

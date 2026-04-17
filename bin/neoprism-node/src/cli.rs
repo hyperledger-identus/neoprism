@@ -202,8 +202,8 @@ pub enum DltSinkType {
 #[command(next_help_heading = "Cardano Wallet")]
 pub struct CardanoWalletArgs {
     /// Base URL of the Cardano wallet. Required when --dlt-sink-type=cardano-wallet.
-    #[arg(long, env = "NPRISM_CARDANO_WALLET_URL")]
-    pub cardano_wallet_url: Option<String>,
+    #[arg(long, env = "NPRISM_CARDANO_WALLET_BASE_URL")]
+    pub cardano_wallet_base_url: Option<String>,
     /// Wallet ID to use for making transactions. Required when --dlt-sink-type=cardano-wallet.
     #[arg(long, env = "NPRISM_CARDANO_WALLET_WALLET_ID")]
     pub cardano_wallet_wallet_id: Option<String>,

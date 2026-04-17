@@ -27,7 +27,7 @@ Uses a [Cardano wallet](https://github.com/CardanoSolutions/cardano-wallet) serv
 
 | Flag | Environment Variable | Description |
 |------|---------------------|-------------|
-| `--cardano-wallet-url` | `NPRISM_CARDANO_WALLET_URL` | Base URL of the Cardano wallet service |
+| `--cardano-wallet-base-url` | `NPRISM_CARDANO_WALLET_BASE_URL` | Base URL of the Cardano wallet service |
 | `--cardano-wallet-wallet-id` | `NPRISM_CARDANO_WALLET_WALLET_ID` | Wallet ID to use for transactions |
 | `--cardano-wallet-passphrase` | `NPRISM_CARDANO_WALLET_PASSPHRASE` | Passphrase for the wallet |
 | `--cardano-wallet-payment-addr` | `NPRISM_CARDANO_WALLET_PAYMENT_ADDR` | Payment address for transactions |

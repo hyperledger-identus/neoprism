@@ -208,7 +208,7 @@ def _add_dlt_sink_env(env: dict[str, str], sink: DltSink) -> None:
     """Add DLT sink-specific environment variables."""
     if isinstance(sink, CardanoWalletSink):
         env["NPRISM_DLT_SINK_TYPE"] = "cardano-wallet"
-        env["NPRISM_CARDANO_WALLET_URL"] = (
+        env["NPRISM_CARDANO_WALLET_BASE_URL"] = (
             f"http://{sink.wallet_host}:{sink.wallet_port}/v2"
         )
         env["NPRISM_CARDANO_WALLET_WALLET_ID"] = sink.wallet_id
