@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-d1ff7a8f.js";
+            window.path_to_searchindex_js = "../searchindex-71835741.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-ddbda910.js"></script>
@@ -177,53 +177,79 @@
                         <h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
 <p>The <strong>Indexer node</strong> monitors the Cardano blockchain for PRISM DID operations, validates and indexes them, and enables efficient lookup of DID Documents.<br>It is typically used for DID resolution and verification services.</p>
 <h2 id="dlt-source"><a class="header" href="#dlt-source">DLT Source</a></h2>
-<p>The Indexer node supports multiple DLT sources for ingesting DID operations:</p>
-<ul>
-<li>
-<p><strong>Oura:</strong><br>Connects to a Cardano relay node and streams block data in real time.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>Cardano network: <code>--cardano-network</code> or <code>NPRISM_CARDANO_NETWORK</code></li>
-<li>Relay address: <code>--cardano-relay-addr</code> or <code>NPRISM_CARDANO_RELAY_ADDR</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>DB-Sync:</strong><br>Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>DB-Sync URL: <code>--db-sync-url</code> or <code>NPRISM_DB_SYNC_URL</code></li>
-<li>Poll interval: <code>--db-sync-poll-interval</code> or <code>NPRISM_DB_SYNC_POLL_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>Blockfrost:</strong><br>Connects to the Blockfrost API for hosted Cardano blockchain data access.
-Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>API key: <code>--blockfrost-api-key</code> or <code>NPRISM_BLOCKFROST_API_KEY</code></li>
-<li>Base URL: <code>--blockfrost-base-url</code> or <code>NPRISM_BLOCKFROST_BASE_URL</code></li>
-<li>Poll interval: <code>--blockfrost-poll-interval</code> or <code>NPRISM_BLOCKFROST_POLL_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-<li>API delay: <code>--blockfrost-api-delay</code> or <code>NPRISM_BLOCKFROST_API_DELAY</code> (throttling to respect rate limits)</li>
-<li>Concurrency limit: <code>--blockfrost-concurrency-limit</code> or <code>NPRISM_BLOCKFROST_CONCURRENCY_LIMIT</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>Common DLT Source Options:</strong></p>
-<ul>
-<li>Index interval: <code>--index-interval</code> or <code>NPRISM_INDEX_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-<li>Confirmation blocks: <code>--confirmation-blocks</code> or <code>NPRISM_CONFIRMATION_BLOCKS</code></li>
-</ul>
-</li>
-</ul>
+<p>The Indexer node requires a DLT source to ingest DID operations from the Cardano blockchain.<br>Select the source type with the <code>--dlt-source-type</code> flag:</p>
+<pre><code>--dlt-source-type &lt;TYPE&gt;    or    NPRISM_DLT_SOURCE_TYPE=&lt;TYPE&gt;
+</code></pre>
+<p>Supported values:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Value</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>oura</code></td><td>Connects to a Cardano relay node and streams block data in real time</td></tr>
+<tr><td><code>dbsync</code></td><td>Connects to a Cardano DB-Sync instance and polls for new blocks</td></tr>
+<tr><td><code>blockfrost</code></td><td>Connects to the Blockfrost API for hosted Cardano blockchain data access</td></tr>
+</tbody>
+</table>
+</div>
+<p>In addition to source-specific options, all DLT sources share a common network setting and indexing configuration (see <a href="#common-dlt-source-options">Common Options</a>).</p>
+<hr>
+<h2 id="oura"><a class="header" href="#oura">Oura</a></h2>
+<p>Connects to a Cardano relay node and streams block data in real time using the chainsync protocol.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-relay-addr</code></td><td><code>NPRISM_CARDANO_RELAY_ADDR</code></td><td>Address of the Cardano relay node (e.g. <code>backbone.mainnet.cardanofoundation.org:3001</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="db-sync"><a class="header" href="#db-sync">DB-Sync</a></h2>
+<p>Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-dbsync-url</code></td><td><code>NPRISM_CARDANO_DBSYNC_URL</code></td><td>DB-Sync URL (e.g. <code>postgres://user:pass@host:5432/db</code>)</td></tr>
+<tr><td><code>--cardano-dbsync-poll-interval</code></td><td><code>NPRISM_CARDANO_DBSYNC_POLL_INTERVAL</code></td><td>Duration to wait before polling (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="blockfrost"><a class="header" href="#blockfrost">Blockfrost</a></h2>
+<p>Connects to the Blockfrost API for hosted Cardano blockchain data access. Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--blockfrost-api-key</code></td><td><code>NPRISM_BLOCKFROST_API_KEY</code></td><td>Blockfrost API key</td></tr>
+<tr><td><code>--blockfrost-base-url</code></td><td><code>NPRISM_BLOCKFROST_BASE_URL</code></td><td>Blockfrost base URL</td></tr>
+<tr><td><code>--blockfrost-poll-interval</code></td><td><code>NPRISM_BLOCKFROST_POLL_INTERVAL</code></td><td>Duration to wait between polls (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+<tr><td><code>--blockfrost-api-delay</code></td><td><code>NPRISM_BLOCKFROST_API_DELAY</code></td><td>Throttling delay to respect rate limits</td></tr>
+<tr><td><code>--blockfrost-concurrency-limit</code></td><td><code>NPRISM_BLOCKFROST_CONCURRENCY_LIMIT</code></td><td>API calls concurrency limit</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="common-dlt-source-options"><a class="header" href="#common-dlt-source-options">Common DLT Source Options</a></h2>
+<p>These options apply regardless of the selected DLT source type:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-network</code></td><td><code>NPRISM_CARDANO_NETWORK</code></td><td>Cardano network (<code>mainnet</code>, <code>preprod</code>, <code>preview</code>, or <code>custom</code>; default: <code>mainnet</code>)</td></tr>
+<tr><td><code>--index-interval</code></td><td><code>NPRISM_INDEX_INTERVAL</code></td><td>Duration between indexing cycles (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+<tr><td><code>--confirmation-blocks</code></td><td><code>NPRISM_CONFIRMATION_BLOCKS</code></td><td>Number of confirmation blocks before considering a block valid (default: <code>112</code>)</td></tr>
+</tbody>
+</table>
+</div>
 <hr>
 <h2 id="dlt-source-comparison"><a class="header" href="#dlt-source-comparison">DLT Source Comparison</a></h2>
 <p><strong>Oura</strong></p>

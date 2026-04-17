@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-d1ff7a8f.js";
+            window.path_to_searchindex_js = "searchindex-71835741.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-ddbda910.js"></script>
@@ -605,53 +605,79 @@ You can refer to the configuration options for each mode and apply them together
 <h1 id="indexer-configuration"><a class="header" href="#indexer-configuration">Indexer Configuration</a></h1>
 <p>The <strong>Indexer node</strong> monitors the Cardano blockchain for PRISM DID operations, validates and indexes them, and enables efficient lookup of DID Documents.<br>It is typically used for DID resolution and verification services.</p>
 <h2 id="dlt-source"><a class="header" href="#dlt-source">DLT Source</a></h2>
-<p>The Indexer node supports multiple DLT sources for ingesting DID operations:</p>
-<ul>
-<li>
-<p><strong>Oura:</strong><br>Connects to a Cardano relay node and streams block data in real time.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>Cardano network: <code>--cardano-network</code> or <code>NPRISM_CARDANO_NETWORK</code></li>
-<li>Relay address: <code>--cardano-relay-addr</code> or <code>NPRISM_CARDANO_RELAY_ADDR</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>DB-Sync:</strong><br>Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>DB-Sync URL: <code>--db-sync-url</code> or <code>NPRISM_DB_SYNC_URL</code></li>
-<li>Poll interval: <code>--db-sync-poll-interval</code> or <code>NPRISM_DB_SYNC_POLL_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>Blockfrost:</strong><br>Connects to the Blockfrost API for hosted Cardano blockchain data access.
-Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.</p>
-<ul>
-<li>Key options:
-<ul>
-<li>API key: <code>--blockfrost-api-key</code> or <code>NPRISM_BLOCKFROST_API_KEY</code></li>
-<li>Base URL: <code>--blockfrost-base-url</code> or <code>NPRISM_BLOCKFROST_BASE_URL</code></li>
-<li>Poll interval: <code>--blockfrost-poll-interval</code> or <code>NPRISM_BLOCKFROST_POLL_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-<li>API delay: <code>--blockfrost-api-delay</code> or <code>NPRISM_BLOCKFROST_API_DELAY</code> (throttling to respect rate limits)</li>
-<li>Concurrency limit: <code>--blockfrost-concurrency-limit</code> or <code>NPRISM_BLOCKFROST_CONCURRENCY_LIMIT</code></li>
-</ul>
-</li>
-</ul>
-</li>
-<li>
-<p><strong>Common DLT Source Options:</strong></p>
-<ul>
-<li>Index interval: <code>--index-interval</code> or <code>NPRISM_INDEX_INTERVAL</code> (duration format, e.g., <code>10s</code>, <code>1m</code>)</li>
-<li>Confirmation blocks: <code>--confirmation-blocks</code> or <code>NPRISM_CONFIRMATION_BLOCKS</code></li>
-</ul>
-</li>
-</ul>
+<p>The Indexer node requires a DLT source to ingest DID operations from the Cardano blockchain.<br>Select the source type with the <code>--dlt-source-type</code> flag:</p>
+<pre><code>--dlt-source-type &lt;TYPE&gt;    or    NPRISM_DLT_SOURCE_TYPE=&lt;TYPE&gt;
+</code></pre>
+<p>Supported values:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Value</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>oura</code></td><td>Connects to a Cardano relay node and streams block data in real time</td></tr>
+<tr><td><code>dbsync</code></td><td>Connects to a Cardano DB-Sync instance and polls for new blocks</td></tr>
+<tr><td><code>blockfrost</code></td><td>Connects to the Blockfrost API for hosted Cardano blockchain data access</td></tr>
+</tbody>
+</table>
+</div>
+<p>In addition to source-specific options, all DLT sources share a common network setting and indexing configuration (see <a href="#common-dlt-source-options">Common Options</a>).</p>
+<hr>
+<h2 id="oura"><a class="header" href="#oura">Oura</a></h2>
+<p>Connects to a Cardano relay node and streams block data in real time using the chainsync protocol.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-relay-addr</code></td><td><code>NPRISM_CARDANO_RELAY_ADDR</code></td><td>Address of the Cardano relay node (e.g. <code>backbone.mainnet.cardanofoundation.org:3001</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="db-sync"><a class="header" href="#db-sync">DB-Sync</a></h2>
+<p>Connects to a Cardano DB-Sync instance and polls for new blocks and transactions.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-dbsync-url</code></td><td><code>NPRISM_CARDANO_DBSYNC_URL</code></td><td>DB-Sync URL (e.g. <code>postgres://user:pass@host:5432/db</code>)</td></tr>
+<tr><td><code>--cardano-dbsync-poll-interval</code></td><td><code>NPRISM_CARDANO_DBSYNC_POLL_INTERVAL</code></td><td>Duration to wait before polling (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="blockfrost"><a class="header" href="#blockfrost">Blockfrost</a></h2>
+<p>Connects to the Blockfrost API for hosted Cardano blockchain data access. Requires a Blockfrost API key but eliminates the need to run your own Cardano infrastructure.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--blockfrost-api-key</code></td><td><code>NPRISM_BLOCKFROST_API_KEY</code></td><td>Blockfrost API key</td></tr>
+<tr><td><code>--blockfrost-base-url</code></td><td><code>NPRISM_BLOCKFROST_BASE_URL</code></td><td>Blockfrost base URL</td></tr>
+<tr><td><code>--blockfrost-poll-interval</code></td><td><code>NPRISM_BLOCKFROST_POLL_INTERVAL</code></td><td>Duration to wait between polls (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+<tr><td><code>--blockfrost-api-delay</code></td><td><code>NPRISM_BLOCKFROST_API_DELAY</code></td><td>Throttling delay to respect rate limits</td></tr>
+<tr><td><code>--blockfrost-concurrency-limit</code></td><td><code>NPRISM_BLOCKFROST_CONCURRENCY_LIMIT</code></td><td>API calls concurrency limit</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="common-dlt-source-options"><a class="header" href="#common-dlt-source-options">Common DLT Source Options</a></h2>
+<p>These options apply regardless of the selected DLT source type:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-network</code></td><td><code>NPRISM_CARDANO_NETWORK</code></td><td>Cardano network (<code>mainnet</code>, <code>preprod</code>, <code>preview</code>, or <code>custom</code>; default: <code>mainnet</code>)</td></tr>
+<tr><td><code>--index-interval</code></td><td><code>NPRISM_INDEX_INTERVAL</code></td><td>Duration between indexing cycles (e.g. <code>10s</code>, <code>1m</code>)</td></tr>
+<tr><td><code>--confirmation-blocks</code></td><td><code>NPRISM_CONFIRMATION_BLOCKS</code></td><td>Number of confirmation blocks before considering a block valid (default: <code>112</code>)</td></tr>
+</tbody>
+</table>
+</div>
 <hr>
 <h2 id="dlt-source-comparison"><a class="header" href="#dlt-source-comparison">DLT Source Comparison</a></h2>
 <p><strong>Oura</strong></p>
@@ -684,26 +710,76 @@ The free tier is sufficient for most development and testing use cases.</p>
 <h1 id="submitter-configuration"><a class="header" href="#submitter-configuration">Submitter Configuration</a></h1>
 <p>The <strong>Submitter node</strong> publishes PRISM DID operations to the Cardano blockchain.<br>It is typically used for creating, updating, or deactivating DIDs.</p>
 <h2 id="dlt-sink"><a class="header" href="#dlt-sink">DLT Sink</a></h2>
-<p>The Submitter node currently supports Cardano wallet integration as its DLT sink:</p>
-<ul>
-<li><strong>Cardano Wallet:</strong><br>Uses a Cardano wallet to sign and submit transactions containing DID operations.
-<ul>
-<li>Key options:
-<ul>
-<li>Wallet base URL: <code>--wallet-base-url</code> or <code>NPRISM_WALLET_BASE_URL</code></li>
-<li>Wallet ID: <code>--wallet-id</code> or <code>NPRISM_WALLET_ID</code></li>
-<li>Passphrase: <code>--wallet-passphrase</code> or <code>NPRISM_WALLET_PASSPHRASE</code></li>
-<li>Payment address: <code>--payment-address</code> or <code>NPRISM_PAYMENT_ADDRESS</code></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
+<p>The Submitter node requires a DLT sink to sign and submit transactions.<br>Select the sink type with the <code>--dlt-sink-type</code> flag:</p>
+<pre><code>--dlt-sink-type &lt;TYPE&gt;    or    NPRISM_DLT_SINK_TYPE=&lt;TYPE&gt;
+</code></pre>
+<p>Supported values:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Value</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>cardano-wallet</code></td><td>Uses an external Cardano wallet service to sign and submit transactions</td></tr>
+<tr><td><code>embedded-wallet</code></td><td>Uses a built-in subprocess-based wallet — no external wallet service required</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="cardano-wallet"><a class="header" href="#cardano-wallet">Cardano Wallet</a></h2>
+<p>Uses a <a href="https://github.com/CardanoSolutions/cardano-wallet">Cardano wallet</a> service to sign and submit transactions containing DID operations.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--cardano-wallet-base-url</code></td><td><code>NPRISM_CARDANO_WALLET_BASE_URL</code></td><td>Base URL of the Cardano wallet service</td></tr>
+<tr><td><code>--cardano-wallet-wallet-id</code></td><td><code>NPRISM_CARDANO_WALLET_WALLET_ID</code></td><td>Wallet ID to use for transactions</td></tr>
+<tr><td><code>--cardano-wallet-passphrase</code></td><td><code>NPRISM_CARDANO_WALLET_PASSPHRASE</code></td><td>Passphrase for the wallet</td></tr>
+<tr><td><code>--cardano-wallet-payment-addr</code></td><td><code>NPRISM_CARDANO_WALLET_PAYMENT_ADDR</code></td><td>Payment address for transactions</td></tr>
+</tbody>
+</table>
+</div>
 <blockquote>
 <p><strong>Important:</strong>
-When the submitter publishes a DID operation, it creates a transaction from the configured wallet to the specified payment address.<br>Make sure you use your own payment address. Using an incorrect or third-party address may result in permanent loss of funds.</p>
+When the submitter publishes a DID operation, it creates a transaction from the configured wallet to the specified payment address.
+Make sure you use your own payment address. Using an incorrect or third-party address may result in permanent loss of funds.</p>
 </blockquote>
-<p>Configure the wallet integration to match your operational and security requirements.</p>
+<hr>
+<h2 id="embedded-wallet"><a class="header" href="#embedded-wallet">Embedded Wallet</a></h2>
+<p>Uses a companion binary to sign and submit transactions without running a separate Cardano wallet service. The submitter spawns the binary as a subprocess for each transaction — it builds the transaction, signs it with the provided mnemonic, and submits it to the network.</p>
+<p>Transactions are submitted via a <strong>Cardano Submit API</strong> endpoint (<code>--embedded-wallet-submit-api-url</code>) or through <strong>Blockfrost</strong> (default). Blockfrost is also used to resolve UTXOs during the build step.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Flag</th><th>Environment Variable</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>--embedded-wallet-bin</code></td><td><code>NPRISM_EMBEDDED_WALLET_BIN</code></td><td>Path to the embedded wallet binary</td></tr>
+<tr><td><code>--embedded-wallet-mnemonic</code></td><td><code>NPRISM_EMBEDDED_WALLET_MNEMONIC</code></td><td>Mnemonic phrase for the wallet (mutually exclusive with <code>--embedded-wallet-mnemonic-file</code>)</td></tr>
+<tr><td><code>--embedded-wallet-mnemonic-file</code></td><td><code>NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE</code></td><td>Path to a file containing the mnemonic phrase (mutually exclusive with <code>--embedded-wallet-mnemonic</code>)</td></tr>
+<tr><td><code>--embedded-wallet-submit-api-url</code></td><td><code>NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL</code></td><td>Cardano Submit API URL (omit to submit via Blockfrost)</td></tr>
+<tr><td><code>--embedded-wallet-blockfrost-url</code></td><td><code>NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL</code></td><td>Blockfrost API URL for private instances (default: <code>https://cardano-mainnet.blockfrost.io/api/v0</code>)</td></tr>
+<tr><td><code>--embedded-wallet-blockfrost-api-key</code></td><td><code>NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY</code></td><td>Blockfrost API key for public instances (takes precedence over <code>--embedded-wallet-blockfrost-url</code> when set)</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Note:</strong> When <code>--embedded-wallet-blockfrost-api-key</code> is set, it takes precedence over <code>--embedded-wallet-blockfrost-url</code> for Blockfrost requests. The submitter uses the default public Blockfrost URL for both UTXO resolution and submission in this case. To submit via a Cardano Submit API endpoint instead of Blockfrost, set <code>--embedded-wallet-submit-api-url</code>.</p>
+</blockquote>
+<blockquote>
+<p><strong>Note:</strong> For network parameters (mainnet, preprod, etc.), use the shared <code>--cardano-network</code> flag documented in the <a href="#indexer-configuration">Indexer configuration</a>.</p>
+</blockquote>
+<blockquote>
+<p><strong>Security recommendation:</strong> Prefer <code>--embedded-wallet-mnemonic-file</code> over <code>--embedded-wallet-mnemonic</code> in production deployments. Environment variables can leak via <code>/proc/&lt;pid&gt;/environ</code>, process listings, crash dumps, or log output. Loading the mnemonic from a file allows you to restrict file permissions (e.g., <code>chmod 600</code>) and use container secret mounts (Docker/Kubernetes secrets). Supplying both flags simultaneously is treated as a configuration error and will prevent the node from starting.</p>
+</blockquote>
+<hr>
+<h2 id="dlt-sink-comparison"><a class="header" href="#dlt-sink-comparison">DLT Sink Comparison</a></h2>
+<p><strong>Cardano Wallet</strong></p>
+<p>The traditional approach that requires a full Cardano wallet service running alongside the node. The wallet handles key management, transaction construction, and submission. This is a good option when you already operate a Cardano wallet as part of your infrastructure, but it adds operational overhead of maintaining an additional service.</p>
+<p><strong>Embedded Wallet</strong></p>
+<p>A lightweight alternative that eliminates the need for an external wallet service. It uses a companion binary to construct and sign transactions as a subprocess. By default, transactions are submitted via Blockfrost; a Cardano Submit API endpoint can be configured as an alternative. This is the recommended option for most deployments due to its simpler operational model.</p>
 <hr>
 <p><strong>Next Steps:</strong></p>
 <ul>
@@ -855,33 +931,47 @@ Options:
 <h2 id="indexer-options"><a class="header" href="#indexer-options">Indexer options</a></h2>
 <pre><code>Start the node in indexer mode
 
-Usage: neoprism-node indexer [OPTIONS]
+Usage: neoprism-node indexer [OPTIONS] --dlt-source-type &lt;DLT_SOURCE_TYPE&gt;
 
 Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --external-url &lt;EXTERNAL_URL&gt;
-          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
-      --db-url &lt;DB_URL&gt;
-          Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
-      --skip-migration
-          Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
+  -h, --help  Print help
+
+Server:
+      --address &lt;ADDRESS&gt;            Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
+  -p, --port &lt;PORT&gt;                  Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
+      --assets-path &lt;ASSETS_PATH&gt;    The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+      --cors-enabled                 Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;  External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
+
+Database:
+      --db-url &lt;DB_URL&gt;  Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
+      --skip-migration   Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
+
+DLT Source:
+      --dlt-source-type &lt;DLT_SOURCE_TYPE&gt;
+          Type of DLT source to use for event synchronization [env: NPRISM_DLT_SOURCE_TYPE=] [possible values: oura, dbsync, blockfrost]
+      --index-interval &lt;INDEX_INTERVAL&gt;
+          Duration to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10s]
+      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
+          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
+
+Network:
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
+          The Cardano network (mainnet, preprod, preview, or custom) [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
+
+Oura:
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+          Address of the Cardano relay node (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+
+DB-Sync:
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync URL. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
           Duration to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10s]
+
+Blockfrost:
       --blockfrost-api-key &lt;BLOCKFROST_API_KEY&gt;
-          Blockfrost API key. If provided, the node will sync events from Blockfrost API [env: NPRISM_BLOCKFROST_API_KEY=]
+          Blockfrost API key [env: NPRISM_BLOCKFROST_API_KEY=]
       --blockfrost-base-url &lt;BLOCKFROST_BASE_URL&gt;
           Blockfrost base URL [env: NPRISM_BLOCKFROST_BASE_URL=] [default: https://cardano-mainnet.blockfrost.io/api/v0]
       --blockfrost-poll-interval &lt;BLOCKFROST_POLL_INTERVAL&gt;
@@ -890,70 +980,97 @@ Options:
           Delay between Blockfrost API calls. Set this to throttle requests and stay within Blockfrost API limits [env: NPRISM_BLOCKFROST_API_DELAY=] [default: 100ms]
       --blockfrost-concurrency-limit &lt;BLOCKFROST_CONCURRENCY_LIMIT&gt;
           Blockfrost API calls concurrency limit [env: NPRISM_BLOCKFROST_CONCURRENCY_LIMIT=] [default: 4]
-      --index-interval &lt;INDEX_INTERVAL&gt;
-          Duration to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10s]
-      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
-          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
-  -h, --help
-          Print help
 </code></pre>
 <h2 id="submitter-options"><a class="header" href="#submitter-options">Submitter options</a></h2>
 <pre><code>Start the node in submitter mode
 
-Usage: neoprism-node submitter [OPTIONS] --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
+Usage: neoprism-node submitter [OPTIONS] --dlt-sink-type &lt;DLT_SINK_TYPE&gt;
 
 Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --external-url &lt;EXTERNAL_URL&gt;
-          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
+  -h, --help  Print help
+
+Server:
+      --address &lt;ADDRESS&gt;            Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
+  -p, --port &lt;PORT&gt;                  Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
+      --assets-path &lt;ASSETS_PATH&gt;    The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+      --cors-enabled                 Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;  External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
+
+Network:
+      --cardano-network &lt;CARDANO_NETWORK&gt;
+          The Cardano network (mainnet, preprod, preview, or custom) [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
+
+DLT Sink:
+      --dlt-sink-type &lt;DLT_SINK_TYPE&gt;  Type of DLT sink to use for transaction submission [env: NPRISM_DLT_SINK_TYPE=] [possible values: cardano-wallet, embedded-wallet]
+
+Cardano Wallet:
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base URL of the Cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
+          Base URL of the Cardano wallet. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
+          Wallet ID to use for making transactions. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
-          Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
+          Passphrase for the wallet. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
       --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transactions [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
-  -h, --help
-          Print help
+          Payment address for making transactions. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
+
+Embedded Wallet:
+      --embedded-wallet-bin &lt;EMBEDDED_WALLET_BIN&gt;
+          Path to the embedded wallet binary. Required when --dlt-sink-type=embedded-wallet [env: NPRISM_EMBEDDED_WALLET_BIN=]
+      --embedded-wallet-submit-api-url &lt;EMBEDDED_WALLET_SUBMIT_API_URL&gt;
+          Base URL of the Cardano submit API. When omitted, transactions are submitted via Blockfrost [env: NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL=]
+      --embedded-wallet-blockfrost-url &lt;EMBEDDED_WALLET_BLOCKFROST_URL&gt;
+          Blockfrost API URL. Defaults to mainnet Blockfrost [env: NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL=] [default: https://cardano-mainnet.blockfrost.io/api/v0]
+      --embedded-wallet-blockfrost-api-key &lt;EMBEDDED_WALLET_BLOCKFROST_API_KEY&gt;
+          Blockfrost API key for public Blockfrost. Takes precedence over --embedded-wallet-blockfrost-url when set [env: NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY=]
+      --embedded-wallet-mnemonic &lt;EMBEDDED_WALLET_MNEMONIC&gt;
+          Mnemonic phrase for the embedded wallet. Required when --dlt-sink-type=embedded-wallet. Mutually exclusive with --embedded-wallet-mnemonic-file [env: NPRISM_EMBEDDED_WALLET_MNEMONIC=]
+      --embedded-wallet-mnemonic-file &lt;EMBEDDED_WALLET_MNEMONIC_FILE&gt;
+          Path to a file containing the mnemonic phrase for the embedded wallet. A safer alternative to --embedded-wallet-mnemonic for production deployments. The file contents are trimmed of leading/trailing whitespace. Mutually exclusive with --embedded-wallet-mnemonic [env: NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE=]
 </code></pre>
 <h2 id="standalone-options"><a class="header" href="#standalone-options">Standalone options</a></h2>
 <pre><code>Start the node in standalone mode
 
-Usage: neoprism-node standalone [OPTIONS] --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt; --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt; --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt; --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
+Usage: neoprism-node standalone [OPTIONS] --dlt-source-type &lt;DLT_SOURCE_TYPE&gt; --dlt-sink-type &lt;DLT_SINK_TYPE&gt;
 
 Options:
-      --address &lt;ADDRESS&gt;
-          Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
-  -p, --port &lt;PORT&gt;
-          Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
-      --assets-path &lt;ASSETS_PATH&gt;
-          The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
-      --cors-enabled
-          Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
-      --external-url &lt;EXTERNAL_URL&gt;
-          External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
-      --db-url &lt;DB_URL&gt;
-          Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
-      --skip-migration
-          Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
+  -h, --help  Print help
+
+Server:
+      --address &lt;ADDRESS&gt;            Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
+  -p, --port &lt;PORT&gt;                  Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
+      --assets-path &lt;ASSETS_PATH&gt;    The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
+      --cors-enabled                 Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
+      --external-url &lt;EXTERNAL_URL&gt;  External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
+
+Database:
+      --db-url &lt;DB_URL&gt;  Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
+      --skip-migration   Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
+
+DLT Source:
+      --dlt-source-type &lt;DLT_SOURCE_TYPE&gt;
+          Type of DLT source to use for event synchronization [env: NPRISM_DLT_SOURCE_TYPE=] [possible values: oura, dbsync, blockfrost]
+      --index-interval &lt;INDEX_INTERVAL&gt;
+          Duration to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10s]
+      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
+          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
+
+Network:
       --cardano-network &lt;CARDANO_NETWORK&gt;
-          The Cardano network the node is syncing from [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
+          The Cardano network (mainnet, preprod, preview, or custom) [env: NPRISM_CARDANO_NETWORK=] [default: mainnet] [possible values: mainnet, preprod, preview, custom]
+
+Oura:
       --cardano-relay-addr &lt;CARDANO_RELAY_ADDR&gt;
-          Address of the Cardano relay node to sync from. If provided, the node will sync events from the Cardano relay node. (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+          Address of the Cardano relay node (e.g. backbone.mainnet.cardanofoundation.org:3001) [env: NPRISM_CARDANO_RELAY_ADDR=]
+
+DB-Sync:
       --cardano-dbsync-url &lt;CARDANO_DBSYNC_URL&gt;
-          DB-Sync URL. If provided, the node will sync events from DB Sync. (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
+          DB-Sync URL (e.g. postgres://user:pass@host:5432/db) [env: NPRISM_CARDANO_DBSYNC_URL=]
       --cardano-dbsync-poll-interval &lt;CARDANO_DBSYNC_POLL_INTERVAL&gt;
           Duration to wait before polling DB Sync for the next update [env: NPRISM_CARDANO_DBSYNC_POLL_INTERVAL=] [default: 10s]
+
+Blockfrost:
       --blockfrost-api-key &lt;BLOCKFROST_API_KEY&gt;
-          Blockfrost API key. If provided, the node will sync events from Blockfrost API [env: NPRISM_BLOCKFROST_API_KEY=]
+          Blockfrost API key [env: NPRISM_BLOCKFROST_API_KEY=]
       --blockfrost-base-url &lt;BLOCKFROST_BASE_URL&gt;
           Blockfrost base URL [env: NPRISM_BLOCKFROST_BASE_URL=] [default: https://cardano-mainnet.blockfrost.io/api/v0]
       --blockfrost-poll-interval &lt;BLOCKFROST_POLL_INTERVAL&gt;
@@ -962,20 +1079,33 @@ Options:
           Delay between Blockfrost API calls. Set this to throttle requests and stay within Blockfrost API limits [env: NPRISM_BLOCKFROST_API_DELAY=] [default: 100ms]
       --blockfrost-concurrency-limit &lt;BLOCKFROST_CONCURRENCY_LIMIT&gt;
           Blockfrost API calls concurrency limit [env: NPRISM_BLOCKFROST_CONCURRENCY_LIMIT=] [default: 4]
-      --index-interval &lt;INDEX_INTERVAL&gt;
-          Duration to wait before checking for unindexed operations [env: NPRISM_INDEX_INTERVAL=] [default: 10s]
-      --confirmation-blocks &lt;CONFIRMATION_BLOCKS&gt;
-          Number of confirmation blocks to wait before considering the block valid [env: NPRISM_CONFIRMATION_BLOCKS=] [default: 112]
+
+DLT Sink:
+      --dlt-sink-type &lt;DLT_SINK_TYPE&gt;  Type of DLT sink to use for transaction submission [env: NPRISM_DLT_SINK_TYPE=] [possible values: cardano-wallet, embedded-wallet]
+
+Cardano Wallet:
       --cardano-wallet-base-url &lt;CARDANO_WALLET_BASE_URL&gt;
-          Base URL of the Cardano wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
+          Base URL of the Cardano wallet. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_BASE_URL=]
       --cardano-wallet-wallet-id &lt;CARDANO_WALLET_WALLET_ID&gt;
-          Wallet ID to use for making transactions [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
+          Wallet ID to use for making transactions. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_WALLET_ID=]
       --cardano-wallet-passphrase &lt;CARDANO_WALLET_PASSPHRASE&gt;
-          Passphrase for the wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
+          Passphrase for the wallet. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_PASSPHRASE=]
       --cardano-wallet-payment-addr &lt;CARDANO_WALLET_PAYMENT_ADDR&gt;
-          Payment address for making transactions [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
-  -h, --help
-          Print help
+          Payment address for making transactions. Required when --dlt-sink-type=cardano-wallet [env: NPRISM_CARDANO_WALLET_PAYMENT_ADDR=]
+
+Embedded Wallet:
+      --embedded-wallet-bin &lt;EMBEDDED_WALLET_BIN&gt;
+          Path to the embedded wallet binary. Required when --dlt-sink-type=embedded-wallet [env: NPRISM_EMBEDDED_WALLET_BIN=]
+      --embedded-wallet-submit-api-url &lt;EMBEDDED_WALLET_SUBMIT_API_URL&gt;
+          Base URL of the Cardano submit API. When omitted, transactions are submitted via Blockfrost [env: NPRISM_EMBEDDED_WALLET_SUBMIT_API_URL=]
+      --embedded-wallet-blockfrost-url &lt;EMBEDDED_WALLET_BLOCKFROST_URL&gt;
+          Blockfrost API URL. Defaults to mainnet Blockfrost [env: NPRISM_EMBEDDED_WALLET_BLOCKFROST_URL=] [default: https://cardano-mainnet.blockfrost.io/api/v0]
+      --embedded-wallet-blockfrost-api-key &lt;EMBEDDED_WALLET_BLOCKFROST_API_KEY&gt;
+          Blockfrost API key for public Blockfrost. Takes precedence over --embedded-wallet-blockfrost-url when set [env: NPRISM_EMBEDDED_WALLET_BLOCKFROST_API_KEY=]
+      --embedded-wallet-mnemonic &lt;EMBEDDED_WALLET_MNEMONIC&gt;
+          Mnemonic phrase for the embedded wallet. Required when --dlt-sink-type=embedded-wallet. Mutually exclusive with --embedded-wallet-mnemonic-file [env: NPRISM_EMBEDDED_WALLET_MNEMONIC=]
+      --embedded-wallet-mnemonic-file &lt;EMBEDDED_WALLET_MNEMONIC_FILE&gt;
+          Path to a file containing the mnemonic phrase for the embedded wallet. A safer alternative to --embedded-wallet-mnemonic for production deployments. The file contents are trimmed of leading/trailing whitespace. Mutually exclusive with --embedded-wallet-mnemonic [env: NPRISM_EMBEDDED_WALLET_MNEMONIC_FILE=]
 </code></pre>
 <h2 id="dev-options"><a class="header" href="#dev-options">Dev options</a></h2>
 <pre><code>Start the node in standalone mode with an in-memory blockchain for development
@@ -983,14 +1113,18 @@ Options:
 Usage: neoprism-node dev [OPTIONS]
 
 Options:
+  -h, --help  Print help
+
+Server:
       --address &lt;ADDRESS&gt;            Node HTTP server binding address [env: NPRISM_ADDRESS=] [default: 0.0.0.0]
   -p, --port &lt;PORT&gt;                  Node HTTP server listening port [env: NPRISM_PORT=] [default: 8080]
       --assets-path &lt;ASSETS_PATH&gt;    The directory containing the web UI assets (CSS, JavaScript files) [env: NPRISM_ASSETS_PATH=] [default: ./bin/neoprism-node/assets]
       --cors-enabled                 Enable permissive CORS (https://docs.rs/tower-http/latest/tower_http/cors/struct.CorsLayer.html#method.permissive) [env: NPRISM_CORS_ENABLED=]
       --external-url &lt;EXTERNAL_URL&gt;  External URL for Swagger server list (e.g. https://example.com) [env: NPRISM_EXTERNAL_URL=]
-      --db-url &lt;DB_URL&gt;              Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
-      --skip-migration               Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
-  -h, --help                         Print help
+
+Database:
+      --db-url &lt;DB_URL&gt;  Database URL (e.g. postgres://user:pass@host:5432/db or sqlite:///path/to/db). Defaults to an embedded SQLite file when omitted [env: NPRISM_DB_URL=]
+      --skip-migration   Skip database migration on node startup [env: NPRISM_SKIP_MIGRATION=]
 </code></pre>
 <h2 id="generate-openapi-options"><a class="header" href="#generate-openapi-options">Generate OpenAPI options</a></h2>
 <pre><code>Generate OpenAPI specification for the API
@@ -1009,7 +1143,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.13.0
+  version: 0.14.0
 servers:
   - url: http://localhost:8080
     description: Local
