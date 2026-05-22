@@ -308,13 +308,13 @@ Control verbosity with `RUST_LOG=debug` environment variable.
 
 ### Commit Conventions
 
-- Format: Conventional Commits without scopes
+- Format: [Conventional Commits](https://www.conventionalcommits.org/) (scopes optional, e.g. `chore(release): prepare for the next release`)
 - Limit: 72 characters
 - No secrets in commits
 - Examples:
-  - `add postgres connection pooling`
-  - `fix did resolution for revoked keys`
-  - `update cargo dependencies`
+  - `feat(indexer): add postgres connection pooling`
+  - `fix(did-prism): fix did resolution for revoked keys`
+  - `chore(deps): update cargo dependencies`
 
 ### Pre-Commit Checklist
 

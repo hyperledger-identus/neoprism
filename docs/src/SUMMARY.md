@@ -1,6 +1,6 @@
 # Summary
 
-# Usage Guide
+# User Guide
 
 - [Welcome](./README.md)
 - [Useful links](./useful-links.md)
@@ -13,9 +13,13 @@
   - [Submitter](./configuration/submitter.md)
   - [Logging](./configuration/logging.md)
   - [Database](./configuration/database.md)
-- [PRISM specification tests](./prism-test/README.md)
 
-# Reference Guide
+# Developer Guide
+
+- [PRISM specification tests](./prism-test/README.md)
+- [Release process](./references/release-process.md)
+
+# Reference
 
 - [CLI options](./references/cli-options.md)
 - [OpenAPI specification](./references/openapi.md)

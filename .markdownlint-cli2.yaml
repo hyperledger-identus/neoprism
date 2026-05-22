@@ -4,3 +4,4 @@ ignores:
   - "**/node_modules/**"
   - "target/**"
   - "**/target/**"
+  - "docs/book/**"
