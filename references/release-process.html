@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Welcome - NeoPRISM Documentation</title>
+        <title>Release process - NeoPRISM Documentation</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-2459343d.css">
-        <link rel="stylesheet" href="css/chrome-ae938929.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-22f0ea20.js";
+            window.path_to_searchindex_js = "../searchindex-22f0ea20.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-43afa49c.js"></script>
+        <script src="../toc-43afa49c.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -105,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -140,7 +140,7 @@
                     <h1 class="menu-title">NeoPRISM Documentation</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -174,16 +174,130 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="neoprism-documentation"><a class="header" href="#neoprism-documentation">NeoPRISM Documentation</a></h1>
-<p>Welcome to the NeoPRISM documentation site!</p>
-<p>Use the navigation panel on the left to browse different sections of the documentation, including guides, references, and community resources.</p>
+                        <h1 id="release-process"><a class="header" href="#release-process">Release Process</a></h1>
+<p>This document describes the step-by-step process for creating a new release of NeoPRISM.</p>
+<h2 id="versioning"><a class="header" href="#versioning">Versioning</a></h2>
+<p>NeoPRISM follows <a href="https://semver.org/">Semantic Versioning</a> (semver). The current version is stored in two places:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Location</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/version"><code>version</code></a></td><td>Repository root — single source of truth</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/Cargo.toml"><code>Cargo.toml</code></a></td><td>Workspace root — must match <code>version</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>Before starting a release, ensure you have:</p>
+<ul>
+<li><strong>Write access</strong> to the <a href="https://github.com/hyperledger-identus/neoprism">hyperledger-identus/neoprism</a> repository</li>
+<li><strong>A GitHub personal access token</strong> with <code>repo</code> scope for pushing tags</li>
+<li><strong>Conventional commits</strong> — all commits in the release should follow the <a href="https://www.conventionalcommits.org/">Conventional Commits</a> standard. PR titles are validated against the conventional commits format by <code>.github/workflows/pr-lint.yml</code> (using <code>amannn/action-semantic-pull-request@v6</code>), and <code>git-cliff</code> uses conventional commit messages to generate the changelog automatically.</li>
+<li><strong>Nix</strong> — all release commands run inside <code>nix develop</code></li>
+</ul>
+<h2 id="release-steps"><a class="header" href="#release-steps">Release Steps</a></h2>
+<h3 id="1-ensure-you-are-on-the-latest-main-branch"><a class="header" href="#1-ensure-you-are-on-the-latest-main-branch">1. Ensure you are on the latest <code>main</code> branch</a></h3>
+<pre><code class="language-bash">git checkout main
+git pull origin main
+</code></pre>
+<h3 id="2-checkout-the-release-branch"><a class="header" href="#2-checkout-the-release-branch">2. Checkout the <code>release</code> branch</a></h3>
+<p>Create the <code>release</code> branch to the current <code>main</code>:</p>
+<pre><code class="language-bash">git checkout -b release
+</code></pre>
+<h3 id="3-bump-the-version"><a class="header" href="#3-bump-the-version">3. Bump the version</a></h3>
+<p>Run the automated version bump command from inside <code>nix develop</code>:</p>
+<pre><code class="language-bash">nix develop -c just release::bump-version
+</code></pre>
+<p>The <code>release::bump-version</code> recipe does all of the following automatically:</p>
+<ol>
+<li><strong>Determines the next version</strong> — uses <code>git-cliff</code> to compute the next version based on conventional commits since the last tag</li>
+<li><strong>Updates <code>version</code> and <code>Cargo.toml</code></strong> — writes the new version to both files</li>
+<li><strong>Generates the changelog</strong> — runs <code>git-cliff</code> to rebuild <code>CHANGELOG.md</code> from the commit history</li>
+<li><strong>Regenerates Docker Compose configs</strong> — runs <code>just build-config</code> to update the auto-generated Docker Compose files with the new version</li>
+</ol>
+<h3 id="4-commit-the-version-bump"><a class="header" href="#4-commit-the-version-bump">4. Commit the version bump</a></h3>
+<pre><code class="language-bash">git add .
+git commit -s -m 'chore(release): prepare for the next release'
+</code></pre>
+<h3 id="5-push-and-open-a-pull-request"><a class="header" href="#5-push-and-open-a-pull-request">5. Push and open a pull request</a></h3>
+<pre><code class="language-bash">git push origin release
+</code></pre>
+<p>Open a pull request from <code>release</code> into <code>main</code> on GitHub. Once CI checks pass, merge the PR.</p>
+<h3 id="6-create-and-push-the-tag"><a class="header" href="#6-create-and-push-the-tag">6. Create and push the tag</a></h3>
+<p>After the PR is merged to <code>main</code>, create a tag for the release and push it:</p>
+<pre><code class="language-bash">git checkout main
+git pull origin main
+VERSION=$(cat version)
+git tag "v$VERSION"
+git push origin "v$VERSION"
+</code></pre>
+<h3 id="7-trigger-the-release-workflow"><a class="header" href="#7-trigger-the-release-workflow">7. Trigger the release workflow</a></h3>
+<blockquote>
+<p><strong>Note:</strong> The release workflow is triggered <strong>manually</strong> — it does not run automatically on tags.</p>
+</blockquote>
+<p>Go to the <a href="https://github.com/hyperledger-identus/neoprism/actions/workflows/release.yml">Release workflow</a> on GitHub Actions and click <strong>Run workflow</strong>. Enter the version number (without the <code>v</code> prefix) in the <code>tag</code> input field.</p>
+<p>The workflow will:</p>
+<ol>
+<li>Check out the tagged commit</li>
+<li>Build Docker images for <strong>linux/amd64</strong> and <strong>linux/arm64</strong> using Nix</li>
+<li>Create a multi-arch Docker manifest and push it to Docker Hub under <code>$DOCKERHUB_ORG/identus-neoprism:&lt;VERSION&gt;</code></li>
+</ol>
+<h3 id="8-release-the-docs"><a class="header" href="#8-release-the-docs">8. Release the docs</a></h3>
+<p>Trigger the <a href="https://github.com/hyperledger-identus/neoprism/actions/workflows/deploy-docs.yml">Deploy Docs Site</a> workflow manually to publish the updated mdBook site to GitHub Pages.</p>
+<h3 id="9-create-a-github-release"><a class="header" href="#9-create-a-github-release">9. Create a GitHub Release</a></h3>
+<p>Navigate to the <a href="https://github.com/hyperledger-identus/neoprism/releases">Releases page</a> and click <strong>Draft a new release</strong>. Select the <code>v&lt;VERSION&gt;</code> tag.</p>
+<p><strong>Optional:</strong> Curate the notable changes or highlight the breaking changes or other notes which require attention.</p>
+<h3 id="10-verify-the-release"><a class="header" href="#10-verify-the-release">10. Verify the release</a></h3>
+<ul>
+<li><strong>Docker Hub</strong>: Confirm the multi-arch image is available at <code>docker pull $DOCKERHUB_ORG/identus-neoprism:&lt;VERSION&gt;</code></li>
+<li><strong>GitHub Releases</strong>: Confirm the release is published on the <a href="https://github.com/hyperledger-identus/neoprism/releases">Releases page</a></li>
+<li><strong>Docs site</strong>: Confirm the updated documentation is live on GitHub Pages</li>
+</ul>
+<h2 id="release-workflow-reference"><a class="header" href="#release-workflow-reference">Release workflow reference</a></h2>
+<p>The CI pipeline for releases is defined in <code>.github/workflows/release.yml</code>. Key details:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Aspect</th><th>Detail</th></tr>
+</thead>
+<tbody>
+<tr><td>Trigger</td><td><code>workflow_dispatch</code> with a version tag</td></tr>
+<tr><td>Architecture</td><td>Builds both <code>amd64</code> and <code>arm64</code>, combines into a multi-arch manifest</td></tr>
+<tr><td>Registry</td><td>Docker Hub (<code>$DOCKERHUB_ORG/identus-neoprism</code>)</td></tr>
+<tr><td>Build system</td><td>Nix (<code>nix build .#neoprism-docker-linux-amd64</code>, <code>nix build .#neoprism-docker-linux-arm64</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="related-files"><a class="header" href="#related-files">Related files</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/version"><code>version</code></a></td><td>Current version number</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/Cargo.toml"><code>Cargo.toml</code></a></td><td>Workspace metadata (version must match <code>version</code> file)</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/justfile"><code>justfile</code></a></td><td>Main justfile (loads the <code>release</code> module from <code>tools/just-recipes/release.just</code>)</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/tools/just-recipes/release.just"><code>tools/just-recipes/release.just</code></a></td><td>Contains the <code>release::bump-version</code> and <code>release::set-version</code> recipes</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/CHANGELOG.md"><code>CHANGELOG.md</code></a></td><td>Auto-generated changelog (rebuilt by <code>release::bump-version</code> via <code>git-cliff</code>)</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/cliff.toml"><code>cliff.toml</code></a></td><td><code>git-cliff</code> configuration controlling changelog format</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/.github/workflows/release.yml"><code>.github/workflows/release.yml</code></a></td><td>Release CI workflow</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/blob/main/.github/workflows/deploy-docs.yml"><code>.github/workflows/deploy-docs.yml</code></a></td><td>Docs site deployment</td></tr>
+</tbody>
+</table>
+</div>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../prism-test/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="useful-links.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../references/cli-options.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -193,8 +307,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../prism-test/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="useful-links.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../references/cli-options.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -214,13 +331,13 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-c2a407aa.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-a0b12cfe.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
 
