@@ -9,13 +9,16 @@ This skill guides you through the complete NeoPRISM release workflow. The releas
 
 ## Important: Context Matters
 
-Before starting a release, confirm with the user:
+The skill automatically infers or tests most prerequisites. Only one question needs user input:
 
-1. **What version are we releasing?** If they don't specify, the automated bump tool (`git-cliff`) will compute the next version from conventional commits since the last tag.
-2. **Do they want a dry run?** For a safe walkthrough without actually pushing, stop after step 4 (commit the version bump) and present the diff.
-3. **Do they have write access** to the [hyperledger-identus/neoprism](https://github.com/hyperledger-identus/neoprism) repo? All steps after the version bump require push access.
-4. **Do they have a GitHub personal access token** with `repo` scope for pushing tags? The tag push requires it.
-5. **Are they inside `nix develop`?** All release commands must run inside the Nix devshell. If not, prefix commands with `nix develop -c`.
+1. **Do they want a dry run?** For a safe walkthrough without actually pushing, stop after step 4 (commit the version bump) and present the diff. If not asked, the skill assumes a full release.
+
+**Everything else is handled automatically:**
+
+- **Version**: The automated bump tool (`git-cliff`) computes the next version from conventional commits since the last tag. Just run `just release::bump-version` and show the result. If the user wants a specific version, they can override after seeing it.
+- **Write access**: Tested at push time — attempt `git push` and handle errors gracefully with a clear message.
+- **GitHub authentication**: Whatever mechanism the user has configured (SSH, HTTPS token, credential helper) works. Push errors will surface auth issues naturally.
+- **Nix environment**: Detected automatically — either commands run inside `nix develop` or are prefixed with `nix develop -c`.
 
 ## Prerequisites Check
 
@@ -25,7 +28,7 @@ Before executing steps, verify:
 - Current branch: `main` (clean, no uncommitted changes)
 - Nix is available: `nix develop --command bash -c "which just && which git-cliff && which jq"`
 - Git user is configured: `git config user.name` and `git config user.email` are set
-- Docker is available and authenticated (for steps 7-8, verify later)
+- Docker is available locally (if you intend to manually verify images after the release)
 
 ## Release Steps
 
@@ -145,6 +148,8 @@ Guide the user to:
 - Checks out the tagged commit
 - Builds Docker images for **linux/amd64** and **linux/arm64** using Nix
 - Creates a multi-arch Docker manifest and pushes to Docker Hub under `$DOCKERHUB_ORG/identus-neoprism:<VERSION>`
+
+**Note:** Docker Hub authentication is handled entirely by the CI workflow using pre-configured repository-level GitHub Actions variables and secrets (`DOCKERHUB_ORG`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`). No user Docker credentials are needed.
 
 ### Step 8: Release the docs
 
