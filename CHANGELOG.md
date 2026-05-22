@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.1) - 2026-05-22
+
+### 📚 Documentation
+
+- Add release process documentation and neoprism-release skill ([#268](https://github.com/hyperledger-identus/neoprism/pull/268))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update apollo-jvm from 1.8.1-kt2.1.20 to 1.8.3-kt2.1.20 ([#258](https://github.com/hyperledger-identus/neoprism/pull/258))
+- Update apollo-jvm from 1.8.3-kt2.1.20 to 1.8.4-kt2.1.20 ([#259](https://github.com/hyperledger-identus/neoprism/pull/259))
+- Update zio-http from 3.10.1 to 3.11.0 ([#260](https://github.com/hyperledger-identus/neoprism/pull/260))
+- Update sbt, scripted-plugin from 1.12.9 to 1.12.11 ([#264](https://github.com/hyperledger-identus/neoprism/pull/264))
+- Update scalafmt-core from 3.11.0 to 3.11.1 ([#266](https://github.com/hyperledger-identus/neoprism/pull/266))
+- Update sbt-scalafmt from 2.6.0 to 2.6.1 ([#265](https://github.com/hyperledger-identus/neoprism/pull/265))
+- Update grpc-netty-shaded from 1.80.0 to 1.81.0 ([#263](https://github.com/hyperledger-identus/neoprism/pull/263))
+- Update zio-http from 3.11.0 to 3.11.1 ([#262](https://github.com/hyperledger-identus/neoprism/pull/262))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.25 to 2.1.26 ([#261](https://github.com/hyperledger-identus/neoprism/pull/261))
+- Update zio-http from 3.11.1 to 3.11.2
+- Simplify release skill prerequisite checklist ([#269](https://github.com/hyperledger-identus/neoprism/pull/269))
+
 ## [0.14.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.0) - 2026-04-17
 
 ### 🚀 Features
