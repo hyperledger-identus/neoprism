@@ -65,17 +65,20 @@ nix develop -c just release::bump-version
 ```
 
 **What this does automatically:**
+
 1. Uses `git-cliff` to determine the next version based on conventional commits since the last tag
 2. Writes the new version to both `version` (root file) and `Cargo.toml` (workspace metadata)
 3. Rebuilds `CHANGELOG.md` from the full commit history via `git-cliff`
 4. Regenerates Docker Compose configurations (`just build-config`) with the new version
 
 After it completes, show the user a summary of what changed:
+
 - `git diff --stat` — which files were modified
 - `cat version` — the new version number
 - The beginning of `CHANGELOG.md` — the newly generated changelog entries
 
 If the bump fails (e.g., no conventional commits since last tag, or git-cliff cannot determine the next version), explain the issue and suggest:
+
 - Check that there are commits since the last tag: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
 - Check that commits follow conventional commit format
 - Alternatively, the user can set a version manually: `just release::set-version X.Y.Z`
@@ -106,6 +109,7 @@ https://github.com/hyperledger-identus/neoprism/compare/main...release
 **Important:** The PR title should match the commit message: `chore(release): prepare for the next release`.
 
 Explain to the user:
+
 - CI checks (lints, tests, builds) will run automatically on the PR
 - Once CI passes, the PR gets merged into `main`
 - **Do not merge the PR until CI is green**
@@ -130,12 +134,14 @@ Explain: the tag (`vX.Y.Z`) is what triggers downstream consumers and is used by
 The release CI workflow is triggered **manually** via GitHub Actions — it does NOT run automatically on tags.
 
 Guide the user to:
-1. Go to https://github.com/hyperledger-identus/neoprism/actions/workflows/release.yml
+
+1. Go to <https://github.com/hyperledger-identus/neoprism/actions/workflows/release.yml>
 2. Click **Run workflow** (dropdown button on the right)
 3. Enter the version number **without the `v` prefix** in the `tag` input field (e.g., `0.15.0` not `v0.15.0`)
 4. Click **Run workflow**
 
 **What the workflow does:**
+
 - Checks out the tagged commit
 - Builds Docker images for **linux/amd64** and **linux/arm64** using Nix
 - Creates a multi-arch Docker manifest and pushes to Docker Hub under `$DOCKERHUB_ORG/identus-neoprism:<VERSION>`
@@ -145,7 +151,8 @@ Guide the user to:
 Trigger the docs deployment workflow:
 
 Guide the user to:
-1. Go to https://github.com/hyperledger-identus/neoprism/actions/workflows/deploy-docs.yml
+
+1. Go to <https://github.com/hyperledger-identus/neoprism/actions/workflows/deploy-docs.yml>
 2. Click **Run workflow**
 3. Select the `main` branch (or the tagged commit)
 4. Click **Run workflow**
@@ -155,13 +162,15 @@ This publishes the updated mdBook documentation site to GitHub Pages.
 ### Step 9: Create a GitHub Release
 
 Guide the user to:
-1. Go to https://github.com/hyperledger-identus/neoprism/releases
+
+1. Go to <https://github.com/hyperledger-identus/neoprism/releases>
 2. Click **Draft a new release**
 3. Select the `v<VERSION>` tag from the dropdown
 4. The release title should be the version (e.g., `v0.15.0`)
 5. The description can be auto-generated from the CHANGELOG.md content for this version, or manually curated
 
 **Optional but recommended:** Curate the release notes:
+
 - Highlight breaking changes prominently
 - Call out notable features or fixes
 - Mention any migration steps or deprecations
@@ -185,6 +194,7 @@ echo "Check: https://hyperledger-identus.github.io/neoprism/"
 ```
 
 Report the results to the user:
+
 | What to verify | How |
 |---|---|
 | **Docker Hub** | Confirm the multi-arch image at `docker pull $DOCKERHUB_ORG/identus-neoprism:<VERSION>` |
