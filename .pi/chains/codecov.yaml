@@ -1,0 +1,17 @@
+loop: 999
+steps:
+  - prompt: |
+      Run code coverage for this rust workspace (use 'just coverage' recipe).
+      Then report the coverage percentage of this project overall.
+  - type: exitPrompt
+    exitPrompt: |
+      The overall coverage is >= 80
+  - prompt: |
+      Please choose the crate and module to focus on.
+      Only choose on module at a time to improve the coverage based on the coverage severity.
+      Then add the tests to improve the coverage of the selected module / crate.
+      After ading tests, verify that the coverage is improved for that particular module.
+
+      If you catch any bug along the way, please add them down to the file ".work/bugs.md".
+  - prompt: |
+      Run the formatter and linter and fix any warnings

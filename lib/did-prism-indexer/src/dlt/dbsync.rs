@@ -380,3 +380,707 @@ ORDER BY slot_no, tx_idx
         Ok(rows)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use chrono::{DateTime, TimeZone, Utc};
+    use identus_did_prism::dlt::{DltCursor, TxId};
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
+    use tokio::sync::{mpsc, watch};
+
+    use super::models::{BlockTimeProjection, MetadataProjection};
+    use super::{DbSyncSource, DbSyncStreamWorker};
+    use crate::DltSource;
+    use crate::dlt::dbsync::models;
+    use crate::repo::DltCursorRepo;
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    /// A valid 32-byte transaction hash.
+    fn valid_tx_hash() -> Vec<u8> {
+        (0..32).collect()
+    }
+
+    /// A valid 32-byte block hash.
+    fn valid_block_hash() -> Vec<u8> {
+        (32..64).collect()
+    }
+
+    /// Encode a PrismObject into metadata byte groups ("0x" + hex).
+    fn encode_object_as_byte_groups(obj: &PrismObject) -> Vec<String> {
+        let bytes = obj.encode_to_vec();
+        bytes
+            .chunks(64)
+            .map(|chunk| {
+                let hex = identus_apollo::hex::HexStr::from(chunk).to_string();
+                format!("0x{hex}")
+            })
+            .collect()
+    }
+
+    /// Build a minimal PrismObject with one empty operation.
+    fn minimal_prism_object() -> PrismObject {
+        PrismObject {
+            block_content: Some(PrismBlock {
+                operations: vec![],
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        }
+    }
+
+    /// Build a valid MetadataProjection with the given metadata JSON.
+    fn valid_projection(metadata: serde_json::Value) -> MetadataProjection {
+        MetadataProjection {
+            time: DateTime::UNIX_EPOCH,
+            slot_no: 1000,
+            block_no: 500,
+            block_hash: valid_block_hash(),
+            tx_idx: 0,
+            tx_hash: valid_tx_hash(),
+            metadata,
+        }
+    }
+
+    /// Build valid metadata JSON from a PrismObject.
+    fn valid_metadata_json(obj: &PrismObject) -> serde_json::Value {
+        let byte_groups = encode_object_as_byte_groups(obj);
+        serde_json::json!({
+            "c": byte_groups,
+            "v": 1
+        })
+    }
+
+    // ------------------------------------------------------------------
+    // Mock DltCursorRepo
+    // ------------------------------------------------------------------
+
+    #[derive(Debug, derive_more::Display, derive_more::Error)]
+    #[display("test error")]
+    struct TestError;
+
+    #[derive(Debug)]
+    struct MockRepo {
+        cursor: Arc<Mutex<Option<DltCursor>>>,
+    }
+
+    impl MockRepo {
+        fn new(cursor: Option<DltCursor>) -> Self {
+            Self {
+                cursor: Arc::new(Mutex::new(cursor)),
+            }
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl DltCursorRepo for MockRepo {
+        type Error = TestError;
+
+        async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error> {
+            *self.cursor.lock().unwrap() = Some(cursor);
+            Ok(())
+        }
+
+        async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
+            Ok(self.cursor.lock().unwrap().clone())
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // models::parse_published_prism_object tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn parse_published_prism_object_valid_minimal() {
+        let obj = minimal_prism_object();
+        let projection = valid_projection(valid_metadata_json(&obj));
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+
+        assert_eq!(result.block_metadata.slot_number.inner(), 1000);
+        assert_eq!(result.block_metadata.block_number.inner(), 500);
+        assert_eq!(result.block_metadata.absn, 0);
+        assert_eq!(result.prism_object, obj);
+    }
+
+    #[test]
+    fn parse_published_prism_object_valid_preserves_tx_id() {
+        let obj = minimal_prism_object();
+        let projection = valid_projection(valid_metadata_json(&obj));
+        let expected_tx_id = TxId::from_bytes(&valid_tx_hash()).unwrap();
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+
+        assert_eq!(result.block_metadata.tx_id, expected_tx_id);
+    }
+
+    #[test]
+    fn parse_published_prism_object_valid_preserves_timestamp() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        let ts = Utc.with_ymd_and_hms(2024, 3, 15, 10, 30, 0).unwrap();
+        projection.time = ts;
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+
+        assert_eq!(result.block_metadata.cbt, ts);
+    }
+
+    #[test]
+    fn parse_published_prism_object_multiple_byte_groups() {
+        // Create an object large enough to span multiple 64-byte chunks.
+        let large_sig: Vec<u8> = (0..200u8).collect();
+        let obj = PrismObject {
+            block_content: Some(PrismBlock {
+                operations: (0..5)
+                    .map(|_| identus_did_prism::proto::prism::SignedPrismOperation {
+                        signed_with: "master-0".to_string(),
+                        signature: large_sig.clone(),
+                        operation: protobuf::MessageField(None),
+                        special_fields: Default::default(),
+                    })
+                    .collect(),
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        };
+
+        let projection = valid_projection(valid_metadata_json(&obj));
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+        assert_eq!(result.prism_object, obj);
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_tx_hash_wrong_length() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        // Tx hash must be 32 bytes — give 16 bytes instead.
+        projection.tx_hash = vec![0u8; 16];
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_tx_hash_empty() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.tx_hash = vec![];
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_metadata_not_json_object() {
+        let mut projection = valid_projection(serde_json::json!("not an object"));
+        projection.metadata = serde_json::json!("not a struct");
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_metadata_missing_fields() {
+        let mut projection = valid_projection(serde_json::json!({
+            "v": 1
+            // missing "c" field
+        }));
+        projection.metadata = serde_json::json!({"v": 1});
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_protobuf_bytes() {
+        // Valid metadata structure but the hex bytes are not valid protobuf.
+        let projection = valid_projection(serde_json::json!({
+            "c": ["0xdeadbeef"],
+            "v": 1
+        }));
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        // The error should mention protobuf decode failure
+        assert!(
+            msg.contains("protobuf") || msg.contains("decode"),
+            "expected protobuf decode error, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_empty_byte_groups_produces_default() {
+        let projection = valid_projection(serde_json::json!({
+            "c": [],
+            "v": 1
+        }));
+
+        let result = models::parse_published_prism_object(projection);
+        assert!(result.is_ok(), "empty byte groups should decode as default PrismObject");
+        assert_eq!(result.unwrap().prism_object, PrismObject::default());
+    }
+
+    #[test]
+    fn parse_published_prism_object_missing_0x_prefix() {
+        let projection = valid_projection(serde_json::json!({
+            "c": ["aabbccdd"],
+            "v": 1
+        }));
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error, got: {msg}"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // BlockTimeProjection::from tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn block_time_projection_from_metadata_projection() {
+        let ts = Utc.with_ymd_and_hms(2024, 6, 1, 12, 0, 0).unwrap();
+        let projection = MetadataProjection {
+            time: ts,
+            slot_no: 42,
+            block_no: 21,
+            block_hash: vec![1u8; 32],
+            tx_idx: 3,
+            tx_hash: vec![2u8; 32],
+            metadata: serde_json::json!({}),
+        };
+
+        let block_time: BlockTimeProjection = projection.into();
+
+        assert_eq!(block_time.time, ts);
+        assert_eq!(block_time.slot_no, 42);
+        assert_eq!(block_time.block_hash, vec![1u8; 32]);
+    }
+
+    // ------------------------------------------------------------------
+    // DbSyncSource construction tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn dbsync_source_new_creates_instance() {
+        let repo = MockRepo::new(None);
+        let source = DbSyncSource::new(
+            repo,
+            "postgres://localhost:5432/dbsync",
+            100,
+            2160,
+            Duration::from_secs(10),
+        );
+
+        assert_eq!(source.from_slot, 100);
+        assert_eq!(source.confirmation_blocks, 2160);
+    }
+
+    #[tokio::test]
+    async fn dbsync_source_sync_cursor_returns_none_initially() {
+        let repo = MockRepo::new(None);
+        let source = DbSyncSource::new(repo, "postgres://localhost:5432/dbsync", 0, 100, Duration::from_secs(5));
+
+        let mut rx = source.sync_cursor();
+        let cursor = rx.borrow_and_update().clone();
+        assert!(cursor.is_none());
+    }
+
+    #[tokio::test]
+    async fn dbsync_source_since_persisted_cursor_with_none() {
+        let repo = MockRepo::new(None);
+        let source = DbSyncSource::since_persisted_cursor(
+            repo,
+            "postgres://localhost:5432/dbsync",
+            100,
+            Duration::from_secs(10),
+        )
+        .await
+        .unwrap();
+
+        // from_slot should default to 0 when no persisted cursor
+        assert_eq!(source.from_slot, 0);
+    }
+
+    #[tokio::test]
+    async fn dbsync_source_since_persisted_cursor_with_existing_cursor() {
+        let cursor = DltCursor {
+            slot: 42,
+            block_hash: vec![0u8; 32],
+            cbt: None,
+            blockfrost_page: None,
+        };
+        let repo = MockRepo::new(Some(cursor));
+        let source = DbSyncSource::since_persisted_cursor(
+            repo,
+            "postgres://localhost:5432/dbsync",
+            100,
+            Duration::from_secs(10),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(source.from_slot, 42);
+    }
+
+    #[tokio::test]
+    async fn dbsync_source_into_stream_creates_channel() {
+        let repo = MockRepo::new(None);
+        let source = DbSyncSource::new(repo, "postgres://localhost:5432/dbsync", 0, 100, Duration::from_secs(5));
+
+        let rx = source.into_stream().unwrap();
+        // Channel should be open (not closed)
+        assert!(!rx.is_closed());
+    }
+
+    // ------------------------------------------------------------------
+    // DbSyncStreamWorker::process_prism_object tests
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn process_prism_object_valid_sends_to_channel() {
+        let (tx, mut rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let obj = minimal_prism_object();
+        let projection = valid_projection(valid_metadata_json(&obj));
+
+        DbSyncStreamWorker::process_prism_object(projection, &tx).await.unwrap();
+
+        let received = rx.try_recv().unwrap();
+        assert_eq!(received.prism_object, obj);
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_invalid_metadata_returns_ok_no_send() {
+        let (tx, rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let projection = valid_projection(serde_json::json!({
+            "c": ["not_valid_hex"],
+            "v": 1
+        }));
+
+        // Invalid metadata should return Ok (logs a warning but doesn't error)
+        DbSyncStreamWorker::process_prism_object(projection, &tx).await.unwrap();
+
+        // Nothing should have been sent
+        assert!(rx.is_empty());
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_invalid_tx_hash_returns_ok_no_send() {
+        let (tx, rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.tx_hash = vec![0u8; 10]; // wrong length
+
+        DbSyncStreamWorker::process_prism_object(projection, &tx).await.unwrap();
+
+        assert!(rx.is_empty());
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_closed_channel_returns_error() {
+        let (tx, rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let obj = minimal_prism_object();
+        let projection = valid_projection(valid_metadata_json(&obj));
+
+        // Close the receiving end so the send fails
+        drop(rx);
+
+        let result = DbSyncStreamWorker::process_prism_object(projection, &tx).await;
+        assert!(result.is_err(), "expected error when channel is closed");
+    }
+
+    // ------------------------------------------------------------------
+    // DbSyncStreamWorker::emit_cursor_progress tests
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn emit_cursor_progress_sends_cursor_via_watch() {
+        let (tx, rx) = watch::channel(None);
+
+        let ts = Utc.with_ymd_and_hms(2024, 1, 15, 8, 30, 0).unwrap();
+        let block_time = BlockTimeProjection {
+            time: ts,
+            slot_no: 555,
+            block_hash: vec![7u8; 32],
+        };
+
+        DbSyncStreamWorker::emit_cursor_progress(block_time, &tx);
+
+        let cursor = rx.borrow().clone().unwrap();
+        assert_eq!(cursor.slot, 555);
+        assert_eq!(cursor.block_hash, vec![7u8; 32]);
+        assert_eq!(cursor.cbt, Some(ts));
+        assert_eq!(cursor.blockfrost_page, None);
+    }
+
+    #[test]
+    fn emit_cursor_progress_overwrites_previous_cursor() {
+        let (tx, rx) = watch::channel(None);
+
+        let block_time1 = BlockTimeProjection {
+            time: DateTime::UNIX_EPOCH,
+            slot_no: 100,
+            block_hash: vec![1u8; 32],
+        };
+        DbSyncStreamWorker::emit_cursor_progress(block_time1, &tx);
+        assert_eq!(rx.borrow().as_ref().unwrap().slot, 100);
+
+        let block_time2 = BlockTimeProjection {
+            time: DateTime::UNIX_EPOCH,
+            slot_no: 200,
+            block_hash: vec![2u8; 32],
+        };
+        DbSyncStreamWorker::emit_cursor_progress(block_time2, &tx);
+        assert_eq!(rx.borrow().as_ref().unwrap().slot, 200);
+    }
+
+    // ------------------------------------------------------------------
+    // DbSyncStreamWorker::spawn tests (connection error path)
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn spawn_with_invalid_url_handles_connection_error() {
+        tokio::time::pause();
+
+        let (event_tx, _event_rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let (sync_cursor_tx, sync_cursor_rx) = watch::channel(None);
+
+        let worker = DbSyncStreamWorker {
+            dbsync_url: "postgres://invalid:invalid@localhost:99999/nonexistent".to_string(),
+            sync_cursor_tx,
+            event_tx,
+            from_slot: 0,
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_millis(10),
+        };
+
+        let handle = worker.spawn();
+
+        // Yield to let the spawned task start and attempt connection (fails immediately).
+        tokio::task::yield_now().await;
+
+        // The sync_cursor_rx should still be None since no data was processed.
+        assert!(sync_cursor_rx.borrow().is_none());
+
+        // Advance time past the 10s restart delay to trigger a retry.
+        tokio::time::advance(Duration::from_secs(11)).await;
+        tokio::task::yield_now().await;
+
+        // The worker should still be running (retrying).
+        assert!(!handle.is_finished());
+
+        // Cursor should still be None — no data was ever processed.
+        assert!(sync_cursor_rx.borrow().is_none());
+
+        handle.abort();
+    }
+
+    // ------------------------------------------------------------------
+    // into_stream integration test with connection failure
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn into_stream_worker_handles_connection_failure_gracefully() {
+        tokio::time::pause();
+
+        let repo = MockRepo::new(None);
+        let source = DbSyncSource::new(
+            repo,
+            "postgres://invalid:invalid@localhost:99999/nonexistent",
+            0,
+            100,
+            Duration::from_millis(10),
+        );
+
+        let rx = source.into_stream().unwrap();
+        // Channel should be open even though connection will fail.
+        assert!(!rx.is_closed());
+
+        // Advance time to let the worker attempt connection and retry.
+        tokio::time::advance(Duration::from_secs(11)).await;
+        tokio::task::yield_now().await;
+
+        // Channel should still be open — the worker keeps retrying.
+        assert!(!rx.is_closed());
+    }
+
+    // ------------------------------------------------------------------
+    // since_persisted_cursor error propagation
+    // ------------------------------------------------------------------
+
+    /// A repo that always fails on get_cursor.
+    #[derive(Debug)]
+    struct FailingRepo;
+
+    #[async_trait::async_trait]
+    impl DltCursorRepo for FailingRepo {
+        type Error = TestError;
+
+        async fn set_cursor(&self, _cursor: DltCursor) -> Result<(), Self::Error> {
+            Ok(())
+        }
+
+        async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
+            Err(TestError)
+        }
+    }
+
+    #[tokio::test]
+    async fn dbsync_source_since_persisted_cursor_store_error() {
+        let result = DbSyncSource::since_persisted_cursor(
+            FailingRepo,
+            "postgres://localhost:5432/dbsync",
+            100,
+            Duration::from_secs(10),
+        )
+        .await;
+
+        assert!(result.is_err(), "expected error when store fails");
+    }
+
+    // ------------------------------------------------------------------
+    // parse_published_prism_object edge cases
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn parse_published_prism_object_zero_slot_and_block() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.slot_no = 0;
+        projection.block_no = 0;
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+        assert_eq!(result.block_metadata.slot_number.inner(), 0);
+        assert_eq!(result.block_metadata.block_number.inner(), 0);
+    }
+
+    #[test]
+    fn parse_published_prism_object_preserves_absn_from_tx_idx() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.tx_idx = 7;
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+        assert_eq!(result.block_metadata.absn, 7);
+    }
+
+    #[test]
+    fn parse_published_prism_object_metadata_null_value() {
+        let mut projection = valid_projection(serde_json::json!("not an object"));
+        projection.metadata = serde_json::Value::Null;
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error for null, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_metadata_wrong_type_for_c() {
+        let projection = valid_projection(serde_json::json!({
+            "c": 42,
+            "v": 1
+        }));
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        assert!(
+            msg.contains("metadata is not a valid"),
+            "expected invalid metadata error when c is not array, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_metadata_c_with_empty_strings() {
+        let projection = valid_projection(serde_json::json!({
+            "c": [""],
+            "v": 1
+        }));
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        let msg = err.to_string();
+        // Empty string fails the "0x" prefix check
+        assert!(
+            msg.contains("metadata is not a valid") || msg.contains("hex"),
+            "expected error for empty byte group, got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_tx_hash_exactly_32_bytes() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.tx_hash = vec![0xABu8; 32];
+
+        let result = models::parse_published_prism_object(projection).unwrap();
+        let expected_tx_id = TxId::from_bytes(&[0xABu8; 32]).unwrap();
+        assert_eq!(result.block_metadata.tx_id, expected_tx_id);
+    }
+
+    #[test]
+    fn parse_published_prism_object_tx_hash_33_bytes_fails() {
+        let obj = minimal_prism_object();
+        let mut projection = valid_projection(valid_metadata_json(&obj));
+        projection.tx_hash = vec![0u8; 33];
+
+        let err = models::parse_published_prism_object(projection).unwrap_err();
+        assert!(
+            err.to_string().contains("metadata is not a valid"),
+            "expected error for 33-byte tx_hash"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // process_prism_object error quality
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn process_prism_object_error_includes_event_handling_context() {
+        let (tx, rx) = mpsc::channel::<identus_did_prism::dlt::PublishedPrismObject>(1024);
+        let obj = minimal_prism_object();
+        let projection = valid_projection(valid_metadata_json(&obj));
+
+        // Close the receiver to cause a send failure
+        drop(rx);
+
+        let err = DbSyncStreamWorker::process_prism_object(projection, &tx)
+            .await
+            .unwrap_err();
+
+        let err_msg = err.to_string();
+        assert!(
+            err_msg.contains("event") || err_msg.contains("handling"),
+            "error should mention event handling, got: {err_msg}"
+        );
+    }
+}
