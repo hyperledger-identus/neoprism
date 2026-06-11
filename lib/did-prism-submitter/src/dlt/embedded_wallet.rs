@@ -172,21 +172,31 @@ impl EmbeddedWalletSink {
             .spawn()
             .map_err(|e| Error::SubprocessSpawn { source: e.into() }.to_string())?;
 
+        // Write mnemonic to stdin. A broken-pipe error here means the
+        // subprocess has already exited (e.g., it failed fast); fall through
+        // to read the output so the caller sees the real exit status / stderr
+        // rather than the stdin write error.
         {
-            let stdin = child.stdin.as_mut().ok_or_else(|| {
-                Error::StdinWrite {
+            use std::io::ErrorKind;
+            if let Some(stdin) = child.stdin.as_mut() {
+                if let Err(e) = stdin.write_all(self.config.mnemonic.as_bytes()).await
+                    && e.kind() != ErrorKind::BrokenPipe
+                {
+                    return Err(Error::StdinWrite { source: e.into() }.to_string());
+                }
+                if let Err(e) = stdin.write_all(b"\n").await
+                    && e.kind() != ErrorKind::BrokenPipe
+                {
+                    return Err(Error::StdinWrite { source: e.into() }.to_string());
+                }
+                // Close stdin to signal EOF to the subprocess.
+                drop(child.stdin.take());
+            } else {
+                return Err(Error::StdinWrite {
                     source: "failed to get stdin handle".into(),
                 }
-                .to_string()
-            })?;
-            stdin
-                .write_all(self.config.mnemonic.as_bytes())
-                .await
-                .map_err(|e| Error::StdinWrite { source: e.into() }.to_string())?;
-            stdin
-                .write_all(b"\n")
-                .await
-                .map_err(|e| Error::StdinWrite { source: e.into() }.to_string())?;
+                .to_string());
+            }
         }
 
         let output = timeout(SUBPROCESS_TIMEOUT, child.wait_with_output())
@@ -259,7 +269,108 @@ impl EmbeddedWalletSink {
 
 #[cfg(test)]
 mod tests {
+    use std::os::unix::fs::PermissionsExt;
+
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+    use tokio::net::TcpListener;
+
     use super::*;
+
+    /// A valid 32-byte hex string used for TxId in tests
+    const VALID_TX_HASH: &str = "aabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
+
+    // ------------------------------------------------------------------
+    // Test helpers
+    // ------------------------------------------------------------------
+
+    /// Create a fake wallet script in the given temp dir.
+    /// The script consumes stdin (mnemonic) and prints `stdout_content` to stdout.
+    fn create_fake_wallet(dir: &tempfile::TempDir, stdout_content: &str) -> PathBuf {
+        let path = dir.path().join("fake-wallet");
+        std::fs::write(&path, format!("#!/bin/sh\ncat > /dev/null\necho '{stdout_content}'\n")).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        path
+    }
+
+    /// Create a fake wallet script that exits with non-zero and prints to stderr.
+    fn create_failing_wallet(dir: &tempfile::TempDir, stderr_msg: &str) -> PathBuf {
+        let path = dir.path().join("fake-wallet-fail");
+        std::fs::write(&path, format!("#!/bin/sh\necho '{stderr_msg}' >&2\nexit 1\n")).unwrap();
+        std::fs::set_permissions(&path, std::fs::Permissions::from_mode(0o755)).unwrap();
+        path
+    }
+
+    /// Build a config with the given binary (submit_api_url = None, no api key).
+    fn config_with_bin(bin: PathBuf) -> EmbeddedWalletSinkConfig {
+        EmbeddedWalletSinkConfig {
+            embedded_wallet_bin: bin,
+            blockfrost_url: String::new(),
+            blockfrost_api_key: None,
+            network: Network::Mainnet,
+            submit_api_url: None,
+            mnemonic: test_mnemonic(),
+        }
+    }
+
+    /// Build a config that uses submit-api at the given URL.
+    fn config_with_submit_api(bin: PathBuf, submit_url: String) -> EmbeddedWalletSinkConfig {
+        EmbeddedWalletSinkConfig {
+            embedded_wallet_bin: bin,
+            blockfrost_url: String::new(),
+            blockfrost_api_key: Some("test-api-key".to_string()),
+            network: Network::Mainnet,
+            submit_api_url: Some(submit_url),
+            mnemonic: test_mnemonic(),
+        }
+    }
+
+    /// Build a config that uses blockfrost (no submit-api-url).
+    fn config_with_blockfrost(
+        bin: PathBuf,
+        blockfrost_url: String,
+        api_key: Option<String>,
+    ) -> EmbeddedWalletSinkConfig {
+        EmbeddedWalletSinkConfig {
+            embedded_wallet_bin: bin,
+            blockfrost_url,
+            blockfrost_api_key: api_key,
+            network: Network::Preprod,
+            submit_api_url: None,
+            mnemonic: test_mnemonic(),
+        }
+    }
+
+    fn test_mnemonic() -> Arc<str> {
+        Arc::from("test word ".repeat(4))
+    }
+
+    /// Start a mock HTTP server that accepts one connection and returns a canned response.
+    async fn start_mock_server(status: u16, body: String) -> (String, tokio::task::JoinHandle<()>) {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let url = format!("http://127.0.0.1:{port}");
+
+        let handle = tokio::spawn(async move {
+            if let Ok((mut stream, _)) = listener.accept().await {
+                // Read the full request (headers + body)
+                let mut buf = vec![0u8; 16384];
+                let _ = stream.read(&mut buf).await;
+
+                let status_text = if (200..300).contains(&status) { "OK" } else { "Error" };
+                let response = format!(
+                    "HTTP/1.1 {status} {status_text}\r\n\
+                     Content-Length: {}\r\n\
+                     Content-Type: application/json\r\n\
+                     \r\n\
+                     {body}",
+                    body.len(),
+                );
+                let _ = stream.write_all(response.as_bytes()).await;
+            }
+        });
+
+        (url, handle)
+    }
 
     // ------------------------------------------------------------------
     // Error Display variants
@@ -399,5 +510,158 @@ mod tests {
         // Non-retryable
         assert!(!EmbeddedWalletSink::is_retryable_error("some unrelated error message"));
         assert!(!EmbeddedWalletSink::is_retryable_error(""));
+    }
+
+    // ------------------------------------------------------------------
+    // build_and_submit — subprocess error paths
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn build_and_submit_nonexistent_binary_returns_spawn_error() {
+        let sink = EmbeddedWalletSink::new(config_with_bin(PathBuf::from("/nonexistent/binary")));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(err.contains("spawn"), "expected spawn error, got: {err}");
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_subprocess_failure_returns_subprocess_failed_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_failing_wallet(&dir, "something went wrong");
+        let sink = EmbeddedWalletSink::new(config_with_bin(bin));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(
+            err.contains("subprocess failed"),
+            "expected subprocess failed, got: {err}"
+        );
+        assert!(
+            err.contains("something went wrong"),
+            "expected stderr in error, got: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_invalid_hex_stdout_returns_cbor_decode_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, "this is not hex!!!");
+        let sink = EmbeddedWalletSink::new(config_with_bin(bin));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(err.contains("decode CBOR"), "expected CBOR decode error, got: {err}");
+    }
+
+    // ------------------------------------------------------------------
+    // build_and_submit — HTTP submit-api paths
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn build_and_submit_unreachable_submit_api_returns_submit_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        // Port 1 is not listening — connection refused
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, "http://127.0.0.1:1".to_string()));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(err.contains("submit"), "expected submit error, got: {err}");
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_submit_api_returns_error_status() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        let (url, _server) = start_mock_server(500, "internal server error".to_string()).await;
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, url));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(
+            err.contains("non-success status"),
+            "expected submit api error, got: {err}"
+        );
+        assert!(err.contains("500"), "expected status 500, got: {err}");
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_submit_api_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        let (url, _server) = start_mock_server(200, VALID_TX_HASH.to_string()).await;
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, url));
+        let tx_id = sink.build_and_submit("deadbeef").await.unwrap();
+        // Verify we got a valid TxId (32 bytes)
+        assert_eq!(tx_id.to_vec().len(), 32);
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_submit_api_json_quoted_hash() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        // cardano-submit-api may return JSON-quoted hash
+        let body = format!("\"{VALID_TX_HASH}\"");
+        let (url, _server) = start_mock_server(200, body).await;
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, url));
+        let tx_id = sink.build_and_submit("deadbeef").await.unwrap();
+        assert_eq!(tx_id.to_vec().len(), 32);
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_submit_api_invalid_tx_hash_returns_parse_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        // Return a hash that's too short (not 32 bytes)
+        let (url, _server) = start_mock_server(200, "aabb".to_string()).await;
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, url));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        // TxId::from_bytes fails with hash size error for short input
+        assert!(
+            err.contains("invalid input size"),
+            "expected hash size error, got: {err}"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // build_and_submit — blockfrost paths
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn build_and_submit_blockfrost_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        let (url, _server) = start_mock_server(200, VALID_TX_HASH.to_string()).await;
+        let sink = EmbeddedWalletSink::new(config_with_blockfrost(bin, url, Some("test-key".to_string())));
+        let tx_id = sink.build_and_submit("deadbeef").await.unwrap();
+        assert_eq!(tx_id.to_vec().len(), 32);
+    }
+
+    #[tokio::test]
+    async fn build_and_submit_blockfrost_without_api_key_returns_error() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        // submit_api_url is None AND blockfrost_api_key is None
+        let sink = EmbeddedWalletSink::new(config_with_blockfrost(bin, "http://127.0.0.1:1".to_string(), None));
+        let err = sink.build_and_submit("deadbeef").await.unwrap_err();
+        assert!(err.contains("submit"), "expected submit error, got: {err}");
+    }
+
+    // ------------------------------------------------------------------
+    // publish_operations — integration via DltSink trait
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn publish_operations_non_retryable_error_returns_immediately() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_failing_wallet(&dir, "permanent failure");
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, "http://127.0.0.1:1".to_string()));
+        // SubprocessFailed error is NOT retryable, so it should return immediately
+        let err = sink.publish_operations(vec![]).await.unwrap_err();
+        assert!(
+            err.contains("subprocess failed"),
+            "expected subprocess failed, got: {err}"
+        );
+    }
+
+    #[tokio::test]
+    async fn publish_operations_success() {
+        let dir = tempfile::tempdir().unwrap();
+        let bin = create_fake_wallet(&dir, VALID_TX_HASH);
+        let (url, _server) = start_mock_server(200, VALID_TX_HASH.to_string()).await;
+        let sink = EmbeddedWalletSink::new(config_with_submit_api(bin, url));
+        let tx_id = sink.publish_operations(vec![]).await.unwrap();
+        assert_eq!(tx_id.to_vec().len(), 32);
     }
 }
