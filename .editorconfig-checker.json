@@ -3,6 +3,7 @@
     "\\.git",
     "node_modules",
     "target",
-    "lib/did-prism-indexer/src/dlt/dbsync\\.rs"
+    "lib/did-prism-indexer/src/dlt/dbsync\\.rs",
+    "lib/did-prism-submitter/src/dlt/embedded_wallet\\.rs"
   ]
 }
