@@ -25,9 +25,8 @@ identus-apollo    = { workspace = true, features = [ "hash", "hex", "secp256k1",
 identus-did-prism = { workspace = true }
 
 [dev-dependencies]
-pallas-codec = { version = "0.30" }
-serde_json   = { workspace = true }
-tokio        = { workspace = true, features = [ "rt", "macros", "test-util" ] }
+serde_json = { workspace = true }
+tokio      = { workspace = true, features = [ "rt", "macros", "test-util" ] }
 
 [features]
 default    = [  ]
