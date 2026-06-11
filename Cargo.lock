@@ -1797,6 +1797,7 @@ dependencies = [
  "k256",
  "ring",
  "serde",
+ "serde_json",
  "utoipa",
  "x25519-dalek",
 ]
@@ -1852,6 +1853,7 @@ dependencies = [
  "identus-apollo",
  "identus-did-prism",
  "oura",
+ "pallas-codec 0.30.2",
  "pallas-primitives",
  "protobuf",
  "serde",
@@ -1887,6 +1889,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
 ]
@@ -1895,9 +1898,14 @@ dependencies = [
 name = "identus-did-resolver-http"
 version = "0.14.1"
 dependencies = [
+ "async-trait",
  "axum",
  "derive_more",
+ "http-body-util",
  "identus-did-core",
+ "serde_json",
+ "tokio",
+ "tower",
  "utoipa",
 ]
 
@@ -2429,6 +2437,7 @@ dependencies = [
  "maud",
  "node-storage",
  "serde",
+ "serde_json",
  "sqlx",
  "tempfile",
  "tokio",
