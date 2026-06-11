@@ -4,13 +4,17 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::{CanonicalPrismDid, PrismDidOps};
-use identus_did_prism::dlt::OperationMetadata;
+use identus_did_prism::dlt::{
+    BlockMetadata, BlockNo, DltCursor, OperationMetadata, PublishedPrismObject, SlotNo, TxId,
+};
 use identus_did_prism::prelude::*;
 use identus_did_prism::proto;
+use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
 use identus_did_prism_indexer::repo::{
     IndexedOperation, IndexedOperationRepo, RawOperationId, RawOperationRecord, RawOperationRepo,
 };
-use identus_did_prism_indexer::run_indexer_loop;
+use identus_did_prism_indexer::{DltSource, run_indexer_loop, run_sync_loop};
+use tokio::sync::{mpsc, watch};
 use uuid::Uuid;
 
 /// Generate a unique UUID from a monotonic counter (avoids needing uuid/v4 feature).
@@ -519,4 +523,414 @@ async fn index_multiple_independent_vdr_entries() {
         init_hashes[0], init_hashes[1],
         "independent VDR entries should have different init hashes"
     );
+}
+
+// ---------------------------------------------------------------------------
+// Tests for index_from_operation branches
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn index_protocol_version_update_operation() {
+    let repo = InMemoryRepo::new();
+    let (create_did_op, _create_did_op_hash, did, master_sk, _) = create_did_with_vdr_key();
+
+    let (pvu_op, _) = test_utils::new_signed_operation(
+        "master-0",
+        &master_sk,
+        proto::prism::prism_operation::Operation::ProtocolVersionUpdate(
+            proto::prism_version::ProtoProtocolVersionUpdate {
+                proposer_did: did.suffix_hex().to_string(),
+                version: Some(proto::prism_version::ProtocolVersionInfo {
+                    version_name: "2.0.0".to_string(),
+                    effective_since: 1000,
+                    protocol_version: Some(proto::prism_version::ProtocolVersion {
+                        major_version: 2,
+                        minor_version: 0,
+                        special_fields: Default::default(),
+                    })
+                    .into(),
+                    special_fields: Default::default(),
+                })
+                .into(),
+                special_fields: Default::default(),
+            },
+        ),
+    );
+    repo.insert(test_utils::dummy_metadata(0), create_did_op);
+    repo.insert(test_utils::dummy_metadata(1), pvu_op);
+
+    run_indexer_loop(&repo).await.unwrap();
+
+    let indexed = repo.indexed_ops();
+    assert_eq!(indexed.len(), 2);
+    // ProtocolVersionUpdate is indexed as SSI with the proposer DID
+    assert_eq!(indexed[1].expect_ssi(), &did);
+}
+
+#[tokio::test]
+async fn index_prism_operation_with_no_inner_operation() {
+    let repo = InMemoryRepo::new();
+
+    // Create a PrismOperation with operation = None, wrapped in SignedPrismOperation
+    let empty_prism_op = proto::prism::PrismOperation {
+        operation: None,
+        special_fields: Default::default(),
+    };
+    let signed_op = proto::prism::SignedPrismOperation {
+        signed_with: "master-0".to_string(),
+        signature: vec![],
+        operation: Some(empty_prism_op).into(),
+        special_fields: Default::default(),
+    };
+    repo.insert(test_utils::dummy_metadata(0), signed_op);
+
+    run_indexer_loop(&repo).await.unwrap();
+
+    let indexed = repo.indexed_ops();
+    assert_eq!(indexed.len(), 1);
+    indexed[0].expect_ignored();
+}
+
+// ---------------------------------------------------------------------------
+// Tests for recursively_find_vdr_root edge cases
+// ---------------------------------------------------------------------------
+
+#[tokio::test]
+async fn index_vdr_child_with_invalid_parent_hash_length() {
+    let repo = InMemoryRepo::new();
+    let (_, _, _, _, vdr_sk) = create_did_with_vdr_key();
+
+    // Construct an UpdateStorageEntry with a prev hash that is NOT 32 bytes
+    let malformed_op = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(proto::prism_storage::ProtoUpdateStorageEntry {
+            previous_event_hash: vec![0xAA; 16], // Only 16 bytes, not 32
+            data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        }),
+    );
+    repo.insert(test_utils::dummy_metadata(0), malformed_op.0);
+
+    run_indexer_loop(&repo).await.unwrap();
+
+    let indexed = repo.indexed_ops();
+    assert_eq!(indexed.len(), 1);
+    indexed[0].expect_ignored();
+}
+
+#[tokio::test]
+async fn index_vdr_child_pointing_to_ssi_operation_is_ignored() {
+    let repo = InMemoryRepo::new();
+    let (create_did_op, create_did_op_hash, _, _, vdr_sk) = create_did_with_vdr_key();
+
+    // An UpdateStorageEntry whose previous_event_hash matches the SSI CreateDid operation hash
+    let (vdr_child_op, _) = new_update_storage_op(&vdr_sk, &create_did_op_hash, vec![9, 9, 9]);
+    repo.insert(test_utils::dummy_metadata(0), create_did_op);
+    repo.insert(test_utils::dummy_metadata(1), vdr_child_op);
+
+    run_indexer_loop(&repo).await.unwrap();
+
+    let indexed = repo.indexed_ops();
+    assert_eq!(indexed.len(), 2);
+    // CreateDid is indexed as SSI
+    indexed[0].expect_ssi();
+    // The VDR child whose parent is an SSI operation should be ignored
+    indexed[1].expect_ignored();
+}
+
+#[tokio::test]
+async fn index_vdr_child_exceeding_max_depth_is_ignored() {
+    let repo = InMemoryRepo::new();
+    let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
+    repo.insert(test_utils::dummy_metadata(0), create_did_op);
+
+    // Build a chain of VDR operations longer than the indexer can walk back.
+    // recursively_find_vdr_root iterates `1..SEARCH_MAX_DEPTH` (199 lookups),
+    // so update #199 is the deepest indexable entry and update #200 falls off.
+    let mut prev_hash = Sha256Digest::from_bytes(&[0u8; 32]).unwrap();
+
+    // Insert a root CreateStorageEntry followed by 200 chained UpdateStorageEntry operations
+    for i in 0..201u32 {
+        let (op, hash) = if i == 0 {
+            new_create_storage_op(&did, &vdr_sk, 0, vec![1])
+        } else {
+            new_update_storage_op(&vdr_sk, &prev_hash, vec![i as u8])
+        };
+        repo.insert(test_utils::dummy_metadata(i + 1), op);
+        prev_hash = hash;
+    }
+
+    run_indexer_loop(&repo).await.unwrap();
+
+    let indexed = repo.indexed_ops();
+    // CreateDid + CreateStorageEntry root + 200 UpdateStorageEntry = 202 operations
+    assert_eq!(indexed.len(), 202);
+
+    // Pin the exact boundary: update #199 is still indexed as VDR,
+    // update #200 exceeds max depth and is ignored
+    indexed[indexed.len() - 2].expect_vdr();
+    indexed.last().unwrap().expect_ignored();
+}
+
+// ---------------------------------------------------------------------------
+// Tests for run_sync_loop
+// ---------------------------------------------------------------------------
+
+struct MockDltSource {
+    rx: Option<mpsc::Receiver<PublishedPrismObject>>,
+    cursor_rx: watch::Receiver<Option<DltCursor>>,
+}
+
+impl DltSource for MockDltSource {
+    fn sync_cursor(&self) -> watch::Receiver<Option<DltCursor>> {
+        self.cursor_rx.clone()
+    }
+
+    fn into_stream(self) -> Result<mpsc::Receiver<PublishedPrismObject>, String> {
+        self.rx.ok_or_else(|| "no receiver configured".to_string())
+    }
+}
+
+fn mock_dlt_source_with_channel() -> (MockDltSource, mpsc::Sender<PublishedPrismObject>) {
+    let (tx, rx) = mpsc::channel::<PublishedPrismObject>(64);
+    let (_, cursor_rx) = watch::channel::<Option<DltCursor>>(None);
+    let source = MockDltSource {
+        rx: Some(rx),
+        cursor_rx,
+    };
+    (source, tx)
+}
+
+fn make_published_object(block_metadata: BlockMetadata, operations: Vec<SignedPrismOperation>) -> PublishedPrismObject {
+    PublishedPrismObject {
+        block_metadata,
+        prism_object: PrismObject {
+            block_content: Some(PrismBlock {
+                operations,
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        },
+    }
+}
+
+#[tokio::test]
+async fn sync_loop_inserts_valid_operations() {
+    let repo = InMemoryRepo::new();
+    let (source, tx) = mock_dlt_source_with_channel();
+    let (create_did_op, _, _did, _, _) = create_did_with_vdr_key();
+
+    let meta = test_utils::dummy_metadata(0).block_metadata;
+    let obj = make_published_object(meta.clone(), vec![create_did_op]);
+    tx.send(obj).await.unwrap();
+    drop(tx); // Close the source
+
+    run_sync_loop(&repo, source).await.unwrap();
+
+    // Verify the raw operation was inserted
+    let unindexed = repo.raw_operations.lock().unwrap();
+    assert_eq!(unindexed.len(), 1);
+    assert_eq!(unindexed[0].metadata.osn, 0);
+    assert_eq!(unindexed[0].metadata.block_metadata.tx_id, meta.tx_id);
+}
+
+#[tokio::test]
+async fn sync_loop_skips_operations_without_inner_operation() {
+    let repo = InMemoryRepo::new();
+    let (source, tx) = mock_dlt_source_with_channel();
+
+    // Create a valid operation
+    let (create_did_op, _, _, _, _) = create_did_with_vdr_key();
+
+    // Create an operation with no inner operation (empty PrismOperation)
+    let empty_op = proto::prism::SignedPrismOperation {
+        signed_with: "master-0".to_string(),
+        signature: vec![],
+        operation: Some(proto::prism::PrismOperation {
+            operation: None,
+            special_fields: Default::default(),
+        })
+        .into(),
+        special_fields: Default::default(),
+    };
+
+    // Create an operation with no PrismOperation at all
+    let no_op = proto::prism::SignedPrismOperation {
+        signed_with: "master-0".to_string(),
+        signature: vec![],
+        operation: None.into(),
+        special_fields: Default::default(),
+    };
+
+    let meta = test_utils::dummy_metadata(0).block_metadata;
+    let obj = make_published_object(meta.clone(), vec![create_did_op, empty_op, no_op]);
+    tx.send(obj).await.unwrap();
+    drop(tx);
+
+    run_sync_loop(&repo, source).await.unwrap();
+
+    // Only the valid operation should be inserted
+    let unindexed = repo.raw_operations.lock().unwrap();
+    assert_eq!(unindexed.len(), 1);
+}
+
+#[tokio::test]
+async fn sync_loop_handles_none_block_content() {
+    let repo = InMemoryRepo::new();
+    let (source, tx) = mock_dlt_source_with_channel();
+
+    let meta = test_utils::dummy_metadata(0).block_metadata;
+    let obj = PublishedPrismObject {
+        block_metadata: meta,
+        prism_object: PrismObject {
+            block_content: None.into(),
+            special_fields: Default::default(),
+        },
+    };
+    tx.send(obj).await.unwrap();
+    drop(tx);
+
+    run_sync_loop(&repo, source).await.unwrap();
+
+    // No operations should be inserted
+    let unindexed = repo.raw_operations.lock().unwrap();
+    assert!(unindexed.is_empty());
+}
+
+#[tokio::test]
+async fn sync_loop_processes_multiple_blocks() {
+    let repo = InMemoryRepo::new();
+    let (source, tx) = mock_dlt_source_with_channel();
+    let (create_did_op, _, _, _, _) = create_did_with_vdr_key();
+
+    // Send two blocks with different metadata
+    for i in 0..2u32 {
+        let meta = BlockMetadata {
+            slot_number: SlotNo::from(i as u64),
+            block_number: BlockNo::from(i as u64),
+            cbt: chrono::DateTime::UNIX_EPOCH,
+            absn: 0,
+            tx_id: TxId::from(identus_apollo::hash::sha256([i as u8; 32])),
+        };
+        let obj = make_published_object(meta, vec![create_did_op.clone()]);
+        tx.send(obj).await.unwrap();
+    }
+    drop(tx);
+
+    run_sync_loop(&repo, source).await.unwrap();
+
+    let unindexed = repo.raw_operations.lock().unwrap();
+    assert_eq!(unindexed.len(), 2);
+    // Verify the operations came from different blocks
+    assert_ne!(
+        unindexed[0].metadata.block_metadata.block_number,
+        unindexed[1].metadata.block_metadata.block_number
+    );
+}
+
+#[tokio::test]
+async fn sync_loop_continues_on_insert_error() {
+    let repo = FailingInsertRepo::new();
+    let (source, tx) = mock_dlt_source_with_channel();
+    let (create_did_op, _, _, _, _) = create_did_with_vdr_key();
+
+    // Send two blocks: the first insert fails, the loop must keep going and store the second
+    for i in 0..2u32 {
+        let meta = BlockMetadata {
+            slot_number: SlotNo::from(i as u64),
+            block_number: BlockNo::from(i as u64),
+            cbt: chrono::DateTime::UNIX_EPOCH,
+            absn: 0,
+            tx_id: TxId::from(identus_apollo::hash::sha256([i as u8; 32])),
+        };
+        let obj = make_published_object(meta, vec![create_did_op.clone()]);
+        tx.send(obj).await.unwrap();
+    }
+    drop(tx);
+
+    // The first insert error is logged and the loop continues
+    run_sync_loop(&repo, source).await.unwrap();
+
+    let inserted = repo.inserted.lock().unwrap();
+    assert_eq!(inserted.len(), 1, "second block should be stored after the first fails");
+    assert_eq!(inserted[0].0.block_metadata.block_number, BlockNo::from(1u64));
+}
+
+/// A repo whose first insert_raw_operations call fails and subsequent calls succeed,
+/// to test that run_sync_loop continues after an insert error.
+struct FailingInsertRepo {
+    failed_once: Mutex<bool>,
+    inserted: Mutex<Vec<(OperationMetadata, SignedPrismOperation)>>,
+}
+
+impl FailingInsertRepo {
+    fn new() -> Self {
+        Self {
+            failed_once: Mutex::new(false),
+            inserted: Mutex::new(vec![]),
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl RawOperationRepo for FailingInsertRepo {
+    type Error = MockError;
+
+    async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
+        Ok(vec![])
+    }
+
+    async fn get_raw_operations_by_did(
+        &self,
+        _did: &CanonicalPrismDid,
+    ) -> Result<Vec<RawOperationRecord>, Self::Error> {
+        Ok(vec![])
+    }
+
+    async fn get_raw_operation_vdr_by_operation_hash(
+        &self,
+        _operation_hash: &Sha256Digest,
+    ) -> Result<Option<RawOperationRecord>, Self::Error> {
+        Ok(None)
+    }
+
+    async fn get_raw_operations_by_tx_id(
+        &self,
+        _tx_id: &TxId,
+    ) -> Result<Vec<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        Ok(vec![])
+    }
+
+    async fn get_raw_operation_by_operation_id(
+        &self,
+        _operation_id: &identus_did_prism::did::operation::OperationId,
+    ) -> Result<Option<(RawOperationRecord, CanonicalPrismDid)>, Self::Error> {
+        Ok(None)
+    }
+
+    async fn insert_raw_operations(
+        &self,
+        operations: Vec<(OperationMetadata, SignedPrismOperation)>,
+    ) -> Result<(), Self::Error> {
+        let mut failed_once = self.failed_once.lock().unwrap();
+        if !*failed_once {
+            *failed_once = true;
+            return Err(MockError);
+        }
+        self.inserted.lock().unwrap().extend(operations);
+        Ok(())
+    }
+}
+
+#[async_trait::async_trait]
+impl IndexedOperationRepo for FailingInsertRepo {
+    type Error = MockError;
+
+    async fn insert_indexed_operations(&self, _operations: Vec<IndexedOperation>) -> Result<(), Self::Error> {
+        Ok(())
+    }
 }

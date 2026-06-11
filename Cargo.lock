@@ -1797,6 +1797,7 @@ dependencies = [
  "k256",
  "ring",
  "serde",
+ "serde_json",
  "utoipa",
  "x25519-dalek",
 ]
@@ -1895,9 +1896,14 @@ dependencies = [
 name = "identus-did-resolver-http"
 version = "0.14.1"
 dependencies = [
+ "async-trait",
  "axum",
  "derive_more",
+ "http-body-util",
  "identus-did-core",
+ "serde_json",
+ "tokio",
+ "tower",
  "utoipa",
 ]
 
