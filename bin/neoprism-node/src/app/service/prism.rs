@@ -341,7 +341,10 @@ mod tests {
         let did_str = "did:prism:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890";
         let (result, _debug) = service.resolve_did(did_str).await;
         let err = result.unwrap_err();
-        matches!(err, ResolutionError::NotFound);
+        assert!(
+            matches!(err, ResolutionError::NotFound),
+            "expected NotFound, got: {err:?}"
+        );
     }
 
     #[tokio::test]
@@ -349,7 +352,10 @@ mod tests {
         let (service, _) = setup_service().await;
         let (result, _debug) = service.resolve_did("not-a-did").await;
         let err = result.unwrap_err();
-        matches!(err, ResolutionError::InvalidDid { .. });
+        assert!(
+            matches!(err, ResolutionError::InvalidDid { .. }),
+            "expected InvalidDid, got: {err:?}"
+        );
     }
 
     // --- resolve_did: published canonical DID ---

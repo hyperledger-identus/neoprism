@@ -558,10 +558,10 @@ mod tests {
             tx_idx: Some(1),
             ..Default::default()
         };
-        // u64::MAX cast to i64 wraps to -1, which gives 1969-12-31T23:59:59Z
-        // DateTime::from_timestamp(-1, 0) is valid
-        let result = models::parse_oura_timestamp(&ctx);
-        assert!(result.is_ok() || result.is_err(), "should not panic");
+        // u64::MAX cast to i64 wraps to -1, which DateTime::from_timestamp
+        // accepts as 1969-12-31T23:59:59Z
+        let result = models::parse_oura_timestamp(&ctx).unwrap();
+        assert_eq!(result.timestamp(), -1);
     }
 
     // ==================================================================

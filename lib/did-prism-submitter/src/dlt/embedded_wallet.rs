@@ -169,6 +169,9 @@ impl EmbeddedWalletSink {
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
+            // Reap the subprocess if we return early (e.g. stdin write error
+            // or timeout) instead of leaving it running unsupervised.
+            .kill_on_drop(true)
             .spawn()
             .map_err(|e| Error::SubprocessSpawn { source: e.into() }.to_string())?;
 

@@ -57,7 +57,6 @@ fn from_slice_too_few_bytes_returns_error() {
 fn from_slice_33_bytes_returns_error() {
     // Regression test: from_slice must reject oversized input (it previously
     // used split_first_chunk::<32>() which silently dropped trailing bytes).
-    // See .work/bugs.md for details.
     let mut input = [0xABu8; 33];
     input[32] = 0xFF; // extra byte that must NOT be silently ignored
     let result = X25519PublicKey::from_slice(&input);

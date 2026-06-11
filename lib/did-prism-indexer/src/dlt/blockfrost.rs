@@ -744,12 +744,9 @@ mod tests {
             tx_hash: valid_hex_hash(),
             json_metadata: Some(serde_json::json!({"wrong_key": []})),
         };
+        // MetadataMapJson requires both 'c' and 'v' fields, so deserialization fails
         let result = parse_published_prism_object(&tx, metadata);
-        // MetadataMapJson expects 'c' and 'v' fields; missing 'c' defaults to empty vec
-        // which decodes as empty bytes -> default PrismObject
-        // Actually serde will fail on missing required fields
-        // Let's see what happens
-        assert!(result.is_ok() || result.is_err(), "should not panic");
+        assert!(result.is_err(), "metadata missing 'c' and 'v' fields should fail");
     }
 
     #[test]

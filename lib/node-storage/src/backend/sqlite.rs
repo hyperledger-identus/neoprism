@@ -995,7 +995,8 @@ mod tests {
 
     // Regression test: set_cursor must replace any prior cursor (not leave stale
     // rows behind), so the indexer resumes from the latest slot on restart.
-    // See .work/bugs.md for the original sea_query UUID mismatch.
+    // The original bug: lazybe/sea_query encoded the uuid id as a string while
+    // the column is BLOB, so the per-row delete never matched (see set_cursor).
     #[tokio::test(flavor = "multi_thread")]
     async fn set_cursor_replaces_previous_cursor() {
         let (_tmp_dir, db) = setup_db().await;
