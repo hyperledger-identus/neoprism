@@ -172,21 +172,31 @@ impl EmbeddedWalletSink {
             .spawn()
             .map_err(|e| Error::SubprocessSpawn { source: e.into() }.to_string())?;
 
+        // Write mnemonic to stdin. A broken-pipe error here means the
+        // subprocess has already exited (e.g., it failed fast); fall through
+        // to read the output so the caller sees the real exit status / stderr
+        // rather than the stdin write error.
         {
-            let stdin = child.stdin.as_mut().ok_or_else(|| {
-                Error::StdinWrite {
+            use std::io::ErrorKind;
+            if let Some(stdin) = child.stdin.as_mut() {
+                if let Err(e) = stdin.write_all(self.config.mnemonic.as_bytes()).await
+                    && e.kind() != ErrorKind::BrokenPipe
+                {
+                    return Err(Error::StdinWrite { source: e.into() }.to_string());
+                }
+                if let Err(e) = stdin.write_all(b"\n").await
+                    && e.kind() != ErrorKind::BrokenPipe
+                {
+                    return Err(Error::StdinWrite { source: e.into() }.to_string());
+                }
+                // Close stdin to signal EOF to the subprocess.
+                drop(child.stdin.take());
+            } else {
+                return Err(Error::StdinWrite {
                     source: "failed to get stdin handle".into(),
                 }
-                .to_string()
-            })?;
-            stdin
-                .write_all(self.config.mnemonic.as_bytes())
-                .await
-                .map_err(|e| Error::StdinWrite { source: e.into() }.to_string())?;
-            stdin
-                .write_all(b"\n")
-                .await
-                .map_err(|e| Error::StdinWrite { source: e.into() }.to_string())?;
+                .to_string());
+            }
         }
 
         let output = timeout(SUBPROCESS_TIMEOUT, child.wait_with_output())

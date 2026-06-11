@@ -110,187 +110,194 @@ mod tests {
 
     use identus_apollo::hash::sha256;
     use identus_did_prism::dlt::DltCursor;
-    use identus_did_prism::proto::MessageExt;
-    use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
 
     use super::*;
 
     // ------------------------------------------------------------------
-    // MetadataMapJson tests
+    // MetadataMapJson tests (gated: requires blockfrost or dbsync feature
+    // because they depend on the feature-gated `metadata_map` module).
     // ------------------------------------------------------------------
 
-    /// Helper: encode a PrismObject into metadata byte groups ("0x" + hex).
-    fn encode_object_as_byte_groups(obj: &PrismObject) -> Vec<String> {
-        let bytes = obj.encode_to_vec();
-        bytes
-            .chunks(64)
-            .map(|chunk| {
-                let hex = identus_apollo::hex::HexStr::from(chunk).to_string();
-                format!("0x{hex}")
-            })
-            .collect()
-    }
+    #[cfg(any(feature = "blockfrost", feature = "dbsync"))]
+    mod metadata_map_tests {
+        use identus_did_prism::proto::MessageExt;
+        use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
 
-    /// Helper: build a minimal PrismObject with one empty operation.
-    fn minimal_prism_object() -> PrismObject {
-        PrismObject {
-            block_content: Some(PrismBlock {
-                operations: vec![],
-                special_fields: Default::default(),
-            })
-            .into(),
-            special_fields: Default::default(),
+        use super::super::metadata_map;
+
+        /// Helper: encode a PrismObject into metadata byte groups ("0x" + hex).
+        fn encode_object_as_byte_groups(obj: &PrismObject) -> Vec<String> {
+            let bytes = obj.encode_to_vec();
+            bytes
+                .chunks(64)
+                .map(|chunk| {
+                    let hex = identus_apollo::hex::HexStr::from(chunk).to_string();
+                    format!("0x{hex}")
+                })
+                .collect()
         }
-    }
 
-    #[test]
-    fn metadata_map_parse_valid_single_byte_group() {
-        let obj = minimal_prism_object();
-        let byte_groups = encode_object_as_byte_groups(&obj);
-
-        let meta = metadata_map::MetadataMapJson { c: byte_groups, v: 1 };
-
-        let result = meta.parse_prism_object("abc123", None).unwrap();
-        assert_eq!(result, obj);
-    }
-
-    #[test]
-    fn metadata_map_parse_valid_multiple_byte_groups() {
-        // Create an object large enough to span multiple 64-byte chunks.
-        // Use operations with large signature data to exceed 64 bytes.
-        let large_sig: Vec<u8> = (0..200u8).collect();
-        let obj = PrismObject {
-            block_content: Some(PrismBlock {
-                operations: (0..10)
-                    .map(|_| identus_did_prism::proto::prism::SignedPrismOperation {
-                        signed_with: "master-0".to_string(),
-                        signature: large_sig.clone(),
-                        operation: protobuf::MessageField(None),
-                        special_fields: Default::default(),
-                    })
-                    .collect(),
+        /// Helper: build a minimal PrismObject with one empty operation.
+        fn minimal_prism_object() -> PrismObject {
+            PrismObject {
+                block_content: Some(PrismBlock {
+                    operations: vec![],
+                    special_fields: Default::default(),
+                })
+                .into(),
                 special_fields: Default::default(),
-            })
-            .into(),
-            special_fields: Default::default(),
-        };
+            }
+        }
 
-        let byte_groups = encode_object_as_byte_groups(&obj);
-        assert!(
-            byte_groups.len() > 1,
-            "expected multiple byte groups for a large object"
-        );
+        #[test]
+        fn metadata_map_parse_valid_single_byte_group() {
+            let obj = minimal_prism_object();
+            let byte_groups = encode_object_as_byte_groups(&obj);
 
-        let meta = metadata_map::MetadataMapJson { c: byte_groups, v: 1 };
+            let meta = metadata_map::MetadataMapJson { c: byte_groups, v: 1 };
 
-        let result = meta.parse_prism_object("deadbeef", Some(5)).unwrap();
-        assert_eq!(result, obj);
-    }
+            let result = meta.parse_prism_object("abc123", None).unwrap();
+            assert_eq!(result, obj);
+        }
 
-    #[test]
-    fn metadata_map_parse_missing_0x_prefix_returns_error() {
-        let meta = metadata_map::MetadataMapJson {
-            c: vec!["aabbccdd".to_string()], // no 0x prefix
-            v: 1,
-        };
+        #[test]
+        fn metadata_map_parse_valid_multiple_byte_groups() {
+            // Create an object large enough to span multiple 64-byte chunks.
+            // Use operations with large signature data to exceed 64 bytes.
+            let large_sig: Vec<u8> = (0..200u8).collect();
+            let obj = PrismObject {
+                block_content: Some(PrismBlock {
+                    operations: (0..10)
+                        .map(|_| identus_did_prism::proto::prism::SignedPrismOperation {
+                            signed_with: "master-0".to_string(),
+                            signature: large_sig.clone(),
+                            operation: protobuf::MessageField(None),
+                            special_fields: Default::default(),
+                        })
+                        .collect(),
+                    special_fields: Default::default(),
+                })
+                .into(),
+                special_fields: Default::default(),
+            };
 
-        let err = meta.parse_prism_object("blockhash", None).unwrap_err();
+            let byte_groups = encode_object_as_byte_groups(&obj);
+            assert!(
+                byte_groups.len() > 1,
+                "expected multiple byte groups for a large object"
+            );
 
-        let err_msg = err.to_string();
-        assert!(
-            err_msg.contains("blockhash"),
-            "error should reference block_hash: {err_msg}"
-        );
-    }
+            let meta = metadata_map::MetadataMapJson { c: byte_groups, v: 1 };
 
-    #[test]
-    fn metadata_map_parse_invalid_hex_after_prefix_returns_error() {
-        let meta = metadata_map::MetadataMapJson {
-            c: vec!["0xZZZZ".to_string()], // invalid hex
-            v: 1,
-        };
+            let result = meta.parse_prism_object("deadbeef", Some(5)).unwrap();
+            assert_eq!(result, obj);
+        }
 
-        let err = meta.parse_prism_object("blockhash", Some(3)).unwrap_err();
+        #[test]
+        fn metadata_map_parse_missing_0x_prefix_returns_error() {
+            let meta = metadata_map::MetadataMapJson {
+                c: vec!["aabbccdd".to_string()], // no 0x prefix
+                v: 1,
+            };
 
-        let err_msg = err.to_string();
-        assert!(
-            err_msg.contains("blockhash"),
-            "error should reference block_hash: {err_msg}"
-        );
-    }
+            let err = meta.parse_prism_object("blockhash", None).unwrap_err();
 
-    #[test]
-    fn metadata_map_parse_invalid_protobuf_returns_error() {
-        let meta = metadata_map::MetadataMapJson {
-            c: vec!["0xdeadbeef".to_string()], // valid hex, but not valid protobuf
-            v: 1,
-        };
+            let err_msg = err.to_string();
+            assert!(
+                err_msg.contains("blockhash"),
+                "error should reference block_hash: {err_msg}"
+            );
+        }
 
-        let err = meta.parse_prism_object("blockhash", Some(7)).unwrap_err();
+        #[test]
+        fn metadata_map_parse_invalid_hex_after_prefix_returns_error() {
+            let meta = metadata_map::MetadataMapJson {
+                c: vec!["0xZZZZ".to_string()], // invalid hex
+                v: 1,
+            };
 
-        let err_msg = err.to_string();
-        assert!(
-            err_msg.contains("blockhash"),
-            "error should reference block_hash: {err_msg}"
-        );
-        assert!(
-            err_msg.contains("protobuf") || err_msg.contains("decode"),
-            "error should mention proto decode: {err_msg}"
-        );
-    }
+            let err = meta.parse_prism_object("blockhash", Some(3)).unwrap_err();
 
-    #[test]
-    fn metadata_map_parse_empty_byte_groups_returns_default_object() {
-        // Zero byte groups means zero bytes -> PrismObject::decode(&[])
-        // produces a default PrismObject in protobuf.
-        let meta = metadata_map::MetadataMapJson { c: vec![], v: 1 };
+            let err_msg = err.to_string();
+            assert!(
+                err_msg.contains("blockhash"),
+                "error should reference block_hash: {err_msg}"
+            );
+        }
 
-        let result = meta.parse_prism_object("empty", None);
-        assert!(result.is_ok(), "empty byte groups should decode as default PrismObject");
-        let obj = result.unwrap();
-        assert_eq!(obj, PrismObject::default());
-    }
+        #[test]
+        fn metadata_map_parse_invalid_protobuf_returns_error() {
+            let meta = metadata_map::MetadataMapJson {
+                c: vec!["0xdeadbeef".to_string()], // valid hex, but not valid protobuf
+                v: 1,
+            };
 
-    #[test]
-    fn metadata_map_parse_short_prefix_returns_error() {
-        // String shorter than 2 chars should fail split_at_checked(2)
-        let meta = metadata_map::MetadataMapJson {
-            c: vec!["0".to_string()], // only 1 char
-            v: 1,
-        };
+            let err = meta.parse_prism_object("blockhash", Some(7)).unwrap_err();
 
-        let err = meta.parse_prism_object("blockhash", None).unwrap_err();
+            let err_msg = err.to_string();
+            assert!(
+                err_msg.contains("blockhash"),
+                "error should reference block_hash: {err_msg}"
+            );
+            assert!(
+                err_msg.contains("protobuf") || err_msg.contains("decode"),
+                "error should mention proto decode: {err_msg}"
+            );
+        }
 
-        let err_msg = err.to_string();
-        assert!(
-            err_msg.contains("blockhash"),
-            "error should reference block_hash: {err_msg}"
-        );
-    }
+        #[test]
+        fn metadata_map_parse_empty_byte_groups_returns_default_object() {
+            // Zero byte groups means zero bytes -> PrismObject::decode(&[])
+            // produces a default PrismObject in protobuf.
+            let meta = metadata_map::MetadataMapJson { c: vec![], v: 1 };
 
-    #[test]
-    fn metadata_map_parse_wrong_prefix_returns_error() {
-        // "ab" prefix instead of "0x"
-        let meta = metadata_map::MetadataMapJson {
-            c: vec!["ab1234".to_string()],
-            v: 1,
-        };
+            let result = meta.parse_prism_object("empty", None);
+            assert!(result.is_ok(), "empty byte groups should decode as default PrismObject");
+            let obj = result.unwrap();
+            assert_eq!(obj, PrismObject::default());
+        }
 
-        let err = meta.parse_prism_object("blockhash", None).unwrap_err();
+        #[test]
+        fn metadata_map_parse_short_prefix_returns_error() {
+            // String shorter than 2 chars should fail split_at_checked(2)
+            let meta = metadata_map::MetadataMapJson {
+                c: vec!["0".to_string()], // only 1 char
+                v: 1,
+            };
 
-        let err_msg = err.to_string();
-        assert!(
-            err_msg.contains("blockhash"),
-            "error should reference block_hash: {err_msg}"
-        );
-    }
+            let err = meta.parse_prism_object("blockhash", None).unwrap_err();
 
-    #[test]
-    fn metadata_map_roundtrip_with_prism_object() {
-        let obj = minimal_prism_object();
-        let encoded = obj.encode_to_vec();
-        let decoded = PrismObject::decode(encoded.as_slice()).unwrap();
-        assert_eq!(decoded, obj);
+            let err_msg = err.to_string();
+            assert!(
+                err_msg.contains("blockhash"),
+                "error should reference block_hash: {err_msg}"
+            );
+        }
+
+        #[test]
+        fn metadata_map_parse_wrong_prefix_returns_error() {
+            // "ab" prefix instead of "0x"
+            let meta = metadata_map::MetadataMapJson {
+                c: vec!["ab1234".to_string()],
+                v: 1,
+            };
+
+            let err = meta.parse_prism_object("blockhash", None).unwrap_err();
+
+            let err_msg = err.to_string();
+            assert!(
+                err_msg.contains("blockhash"),
+                "error should reference block_hash: {err_msg}"
+            );
+        }
+
+        #[test]
+        fn metadata_map_roundtrip_with_prism_object() {
+            let obj = minimal_prism_object();
+            let encoded = obj.encode_to_vec();
+            let decoded = PrismObject::decode(encoded.as_slice()).unwrap();
+            assert_eq!(decoded, obj);
+        }
     }
 
     // ------------------------------------------------------------------

@@ -1,3 +1,5 @@
+#![cfg(feature = "base64")]
+
 use std::str::FromStr;
 
 use identus_apollo::base64::{Base64UrlStr, Base64UrlStrNoPad};
@@ -265,6 +267,7 @@ fn base64_url_no_pad_url_safe_characters() {
 // Serde serialization / deserialization (requires --all-features)
 // ---------------------------------------------------------------------------
 
+#[cfg(feature = "serde")]
 mod serde_tests {
     use serde::Deserialize;
 
