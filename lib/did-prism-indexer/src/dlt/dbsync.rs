@@ -238,6 +238,11 @@ impl DbSyncStreamWorker {
             let row_count = metadata_rows.len();
             for row in metadata_rows {
                 let process_result = Self::process_prism_object(row.clone(), &event_tx).await;
+                // Advance the cursor before propagating any error so a poison row
+                // (e.g. unparseable metadata) doesn't get re-fetched and re-failed
+                // forever. The watch channel carries the latest value to both
+                // CursorPersistWorker (durable resume across restarts) and the
+                // next stream_loop iteration (in-process restart).
                 Self::emit_cursor_progress(row.into(), &sync_cursor_tx);
                 if let Err(e) = process_result {
                     tracing::error!("error handling event from dbsync source");

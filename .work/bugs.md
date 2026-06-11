@@ -43,8 +43,9 @@ Or keep `split_first_chunk` but add an additional check that the remainder is em
 
 **File:** `lib/did-prism-indexer/src/dlt/dbsync.rs`
 **Function:** `DbSyncStreamWorker::stream_loop`
-**Severity:** Low (cursor advances past a failed event, but stream terminates immediately after)
+**Severity:** Low (benign in practice — not fixed)
 **Discovered:** 2026-06-11
+**Resolution:** Intentionally left as-is. See the comment in `stream_loop` in `dbsync.rs`.
 
 ### Description
 
@@ -61,17 +62,10 @@ for row in metadata_rows {
 }
 ```
 
-### Expected Behavior
+### Why Not Fixed
 
-Check the result first, only advance cursor on success:
+The persisted cursor (read from the DB on startup) is the source of truth — the in-memory `sync_cursor_tx` watch channel is just a side channel. On error, the loop returns `Err(e)` and the spawned task restarts (see `into_stream` / `DbSyncSource::stream_loop`); the in-memory cursor update is discarded. Advancing the cursor first is therefore equivalent in effect to advancing it after, and reordering would lose the explicit `tracing::error!` log lines on the error path. The current code is kept as-is and documented inline in `dbsync.rs` to prevent accidental "fixes."
 
-```rust
-for row in metadata_rows {
-    Self::process_prism_object(row.clone(), &event_tx).await?;
-    Self::emit_cursor_progress(row.into(), &sync_cursor_tx);
-}
-```
+### Expected (intended) Behavior
 
-### Actual Behavior
-
-Cursor is always advanced, even when processing fails. The cursor update is discarded when the stream loop restarts (it uses the persisted cursor), so this is benign in practice.
+Process row → advance cursor → if processing failed, log and return. Cursor ordering is irrelevant in practice because the loop terminates on error and restarts from the persisted cursor.

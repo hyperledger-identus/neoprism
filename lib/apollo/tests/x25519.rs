@@ -54,17 +54,18 @@ fn from_slice_too_few_bytes_returns_error() {
 }
 
 #[test]
-fn from_slice_33_bytes_succeeds_silently_truncates() {
-    // NOTE: from_slice uses split_first_chunk::<32>() which takes the first 32 bytes
-    // and silently ignores any extra bytes. This means 33+ bytes does NOT error.
+fn from_slice_33_bytes_returns_error() {
+    // Regression test: from_slice must reject oversized input (it previously
+    // used split_first_chunk::<32>() which silently dropped trailing bytes).
     // See .work/bugs.md for details.
     let mut input = [0xABu8; 33];
-    input[32] = 0xFF; // extra byte that will be ignored
+    input[32] = 0xFF; // extra byte that must NOT be silently ignored
     let result = X25519PublicKey::from_slice(&input);
-    assert!(result.is_ok(), "from_slice accepts >32 bytes, silently truncating");
-    let key = result.unwrap();
-    // The key should be the first 32 bytes
-    assert_eq!(key.encode_array(), [0xABu8; 32]);
+    assert!(result.is_err(), "from_slice must reject >32 bytes");
+    let err = result.unwrap_err();
+    let msg = err.to_string();
+    assert!(msg.contains("32"), "error should mention expected size: {msg}");
+    assert!(msg.contains("33"), "error should mention actual size: {msg}");
 }
 
 #[test]

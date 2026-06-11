@@ -7,14 +7,14 @@ pub struct X25519PublicKey(x25519_dalek::PublicKey);
 
 impl X25519PublicKey {
     pub fn from_slice(slice: &[u8]) -> Result<X25519PublicKey, Error> {
-        let Some((key, _)) = slice.split_first_chunk::<32>() else {
-            Err(Error::InvalidKeySize {
+        if slice.len() != 32 {
+            return Err(Error::InvalidKeySize {
                 expected: 32,
                 actual: slice.len(),
                 key_type: std::any::type_name::<X25519PublicKey>(),
-            })?
-        };
-        let key = x25519_dalek::PublicKey::from(key.to_owned());
+            });
+        }
+        let key = x25519_dalek::PublicKey::from(<[u8; 32]>::try_from(slice).expect("checked above"));
         Ok(X25519PublicKey(key))
     }
 }
