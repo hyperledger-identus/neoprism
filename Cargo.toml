@@ -68,6 +68,7 @@ humantime      = { version = "2" }
 tempfile       = { version = "3" }
 # cardano
 oura              = { git = "https://github.com/patextreme/oura.git", rev = "3546c03dac9fac8b5173332c1fe5122882e7351e" }
+pallas-codec      = { version = "0.30" }
 pallas-primitives = { version = "0.30" }
 # proto
 protobuf         = { version = "3" }

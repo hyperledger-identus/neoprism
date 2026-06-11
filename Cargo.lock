@@ -1853,6 +1853,7 @@ dependencies = [
  "identus-apollo",
  "identus-did-prism",
  "oura",
+ "pallas-codec 0.30.2",
  "pallas-primitives",
  "protobuf",
  "serde",
@@ -1888,6 +1889,7 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
+ "tempfile",
  "tokio",
  "tracing",
 ]
@@ -2435,6 +2437,7 @@ dependencies = [
  "maud",
  "node-storage",
  "serde",
+ "serde_json",
  "sqlx",
  "tempfile",
  "tokio",
