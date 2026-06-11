@@ -2,7 +2,7 @@
 
 use ed25519_dalek::Signer;
 use identus_apollo::crypto::ed25519::Ed25519PublicKey;
-use identus_apollo::crypto::{EncodeArray, EncodeVec, Verifiable};
+use identus_apollo::crypto::{EncodeArray, EncodeVec, Error, Verifiable};
 use identus_apollo::jwk::EncodeJwk;
 
 // ---------------------------------------------------------------------------
@@ -30,12 +30,40 @@ fn sample_public_key() -> Ed25519PublicKey {
 
 #[test]
 fn from_slice_invalid_32_bytes_returns_error() {
-    // [0x02; 32] is not a valid Ed25519 point (y=2 does not produce a valid x on the curve)
+    // [0x02; 32] does not decode to a valid Ed25519 curve point
     let result = Ed25519PublicKey::from_slice(&[0x02; 32]);
     assert!(
         result.is_err(),
         "all-0x02 bytes should be rejected as an invalid Ed25519 key"
     );
+}
+
+#[test]
+fn from_slice_too_short_returns_invalid_key_size() {
+    let err = Ed25519PublicKey::from_slice(&[0u8; 31]).unwrap_err();
+    assert!(
+        matches!(
+            err,
+            Error::InvalidKeySize {
+                expected: 32,
+                actual: 31,
+                ..
+            }
+        ),
+        "expected InvalidKeySize, got: {err:?}"
+    );
+}
+
+#[test]
+fn from_slice_ignores_trailing_bytes() {
+    // Pins current behavior: from_slice reads the first 32 bytes and silently
+    // ignores anything after them.
+    let signing = sample_signing_key();
+    let mut bytes = signing.verifying_key().as_bytes().to_vec();
+    bytes.extend_from_slice(&[0xFF; 8]);
+
+    let pk = Ed25519PublicKey::from_slice(&bytes).unwrap();
+    assert_eq!(pk, sample_public_key());
 }
 
 // ---------------------------------------------------------------------------

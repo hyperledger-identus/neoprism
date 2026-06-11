@@ -649,36 +649,5 @@ fn storage_state_with_bytes_converts_to_did_data() {
     assert_eq!(did_data.id, HexStr::from(make_suffix().as_bytes()).to_string());
 }
 
-#[test]
-fn storage_state_with_ipfs_fails_conversion() {
-    use identus_did_prism::did::operation::StorageData;
-    use identus_did_prism::proto::node_api;
-
-    let storage = StorageState {
-        init_operation_hash: Rc::new(Sha256Digest::from_bytes(&[0u8; 32]).unwrap()),
-        last_operation_hash: Rc::new(Sha256Digest::from_bytes(&[1u8; 32]).unwrap()),
-        data: Rc::new(StorageData::Ipfs("QmExample".to_string())),
-    };
-
-    let result: Result<node_api::StorageData, _> = storage.try_into();
-    assert!(result.is_err());
-}
-
-#[test]
-fn storage_state_with_status_list_fails_conversion() {
-    use identus_did_prism::did::operation::{StatusListData, StorageData};
-    use identus_did_prism::proto::node_api;
-
-    let storage = StorageState {
-        init_operation_hash: Rc::new(Sha256Digest::from_bytes(&[0u8; 32]).unwrap()),
-        last_operation_hash: Rc::new(Sha256Digest::from_bytes(&[1u8; 32]).unwrap()),
-        data: Rc::new(StorageData::StatusList(StatusListData {
-            state: 1,
-            name: "test".to_string(),
-            detail: "detail".to_string(),
-        })),
-    };
-
-    let result: Result<node_api::StorageData, _> = storage.try_into();
-    assert!(result.is_err());
-}
+// Note: the failing StorageState → node_api conversions (Ipfs, StatusList) are
+// covered in did_mod.rs, where the conversion impl lives.

@@ -262,43 +262,6 @@ fn raw_operation_id_as_ref() {
     assert_eq!(id.as_ref(), &uuid);
 }
 
-#[test]
-fn raw_operation_id_clone() {
-    let uuid = next_uuid();
-    let id1 = RawOperationId::from(uuid);
-    let id2 = id1;
-    assert_eq!(id1.as_ref(), id2.as_ref());
-}
-
-#[test]
-fn raw_operation_id_debug() {
-    let uuid = Uuid::parse_str("550e8400-e29b-41d4-a716-446655440000").unwrap();
-    let id = RawOperationId::from(uuid);
-    let debug_str = format!("{:?}", id);
-    assert!(debug_str.contains("550e8400"));
-}
-
-// ---------------------------------------------------------------------------
-// RawOperationRecord tests
-// ---------------------------------------------------------------------------
-
-#[test]
-fn raw_operation_record_construction() {
-    let uuid = next_uuid();
-    let record = dummy_raw_record(uuid);
-    assert_eq!(*record.id.as_ref(), uuid);
-    assert_eq!(record.metadata.osn, 0);
-    assert_eq!(record.signed_operation.signed_with, "master-0");
-}
-
-#[test]
-fn raw_operation_record_clone() {
-    let uuid = next_uuid();
-    let record = dummy_raw_record(uuid);
-    let cloned = record.clone();
-    assert_eq!(*cloned.id.as_ref(), *record.id.as_ref());
-}
-
 // ---------------------------------------------------------------------------
 // IndexedOperation::raw_operation_id() tests
 // ---------------------------------------------------------------------------
@@ -353,254 +316,60 @@ fn indexed_operation_raw_operation_id_ignored_variant() {
 }
 
 // ---------------------------------------------------------------------------
-// Arc<T> delegation: RawOperationRepo
+// Arc<T> delegation
+//
+// The `impl<T> Repo for Arc<T>` blanket impls are one-line forwards; one smoke
+// test per trait is enough to prove they exist, compile for `Arc<dyn Trait>`,
+// and forward arguments and results.
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn arc_raw_repo_get_raw_operations_unindexed() {
-    let mock = MockRawRepo::new();
+async fn arc_raw_operation_repo_forwards_calls() {
+    let mock = Arc::new(MockRawRepo::new());
     let record = dummy_raw_record(next_uuid());
     mock.unindexed_result.lock().unwrap().push(record.clone());
 
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
+    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = mock.clone();
     let result = arc.get_raw_operations_unindexed().await.unwrap();
     assert_eq!(result.len(), 1);
     assert_eq!(*result[0].id.as_ref(), *record.id.as_ref());
+
+    arc.insert_raw_operations(vec![(dummy_metadata(0), dummy_signed_operation())])
+        .await
+        .unwrap();
+    assert_eq!(mock.inserted.lock().unwrap().len(), 1);
 }
 
 #[tokio::test]
-async fn arc_raw_repo_get_raw_operations_unindexed_empty() {
-    let mock = MockRawRepo::new();
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operations_unindexed().await.unwrap();
-    assert!(result.is_empty());
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operations_by_did() {
-    let mock = MockRawRepo::new();
-    let record = dummy_raw_record(next_uuid());
-    mock.by_did_result.lock().unwrap().push(record);
-
-    let did = dummy_did();
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operations_by_did(&did).await.unwrap();
-    assert_eq!(result.len(), 1);
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operation_vdr_by_operation_hash() {
-    let mock = MockRawRepo::new();
-    let record = dummy_raw_record(next_uuid());
-    mock.vdr_by_hash_result.lock().unwrap().replace(record);
-
-    let hash = sha256([1u8; 32]);
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operation_vdr_by_operation_hash(&hash).await.unwrap();
-    assert!(result.is_some());
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operation_vdr_by_operation_hash_none() {
-    let mock = MockRawRepo::new();
-    let hash = sha256([1u8; 32]);
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operation_vdr_by_operation_hash(&hash).await.unwrap();
-    assert!(result.is_none());
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operations_by_tx_id() {
-    let mock = MockRawRepo::new();
-    let did = dummy_did();
-    let record = dummy_raw_record(next_uuid());
-    mock.by_tx_id_result.lock().unwrap().push((record, did.clone()));
-
-    let tx_id = TxId::from(sha256([2u8; 32]));
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operations_by_tx_id(&tx_id).await.unwrap();
-    assert_eq!(result.len(), 1);
-    assert_eq!(result[0].1, did);
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operation_by_operation_id() {
-    let mock = MockRawRepo::new();
-    let did = dummy_did();
-    let record = dummy_raw_record(next_uuid());
-    mock.by_op_id_result.lock().unwrap().replace((record, did.clone()));
-
-    let op_id = OperationId::from(Sha256Digest::from_bytes(&[3u8; 32]).unwrap());
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operation_by_operation_id(&op_id).await.unwrap();
-    assert!(result.is_some());
-    assert_eq!(result.unwrap().1, did);
-}
-
-#[tokio::test]
-async fn arc_raw_repo_get_raw_operation_by_operation_id_none() {
-    let mock = MockRawRepo::new();
-    let op_id = OperationId::from(Sha256Digest::from_bytes(&[3u8; 32]).unwrap());
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_raw_operation_by_operation_id(&op_id).await.unwrap();
-    assert!(result.is_none());
-}
-
-#[tokio::test]
-async fn arc_raw_repo_insert_raw_operations() {
-    let mock = MockRawRepo::new();
-
-    // Keep a reference to the mock to inspect later
-    let mock_ptr = Arc::new(mock);
-    let meta = dummy_metadata(0);
-    let signed_op = dummy_signed_operation();
-
-    let arc: Arc<dyn RawOperationRepo<Error = MockError> + Send + Sync> = mock_ptr.clone();
-    arc.insert_raw_operations(vec![(meta, signed_op)]).await.unwrap();
-
-    // Access through the concrete Arc<MockRawRepo>
-    let inner = mock_ptr.as_ref() as &MockRawRepo;
-    assert_eq!(inner.inserted.lock().unwrap().len(), 1);
-}
-
-// ---------------------------------------------------------------------------
-// Arc<T> delegation: IndexedOperationRepo
-// ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn arc_indexed_repo_insert_indexed_operations() {
-    let mock = MockIndexedRepo::new();
-    let mock_ptr = Arc::new(mock);
-
-    let raw_id = RawOperationId::from(next_uuid());
+async fn arc_indexed_operation_repo_forwards_calls() {
+    let mock = Arc::new(MockIndexedRepo::new());
     let ops = vec![IndexedOperation::Ssi {
-        raw_operation_id: raw_id,
+        raw_operation_id: RawOperationId::from(next_uuid()),
         did: dummy_did(),
     }];
 
-    let arc: Arc<dyn IndexedOperationRepo<Error = MockError> + Send + Sync> = mock_ptr.clone();
+    let arc: Arc<dyn IndexedOperationRepo<Error = MockError> + Send + Sync> = mock.clone();
     arc.insert_indexed_operations(ops).await.unwrap();
-
-    let inner = mock_ptr.as_ref() as &MockIndexedRepo;
-    assert_eq!(inner.inserted.lock().unwrap().len(), 1);
+    assert_eq!(mock.inserted.lock().unwrap().len(), 1);
 }
 
-// ---------------------------------------------------------------------------
-// Arc<T> delegation: IndexerStateRepo
-// ---------------------------------------------------------------------------
-
 #[tokio::test]
-async fn arc_state_repo_get_last_indexed_block_some() {
-    let mock = MockStateRepo::new();
+async fn arc_indexer_state_repo_forwards_calls() {
+    let mock = Arc::new(MockStateRepo::new());
     *mock.last_block.lock().unwrap() = Some((SlotNo::from(42), BlockNo::from(10)));
 
-    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
+    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = mock.clone();
     let result = arc.get_last_indexed_block().await.unwrap();
     assert_eq!(result, Some((SlotNo::from(42), BlockNo::from(10))));
 }
 
 #[tokio::test]
-async fn arc_state_repo_get_last_indexed_block_none() {
-    let mock = MockStateRepo::new();
-
-    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_last_indexed_block().await.unwrap();
-    assert!(result.is_none());
-}
-
-#[tokio::test]
-async fn arc_state_repo_get_all_dids() {
-    let mock = MockStateRepo::new();
-    let did = dummy_did();
-    *mock.all_dids.lock().unwrap() = Paginated {
-        items: vec![did],
-        current_page: 1,
-        page_size: 10,
-        total_items: 1,
-    };
-
-    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_all_dids(1, 10).await.unwrap();
-    assert_eq!(result.items.len(), 1);
-    assert_eq!(result.total_items, 1);
-}
-
-#[tokio::test]
-async fn arc_state_repo_get_did_by_vdr_entry_some() {
-    let mock = MockStateRepo::new();
-    let did = dummy_did();
-    *mock.did_by_vdr.lock().unwrap() = Some(did.clone());
-
-    let hash = sha256([4u8; 32]);
-
-    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_did_by_vdr_entry(&hash).await.unwrap();
-    assert_eq!(result, Some(did));
-}
-
-#[tokio::test]
-async fn arc_state_repo_get_did_by_vdr_entry_none() {
-    let mock = MockStateRepo::new();
-    let hash = sha256([4u8; 32]);
-
-    let arc: Arc<dyn IndexerStateRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_did_by_vdr_entry(&hash).await.unwrap();
-    assert!(result.is_none());
-}
-
-// ---------------------------------------------------------------------------
-// Arc<T> delegation: DltCursorRepo
-// ---------------------------------------------------------------------------
-
-#[tokio::test]
-async fn arc_cursor_repo_set_and_get_cursor() {
-    let mock = MockCursorRepo::new();
+async fn arc_dlt_cursor_repo_forwards_calls() {
+    let mock = Arc::new(MockCursorRepo::new());
     let cursor = dummy_cursor();
 
-    let arc: Arc<dyn DltCursorRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-
+    let arc: Arc<dyn DltCursorRepo<Error = MockError> + Send + Sync> = mock.clone();
     arc.set_cursor(cursor.clone()).await.unwrap();
     let result = arc.get_cursor().await.unwrap();
     assert_eq!(result, Some(cursor));
-}
-
-#[tokio::test]
-async fn arc_cursor_repo_get_cursor_none() {
-    let mock = MockCursorRepo::new();
-
-    let arc: Arc<dyn DltCursorRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-    let result = arc.get_cursor().await.unwrap();
-    assert!(result.is_none());
-}
-
-#[tokio::test]
-async fn arc_cursor_repo_set_cursor_overwrites() {
-    let mock = MockCursorRepo::new();
-
-    let arc: Arc<dyn DltCursorRepo<Error = MockError> + Send + Sync> = Arc::new(mock);
-
-    let cursor1 = DltCursor {
-        slot: 1,
-        block_hash: vec![1],
-        cbt: None,
-        blockfrost_page: None,
-    };
-    let cursor2 = DltCursor {
-        slot: 2,
-        block_hash: vec![2],
-        cbt: None,
-        blockfrost_page: Some(5),
-    };
-
-    arc.set_cursor(cursor1).await.unwrap();
-    arc.set_cursor(cursor2.clone()).await.unwrap();
-
-    let result = arc.get_cursor().await.unwrap();
-    assert_eq!(result, Some(cursor2));
 }

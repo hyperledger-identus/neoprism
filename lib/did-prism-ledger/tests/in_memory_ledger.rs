@@ -1,7 +1,6 @@
 //! Tests for the in-memory ledger implementation.
 //!
 //! Covers: `create_ledger()`, `InMemoryDltSink`, and `InMemoryDltSource`.
-//! These modules are at 0% coverage and are fully self-contained (no external deps).
 
 use std::time::Duration;
 
@@ -46,8 +45,9 @@ fn make_signed_operation(signed_with: &str) -> identus_did_prism::proto::prism::
 
 #[tokio::test]
 async fn sink_publish_single_operation_returns_tx_id() {
-    let (source, sink) = create_ledger();
-    drop(source);
+    // Keep the source alive: dropping it lets the relay task close the block
+    // channel, which would make publish fail under a multi-threaded runtime.
+    let (_source, sink) = create_ledger();
 
     let signed_op = make_signed_operation("master-0");
     let result = sink.publish_operations(vec![signed_op]).await;
@@ -58,8 +58,7 @@ async fn sink_publish_single_operation_returns_tx_id() {
 
 #[tokio::test]
 async fn sink_publish_multiple_operations_generates_unique_tx_ids() {
-    let (source, sink) = create_ledger();
-    drop(source);
+    let (_source, sink) = create_ledger();
 
     let op1 = make_signed_operation("master-0");
     let op2 = make_signed_operation("master-1");

@@ -6,7 +6,7 @@ use identus_apollo::base64::Base64UrlStrNoPad;
 // Secp256k1PrivateKey is not needed in this test file
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
-use identus_did_prism::did::error::Error as DidError;
+use identus_did_prism::did::error::{DidSyntaxError, Error as DidError};
 use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, DidState, LongFormPrismDid, PrismDid, PrismDidOps, StorageState};
 use identus_did_prism::proto;
@@ -57,11 +57,10 @@ fn canonical_from_suffix_str_valid() {
 #[test]
 fn canonical_from_suffix_str_invalid_hex() {
     let result = CanonicalPrismDid::from_suffix_str("not_hex");
-    assert!(result.is_err());
     let err = result.unwrap_err();
     assert!(
-        err.to_string().contains("invalid"),
-        "expected 'invalid' in error message, got: {err}"
+        matches!(err, DidSyntaxError::DidSuffixInvalidStr { .. }),
+        "expected DidSuffixInvalidStr, got: {err:?}"
     );
 }
 
@@ -283,7 +282,15 @@ fn prism_did_from_str_long_form_suffix_mismatch() {
 
     let tampered = format!("{prefix}{flipped_suffix}:{state_part}");
     let result = PrismDid::from_str(&tampered);
-    assert!(result.is_err());
+    match result.unwrap_err() {
+        DidError::InvalidDidSyntax {
+            source: DidSyntaxError::DidSuffixEncodedStateUnmatched { did, expected_did },
+        } => {
+            assert_eq!(did, tampered);
+            assert_eq!(expected_did, long_form.into_canonical());
+        }
+        other => panic!("expected DidSuffixEncodedStateUnmatched, got: {other}"),
+    }
 }
 
 #[test]

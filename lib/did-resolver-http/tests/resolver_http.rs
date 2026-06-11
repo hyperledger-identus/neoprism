@@ -43,6 +43,25 @@ impl MockResolver {
         })
     }
 
+    /// Echoes the DID received by the resolver into the document `id`, so tests
+    /// can verify the handler decodes the path segment and forwards the right DID.
+    fn echo() -> Self {
+        Self::new(|did| {
+            ResolutionResult::success(DidDocument {
+                context: vec!["https://www.w3.org/ns/did/v1".to_string()],
+                id: did.clone(),
+                also_known_as: None,
+                verification_method: vec![],
+                authentication: None,
+                assertion_method: None,
+                key_agreement: None,
+                capability_invocation: None,
+                capability_delegation: None,
+                service: None,
+            })
+        })
+    }
+
     fn not_found() -> Self {
         Self::new(|_| ResolutionResult {
             did_document: None,
@@ -197,7 +216,11 @@ async fn send_request(app: axum::Router, did: &str, accept: Option<&str>) -> (St
     // Percent-encode colons and other special chars in the DID for use in URI path
     let encoded_did = did.replace(':', "%3A");
     let path = format!("/did/{encoded_did}");
-    let mut builder = Request::builder().uri(&path).method("GET");
+    send_request_raw(app, &path, accept).await
+}
+
+async fn send_request_raw(app: axum::Router, path: &str, accept: Option<&str>) -> (StatusCode, String, String) {
+    let mut builder = Request::builder().uri(path).method("GET");
     if let Some(accept) = accept {
         builder = builder.header(header::ACCEPT, accept);
     }
@@ -281,6 +304,18 @@ async fn resolve_success_accept_multiple_includes_json() {
     assert_eq!(content_type, "application/json");
 }
 
+#[tokio::test]
+async fn resolve_passes_decoded_did_from_path_to_resolver() {
+    let app = make_app(MockResolver::echo());
+    let requested_did = "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595";
+    let (status, _content_type, body) = send_request(app, requested_did, None).await;
+
+    assert_eq!(status, StatusCode::OK);
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    // The percent-encoded path segment must be decoded back to the original DID
+    assert_eq!(json["id"], requested_did);
+}
+
 // ---------------------------------------------------------------------------
 // Tests: invalid DID
 // ---------------------------------------------------------------------------
@@ -289,35 +324,39 @@ async fn resolve_success_accept_multiple_includes_json() {
 async fn resolve_invalid_did_returns_bad_request() {
     let app = make_app(MockResolver::success());
     // "not-a-did" is not a valid DID (no method)
-    let (status, _content_type, body) = send_request(app, "not-a-did", None).await;
+    let (status, content_type, body) = send_request(app, "not-a-did", None).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
-    assert!(json.get("didResolutionMetadata").is_some());
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#INVALID_DID");
 }
 
 #[tokio::test]
 async fn resolve_invalid_did_with_fragment_returns_bad_request() {
     let app = make_app(MockResolver::success());
     // URL-encode the fragment so it's part of the path, not the URL fragment
-    let request = Request::builder()
-        .uri("/did/did:example:123%23key-1")
-        .body(Body::empty())
-        .unwrap();
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let (status, content_type, body) = send_request_raw(app, "/did/did:example:123%23key-1", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#INVALID_DID");
 }
 
 #[tokio::test]
 async fn resolve_invalid_did_with_query_returns_bad_request() {
     let app = make_app(MockResolver::success());
     // URL-encode the ? so it's part of the path, not the query string
-    let request = Request::builder()
-        .uri("/did/did:example:123%3Fservice=abc")
-        .body(Body::empty())
-        .unwrap();
-    let response = app.oneshot(request).await.unwrap();
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let (status, content_type, body) = send_request_raw(app, "/did/did:example:123%3Fservice=abc", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#INVALID_DID");
 }
 
 // ---------------------------------------------------------------------------
@@ -390,25 +429,37 @@ async fn resolve_internal_error_returns_500() {
 #[tokio::test]
 async fn resolve_invalid_did_url_returns_bad_request() {
     let app = make_app(MockResolver::invalid_did_url());
-    let (status, _content_type, _body) = send_request(app, "did:example:url", None).await;
+    let (status, content_type, body) = send_request(app, "did:example:url", None).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#INVALID_DID_URL");
 }
 
 #[tokio::test]
 async fn resolve_invalid_options_returns_bad_request() {
     let app = make_app(MockResolver::invalid_options());
-    let (status, _content_type, _body) = send_request(app, "did:example:opt", None).await;
+    let (status, content_type, body) = send_request(app, "did:example:opt", None).await;
 
     assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#INVALID_OPTIONS");
 }
 
 #[tokio::test]
 async fn resolve_representation_not_supported_returns_not_acceptable() {
     let app = make_app(MockResolver::representation_not_supported());
-    let (status, _content_type, _body) = send_request(app, "did:example:rep", None).await;
+    let (status, content_type, body) = send_request(app, "did:example:rep", None).await;
 
     assert_eq!(status, StatusCode::NOT_ACCEPTABLE);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    let error = &json["didResolutionMetadata"]["error"];
+    assert_eq!(error["type"], "https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED");
 }
 
 // ---------------------------------------------------------------------------

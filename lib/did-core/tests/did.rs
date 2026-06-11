@@ -93,7 +93,12 @@ fn parse_did_rejects_path() {
 
 #[test]
 fn did_url_to_did_strips_components() {
-    let did_url: DidUrl = "did:example:abcdefghi#key-1?service=abc".parse().unwrap();
+    let did_url: DidUrl = "did:example:abcdefghi/some/path?service=abc#key-1".parse().unwrap();
+    // Confirm the URL actually carries all three components before stripping
+    assert_eq!(did_url.path(), Some("/some/path"));
+    assert_eq!(did_url.query(), Some("service=abc"));
+    assert_eq!(did_url.fragment(), Some("key-1"));
+
     let did = did_url.to_did();
     assert_eq!(did.to_string(), "did:example:abcdefghi");
     assert_eq!(did.method(), "example");

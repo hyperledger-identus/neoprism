@@ -647,13 +647,14 @@ async fn index_vdr_child_exceeding_max_depth_is_ignored() {
     let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
     repo.insert(test_utils::dummy_metadata(0), create_did_op);
 
-    // Build a chain of VDR operations longer than SEARCH_MAX_DEPTH (200)
+    // Build a chain of VDR operations longer than the indexer can walk back.
+    // recursively_find_vdr_root iterates `1..SEARCH_MAX_DEPTH` (199 lookups),
+    // so update #199 is the deepest indexable entry and update #200 falls off.
     let mut prev_hash = Sha256Digest::from_bytes(&[0u8; 32]).unwrap();
 
-    // Insert 201 chained UpdateStorageEntry operations
+    // Insert a root CreateStorageEntry followed by 200 chained UpdateStorageEntry operations
     for i in 0..201u32 {
         let (op, hash) = if i == 0 {
-            // First one is a root CreateStorageEntry
             new_create_storage_op(&did, &vdr_sk, 0, vec![1])
         } else {
             new_update_storage_op(&vdr_sk, &prev_hash, vec![i as u8])
@@ -666,10 +667,11 @@ async fn index_vdr_child_exceeding_max_depth_is_ignored() {
 
     let indexed = repo.indexed_ops();
     // CreateDid + CreateStorageEntry root + 200 UpdateStorageEntry = 202 operations
-    // But the 201st update (index 202) exceeds depth and should be ignored
     assert_eq!(indexed.len(), 202);
 
-    // The last indexed operation should be ignored (exceeded max depth)
+    // Pin the exact boundary: update #199 is still indexed as VDR,
+    // update #200 exceeds max depth and is ignored
+    indexed[indexed.len() - 2].expect_vdr();
     indexed.last().unwrap().expect_ignored();
 }
 
@@ -836,25 +838,40 @@ async fn sync_loop_continues_on_insert_error() {
     let (source, tx) = mock_dlt_source_with_channel();
     let (create_did_op, _, _, _, _) = create_did_with_vdr_key();
 
-    let meta = test_utils::dummy_metadata(0).block_metadata;
-    let obj = make_published_object(meta, vec![create_did_op]);
-    tx.send(obj).await.unwrap();
+    // Send two blocks: the first insert fails, the loop must keep going and store the second
+    for i in 0..2u32 {
+        let meta = BlockMetadata {
+            slot_number: SlotNo::from(i as u64),
+            block_number: BlockNo::from(i as u64),
+            cbt: chrono::DateTime::UNIX_EPOCH,
+            absn: 0,
+            tx_id: TxId::from(identus_apollo::hash::sha256([i as u8; 32])),
+        };
+        let obj = make_published_object(meta, vec![create_did_op.clone()]);
+        tx.send(obj).await.unwrap();
+    }
     drop(tx);
 
-    // Should not panic or error — the error is logged and the loop continues
+    // The first insert error is logged and the loop continues
     run_sync_loop(&repo, source).await.unwrap();
+
+    let inserted = repo.inserted.lock().unwrap();
+    assert_eq!(inserted.len(), 1, "second block should be stored after the first fails");
+    assert_eq!(inserted[0].0.block_metadata.block_number, BlockNo::from(1u64));
 }
 
-/// A repo that always fails on insert_raw_operations, to test error handling in run_sync_loop.
+/// A repo whose first insert_raw_operations call fails and subsequent calls succeed,
+/// to test that run_sync_loop continues after an insert error.
 struct FailingInsertRepo {
-    #[allow(dead_code)]
-    raw_operations: Mutex<Vec<RawOperationRecord>>,
+    failed_once: Mutex<bool>,
+    inserted: Mutex<Vec<(OperationMetadata, SignedPrismOperation)>>,
 }
 
 impl FailingInsertRepo {
     fn new() -> Self {
         Self {
-            raw_operations: Mutex::new(vec![]),
+            failed_once: Mutex::new(false),
+            inserted: Mutex::new(vec![]),
         }
     }
 }
@@ -897,9 +914,15 @@ impl RawOperationRepo for FailingInsertRepo {
 
     async fn insert_raw_operations(
         &self,
-        _operations: Vec<(OperationMetadata, SignedPrismOperation)>,
+        operations: Vec<(OperationMetadata, SignedPrismOperation)>,
     ) -> Result<(), Self::Error> {
-        Err(MockError)
+        let mut failed_once = self.failed_once.lock().unwrap();
+        if !*failed_once {
+            *failed_once = true;
+            return Err(MockError);
+        }
+        self.inserted.lock().unwrap().extend(operations);
+        Ok(())
     }
 }
 

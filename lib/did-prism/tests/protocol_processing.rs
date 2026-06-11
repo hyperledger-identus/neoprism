@@ -341,12 +341,12 @@ fn process_operation_with_unknown_key_id_returns_error() {
 }
 
 #[test]
-fn process_operation_with_revoked_key_returns_error() {
+fn update_removing_last_master_key_fails_validation() {
     let (create_did_op, create_did_op_hash, _) = test_utils::new_create_did_operation(None);
     let master_sk = Secp256k1PrivateKey::from_slice(&[1u8; 32]).unwrap();
     let did = CanonicalPrismDid::from_operation(create_did_op.operation.as_ref().unwrap()).unwrap();
 
-    // Revoke the master key via UpdateDID
+    // Remove the only master key via UpdateDID
     let (revoke_op, _revoke_op_hash) = test_utils::new_signed_operation(
         "master-0",
         &master_sk,
@@ -366,16 +366,15 @@ fn process_operation_with_revoked_key_returns_error() {
         }),
     );
 
-    // This update removes the master key → fails validation (no master key left)
+    // The update fails candidate-state validation: no master key would remain
     let operations = test_utils::populate_metadata(vec![create_did_op, revoke_op]);
     let (state, debug) = resolver::resolve_published(operations);
 
-    // The revoke should fail because after removing the master key there's no master key
     let state = state.unwrap();
     assert_eq!(
         state.public_keys.len(),
         1,
-        "state should remain unchanged after failed revoke"
+        "state should remain unchanged after failed update"
     );
     let error = debug[1].2.as_ref().unwrap();
     assert!(
@@ -918,8 +917,8 @@ fn resolve_published_update_revoked_storage_entry_after_did_deactivation() {
     assert!(state.storage.is_empty());
     let error = debug[3].2.as_ref().unwrap();
     assert!(
-        format!("{error}").contains("revoked"),
-        "expected revoked key error, got: {error}"
+        format!("{error:?}").contains("SignedPrismOperationSignedWithRevokedKey"),
+        "expected signed-with-revoked-key error, got: {error:?}"
     );
 }
 

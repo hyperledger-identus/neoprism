@@ -3,6 +3,7 @@
 //! These tests directly exercise the parse methods and all StorageData variants,
 //! complementing the integration-level tests in `storage_operation.rs`.
 
+use identus_did_prism::did::error::{CreateStorageOperationError, UpdateStorageOperationError};
 use identus_did_prism::did::operation::{
     CreateStorageOperation, DeactivateStorageOperation, StatusListData, StorageData, UpdateStorageOperation,
 };
@@ -212,11 +213,10 @@ fn create_storage_operation_parse_invalid_did_hash_returns_error() {
     };
 
     let result = CreateStorageOperation::parse(&proto);
-    assert!(result.is_err());
-    let msg = format!("{}", result.unwrap_err());
+    let err = result.unwrap_err();
     assert!(
-        msg.contains("did") || msg.contains("suffix") || msg.contains("invalid"),
-        "unexpected error: {msg}"
+        matches!(err, CreateStorageOperationError::InvalidDidSyntax { .. }),
+        "expected InvalidDidSyntax, got: {err:?}"
     );
 }
 
@@ -311,11 +311,10 @@ fn update_storage_operation_parse_invalid_hash_returns_error() {
     };
 
     let result = UpdateStorageOperation::parse(&proto);
-    assert!(result.is_err());
-    let msg = format!("{}", result.unwrap_err());
+    let err = result.unwrap_err();
     assert!(
-        msg.contains("previous operation hash") || msg.contains("invalid"),
-        "unexpected error: {msg}"
+        matches!(err, UpdateStorageOperationError::InvalidPreviousOperationHash { .. }),
+        "expected InvalidPreviousOperationHash, got: {err:?}"
     );
 }
 

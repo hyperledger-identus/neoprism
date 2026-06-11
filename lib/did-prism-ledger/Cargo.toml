@@ -15,7 +15,7 @@ identus-did-prism-indexer   = { workspace = true }
 identus-did-prism-submitter = { workspace = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = [ "sync", "time", "rt", "macros", "rt-multi-thread" ] }
+tokio = { workspace = true, features = [ "sync", "time", "rt", "macros" ] }
 
 [features]
 default   = [  ]
