@@ -409,14 +409,11 @@ impl DltCursorRepo for SqliteDb {
 
     async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error> {
         let mut tx = self.pool.begin().await?;
-        let cursors = self
-            .db_ctx
-            .list::<entity::DltCursor>(&mut tx, Filter::empty(), Sort::empty(), None)
-            .await?
-            .data;
-        for c in cursors {
-            self.db_ctx.delete::<entity::DltCursor>(&mut tx, c.id).await?;
-        }
+        // Use raw SQL here: lazybe/sea_query encodes a `uuid::Uuid` as a string
+        // for the `id = ?` comparison, but the column is `BLOB` (16 bytes), so the
+        // per-row delete never matches and stale cursors pile up. The table holds
+        // at most one cursor, so a single DELETE clears all rows regardless of id.
+        sqlx::query("DELETE FROM dlt_cursor").execute(&mut *tx).await?;
         self.db_ctx
             .create::<entity::DltCursor>(
                 &mut tx,
@@ -996,11 +993,11 @@ mod tests {
         assert_eq!(result, Some(cursor));
     }
 
-    // NOTE: This test documents a known bug — set_cursor does not actually delete
-    // old cursors in SQLite due to a UUID blob vs string mismatch in sea_query.
-    // See .work/bugs.md for details.
+    // Regression test: set_cursor must replace any prior cursor (not leave stale
+    // rows behind), so the indexer resumes from the latest slot on restart.
+    // See .work/bugs.md for the original sea_query UUID mismatch.
     #[tokio::test(flavor = "multi_thread")]
-    async fn set_cursor_creates_new_cursor_even_when_previous_exists() {
+    async fn set_cursor_replaces_previous_cursor() {
         let (_tmp_dir, db) = setup_db().await;
 
         db.set_cursor(DltCursor {
@@ -1021,17 +1018,19 @@ mod tests {
         .await
         .expect("set 2");
 
-        // Due to the delete bug, get_cursor returns the FIRST cursor (slot=1), not the latest.
+        // get_cursor returns the latest cursor, not the first.
         let result = db.get_cursor().await.expect("get");
         let cursor = result.expect("cursor exists");
-        assert_eq!(cursor.slot, 1);
+        assert_eq!(cursor.slot, 99);
+        assert_eq!(cursor.block_hash, vec![2]);
+        assert_eq!(cursor.blockfrost_page, Some(5));
 
-        // Verify that both cursors exist in the database (delete didn't work)
+        // Only one cursor row remains — the previous one was deleted.
         let count: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM dlt_cursor")
             .fetch_one(&db.pool)
             .await
             .expect("count");
-        assert_eq!(count, 2);
+        assert_eq!(count, 1);
     }
 
     #[tokio::test(flavor = "multi_thread")]
