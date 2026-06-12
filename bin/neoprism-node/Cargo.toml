@@ -37,4 +37,5 @@ identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true, features = [ "sqlite-storage" ] }
 
 [dev-dependencies]
-tempfile = { workspace = true }
+serde_json = { workspace = true }
+tempfile   = { workspace = true }
