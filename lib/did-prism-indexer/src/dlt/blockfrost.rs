@@ -463,6 +463,7 @@ mod tests {
     use super::models::{BlockTimeProjection, parse_blockfrost_timestamp, parse_published_prism_object};
     use super::{BlockfrostConfig, BlockfrostSource, BlockfrostStreamWorker};
     use crate::DltSource;
+    use crate::dlt::error::MetadataReadError;
     use crate::repo::DltCursorRepo;
 
     // ------------------------------------------------------------------
@@ -705,25 +706,21 @@ mod tests {
     }
 
     #[test]
-    fn parse_published_prism_object_invalid_block_time() {
-        let mut tx = make_tx_content();
-        // block_time is i32, but parse_blockfrost_timestamp converts to i64
-        // i32::MAX is still a valid timestamp (year 2038), so we need to test
-        // that the timestamp flows through correctly instead
-        tx.block_time = 1_700_000_000;
-        let metadata = make_valid_metadata();
-        let result = parse_published_prism_object(&tx, metadata);
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn parse_published_prism_object_invalid_tx_hash_hex() {
         let mut tx = make_tx_content();
         tx.hash = "NOTVALIDHEX".to_string();
         let metadata = make_valid_metadata();
-        let err = parse_published_prism_object(&tx, metadata).unwrap_err().to_string();
-        // The TxId::from_str should fail for non-hex input
-        assert!(!err.is_empty(), "should produce an error for invalid tx hash");
+        let err = parse_published_prism_object(&tx, metadata).unwrap_err();
+        // parse_published_prism_object should classify the bad hex as a
+        // metadata-type error, not fabricate its own message.
+        assert!(
+            matches!(err, MetadataReadError::InvalidMetadataType { .. }),
+            "expected InvalidMetadataType, got: {err:?}"
+        );
+        assert!(
+            std::error::Error::source(&err).is_some(),
+            "expected an underlying source error, got: {err:?}"
+        );
     }
 
     #[test]
