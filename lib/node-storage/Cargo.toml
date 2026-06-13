@@ -9,6 +9,7 @@ sqlite-storage = [
   "lazybe/sqlite",
   "sea-query/backend-sqlite",
   "sqlx/sqlite",
+  "sqlx/runtime-tokio",
 ]
 
 [dependencies]

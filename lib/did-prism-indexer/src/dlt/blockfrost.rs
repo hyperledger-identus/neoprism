@@ -27,7 +27,7 @@ mod models {
     use crate::dlt::common::metadata_map::MetadataMapJson;
     use crate::dlt::error::MetadataReadError;
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub(crate) struct BlockTimeProjection {
         pub time: DateTime<Utc>,
         pub slot_no: i64,
@@ -446,5 +446,660 @@ impl BlockfrostStreamWorker {
                 source: e.into(),
                 location: location!(),
             })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    use blockfrost_openapi::models::{BlockContent, TxContent, TxMetadataLabelJsonInner};
+    use identus_did_prism::dlt::{BlockNo, DltCursor, PublishedPrismObject, SlotNo};
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::proto::prism::{PrismBlock, PrismObject};
+    use tokio::sync::{mpsc, watch};
+
+    use super::models::{BlockTimeProjection, parse_blockfrost_timestamp, parse_published_prism_object};
+    use super::{BlockfrostConfig, BlockfrostSource, BlockfrostStreamWorker};
+    use crate::DltSource;
+    use crate::dlt::error::MetadataReadError;
+    use crate::repo::DltCursorRepo;
+
+    // ------------------------------------------------------------------
+    // Helpers
+    // ------------------------------------------------------------------
+
+    /// Valid 64-character hex string (32 bytes) used for block/tx hashes.
+    fn valid_hex_hash() -> String {
+        "aa".repeat(32)
+    }
+
+    fn make_tx_content() -> TxContent {
+        TxContent {
+            hash: valid_hex_hash(),
+            block: valid_hex_hash(),
+            block_height: 5_000_000,
+            block_time: 1_700_000_000,
+            slot: 50_000_000,
+            index: 3,
+            ..Default::default()
+        }
+    }
+
+    fn make_block_content() -> BlockContent {
+        BlockContent {
+            time: 1_700_000_000,
+            height: Some(5_000_000),
+            hash: valid_hex_hash(),
+            slot: Some(50_000_000),
+            ..Default::default()
+        }
+    }
+
+    /// Build a minimal PrismObject with zero operations.
+    fn minimal_prism_object() -> PrismObject {
+        PrismObject {
+            block_content: Some(PrismBlock {
+                operations: vec![],
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        }
+    }
+
+    /// Encode a PrismObject into Blockfrost metadata byte groups ("0x" + hex).
+    fn encode_as_byte_groups(obj: &PrismObject) -> Vec<String> {
+        let bytes = obj.encode_to_vec();
+        bytes
+            .chunks(64)
+            .map(|chunk| {
+                let hex = identus_apollo::hex::HexStr::from(chunk).to_string();
+                format!("0x{hex}")
+            })
+            .collect()
+    }
+
+    fn make_valid_metadata_with_object(obj: &PrismObject) -> TxMetadataLabelJsonInner {
+        let byte_groups = encode_as_byte_groups(obj);
+        TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({
+                "c": byte_groups,
+                "v": 1
+            })),
+        }
+    }
+
+    fn make_valid_metadata() -> TxMetadataLabelJsonInner {
+        make_valid_metadata_with_object(&minimal_prism_object())
+    }
+
+    // ------------------------------------------------------------------
+    // parse_blockfrost_timestamp
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn parse_timestamp_valid_unix_epoch() {
+        let result = parse_blockfrost_timestamp(0, &None, &None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().timestamp(), 0);
+    }
+
+    #[test]
+    fn parse_timestamp_valid_recent() {
+        let result = parse_blockfrost_timestamp(1_700_000_000, &None, &None);
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().timestamp(), 1_700_000_000);
+    }
+
+    #[test]
+    fn parse_timestamp_valid_with_context() {
+        let result = parse_blockfrost_timestamp(1_700_000_000, &Some("abc123".to_string()), &Some(5));
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn parse_timestamp_invalid_extreme_value() {
+        // i64::MAX is far beyond the representable range of DateTime<Utc>
+        let result = parse_blockfrost_timestamp(i64::MAX, &Some("blockhash".to_string()), &Some(1));
+        assert!(result.is_err());
+        let err = result.unwrap_err().to_string();
+        assert!(err.contains("timestamp"), "error should mention timestamp: {err}");
+        assert!(err.contains("blockhash"), "error should reference block_hash: {err}");
+        assert!(
+            err.contains("9223372036854775807"),
+            "error should include the timestamp value: {err}"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // BlockTimeProjection::try_from(&TxContent)
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn block_time_projection_from_tx_valid() {
+        let tx = make_tx_content();
+        let proj = BlockTimeProjection::try_from(&tx).unwrap();
+        assert_eq!(proj.slot_no, 50_000_000);
+        assert_eq!(proj.block_hash, vec![0xaa; 32]);
+        assert_eq!(proj.time.timestamp(), 1_700_000_000);
+    }
+
+    #[test]
+    fn block_time_projection_from_tx_invalid_block_hex() {
+        let mut tx = make_tx_content();
+        tx.block = "ZZZZ".to_string();
+        let err = BlockTimeProjection::try_from(&tx).unwrap_err().to_string();
+        assert!(err.contains("ZZZZ"), "error should reference block hash: {err}");
+    }
+
+    #[test]
+    fn block_time_projection_from_tx_invalid_timestamp() {
+        let mut tx = make_tx_content();
+        tx.block_time = i32::MAX;
+        // i32::MAX = 2_147_483_647 is a valid unix timestamp (year 2038)
+        let result = BlockTimeProjection::try_from(&tx);
+        assert!(result.is_ok(), "i32::MAX should still be a valid timestamp");
+    }
+
+    // ------------------------------------------------------------------
+    // BlockTimeProjection::try_from(&BlockContent)
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn block_time_projection_from_block_valid() {
+        let block = make_block_content();
+        let proj = BlockTimeProjection::try_from(&block).unwrap();
+        assert_eq!(proj.slot_no, 50_000_000);
+        assert_eq!(proj.block_hash, vec![0xaa; 32]);
+        assert_eq!(proj.time.timestamp(), 1_700_000_000);
+    }
+
+    #[test]
+    fn block_time_projection_from_block_missing_slot() {
+        let mut block = make_block_content();
+        block.slot = None;
+        let err = BlockTimeProjection::try_from(&block).unwrap_err().to_string();
+        assert!(err.contains("slot"), "error should mention 'slot': {err}");
+    }
+
+    #[test]
+    fn block_time_projection_from_block_invalid_hex() {
+        let mut block = make_block_content();
+        block.hash = "NOTHEX".to_string();
+        let err = BlockTimeProjection::try_from(&block).unwrap_err().to_string();
+        assert!(err.contains("NOTHEX"), "error should reference block hash: {err}");
+    }
+
+    #[test]
+    fn block_time_projection_from_block_equality() {
+        let block = make_block_content();
+        let proj1 = BlockTimeProjection::try_from(&block).unwrap();
+        let proj2 = BlockTimeProjection::try_from(&block).unwrap();
+        assert_eq!(proj1, proj2);
+    }
+
+    // ------------------------------------------------------------------
+    // parse_published_prism_object
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn parse_published_prism_object_valid_minimal() {
+        let tx = make_tx_content();
+        let metadata = make_valid_metadata();
+        let result = parse_published_prism_object(&tx, metadata).unwrap();
+
+        assert_eq!(result.block_metadata.slot_number, SlotNo::from(50_000_000u64));
+        assert_eq!(result.block_metadata.block_number, BlockNo::from(5_000_000u64));
+        assert_eq!(result.block_metadata.absn, 3);
+        assert_eq!(result.prism_object, minimal_prism_object());
+    }
+
+    #[test]
+    fn parse_published_prism_object_valid_with_operations() {
+        let large_sig: Vec<u8> = (0..100u8).collect();
+        let obj = PrismObject {
+            block_content: Some(PrismBlock {
+                operations: vec![identus_did_prism::proto::prism::SignedPrismOperation {
+                    signed_with: "master-0".to_string(),
+                    signature: large_sig.clone(),
+                    operation: protobuf::MessageField(None),
+                    special_fields: Default::default(),
+                }],
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        };
+
+        let tx = make_tx_content();
+        let metadata = make_valid_metadata_with_object(&obj);
+        let result = parse_published_prism_object(&tx, metadata).unwrap();
+        assert_eq!(result.prism_object, obj);
+    }
+
+    #[test]
+    fn parse_published_prism_object_missing_json_metadata() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: None,
+        };
+        let err = parse_published_prism_object(&tx, metadata).unwrap_err().to_string();
+        assert!(
+            err.contains("json_metadata"),
+            "error should mention json_metadata: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_tx_hash_for_tx_id() {
+        let mut tx = make_tx_content();
+        // TxId::from_str validates block.hash as a 32-byte hex string
+        tx.hash = "ZZZZ".to_string();
+        let metadata = make_valid_metadata();
+        let result = parse_published_prism_object(&tx, metadata);
+        // The error is wrapped as InvalidMetadataType, referencing the block context
+        assert!(result.is_err(), "invalid hex in tx.hash should produce an error");
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_tx_hash_hex() {
+        let mut tx = make_tx_content();
+        tx.hash = "NOTVALIDHEX".to_string();
+        let metadata = make_valid_metadata();
+        let err = parse_published_prism_object(&tx, metadata).unwrap_err();
+        // parse_published_prism_object should classify the bad hex as a
+        // metadata-type error, not fabricate its own message.
+        assert!(
+            matches!(err, MetadataReadError::InvalidMetadataType { .. }),
+            "expected InvalidMetadataType, got: {err:?}"
+        );
+        assert!(
+            std::error::Error::source(&err).is_some(),
+            "expected an underlying source error, got: {err:?}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_metadata_not_json_object() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!("not an object")),
+        };
+        let result = parse_published_prism_object(&tx, metadata);
+        assert!(result.is_err(), "non-object json_metadata should fail");
+    }
+
+    #[test]
+    fn parse_published_prism_object_metadata_wrong_structure() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({"wrong_key": []})),
+        };
+        // MetadataMapJson requires both 'c' and 'v' fields, so deserialization fails
+        let result = parse_published_prism_object(&tx, metadata);
+        assert!(result.is_err(), "metadata missing 'c' and 'v' fields should fail");
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_byte_group_format() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({
+                "c": ["invalid_hex"],
+                "v": 1
+            })),
+        };
+        let err = parse_published_prism_object(&tx, metadata).unwrap_err().to_string();
+        assert!(
+            err.contains(&valid_hex_hash()) || err.contains("metadata"),
+            "error should reference block or metadata: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_invalid_protobuf_data() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({
+                "c": ["0xdeadbeef"],
+                "v": 1
+            })),
+        };
+        let err = parse_published_prism_object(&tx, metadata).unwrap_err().to_string();
+        assert!(
+            err.contains("protobuf") || err.contains("decode"),
+            "error should mention protobuf decode: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_published_prism_object_empty_byte_groups() {
+        let tx = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({
+                "c": [],
+                "v": 1
+            })),
+        };
+        let result = parse_published_prism_object(&tx, metadata);
+        assert!(result.is_ok(), "empty byte groups should decode as default PrismObject");
+        assert_eq!(result.unwrap().prism_object, PrismObject::default());
+    }
+
+    // ------------------------------------------------------------------
+    // BlockfrostConfig
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn blockfrost_config_clone_and_debug() {
+        let config = BlockfrostConfig {
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_secs(5),
+            concurrency_limit: 10,
+            api_delay: Duration::from_millis(100),
+        };
+        let cloned = config.clone();
+        assert_eq!(config.confirmation_blocks, cloned.confirmation_blocks);
+        assert_eq!(config.poll_interval, cloned.poll_interval);
+        assert_eq!(config.concurrency_limit, cloned.concurrency_limit);
+        assert_eq!(config.api_delay, cloned.api_delay);
+        let debug_str = format!("{:?}", config);
+        assert!(debug_str.contains("BlockfrostConfig"));
+    }
+
+    // ------------------------------------------------------------------
+    // BlockfrostSource
+    // ------------------------------------------------------------------
+
+    /// A mock DltCursorRepo for testing.
+    #[derive(Debug)]
+    struct MockRepo {
+        cursor: Arc<Mutex<Option<DltCursor>>>,
+    }
+
+    #[derive(Debug, derive_more::Display, derive_more::Error)]
+    #[display("mock error")]
+    struct MockError;
+
+    #[async_trait::async_trait]
+    impl DltCursorRepo for MockRepo {
+        type Error = MockError;
+
+        async fn set_cursor(&self, cursor: DltCursor) -> Result<(), Self::Error> {
+            *self.cursor.lock().unwrap() = Some(cursor);
+            Ok(())
+        }
+
+        async fn get_cursor(&self) -> Result<Option<DltCursor>, Self::Error> {
+            Ok(self.cursor.lock().unwrap().clone())
+        }
+    }
+
+    #[tokio::test]
+    async fn blockfrost_source_new_creates_instance() {
+        let repo = MockRepo {
+            cursor: Arc::new(Mutex::new(None)),
+        };
+        let config = BlockfrostConfig {
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_secs(5),
+            concurrency_limit: 10,
+            api_delay: Duration::from_millis(100),
+        };
+        let source = BlockfrostSource::new(repo, "test-key", "https://example.com", 1, config);
+
+        // Verify sync_cursor returns a receiver
+        let rx = source.sync_cursor();
+        assert!(rx.borrow().is_none(), "initial cursor should be None");
+    }
+
+    #[tokio::test]
+    async fn blockfrost_source_new_with_custom_from_page() {
+        let repo = MockRepo {
+            cursor: Arc::new(Mutex::new(None)),
+        };
+        let config = BlockfrostConfig {
+            confirmation_blocks: 50,
+            poll_interval: Duration::from_secs(10),
+            concurrency_limit: 5,
+            api_delay: Duration::from_millis(200),
+        };
+        let source = BlockfrostSource::new(repo, "key", "https://api.example.com", 42, config);
+        let rx = source.sync_cursor();
+        assert!(rx.borrow().is_none());
+    }
+
+    #[tokio::test]
+    async fn blockfrost_source_since_persisted_cursor_none() {
+        let repo = MockRepo {
+            cursor: Arc::new(Mutex::new(None)),
+        };
+        let config = BlockfrostConfig {
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_secs(5),
+            concurrency_limit: 10,
+            api_delay: Duration::from_millis(100),
+        };
+        let source = BlockfrostSource::since_persisted_cursor(repo, "key", "https://example.com", config)
+            .await
+            .unwrap();
+        let rx = source.sync_cursor();
+        assert!(rx.borrow().is_none());
+    }
+
+    #[tokio::test]
+    async fn blockfrost_source_since_persisted_cursor_with_page() {
+        let cursor = DltCursor {
+            slot: 100,
+            block_hash: vec![1; 32],
+            cbt: None,
+            blockfrost_page: Some(5),
+        };
+        let repo = MockRepo {
+            cursor: Arc::new(Mutex::new(Some(cursor))),
+        };
+        let config = BlockfrostConfig {
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_secs(5),
+            concurrency_limit: 10,
+            api_delay: Duration::from_millis(100),
+        };
+        let source = BlockfrostSource::since_persisted_cursor(repo, "key", "https://example.com", config)
+            .await
+            .unwrap();
+        let rx = source.sync_cursor();
+        assert!(rx.borrow().is_none());
+    }
+
+    // ------------------------------------------------------------------
+    // emit_cursor_progress (tested indirectly via BlockTimeProjection)
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn block_time_projection_debug_format() {
+        let tx = make_tx_content();
+        let proj = BlockTimeProjection::try_from(&tx).unwrap();
+        let debug_str = format!("{:?}", proj);
+        assert!(debug_str.contains("BlockTimeProjection"));
+    }
+
+    #[test]
+    fn block_time_projection_clone() {
+        let tx = make_tx_content();
+        let proj = BlockTimeProjection::try_from(&tx).unwrap();
+        let cloned = proj.clone();
+        assert_eq!(proj, cloned);
+    }
+
+    // ------------------------------------------------------------------
+    // BlockfrostStreamWorker::process_prism_object
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn process_prism_object_valid_sends_to_channel() {
+        let (tx, mut rx) = mpsc::channel::<PublishedPrismObject>(1024);
+        let tx_content = make_tx_content();
+        let metadata = make_valid_metadata();
+
+        BlockfrostStreamWorker::process_prism_object(&tx_content, metadata, &tx)
+            .await
+            .unwrap();
+
+        let obj = rx.try_recv().unwrap();
+        assert_eq!(obj.block_metadata.absn, 3);
+        assert_eq!(obj.block_metadata.slot_number, SlotNo::from(50_000_000u64));
+        assert_eq!(obj.block_metadata.block_number, BlockNo::from(5_000_000u64));
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_with_operations_sends_full_object() {
+        let (tx, mut rx) = mpsc::channel::<PublishedPrismObject>(1024);
+        let tx_content = make_tx_content();
+        let obj = PrismObject {
+            block_content: Some(PrismBlock {
+                operations: vec![identus_did_prism::proto::prism::SignedPrismOperation {
+                    signed_with: "master-0".to_string(),
+                    signature: (0..64u8).collect(),
+                    operation: protobuf::MessageField(None),
+                    special_fields: Default::default(),
+                }],
+                special_fields: Default::default(),
+            })
+            .into(),
+            special_fields: Default::default(),
+        };
+        let metadata = make_valid_metadata_with_object(&obj);
+
+        BlockfrostStreamWorker::process_prism_object(&tx_content, metadata, &tx)
+            .await
+            .unwrap();
+
+        let received = rx.try_recv().unwrap();
+        assert_eq!(received.prism_object, obj);
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_invalid_metadata_returns_ok_no_send() {
+        let (tx, mut rx) = mpsc::channel::<PublishedPrismObject>(1024);
+        let tx_content = make_tx_content();
+        // json_metadata is not a valid object → parse_published_prism_object fails
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!("not an object")),
+        };
+
+        // Invalid metadata is logged as warning but returns Ok(())
+        let result = BlockfrostStreamWorker::process_prism_object(&tx_content, metadata, &tx).await;
+        assert!(result.is_ok(), "invalid metadata should return Ok (logged as warning)");
+        assert!(rx.try_recv().is_err(), "no object should be sent for invalid metadata");
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_invalid_protobuf_returns_ok_no_send() {
+        let (tx, mut rx) = mpsc::channel::<PublishedPrismObject>(1024);
+        let tx_content = make_tx_content();
+        let metadata = TxMetadataLabelJsonInner {
+            tx_hash: valid_hex_hash(),
+            json_metadata: Some(serde_json::json!({
+                "c": ["0xdeadbeef"],
+                "v": 1
+            })),
+        };
+
+        let result = BlockfrostStreamWorker::process_prism_object(&tx_content, metadata, &tx).await;
+        assert!(result.is_ok(), "bad protobuf should return Ok (logged as warning)");
+        assert!(rx.try_recv().is_err());
+    }
+
+    #[tokio::test]
+    async fn process_prism_object_closed_channel_returns_error() {
+        let (tx, rx) = mpsc::channel::<PublishedPrismObject>(1024);
+        let tx_content = make_tx_content();
+        let metadata = make_valid_metadata();
+
+        // Drop the receiver to close the channel
+        drop(rx);
+
+        let result = BlockfrostStreamWorker::process_prism_object(&tx_content, metadata, &tx).await;
+        assert!(result.is_err(), "sending to closed channel should return error");
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("handling DLT event failed"),
+            "error should be EventHandling: {err_msg}"
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // BlockfrostStreamWorker::emit_cursor_progress
+    // ------------------------------------------------------------------
+
+    #[test]
+    fn emit_cursor_progress_sends_cursor_via_watch() {
+        let (tx, rx) = watch::channel::<Option<DltCursor>>(None);
+        let block_time = BlockTimeProjection::try_from(&make_tx_content()).unwrap();
+
+        BlockfrostStreamWorker::emit_cursor_progress(block_time, 5, &tx);
+
+        let cursor = rx.borrow().as_ref().unwrap().clone();
+        assert_eq!(cursor.slot, 50_000_000);
+        assert_eq!(cursor.block_hash, vec![0xaa; 32]);
+        assert_eq!(cursor.blockfrost_page, Some(5));
+        assert!(cursor.cbt.is_some(), "cbt should be populated from block time");
+    }
+
+    #[test]
+    fn emit_cursor_progress_overwrites_previous_cursor() {
+        let (tx, rx) = watch::channel::<Option<DltCursor>>(None);
+        let block_time = BlockTimeProjection::try_from(&make_tx_content()).unwrap();
+
+        BlockfrostStreamWorker::emit_cursor_progress(block_time.clone(), 1, &tx);
+        assert_eq!(rx.borrow().as_ref().unwrap().blockfrost_page, Some(1));
+
+        BlockfrostStreamWorker::emit_cursor_progress(block_time, 2, &tx);
+        let cursor = rx.borrow().as_ref().unwrap().clone();
+        assert_eq!(cursor.blockfrost_page, Some(2));
+    }
+
+    #[test]
+    fn emit_cursor_progress_with_page_zero() {
+        let (tx, rx) = watch::channel::<Option<DltCursor>>(None);
+        let block_time = BlockTimeProjection::try_from(&make_tx_content()).unwrap();
+
+        BlockfrostStreamWorker::emit_cursor_progress(block_time, 0, &tx);
+
+        let cursor = rx.borrow().as_ref().unwrap().clone();
+        assert_eq!(cursor.blockfrost_page, Some(0));
+    }
+
+    // ------------------------------------------------------------------
+    // BlockfrostSource::into_stream
+    // ------------------------------------------------------------------
+
+    #[tokio::test]
+    async fn into_stream_returns_receiver_channel() {
+        let repo = MockRepo {
+            cursor: Arc::new(Mutex::new(None)),
+        };
+        let config = BlockfrostConfig {
+            confirmation_blocks: 100,
+            poll_interval: Duration::from_secs(5),
+            concurrency_limit: 10,
+            api_delay: Duration::from_millis(100),
+        };
+        let source = BlockfrostSource::new(repo, "key", "http://127.0.0.1:1", 1, config);
+        let result = source.into_stream();
+        assert!(result.is_ok(), "into_stream should return Ok");
+        // Drop the receiver; spawned workers will fail to connect to the fake URL
+        // and retry in background until the test runtime is torn down.
+        drop(result);
     }
 }

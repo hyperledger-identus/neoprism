@@ -16,6 +16,9 @@ ed25519-dalek = { version = "2", optional = true }
 k256          = { version = "0.13", optional = true, features = [ "arithmetic", "ecdsa" ] }
 x25519-dalek  = { version = "2", optional = true }
 
+[dev-dependencies]
+serde_json = { workspace = true }
+
 [features]
 default   = [  ]
 base64    = [ "dep:base64" ]

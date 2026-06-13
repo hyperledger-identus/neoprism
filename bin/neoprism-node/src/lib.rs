@@ -129,7 +129,7 @@ fn generate_openapi(args: crate::cli::GenerateOpenApiArgs) -> anyhow::Result<()>
 
 async fn run_indexer_command(args: IndexerArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.network.cardano_network.clone().into();
-    let db = init_database(&args.db, Some(&network)).await;
+    let db = init_database(&args.db, Some(&network), &default_base_dir()).await;
     let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let app_state = AppState {
         run_mode: RunMode::Indexer,
@@ -165,7 +165,7 @@ async fn run_submitter_command(args: SubmitterArgs) -> anyhow::Result<()> {
 
 async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
     let network = args.dlt_source.network.cardano_network.clone().into();
-    let db = init_database(&args.db, Some(&network)).await;
+    let db = init_database(&args.db, Some(&network), &default_base_dir()).await;
     let (cursor_rx, mut handles) = init_dlt_source(&args.dlt_source, &network, db.clone()).await;
     let dlt_sink = init_dlt_sink(&args.dlt_sink, &network)?;
     let app_state = AppState {
@@ -192,7 +192,7 @@ async fn run_standalone_command(args: StandaloneArgs) -> anyhow::Result<()> {
 }
 
 async fn run_dev_command(args: DevArgs) -> anyhow::Result<()> {
-    let db = init_database(&args.db, Some(&NetworkIdentifier::Custom)).await;
+    let db = init_database(&args.db, Some(&NetworkIdentifier::Custom), &default_base_dir()).await;
     let (cursor_rx, dlt_sink, mut handles) = init_memory_ledger(db.clone());
     let app_state = AppState {
         run_mode: RunMode::Standalone,
@@ -299,8 +299,8 @@ async fn shutdown_signal() {
     }
 }
 
-async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> SharedStorage {
-    let db_config = resolve_db_config(db_args, network_hint);
+async fn init_database(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>, base: &Path) -> SharedStorage {
+    let db_config = resolve_db_config(db_args, network_hint, base);
 
     match db_config.backend {
         DbBackend::Postgres => Arc::new(init_postgres_database(&db_config.url, db_args).await),
@@ -550,8 +550,12 @@ async fn init_sqlite_database(db_url: &str, db_args: &DbArgs) -> SharedStorage {
     Arc::new(db)
 }
 
-fn default_sqlite_url(network_hint: Option<&NetworkIdentifier>) -> String {
-    let mut base = data_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
+fn default_base_dir() -> PathBuf {
+    data_dir().unwrap_or_else(|| std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+}
+
+fn default_sqlite_url(network_hint: Option<&NetworkIdentifier>, base: &Path) -> String {
+    let mut base = base.to_path_buf();
     base.push("NeoPRISM");
     if let Some(network) = network_hint {
         base.push(network_identifier_slug(network));
@@ -593,7 +597,7 @@ fn sqlite_path_from_url(db_url: &str) -> Option<PathBuf> {
     Some(Path::new(path_part).to_path_buf())
 }
 
-fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>) -> DatabaseConfig {
+fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>, base: &Path) -> DatabaseConfig {
     if let Some(db_url) = &db_args.db_url {
         let backend = infer_db_backend(db_url);
         return DatabaseConfig {
@@ -602,7 +606,7 @@ fn resolve_db_config(db_args: &DbArgs, network_hint: Option<&NetworkIdentifier>)
         };
     }
 
-    let url = default_sqlite_url(network_hint);
+    let url = default_sqlite_url(network_hint, base);
     tracing::info!("NPRISM_DB_URL not set, defaulting to embedded SQLite at {}", url);
     DatabaseConfig {
         backend: DbBackend::Sqlite,
@@ -815,5 +819,298 @@ mod tests {
     fn resolve_mnemonic_missing_file_returns_error() {
         let result = resolve_mnemonic(None, Some(Path::new("/nonexistent/mnemonic.txt")));
         assert!(result.is_err(), "expected error for missing file");
+    }
+
+    // --- default_sqlite_url ---
+
+    #[test]
+    fn default_sqlite_url_produces_sqlite_scheme() {
+        let dir = tempfile::tempdir().unwrap();
+        let url = default_sqlite_url(Some(&NetworkIdentifier::Mainnet), dir.path());
+        assert!(url.starts_with("sqlite://"), "expected sqlite:// scheme, got: {url}");
+    }
+
+    #[test]
+    fn default_sqlite_url_includes_network_slug() {
+        let dir = tempfile::tempdir().unwrap();
+        let url = default_sqlite_url(Some(&NetworkIdentifier::Preprod), dir.path());
+        assert!(url.contains("/preprod/"), "expected /preprod/ in URL, got: {url}");
+    }
+
+    #[test]
+    fn default_sqlite_url_includes_db_filename() {
+        let dir = tempfile::tempdir().unwrap();
+        let url = default_sqlite_url(Some(&NetworkIdentifier::Preview), dir.path());
+        assert!(url.contains("neoprism.db"), "expected neoprism.db in URL, got: {url}");
+    }
+
+    #[test]
+    fn default_sqlite_url_without_network_hint() {
+        let dir = tempfile::tempdir().unwrap();
+        let url = default_sqlite_url(None, dir.path());
+        assert!(
+            url.starts_with("sqlite://") && url.contains("NeoPRISM") && url.contains("neoprism.db"),
+            "expected NeoPRISM/neoprism.db in URL, got: {url}"
+        );
+        // Without a network hint, there should be no network subdirectory
+        let path_part = url.strip_prefix("sqlite://").unwrap();
+        // The path should contain NeoPRISM directly followed by neoprism.db
+        // (no mainnet/preprod/preview/custom segment)
+        assert!(
+            !path_part.contains("/mainnet/"),
+            "should not contain mainnet slug, got: {url}"
+        );
+    }
+
+    #[test]
+    fn default_sqlite_url_creates_parent_directory() {
+        // default_sqlite_url ensures the parent directory exists
+        let dir = tempfile::tempdir().unwrap();
+        let url = default_sqlite_url(Some(&NetworkIdentifier::Custom), dir.path());
+        if let Some(path) = sqlite_path_from_url(&url)
+            && let Some(parent) = path.parent()
+        {
+            assert!(parent.exists(), "parent directory should exist");
+        }
+    }
+
+    // --- resolve_db_config ---
+
+    #[test]
+    fn resolve_db_config_with_postgres_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: Some("postgres://user:pass@localhost:5432/testdb".to_string()),
+            skip_migration: false,
+        };
+        let config = resolve_db_config(&db_args, Some(&NetworkIdentifier::Mainnet), dir.path());
+        assert_eq!(config.backend, DbBackend::Postgres);
+        assert_eq!(config.url, "postgres://user:pass@localhost:5432/testdb");
+    }
+
+    #[test]
+    fn resolve_db_config_with_sqlite_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: Some("sqlite:///tmp/test.db".to_string()),
+            skip_migration: false,
+        };
+        let config = resolve_db_config(&db_args, Some(&NetworkIdentifier::Mainnet), dir.path());
+        assert_eq!(config.backend, DbBackend::Sqlite);
+        assert_eq!(config.url, "sqlite:///tmp/test.db");
+    }
+
+    #[test]
+    fn resolve_db_config_defaults_to_sqlite_when_no_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: None,
+            skip_migration: false,
+        };
+        let config = resolve_db_config(&db_args, Some(&NetworkIdentifier::Preprod), dir.path());
+        assert_eq!(config.backend, DbBackend::Sqlite);
+        assert!(config.url.starts_with("sqlite://"));
+        assert!(config.url.contains("preprod"));
+    }
+
+    // --- generate_openapi ---
+
+    #[test]
+    fn generate_openapi_to_stdout() {
+        // Test the generate_openapi with no output file (stdout)
+        // We verify the inner logic directly (the actual stdout capture is not easy in tests).
+        let oas = http::build_openapi(&RunMode::Standalone, 8080, None);
+        let json = oas.to_pretty_json().unwrap();
+        // Verify it's valid JSON with expected OpenAPI structure
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(
+            parsed.get("openapi").is_some(),
+            "expected 'openapi' field in OpenAPI JSON"
+        );
+        assert!(parsed.get("paths").is_some(), "expected 'paths' field in OpenAPI JSON");
+    }
+
+    #[test]
+    fn generate_openapi_to_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let output_path = dir.path().join("openapi.json");
+        let args = crate::cli::GenerateOpenApiArgs {
+            output: Some(output_path.clone()),
+        };
+        generate_openapi(args).unwrap();
+        assert!(output_path.exists(), "output file should be created");
+        let content = fs::read_to_string(&output_path).unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&content).unwrap();
+        assert!(parsed.get("openapi").is_some());
+    }
+
+    #[test]
+    fn generate_openapi_indexer_mode() {
+        let oas = http::build_openapi(&RunMode::Indexer, 8080, None);
+        let json = oas.to_pretty_json().unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed.get("paths").is_some());
+    }
+
+    #[test]
+    fn generate_openapi_submitter_mode() {
+        let oas = http::build_openapi(&RunMode::Submitter, 8080, None);
+        let json = oas.to_pretty_json().unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        assert!(parsed.get("paths").is_some());
+    }
+
+    #[test]
+    fn generate_openapi_with_external_url() {
+        let oas = http::build_openapi(&RunMode::Standalone, 9090, Some("https://example.com"));
+        let json = oas.to_pretty_json().unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&json).unwrap();
+        let servers = parsed.get("servers").unwrap().as_array().unwrap();
+        assert!(
+            servers
+                .iter()
+                .any(|s| s.get("url").unwrap().as_str().unwrap().contains("example.com")),
+            "expected external URL in servers"
+        );
+    }
+
+    // --- init_sqlite_database (in-memory) ---
+
+    #[tokio::test]
+    async fn init_sqlite_database_in_memory_skip_migration() {
+        let db_args = DbArgs {
+            db_url: None,
+            skip_migration: true,
+        };
+        let _db = init_sqlite_database("sqlite::memory:", &db_args).await;
+        // Database connected successfully (no panic). Tables may not exist yet
+        // since migration was skipped — that is the expected behaviour.
+    }
+
+    #[tokio::test]
+    async fn init_sqlite_database_in_memory_with_migration() {
+        let db_args = DbArgs {
+            db_url: None,
+            skip_migration: false,
+        };
+        let db = init_sqlite_database("sqlite::memory:", &db_args).await;
+        // Migration should succeed on in-memory SQLite
+        assert!(
+            db.get_last_indexed_block().await.is_ok(),
+            "storage should be usable after migration"
+        );
+    }
+
+    #[tokio::test]
+    async fn init_sqlite_database_file_based() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("test.db");
+        let db_url = format!("sqlite://{}", db_path.display());
+        let db_args = DbArgs {
+            db_url: None,
+            skip_migration: false,
+        };
+        let db = init_sqlite_database(&db_url, &db_args).await;
+        assert!(
+            db.get_last_indexed_block().await.is_ok(),
+            "file-based SQLite should be usable after migration"
+        );
+    }
+
+    // --- init_database ---
+
+    #[tokio::test]
+    async fn init_database_with_sqlite_url() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: Some("sqlite::memory:".to_string()),
+            skip_migration: false,
+        };
+        let db = init_database(&db_args, Some(&NetworkIdentifier::Custom), dir.path()).await;
+        assert!(
+            db.get_last_indexed_block().await.is_ok(),
+            "init_database should produce a working SQLite storage"
+        );
+    }
+
+    #[tokio::test]
+    async fn init_database_without_url_defaults_to_sqlite() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: None,
+            skip_migration: false,
+        };
+        let db = init_database(&db_args, Some(&NetworkIdentifier::Custom), dir.path()).await;
+        assert!(
+            db.get_last_indexed_block().await.is_ok(),
+            "init_database should default to SQLite and be usable"
+        );
+    }
+
+    // --- init_memory_ledger ---
+
+    #[tokio::test]
+    async fn init_memory_ledger_creates_workers() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: Some("sqlite::memory:".to_string()),
+            skip_migration: true,
+        };
+        let db = init_database(&db_args, Some(&NetworkIdentifier::Custom), dir.path()).await;
+        let (cursor_rx, _dlt_sink, mut handles) = init_memory_ledger(db);
+
+        // Cursor should start as None
+        let cursor = cursor_rx.borrow().clone();
+        assert!(cursor.is_none(), "cursor should start as None");
+
+        // Workers should be spawned (JoinSet should have tasks)
+        assert!(!handles.is_empty(), "should have spawned worker tasks");
+
+        // Clean up
+        handles.abort_all();
+    }
+
+    #[tokio::test]
+    async fn init_memory_ledger_dlt_sink_is_usable() {
+        let dir = tempfile::tempdir().unwrap();
+        let db_args = DbArgs {
+            db_url: Some("sqlite::memory:".to_string()),
+            skip_migration: true,
+        };
+        let db = init_database(&db_args, Some(&NetworkIdentifier::Custom), dir.path()).await;
+        let (_cursor_rx, dlt_sink, mut handles) = init_memory_ledger(db);
+
+        // The DLT sink should not be None (it's Arc<dyn DltSink>)
+        // Verify it can be cloned
+        let sink2 = dlt_sink.clone();
+        drop(sink2);
+
+        handles.abort_all();
+    }
+
+    // --- RunMode / DbBackend / state structs ---
+
+    #[test]
+    fn db_backend_equality() {
+        assert_eq!(DbBackend::Postgres, DbBackend::Postgres);
+        assert_eq!(DbBackend::Sqlite, DbBackend::Sqlite);
+        assert_ne!(DbBackend::Postgres, DbBackend::Sqlite);
+    }
+
+    #[test]
+    fn run_mode_variants() {
+        let _indexer = RunMode::Indexer;
+        let _submitter = RunMode::Submitter;
+        let _standalone = RunMode::Standalone;
+    }
+
+    #[test]
+    fn database_config_fields() {
+        let config = DatabaseConfig {
+            backend: DbBackend::Sqlite,
+            url: "sqlite::memory:".to_string(),
+        };
+        assert_eq!(config.backend, DbBackend::Sqlite);
+        assert_eq!(config.url, "sqlite::memory:");
     }
 }
