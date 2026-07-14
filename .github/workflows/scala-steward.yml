@@ -18,11 +18,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.0
 
-      - name: Set up JDK 11
+      - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
           distribution: "temurin"
-          java-version: "11"
+          java-version: "17"
 
       - name: Install GPG key
         uses: crazy-max/ghaction-import-gpg@v7
@@ -43,7 +43,7 @@ jobs:
           echo "email:       ${{ steps.import_gpg.outputs.email }}"
 
       - name: Launch Scala Steward
-        uses: scala-steward-org/scala-steward-action@v2
+        uses: scala-steward-org/scala-steward-action@ff09222640622d474d0d9f93c04aefedd125b187 # v2
         env:
           GITHUB_TOKEN: ${{ secrets.IDENTUS_CI }}
         with:
