@@ -1,14 +1,13 @@
 import sbt.*
 
-object V {
+object V:
   val zio = "2.1.26"
   val zioHttp = "3.11.3"
   val monocle = "3.3.0"
   val apollo = "1.8.8"
-  val grpcNetty = "1.83.0"
-}
+  val grpcNetty = "1.83.1"
 
-object D {
+object D:
   val scalaPbDeps: Seq[ModuleID] = Seq(
     "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf",
     "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion
@@ -35,4 +34,3 @@ object D {
     "dev.zio" %% "zio-test-sbt" % V.zio % Test,
     "dev.zio" %% "zio-test-magnolia" % V.zio % Test
   )
-}
