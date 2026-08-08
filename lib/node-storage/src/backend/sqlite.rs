@@ -137,8 +137,12 @@ impl RawOperationRepo for SqliteDb {
     type Error = Error;
 
     async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
+        // Page size for the initial fetch. A transaction whose operations span
+        // this page boundary is re-fetched in full below so that the indexer can
+        // commit it atomically (see `run_indexer_loop`).
+        const UNINDEXED_PAGE_LIMIT: u32 = 200;
         let mut tx = self.pool.begin().await?;
-        let result = self
+        let page = self
             .db_ctx
             .list::<entity::RawOperation>(
                 &mut tx,
@@ -148,10 +152,48 @@ impl RawOperationRepo for SqliteDb {
                     entity::RawOperationSort::absn().asc(),
                     entity::RawOperationSort::osn().asc(),
                 ]),
-                Some(PaginationInput { page: 0, limit: 200 }),
+                Some(PaginationInput {
+                    page: 0,
+                    limit: UNINDEXED_PAGE_LIMIT,
+                }),
             )
             .await?
-            .data
+            .data;
+
+        // If the page is full, the last transaction may be split across the page
+        // boundary. Drop its (possibly partial) rows and re-fetch the whole
+        // transaction so that every returned transaction is complete. Without
+        // this, the indexer would commit a split transaction in two separate
+        // calls and reintroduce the partial-visibility race.
+        let rows = if page.len() as u32 == UNINDEXED_PAGE_LIMIT {
+            let last = page.last().expect("page is non-empty");
+            let last_block = last.block_number;
+            let last_absn = last.absn;
+            let mut rows: Vec<entity::RawOperation> = page
+                .into_iter()
+                .filter(|r| r.block_number != last_block || r.absn != last_absn)
+                .collect();
+            let full_last_tx = self
+                .db_ctx
+                .list::<entity::RawOperation>(
+                    &mut tx,
+                    Filter::all([
+                        entity::RawOperationFilter::is_indexed().eq(false),
+                        entity::RawOperationFilter::block_number().eq(last_block),
+                        entity::RawOperationFilter::absn().eq(last_absn),
+                    ]),
+                    Sort::new([entity::RawOperationSort::osn().asc()]),
+                    None,
+                )
+                .await?
+                .data;
+            rows.extend(full_last_tx);
+            rows
+        } else {
+            page
+        };
+
+        let result = rows
             .into_iter()
             .map(parse_raw_operation)
             .collect::<Result<Vec<_>, _>>()?;
@@ -603,6 +645,60 @@ mod tests {
         assert_eq!(result[1].metadata.block_metadata.block_number.inner(), 1);
         assert_eq!(result[1].metadata.block_metadata.absn, 1);
         assert_eq!(result[2].metadata.block_metadata.block_number.inner(), 3);
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_raw_operations_unindexed_returns_complete_transaction_across_page_boundary() {
+        let (_tmp_dir, db) = setup_db().await;
+        let op = new_create_did_signed_operation();
+
+        // 250 operations in a single transaction (block_number=1, absn=0), osn
+        // 0..249, exceeding the 200-row page limit. The whole transaction must be
+        // returned in one call (not truncated at the page boundary) so the indexer
+        // can commit it atomically.
+        let batch: Vec<_> = (0..250u32).map(|osn| (dummy_metadata(1, 0, osn), op.clone())).collect();
+        db.insert_raw_operations(batch).await.expect("insert");
+
+        let unindexed = db.get_raw_operations_unindexed().await.expect("fetch");
+        assert_eq!(
+            unindexed.len(),
+            250,
+            "a transaction spanning the page boundary must be returned in full"
+        );
+        assert!(
+            unindexed.iter().all(|r| {
+                r.metadata.block_metadata.block_number.inner() == 1 && r.metadata.block_metadata.absn == 0
+            })
+        );
+    }
+
+    #[tokio::test(flavor = "multi_thread")]
+    async fn get_raw_operations_unindexed_completes_last_transaction_when_page_is_full() {
+        let (_tmp_dir, db) = setup_db().await;
+        let op = new_create_did_signed_operation();
+
+        // Two transactions (350 ops total) exceeding the 200-row page. The page
+        // cut lands inside tx B; both tx A and tx B must be returned complete.
+        let mut batch: Vec<_> = Vec::new();
+        for osn in 0..150u32 {
+            batch.push((dummy_metadata(1, 0, osn), op.clone())); // tx A: 150 ops
+        }
+        for osn in 0..200u32 {
+            batch.push((dummy_metadata(2, 0, osn), op.clone())); // tx B: 200 ops
+        }
+        db.insert_raw_operations(batch).await.expect("insert");
+
+        let unindexed = db.get_raw_operations_unindexed().await.expect("fetch");
+        let tx_a = unindexed
+            .iter()
+            .filter(|r| r.metadata.block_metadata.block_number.inner() == 1)
+            .count();
+        let tx_b = unindexed
+            .iter()
+            .filter(|r| r.metadata.block_metadata.block_number.inner() == 2)
+            .count();
+        assert_eq!(tx_a, 150, "tx A must be returned complete");
+        assert_eq!(tx_b, 200, "tx B (split across the page) must be returned complete");
     }
 
     // ── RawOperationRepo: get_raw_operations_by_did ──
