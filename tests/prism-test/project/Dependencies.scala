@@ -2,7 +2,7 @@ import sbt.*
 
 object V:
   val zio = "2.1.26"
-  val zioHttp = "3.11.3"
+  val zioHttp = "3.11.4"
   val monocle = "3.3.0"
   val apollo = "1.8.8"
   val grpcNetty = "1.83.1"
