@@ -125,8 +125,12 @@ impl RawOperationRepo for PostgresDb {
     type Error = Error;
 
     async fn get_raw_operations_unindexed(&self) -> Result<Vec<RawOperationRecord>, Self::Error> {
+        // Page size for the initial fetch. A transaction whose operations span
+        // this page boundary is re-fetched in full below so that the indexer can
+        // commit it atomically (see `run_indexer_loop`).
+        const UNINDEXED_PAGE_LIMIT: u32 = 200;
         let mut tx = self.pool.begin().await?;
-        let result = self
+        let page = self
             .db_ctx
             .list::<entity::RawOperation>(
                 &mut tx,
@@ -136,10 +140,48 @@ impl RawOperationRepo for PostgresDb {
                     entity::RawOperationSort::absn().asc(),
                     entity::RawOperationSort::osn().asc(),
                 ]),
-                Some(PaginationInput { page: 0, limit: 200 }),
+                Some(PaginationInput {
+                    page: 0,
+                    limit: UNINDEXED_PAGE_LIMIT,
+                }),
             )
             .await?
-            .data
+            .data;
+
+        // If the page is full, the last transaction may be split across the page
+        // boundary. Drop its (possibly partial) rows and re-fetch the whole
+        // transaction so that every returned transaction is complete. Without
+        // this, the indexer would commit a split transaction in two separate
+        // calls and reintroduce the partial-visibility race.
+        let rows = if page.len() as u32 == UNINDEXED_PAGE_LIMIT {
+            let last = page.last().expect("page is non-empty");
+            let last_block = last.block_number;
+            let last_absn = last.absn;
+            let mut rows: Vec<entity::RawOperation> = page
+                .into_iter()
+                .filter(|r| r.block_number != last_block || r.absn != last_absn)
+                .collect();
+            let full_last_tx = self
+                .db_ctx
+                .list::<entity::RawOperation>(
+                    &mut tx,
+                    Filter::all([
+                        entity::RawOperationFilter::is_indexed().eq(false),
+                        entity::RawOperationFilter::block_number().eq(last_block),
+                        entity::RawOperationFilter::absn().eq(last_absn),
+                    ]),
+                    Sort::new([entity::RawOperationSort::osn().asc()]),
+                    None,
+                )
+                .await?
+                .data;
+            rows.extend(full_last_tx);
+            rows
+        } else {
+            page
+        };
+
+        let result = rows
             .into_iter()
             .map(parse_raw_operation)
             .collect::<Result<Vec<_>, _>>()?;
