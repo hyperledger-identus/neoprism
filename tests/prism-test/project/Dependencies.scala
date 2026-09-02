@@ -5,7 +5,7 @@ object V:
   val zioHttp = "3.11.4"
   val monocle = "3.3.0"
   val apollo = "1.8.8"
-  val grpcNetty = "1.83.1"
+  val grpcNetty = "1.84.0"
 
 object D:
   val scalaPbDeps: Seq[ModuleID] = Seq(
