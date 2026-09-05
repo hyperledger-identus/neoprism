@@ -5,6 +5,7 @@ use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
 use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, PrismDidOps};
+use identus_did_prism::prelude::MessageExt;
 use identus_did_prism::proto;
 use identus_did_prism::protocol::resolver;
 
@@ -801,4 +802,140 @@ fn new_create_storage_op(
             special_fields: Default::default(),
         }),
     )
+}
+
+// --- unknown fields ---
+//
+// Field number 100 is used as the injected unknown field in all tests below.
+// 100 is well above the highest field number used in any current proto schema,
+// so it is guaranteed to be unknown to the current implementation.
+
+#[test]
+fn create_storage_with_unknown_fields_is_invalid() {
+    let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
+    let mut inner = proto::prism_storage::ProtoCreateStorageEntry {
+        did_prism_hash: did.suffix.to_vec(),
+        nonce: vec![0],
+        data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+            1, 2, 3,
+        ])),
+        special_fields: Default::default(),
+    };
+    inner.special_fields.mut_unknown_fields().add_varint(100, 0);
+    let (create_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::CreateStorageEntry(inner),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // Operation must be rejected — no storage entry should be recorded.
+    assert!(state.storage.is_empty());
+}
+
+#[test]
+fn update_storage_with_unknown_fields_is_invalid() {
+    let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = new_create_storage_op(&did, &vdr_sk, vec![1, 2, 3], vec![0]);
+    let mut inner = proto::prism_storage::ProtoUpdateStorageEntry {
+        previous_event_hash: create_storage_op_hash.to_vec(),
+        data: Some(proto::prism_storage::proto_update_storage_entry::Data::Bytes(vec![
+            4, 5, 6,
+        ])),
+        special_fields: Default::default(),
+    };
+    inner.special_fields.mut_unknown_fields().add_varint(100, 0);
+    let (update_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::UpdateStorageEntry(inner),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, update_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // Update must be rejected — original entry must remain unchanged.
+    assert_eq!(state.storage.len(), 1);
+    assert_eq!(*state.storage[0].data, StorageData::Bytes(vec![1, 2, 3]));
+}
+
+#[test]
+fn deactivate_storage_with_unknown_fields_is_invalid() {
+    let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
+    let (create_storage_op, create_storage_op_hash) = new_create_storage_op(&did, &vdr_sk, vec![1, 2, 3], vec![0]);
+    let mut inner = proto::prism_storage::ProtoDeactivateStorageEntry {
+        previous_event_hash: create_storage_op_hash.to_vec(),
+        special_fields: Default::default(),
+    };
+    inner.special_fields.mut_unknown_fields().add_varint(100, 0);
+    let (deactivate_storage_op, _) = test_utils::new_signed_operation(
+        VDR_KEY_NAME,
+        &vdr_sk,
+        proto::prism::prism_operation::Operation::DeactivateStorageEntry(inner),
+    );
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op, deactivate_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    // Deactivation must be rejected — entry must still be present (active entries
+    // are the only ones included in DidState.storage after finalization).
+    assert_eq!(state.storage.len(), 1);
+}
+
+#[test]
+fn create_storage_with_unknown_fields_in_prism_operation_wrapper_is_invalid() {
+    let (create_did_op, _, did, _, vdr_sk) = create_did_with_vdr_key();
+    let inner =
+        proto::prism::prism_operation::Operation::CreateStorageEntry(proto::prism_storage::ProtoCreateStorageEntry {
+            did_prism_hash: did.suffix.to_vec(),
+            nonce: vec![0],
+            data: Some(proto::prism_storage::proto_create_storage_entry::Data::Bytes(vec![
+                1, 2, 3,
+            ])),
+            special_fields: Default::default(),
+        });
+    // Add unknown field to the outer PrismOperation wrapper.
+    let mut prism_op = proto::prism::PrismOperation {
+        operation: Some(inner),
+        special_fields: Default::default(),
+    };
+    prism_op.special_fields.mut_unknown_fields().add_varint(100, 0);
+    let create_storage_op = proto::prism::SignedPrismOperation {
+        signed_with: VDR_KEY_NAME.to_string(),
+        signature: vdr_sk.sign(&prism_op.encode_to_vec()),
+        operation: Some(prism_op).into(),
+        special_fields: Default::default(),
+    };
+
+    let operations = test_utils::populate_metadata(vec![create_did_op, create_storage_op]);
+    let state = resolver::resolve_published(operations).0.unwrap();
+
+    assert!(state.storage.is_empty());
+}
+
+#[test]
+fn create_did_with_unknown_fields_in_prism_operation_wrapper_is_still_valid() {
+    // SSI (DID) operations must remain valid even when the PrismOperation wrapper
+    // carries unknown fields, ensuring forward-compatibility for the SSI chain.
+    let (signed_op, _, master_sk) = test_utils::new_create_did_operation(None);
+    let inner_op = signed_op.operation.as_ref().unwrap().operation.clone().unwrap();
+    let mut prism_op = proto::prism::PrismOperation {
+        operation: Some(inner_op),
+        special_fields: Default::default(),
+    };
+    prism_op.special_fields.mut_unknown_fields().add_varint(100, 0);
+    let signed_op_with_unknown = proto::prism::SignedPrismOperation {
+        signed_with: signed_op.signed_with.clone(),
+        signature: master_sk.sign(&prism_op.encode_to_vec()),
+        operation: Some(prism_op).into(),
+        special_fields: Default::default(),
+    };
+
+    let operations = test_utils::populate_metadata(vec![signed_op_with_unknown]);
+    let state = resolver::resolve_published(operations).0;
+
+    // The DID must resolve successfully — SSI unknown fields are intentionally tolerated.
+    assert!(state.is_some());
 }
