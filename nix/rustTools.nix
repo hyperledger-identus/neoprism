@@ -1,7 +1,9 @@
 { rust-bin, rust-overlay }:
 
 let
-  nightlyVersion = "2026-03-18";
+  # NeoPRISM still needs nightly for lazybe and error_reporter. Keep the beta
+  # beyond sdk-rust's Rust 1.98.1 floor so the git dependency can compile.
+  nightlyVersion = "2026-09-02";
   rustOverrideArgs = {
     extensions = [
       "rust-src"
