@@ -846,7 +846,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
- "syn 2.0.106",
+ "syn 1.0.109",
 ]
 
 [[package]]
@@ -1794,12 +1794,46 @@ dependencies = [
  "derive_more",
  "ed25519-dalek",
  "hex",
- "k256",
- "ring",
+ "identus-crypto",
  "serde",
  "serde_json",
  "utoipa",
+]
+
+[[package]]
+name = "identus-core"
+version = "0.0.0"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+dependencies = [
+ "identus-derive",
+ "serde",
+]
+
+[[package]]
+name = "identus-crypto"
+version = "0.0.0"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+dependencies = [
+ "base64",
+ "ed25519-dalek",
+ "identus-core",
+ "identus-derive",
+ "k256",
+ "serde",
+ "serde_json",
+ "sha2",
  "x25519-dalek",
+ "zeroize",
+]
+
+[[package]]
+name = "identus-derive"
+version = "0.0.0"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.106",
 ]
 
 [[package]]
@@ -2108,7 +2142,6 @@ dependencies = [
  "elliptic-curve",
  "once_cell",
  "sha2",
- "signature",
 ]
 
 [[package]]
@@ -5220,18 +5253,18 @@ dependencies = [
 
 [[package]]
 name = "zeroize"
-version = "1.8.1"
+version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ced3678a2879b30306d323f4542626697a464a97c0a07c9aebf7ebca65cd4dde"
+checksum = "e13c156562582aa81c60cb29407084cdb54c4164760106ab78e6c5b0858cf64e"
 dependencies = [
  "zeroize_derive",
 ]
 
 [[package]]
 name = "zeroize_derive"
-version = "1.4.2"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ce36e65b0d2999d2aafac989fb249189a141aee1f53c612c1f37d72631959f69"
+checksum = "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328"
 dependencies = [
  "proc-macro2",
  "quote",
