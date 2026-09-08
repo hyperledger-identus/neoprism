@@ -612,7 +612,7 @@ mod tests {
         let err = sink.build_and_submit("deadbeef").await.unwrap_err();
         // TxId::from_bytes fails with hash size error for short input
         assert!(
-            err.contains("invalid input size"),
+            err.contains("key size to be 32"),
             "expected hash size error, got: {err}"
         );
     }

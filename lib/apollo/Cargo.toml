@@ -8,25 +8,28 @@ derive_more = { workspace = true, features = [ "as_ref", "from", "into", "debug"
 serde       = { workspace = true, optional = true, features = [ "derive" ] }
 utoipa      = { workspace = true, optional = true }
 
-# crypto
-ring          = { version = "0.17", optional = true }
-base64        = { version = "0.22", optional = true }
-hex           = { version = "0.4", optional = true }
-ed25519-dalek = { version = "2", optional = true }
-k256          = { version = "0.13", optional = true, features = [ "arithmetic", "ecdsa" ] }
-x25519-dalek  = { version = "2", optional = true }
+# Beta consumption of the generic crypto implementation extracted from
+# NeoPRISM. Keep this immutable until sdk-rust publishes versioned crates.
+identus-crypto = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6", default-features = false }
+
+# Compatibility-only encoding DTOs. Cryptographic primitives are delegated to
+# identus-crypto; codec convergence can follow without coupling the first beta
+# to a wire-type migration.
+base64 = { version = "0.22", optional = true }
+hex    = { version = "0.4", optional = true }
 
 [dev-dependencies]
-serde_json = { workspace = true }
+ed25519-dalek = "2"
+serde_json     = { workspace = true }
 
 [features]
 default   = [  ]
 base64    = [ "dep:base64" ]
-ed25519   = [ "jwk", "dep:ed25519-dalek" ]
-hash      = [ "hex", "dep:ring" ]
+ed25519   = [ "jwk", "identus-crypto/ed25519" ]
+hash      = [ "hex", "identus-crypto/hash" ]
 hex       = [ "dep:hex" ]
-jwk       = [ "base64" ]
+jwk       = [ "base64", "identus-crypto/jwk" ]
 openapi   = [ "serde", "dep:utoipa" ]
-secp256k1 = [ "jwk", "dep:k256" ]
+secp256k1 = [ "jwk", "identus-crypto/secp256k1" ]
 serde     = [ "dep:serde" ]
-x25519    = [ "jwk", "dep:x25519-dalek" ]
+x25519    = [ "jwk", "identus-crypto/x25519" ]

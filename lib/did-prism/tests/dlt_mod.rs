@@ -342,7 +342,7 @@ fn block_no_serialize_deserialize() {
 #[test]
 fn tx_id_from_bytes_valid() {
     let digest = sha256([0u8; 32]);
-    let tx_id = TxId::from(digest.clone());
+    let tx_id = TxId::from(digest);
     assert_eq!(tx_id.to_vec(), digest.to_vec());
 }
 
@@ -355,14 +355,14 @@ fn tx_id_from_bytes_error_wrong_length() {
 #[test]
 fn tx_id_to_vec() {
     let digest = sha256([0u8; 32]);
-    let tx_id = TxId::from(digest.clone());
+    let tx_id = TxId::from(digest);
     assert_eq!(tx_id.to_vec(), digest.to_vec());
 }
 
 #[test]
 fn tx_id_display_shows_hex() {
     let digest = sha256([0u8; 32]);
-    let tx_id = TxId::from(digest.clone());
+    let tx_id = TxId::from(digest);
     let hex = identus_apollo::hex::HexStr::from(digest.as_bytes());
     assert_eq!(format!("{}", tx_id), format!("{}", hex));
 }
@@ -370,7 +370,7 @@ fn tx_id_display_shows_hex() {
 #[test]
 fn tx_id_debug_shows_hex() {
     let digest = sha256([0u8; 32]);
-    let tx_id = TxId::from(digest.clone());
+    let tx_id = TxId::from(digest);
     let hex = identus_apollo::hex::HexStr::from(digest.as_bytes());
     assert_eq!(format!("{:?}", tx_id), format!("{}", hex));
 }
@@ -378,7 +378,7 @@ fn tx_id_debug_shows_hex() {
 #[test]
 fn tx_id_from_str_valid() {
     let digest = sha256([0u8; 32]);
-    let expected = TxId::from(digest.clone());
+    let expected = TxId::from(digest);
     let hex = identus_apollo::hex::HexStr::from(digest.as_bytes());
     let parsed: TxId = TxId::from_str(&hex.to_string()).unwrap();
     assert_eq!(parsed.to_vec(), expected.to_vec());
