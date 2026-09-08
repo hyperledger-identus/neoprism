@@ -26,7 +26,6 @@
           mdbook
           mdbook-cmdrun
           mdbook-d2
-          mdbook-linkcheck
           yq-go
           self'.packages.neoprism-bin
         ];

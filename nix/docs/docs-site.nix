@@ -6,7 +6,6 @@
   mdbook,
   mdbook-d2,
   mdbook-cmdrun,
-  mdbook-linkcheck,
   yq-go,
   neoprism-bin,
 }:
@@ -22,7 +21,6 @@ stdenv.mkDerivation {
     mdbook
     mdbook-cmdrun
     mdbook-d2
-    mdbook-linkcheck
     neoprism-bin
     yq-go
   ];
