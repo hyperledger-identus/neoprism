@@ -2,6 +2,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.2](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.2) - 2026-09-08
+
+### 🐛 Bug Fixes
+
+- X25519 input validation, SQLite cursor cleanup + DLT/submitter/service test coverage ([#277](https://github.com/hyperledger-identus/neoprism/pull/277))
+- *(ci)* Upgrade JDK to 17 and pin scala-steward-action ([#291](https://github.com/hyperledger-identus/neoprism/pull/291))
+- *(ci)* Update nixpkgs to fix crates.io 403 downloads ([#313](https://github.com/hyperledger-identus/neoprism/pull/313))
+- *(indexer)* Index operations atomically per transaction ([#299](https://github.com/hyperledger-identus/neoprism/pull/299))
+
+### 🧪 Testing
+
+- Add comprehensive test coverage across crates ([#276](https://github.com/hyperledger-identus/neoprism/pull/276))
+
+### ⚙️ Miscellaneous Tasks
+
+- Add backlog config and sqlite cli audit findings ([#279](https://github.com/hyperledger-identus/neoprism/pull/279))
+- Update apollo-jvm from 1.8.4-kt2.1.20 to 1.8.7 ([#278](https://github.com/hyperledger-identus/neoprism/pull/278))
+- Update grpc-netty-shaded from 1.81.0 to 1.82.0 ([#274](https://github.com/hyperledger-identus/neoprism/pull/274))
+- Update scala3-library from 3.3.7 to 3.3.8 ([#281](https://github.com/hyperledger-identus/neoprism/pull/281))
+- Update apollo-jvm from 1.8.7 to 1.8.8 ([#280](https://github.com/hyperledger-identus/neoprism/pull/280))
+- Update sbt, scripted-plugin from 1.12.11 to 1.12.12 ([#282](https://github.com/hyperledger-identus/neoprism/pull/282))
+- Update sbt, scripted-plugin from 1.12.12 to 1.12.13
+- Update grpc-netty-shaded from 1.82.0 to 1.82.1 ([#286](https://github.com/hyperledger-identus/neoprism/pull/286))
+- Update zio-http from 3.11.2 to 3.11.3 ([#287](https://github.com/hyperledger-identus/neoprism/pull/287))
+- Update grpc-netty-shaded from 1.82.1 to 1.82.2 ([#289](https://github.com/hyperledger-identus/neoprism/pull/289))
+- Update scalafmt-core from 3.11.1 to 3.11.2 ([#290](https://github.com/hyperledger-identus/neoprism/pull/290))
+- Update scalafmt-core from 3.11.2 to 3.11.3 ([#293](https://github.com/hyperledger-identus/neoprism/pull/293))
+- Update sbt, scripted-plugin from 1.12.13 to 1.12.14 ([#294](https://github.com/hyperledger-identus/neoprism/pull/294))
+- Update sbt-scalafmt from 2.6.1 to 2.6.2 ([#295](https://github.com/hyperledger-identus/neoprism/pull/295))
+- Update scalafmt-core from 3.11.3 to 3.11.4 ([#296](https://github.com/hyperledger-identus/neoprism/pull/296))
+- Update grpc-netty-shaded from 1.82.2 to 1.83.0 ([#298](https://github.com/hyperledger-identus/neoprism/pull/298))
+- Update sbt from 1.12.14 to 2.0.4 ([#300](https://github.com/hyperledger-identus/neoprism/pull/300))
+- Update scalafmt-core from 3.11.4 to 3.11.5 ([#302](https://github.com/hyperledger-identus/neoprism/pull/302))
+- Update grpc-netty-shaded from 1.83.0 to 1.83.1 ([#303](https://github.com/hyperledger-identus/neoprism/pull/303))
+- Update sbt from 2.0.4 to 2.0.5 ([#305](https://github.com/hyperledger-identus/neoprism/pull/305))
+- Update sbt from 2.0.5 to 2.0.6 ([#306](https://github.com/hyperledger-identus/neoprism/pull/306))
+- Update zio-http from 3.11.3 to 3.11.4 ([#309](https://github.com/hyperledger-identus/neoprism/pull/309))
+- Update sbt from 2.0.6 to 2.0.8 ([#312](https://github.com/hyperledger-identus/neoprism/pull/312))
+- Update grpc-netty-shaded from 1.83.1 to 1.84.0 ([#315](https://github.com/hyperledger-identus/neoprism/pull/315))
+- Bump lint-files.yml workflow pin for editorconfig-checker v3 ([#316](https://github.com/hyperledger-identus/neoprism/pull/316))
+- Update scala3-library from 3.3.8 to 3.9.0 ([#317](https://github.com/hyperledger-identus/neoprism/pull/317))
+
 ## [0.14.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.1) - 2026-05-22
 
 ### 📚 Documentation
