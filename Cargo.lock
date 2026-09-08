@@ -1788,7 +1788,7 @@ dependencies = [
 
 [[package]]
 name = "identus-apollo"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "base64",
  "derive_more",
@@ -1804,7 +1804,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-core"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1821,7 +1821,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "chrono",
  "derive_more",
@@ -1841,7 +1841,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism-indexer"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1866,7 +1866,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism-ledger"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "async-trait",
  "chrono",
@@ -1880,7 +1880,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-prism-submitter"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "async-trait",
  "derive_more",
@@ -1896,7 +1896,7 @@ dependencies = [
 
 [[package]]
 name = "identus-did-resolver-http"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "async-trait",
  "axum",
@@ -2416,7 +2416,7 @@ dependencies = [
 
 [[package]]
 name = "neoprism-node"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2462,7 +2462,7 @@ dependencies = [
 
 [[package]]
 name = "node-storage"
-version = "0.14.1"
+version = "0.14.2"
 dependencies = [
  "async-trait",
  "chrono",
