@@ -57,7 +57,7 @@ rustPlatform.buildRustPackage {
     cargo clippy -p identus-did-core --all-targets --features ts-types -- -D warnings
 
     echo "checking feature gate for identus-did-resolver-http"
-    cargo clippy -p identus-did-resolver-http --all-targets --features openapi -- -D warnings
+    cargo clippy -p identus-did-resolver-http@0.14.2 --all-targets --features openapi -- -D warnings
 
     echo "checking feature gate for identus-did-prism"
     cargo clippy -p identus-did-prism --all-targets --features openapi -- -D warnings
