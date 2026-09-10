@@ -4,10 +4,10 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-identus-did-core = { workspace = true }
+identus-did-core              = { workspace = true }
 identus-sdk-did-resolver-http = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "04b45b7fceb094ae601e3cf7a3291de0a0248b57" }
-axum             = { workspace = true }
-utoipa           = { workspace = true, optional = true, features = [ "chrono" ] }
+axum                          = { workspace = true }
+utoipa                        = { workspace = true, optional = true, features = [ "chrono" ] }
 
 [dev-dependencies]
 async-trait    = { workspace = true }
