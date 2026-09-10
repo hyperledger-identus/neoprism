@@ -5,6 +5,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 from .manifest import compare, read_manifest, write_manifest, write_reports
+from .metrics import MetricsRecorder, parse_memory_bytes, parse_percent
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "docker" / "indexer-parity" / "compose.yml"
@@ -61,6 +63,7 @@ class RunOptions:
     sample_seconds: int
     boundary_lag: int
     timeout_seconds: int
+    metrics_sample_seconds: int
     output_dir: Path
     keep: bool
 
@@ -183,6 +186,19 @@ class ComposeHarness:
             )
         return result.stdout.strip()
 
+    def container_id(self, service: str) -> str:
+        result = self.compose("ps", "--quiet", service)
+        container_id = result.stdout.strip()
+        if not container_id:
+            raise HarnessError(f"unable to resolve container for service {service}")
+        return container_id
+
+    def restart_count(self, container_id: str) -> int:
+        result = _run(
+            ["docker", "inspect", "--format", "{{.RestartCount}}", container_id]
+        )
+        return int(result.stdout.strip())
+
     def write_logs(self) -> None:
         logs = self.compose("logs", "--no-color", check=False)
         (self.options.output_dir / "containers.log").write_text(
@@ -192,6 +208,108 @@ class ComposeHarness:
 
     def cleanup(self) -> None:
         self.compose("down", "--volumes", "--remove-orphans", check=False)
+
+
+class ResourceSampler:
+    def __init__(
+        self,
+        harness: ComposeHarness,
+        recorder: MetricsRecorder,
+        interval_seconds: int,
+    ) -> None:
+        self.harness = harness
+        self.recorder = recorder
+        self.interval_seconds = interval_seconds
+        self.container_ids: dict[str, str] = {}
+        self.warnings: list[str] = []
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def start(self) -> None:
+        self.container_ids = {
+            service: self.harness.container_id(service)
+            for service in ("baseline", "candidate")
+        }
+        self._thread = threading.Thread(
+            target=self._run,
+            name="indexer-parity-resource-sampler",
+            daemon=True,
+        )
+        self._thread.start()
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            sample_started = time.monotonic()
+            self._sample_all()
+            sample_duration = time.monotonic() - sample_started
+            self._stop.wait(max(0.0, self.interval_seconds - sample_duration))
+
+    def _sample_all(self) -> None:
+        result = _run(
+            [
+                "docker",
+                "stats",
+                "--no-stream",
+                "--format",
+                "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.PIDs}}",
+                *self.container_ids.values(),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            warning = f"Docker stats failed: {result.stderr.strip()}"
+            if warning not in self.warnings:
+                self.warnings.append(warning)
+            return
+        for line in result.stdout.splitlines():
+            self._record_line(line)
+
+    def _record_line(self, line: str) -> None:
+        parts = line.strip().split("|")
+        if len(parts) != 5:
+            warning = "unexpected Docker stats output"
+            if warning not in self.warnings:
+                self.warnings.append(warning)
+            return
+        identifier = parts[0]
+        service = next(
+            (
+                name
+                for name, container_id in self.container_ids.items()
+                if container_id.startswith(identifier)
+                or identifier.startswith(container_id)
+            ),
+            None,
+        )
+        if service is None:
+            warning = f"Docker stats returned unknown container {identifier}"
+            if warning not in self.warnings:
+                self.warnings.append(warning)
+            return
+        try:
+            self.recorder.record_resource(
+                service=service,
+                cpu_percent=parse_percent(parts[1]),
+                memory_bytes=parse_memory_bytes(parts[2].split("/", maxsplit=1)[0]),
+                memory_percent=parse_percent(parts[3]),
+                pids=int(parts[4]),
+            )
+        except ValueError as error:
+            warning = f"unable to parse Docker stats for {service}: {error}"
+            if warning not in self.warnings:
+                self.warnings.append(warning)
+
+    def stop(self) -> None:
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=self.interval_seconds + 10)
+            self._thread = None
+
+    def restart_counts(self) -> dict[str, int]:
+        return {
+            service: self.harness.restart_count(container_id)
+            for service, container_id in self.container_ids.items()
+        }
 
 
 def _wait_for_databases(harness: ComposeHarness, deadline: float) -> None:
@@ -220,15 +338,19 @@ def _wait_for_databases(harness: ComposeHarness, deadline: float) -> None:
     raise HarnessError("timed out waiting for both database schemas")
 
 
-def _read_cursors(harness: ComposeHarness) -> tuple[int, int]:
-    return harness.cursor("db-baseline"), harness.cursor("db-candidate")
+def _read_cursors(
+    harness: ComposeHarness, metrics: MetricsRecorder
+) -> tuple[int, int]:
+    cursors = harness.cursor("db-baseline"), harness.cursor("db-candidate")
+    metrics.record_cursors(*cursors)
+    return cursors
 
 
 def _wait_for_initial_progress(
-    harness: ComposeHarness, deadline: float
+    harness: ComposeHarness, metrics: MetricsRecorder, deadline: float
 ) -> tuple[int, int]:
     while time.monotonic() < deadline:
-        cursors = _read_cursors(harness)
+        cursors = _read_cursors(harness, metrics)
         print(f"cursor baseline={cursors[0]} candidate={cursors[1]}", flush=True)
         if min(cursors) > 0:
             return cursors
@@ -237,16 +359,19 @@ def _wait_for_initial_progress(
 
 
 def _select_boundary(
-    harness: ComposeHarness, options: RunOptions, deadline: float
+    harness: ComposeHarness,
+    metrics: MetricsRecorder,
+    options: RunOptions,
+    deadline: float,
 ) -> int:
     if options.target_slot is not None:
         return options.target_slot
 
-    cursors = _wait_for_initial_progress(harness, deadline)
+    cursors = _wait_for_initial_progress(harness, metrics, deadline)
     sample_deadline = min(deadline, time.monotonic() + options.sample_seconds)
     while time.monotonic() < sample_deadline:
         time.sleep(min(POLL_SECONDS, max(0.0, sample_deadline - time.monotonic())))
-        cursors = _read_cursors(harness)
+        cursors = _read_cursors(harness, metrics)
         print(f"sampling baseline={cursors[0]} candidate={cursors[1]}", flush=True)
     boundary = min(cursors) - options.boundary_lag
     if boundary <= 0:
@@ -259,13 +384,14 @@ def _select_boundary(
 
 def _wait_for_boundary(
     harness: ComposeHarness,
+    metrics: MetricsRecorder,
     comparison_slot: int,
     boundary_lag: int,
     deadline: float,
 ) -> tuple[int, int]:
     required_cursor = comparison_slot + boundary_lag
     while time.monotonic() < deadline:
-        cursors = _read_cursors(harness)
+        cursors = _read_cursors(harness, metrics)
         print(
             f"target={comparison_slot} required={required_cursor} "
             f"baseline={cursors[0]} candidate={cursors[1]}",
@@ -309,6 +435,9 @@ def run(options: RunOptions) -> int:
     harness = ComposeHarness(options)
     deadline = time.monotonic() + options.timeout_seconds
     started_at = datetime.now(UTC)
+    run_started_monotonic = time.monotonic()
+    metrics: MetricsRecorder | None = None
+    sampler: ResourceSampler | None = None
     succeeded = False
     try:
         _run(["docker", "info"])
@@ -321,13 +450,20 @@ def run(options: RunOptions) -> int:
                 "baseline and candidate resolve to the same image ID; "
                 "a differential run requires two distinct images"
             )
+        scan_started_monotonic = time.monotonic()
+        metrics = MetricsRecorder(scan_started_monotonic)
         harness.compose("up", "--detach")
+        sampler = ResourceSampler(harness, metrics, options.metrics_sample_seconds)
+        sampler.start()
         _wait_for_databases(harness, deadline)
-        comparison_slot = _select_boundary(harness, options, deadline)
+        comparison_slot = _select_boundary(harness, metrics, options, deadline)
         cursors = _wait_for_boundary(
-            harness, comparison_slot, options.boundary_lag, deadline
+            harness, metrics, comparison_slot, options.boundary_lag, deadline
         )
         _wait_for_drain(harness, comparison_slot, deadline)
+        sampler.stop()
+        scan_duration_seconds = time.monotonic() - scan_started_monotonic
+        restart_counts = sampler.restart_counts()
         harness.compose("stop", "baseline", "candidate")
 
         baseline = read_manifest(
@@ -339,6 +475,16 @@ def run(options: RunOptions) -> int:
         write_manifest(options.output_dir / "baseline.csv", baseline)
         write_manifest(options.output_dir / "candidate.csv", candidate)
         comparison = compare(baseline, candidate)
+        total_duration_seconds = time.monotonic() - run_started_monotonic
+        metrics.write_samples(options.output_dir)
+        metrics_summary = metrics.summarize(
+            network=options.network,
+            required_cursor=comparison_slot + options.boundary_lag,
+            total_duration_seconds=total_duration_seconds,
+            scan_duration_seconds=scan_duration_seconds,
+            restart_counts=restart_counts,
+        )
+        metrics_summary["warnings"] = sampler.warnings
         metadata: dict[str, Any] = {
             "network": options.network,
             "relay_address": options.relay_address,
@@ -352,12 +498,16 @@ def run(options: RunOptions) -> int:
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
         }
-        write_reports(options.output_dir, comparison, metadata)
+        write_reports(options.output_dir, comparison, metadata, metrics_summary)
         succeeded = comparison.equal
         print(f"parity result: {'PASS' if comparison.equal else 'FAIL'}")
         print(f"report: {options.output_dir / 'report.md'}")
         return 0 if comparison.equal else 1
     finally:
+        if sampler is not None:
+            sampler.stop()
+        if metrics is not None:
+            metrics.write_samples(options.output_dir)
         harness.write_logs()
         if not options.keep:
             harness.cleanup()
@@ -384,6 +534,7 @@ def parse_args(arguments: list[str] | None = None) -> RunOptions:
     parser.add_argument("--sample-seconds", type=_positive_int, default=300)
     parser.add_argument("--boundary-lag", type=_positive_int, default=1_000)
     parser.add_argument("--timeout-seconds", type=_positive_int, default=7_200)
+    parser.add_argument("--metrics-sample-seconds", type=_positive_int, default=5)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--allow-mainnet", action="store_true")
     parser.add_argument("--keep", action="store_true")
@@ -410,6 +561,7 @@ def parse_args(arguments: list[str] | None = None) -> RunOptions:
         sample_seconds=args.sample_seconds,
         boundary_lag=args.boundary_lag,
         timeout_seconds=args.timeout_seconds,
+        metrics_sample_seconds=args.metrics_sample_seconds,
         output_dir=output_dir.resolve(),
         keep=args.keep,
     )
