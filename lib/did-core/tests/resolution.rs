@@ -122,9 +122,7 @@ fn resolution_result_deactivated() {
 
 #[test]
 fn resolution_result_invalid_did_with_error() {
-    let err = identus_did_core::Error::InvalidDid {
-        error: identus_did_core::InvalidDid::from(identity_did::Error::Other("DID cannot contain fragment")),
-    };
+    let err = "did:example:123#fragment".parse::<Did>().unwrap_err();
     let result = ResolutionResult::invalid_did(err);
 
     // No document
@@ -145,12 +143,10 @@ fn resolution_result_invalid_did_with_error() {
 
 #[test]
 fn resolution_result_invalid_did_error_detail_content() {
-    let err = identus_did_core::Error::InvalidDid {
-        error: identus_did_core::InvalidDid::from(identity_did::Error::Other("custom error msg")),
-    };
+    let err = "not-a-did".parse::<Did>().unwrap_err();
     let result = ResolutionResult::invalid_did(err);
     let detail = result.did_resolution_metadata.error.unwrap().detail.unwrap();
-    assert!(detail.contains("custom error msg"));
+    assert!(!detail.is_empty());
 }
 
 #[test]

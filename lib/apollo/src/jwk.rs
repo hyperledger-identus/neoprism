@@ -14,6 +14,7 @@ pub trait EncodeJwk {
     fn encode_jwk(&self) -> Jwk;
 }
 
+#[cfg(any(feature = "ed25519", feature = "secp256k1", feature = "x25519"))]
 fn from_sdk(jwk: identus_crypto::jwk::PublicKeyJwk) -> Jwk {
     Jwk {
         kty: jwk.kty().to_string(),
