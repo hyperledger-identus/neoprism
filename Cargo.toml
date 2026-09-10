@@ -32,7 +32,7 @@ node-storage                = { path = "lib/node-storage" }
 # general
 anyhow             = { version = "1" }
 async-trait        = { version = "0.1" }
-axum               = { version = "0.8" }
+axum               = { version = "=0.8.9" }
 blockfrost         = { version = "1.2", default-features = false }
 blockfrost-openapi = { version = "0.1", default-features = false }
 chrono             = { version = "0.4" }
@@ -54,7 +54,7 @@ tower-http         = { version = "0.6" }
 tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
 ts-rs              = { version = "11.0" }
-utoipa             = { version = "5" }
+utoipa             = { version = "=5.5.0" }
 utoipa-scalar      = { version = "0.3" }
 uuid               = { version = "1" }
 # db

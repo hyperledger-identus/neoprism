@@ -123,6 +123,19 @@ async fn exposes_a_neoprism_resolver_through_the_sdk_port() {
 }
 
 #[tokio::test]
+async fn projects_the_sdk_requested_document_media_type() {
+    let adapter = SdkDidResolverAdapter::new(FixedResolver(ResolutionResult::success(sample_document())));
+    let did = identus_did::Did::parse("did:prism:1234").unwrap();
+    let options = identus_did::ResolutionOptions::builder()
+        .accept(identus_did::MediaType::parse("application/json").unwrap())
+        .build()
+        .unwrap();
+    let result = identus_did::DidResolver::resolve(&adapter, &did, &options).await;
+
+    assert_eq!(result.metadata().content_type().unwrap().as_str(), "application/json");
+}
+
+#[tokio::test]
 async fn maps_unsupported_sdk_options_to_invalid_options() {
     let adapter = SdkDidResolverAdapter::new(FixedResolver(ResolutionResult::success(sample_document())));
     let did = identus_did::Did::parse("did:example:123").unwrap();

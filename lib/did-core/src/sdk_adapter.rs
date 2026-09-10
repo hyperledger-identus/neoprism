@@ -124,7 +124,13 @@ where
                     return sdk_failure(identus_did::DidResolutionErrorKind::InvalidOptions);
                 }
             };
-            let result = self.inner.resolve(&did, &options).await;
+            let mut result = self.inner.resolve(&did, &options).await;
+            if result.did_document.is_some()
+                && result.did_resolution_metadata.error.is_none()
+                && let Some(accept) = options.accept
+            {
+                result.did_resolution_metadata.content_type = Some(accept);
+            }
             resolution_result_to_sdk(&result)
                 .unwrap_or_else(|_| sdk_failure(identus_did::DidResolutionErrorKind::InternalError))
         })
