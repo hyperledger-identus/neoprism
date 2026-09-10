@@ -19,7 +19,7 @@ select = [
 # All compose_gen code must pass strict mode checks.
 typeCheckingMode = "strict"
 pythonVersion    = "3.13"
-include          = [ "compose_gen" ]
+include          = [ "compose_gen", "indexer_parity" ]
 
 # Core strict mode rules
 reportUnnecessaryIsInstance = true

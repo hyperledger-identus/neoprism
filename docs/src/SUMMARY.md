@@ -17,6 +17,7 @@
 # Developer Guide
 
 - [PRISM specification tests](./prism-test/README.md)
+- [Live indexer parity test](./indexer-parity/README.md)
 - [Release process](./references/release-process.md)
 
 # Reference
