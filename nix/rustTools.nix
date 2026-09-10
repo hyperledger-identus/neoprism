@@ -8,6 +8,7 @@ let
     extensions = [
       "rust-src"
       "rust-analyzer"
+      "llvm-tools"
     ];
     targets = [ ];
   };
