@@ -1803,7 +1803,7 @@ dependencies = [
 [[package]]
 name = "identus-core"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=04b45b7fceb094ae601e3cf7a3291de0a0248b57#04b45b7fceb094ae601e3cf7a3291de0a0248b57"
 dependencies = [
  "identus-derive",
  "serde",
@@ -1812,7 +1812,7 @@ dependencies = [
 [[package]]
 name = "identus-crypto"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=04b45b7fceb094ae601e3cf7a3291de0a0248b57#04b45b7fceb094ae601e3cf7a3291de0a0248b57"
 dependencies = [
  "base64",
  "ed25519-dalek",
@@ -1829,7 +1829,7 @@ dependencies = [
 [[package]]
 name = "identus-derive"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6#9ff2fa87337d3f25d67f38486c3a4d0a656bd9d6"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=04b45b7fceb094ae601e3cf7a3291de0a0248b57#04b45b7fceb094ae601e3cf7a3291de0a0248b57"
 dependencies = [
  "proc-macro2",
  "quote",
