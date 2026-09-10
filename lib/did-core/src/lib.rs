@@ -2,6 +2,7 @@ mod did;
 mod did_doc;
 mod error;
 mod resolution;
+pub mod sdk_adapter;
 pub mod uri;
 
 pub use did::*;

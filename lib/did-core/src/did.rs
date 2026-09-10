@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use identity_did::DID;
+use identus_did::{Did as SdkDid, DidUrl as SdkDidUrl};
 use serde::{Deserialize, Serialize};
 
 use crate::{Error, InvalidDid};
@@ -15,14 +15,14 @@ use crate::{Error, InvalidDid};
 )]
 #[debug("{}", self.0.to_string())]
 #[display("{}", self.0.to_string())]
-pub struct Did(#[cfg_attr(feature = "ts-types", ts(type = "string"))] identity_did::CoreDID);
+pub struct Did(#[cfg_attr(feature = "ts-types", ts(type = "string"))] SdkDid);
 
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(feature = "openapi", schema(value_type = String, example = "did:example:123456789abcdefghi#key-1?service=abc"))]
 #[display("{}", self.0.to_string())]
 #[debug("{}", self.0.to_string())]
-pub struct DidUrl(identity_did::DIDUrl);
+pub struct DidUrl(SdkDidUrl);
 
 impl Did {
     pub fn to_did_url(&self) -> DidUrl {
@@ -32,39 +32,31 @@ impl Did {
 
 impl DidUrl {
     pub fn to_did(&self) -> Did {
-        let mut did_url = self.0.clone();
-        did_url.set_fragment(None).unwrap();
-        did_url.set_path(None).unwrap();
-        did_url.set_query(None).unwrap();
-        Did(did_url.did().clone())
+        Did(self.0.to_did())
     }
 }
 
 impl FromStr for Did {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let did_url = DidUrl::from_str(s)?;
-        if did_url.path().is_some() {
-            Err(InvalidDid::from(identity_did::Error::Other(
-                "DID cannot contain path segment(s)",
-            )))?;
+        let did_url = SdkDidUrl::parse(s).map_err(InvalidDid::from)?;
+        if !did_url.path().is_empty() {
+            Err(InvalidDid::new("DID cannot contain path segment(s)"))?;
         }
         if did_url.query().is_some() {
-            Err(InvalidDid::from(identity_did::Error::Other("DID cannot contain query")))?;
+            Err(InvalidDid::new("DID cannot contain query"))?;
         }
         if did_url.fragment().is_some() {
-            Err(InvalidDid::from(identity_did::Error::Other(
-                "DID cannot contain fragment",
-            )))?;
+            Err(InvalidDid::new("DID cannot contain fragment"))?;
         }
-        Ok(did_url.to_did())
+        Ok(Self(SdkDid::parse(s).map_err(InvalidDid::from)?))
     }
 }
 
 impl FromStr for DidUrl {
     type Err = Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self(identity_did::DIDUrl::parse(s).map_err(InvalidDid::from)?))
+        Ok(Self(SdkDidUrl::parse(s).map_err(InvalidDid::from)?))
     }
 }
 
@@ -85,17 +77,17 @@ impl DidOps for Did {
     }
 
     fn method_id(&self) -> &str {
-        self.0.method_id()
+        self.0.method_specific_id()
     }
 }
 
 impl DidOps for DidUrl {
     fn method(&self) -> &str {
-        self.0.did().method()
+        self.0.method()
     }
 
     fn method_id(&self) -> &str {
-        self.0.did().method_id()
+        self.0.method_specific_id()
     }
 }
 
@@ -105,7 +97,8 @@ impl DidUrlOps for DidUrl {
     }
 
     fn path(&self) -> Option<&str> {
-        self.0.path()
+        let path = self.0.path();
+        (!path.is_empty()).then_some(path)
     }
 
     fn query(&self) -> Option<&str> {

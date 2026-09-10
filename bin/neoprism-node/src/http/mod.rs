@@ -4,7 +4,7 @@ use axum::Router;
 use axum::response::Redirect;
 use axum::routing::get;
 use features::{api, ui_explorer, ui_resolver};
-use identus_did_resolver_http::DidResolverStateDyn;
+use identus_did_resolver_http::DidResolverRouter;
 use tower_http::services::ServeDir;
 
 use crate::{AppState, IndexerState, IndexerUiState, RunMode, SubmitterState};
@@ -20,7 +20,7 @@ pub struct Routers {
     pub app_router: Router<AppState>,
     pub indexer_ui_router: Router<IndexerUiState>,
     pub indexer_router: Router<IndexerState>,
-    pub did_resolver_router: Router<DidResolverStateDyn>,
+    pub did_resolver_router: DidResolverRouter,
     pub submitter_router: Router<SubmitterState>,
 }
 

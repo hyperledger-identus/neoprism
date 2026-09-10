@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +18,16 @@ pub struct ResolutionOptions {
 #[async_trait::async_trait]
 pub trait DidResolver {
     async fn resolve(&self, did: &Did, options: &ResolutionOptions) -> ResolutionResult;
+}
+
+#[async_trait::async_trait]
+impl<T> DidResolver for Arc<T>
+where
+    T: DidResolver + Send + Sync + ?Sized,
+{
+    async fn resolve(&self, did: &Did, options: &ResolutionOptions) -> ResolutionResult {
+        (**self).resolve(did, options).await
+    }
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
