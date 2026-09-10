@@ -3,8 +3,8 @@ set working-directory := '../..'
 # Format and lint-fix tools sources and justfile
 format:
     echo "Formatting Python files..."
-    ruff check --select I --fix tools/compose_gen
-    ruff format tools/compose_gen
+    ruff check --select I --fix tools/compose_gen tools/indexer_parity
+    ruff format tools/compose_gen tools/indexer_parity
 
     echo "Formatting justfiles..."
     just --fmt --unstable
