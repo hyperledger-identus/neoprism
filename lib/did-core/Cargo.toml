@@ -15,6 +15,9 @@ ts-rs          = { workspace = true, optional = true }
 utoipa         = { workspace = true, optional = true, features = [ "chrono" ] }
 regex          = { workspace = true }
 
+[dev-dependencies]
+tokio = { workspace = true, features = [ "macros", "rt" ] }
+
 [features]
 default  = [  ]
 openapi  = [ "dep:utoipa", "identus-apollo/openapi" ]

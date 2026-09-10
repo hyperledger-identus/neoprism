@@ -4,7 +4,7 @@ use chrono::{TimeZone, Utc};
 use identus_apollo::base64::Base64UrlStrNoPad;
 use identus_apollo::jwk::Jwk;
 use identus_did_core::sdk_adapter::{
-    did_document_to_sdk, did_from_sdk, resolution_options_from_sdk, resolution_result_to_sdk,
+    SdkDidResolverAdapter, did_document_to_sdk, did_from_sdk, resolution_options_from_sdk, resolution_result_to_sdk,
 };
 use identus_did_core::{
     Did, DidDocument, DidDocumentMetadata, DidResolutionError, DidResolutionErrorCode, DidResolutionMetadata,
@@ -87,6 +87,66 @@ fn projects_resolution_options_from_sdk() {
     assert_eq!(
         projected.version_time,
         Some(Utc.with_ymd_and_hms(2026, 9, 10, 7, 0, 0).unwrap())
+    );
+}
+
+#[test]
+fn rejects_sdk_options_the_legacy_resolver_cannot_honor() {
+    let sdk = identus_did::ResolutionOptions::builder()
+        .no_cache(true)
+        .build()
+        .unwrap();
+    assert!(resolution_options_from_sdk(&sdk).is_err());
+}
+
+#[derive(Debug)]
+struct FixedResolver(ResolutionResult);
+
+#[async_trait::async_trait]
+impl identus_did_core::DidResolver for FixedResolver {
+    async fn resolve(
+        &self,
+        _did: &identus_did_core::Did,
+        _options: &identus_did_core::ResolutionOptions,
+    ) -> ResolutionResult {
+        self.0.clone()
+    }
+}
+
+#[tokio::test]
+async fn exposes_a_neoprism_resolver_through_the_sdk_port() {
+    let adapter = SdkDidResolverAdapter::new(FixedResolver(ResolutionResult::success(sample_document())));
+    let did = identus_did::Did::parse("did:prism:1234").unwrap();
+    let result = identus_did::DidResolver::resolve(&adapter, &did, &identus_did::ResolutionOptions::empty()).await;
+
+    assert_eq!(result.document().unwrap().id(), &did);
+}
+
+#[tokio::test]
+async fn maps_unsupported_sdk_options_to_invalid_options() {
+    let adapter = SdkDidResolverAdapter::new(FixedResolver(ResolutionResult::success(sample_document())));
+    let did = identus_did::Did::parse("did:example:123").unwrap();
+    let options = identus_did::ResolutionOptions::builder()
+        .no_cache(true)
+        .build()
+        .unwrap();
+    let result = identus_did::DidResolver::resolve(&adapter, &did, &options).await;
+
+    assert_eq!(
+        result.metadata().error().unwrap().kind(),
+        Some(identus_did::DidResolutionErrorKind::InvalidOptions)
+    );
+}
+
+#[tokio::test]
+async fn maps_an_invalid_neoprism_result_to_internal_error() {
+    let adapter = SdkDidResolverAdapter::new(FixedResolver(ResolutionResult::default()));
+    let did = identus_did::Did::parse("did:prism:1234").unwrap();
+    let result = identus_did::DidResolver::resolve(&adapter, &did, &identus_did::ResolutionOptions::empty()).await;
+
+    assert_eq!(
+        result.metadata().error().unwrap().kind(),
+        Some(identus_did::DidResolutionErrorKind::InternalError)
     );
 }
 
