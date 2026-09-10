@@ -81,6 +81,7 @@ def build_example_configs() -> dict[str, ComposeConfig]:
         ),
         "blockfrost-neoprism-demo/compose": stacks.blockfrost_neoprism_demo.mk_stack(),
         "mainnet-universal-resolver/compose": stacks.universal_resolver.mk_stack(),
+        "indexer-parity/compose": stacks.indexer_parity.mk_stack(),
     }
 
 
