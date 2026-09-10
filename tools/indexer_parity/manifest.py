@@ -180,9 +180,16 @@ def compare(
 
 
 def write_reports(
-    output_dir: Path, comparison: Comparison, metadata: dict[str, Any]
+    output_dir: Path,
+    comparison: Comparison,
+    metadata: dict[str, Any],
+    metrics: dict[str, Any],
 ) -> None:
-    json_report = {"metadata": metadata, "comparison": comparison.to_dict()}
+    json_report = {
+        "metadata": metadata,
+        "comparison": comparison.to_dict(),
+        "metrics": metrics,
+    }
     (output_dir / "report.json").write_text(
         json.dumps(json_report, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
@@ -205,6 +212,80 @@ def write_reports(
         f"- Baseline operations: `{comparison.baseline_count}`",
         f"- Candidate operations: `{comparison.candidate_count}`",
         "",
+        "## Performance and QoS Diagnostics",
+        "",
+        (
+            f"- Total harness duration: "
+            f"`{metrics['durations']['total_run_seconds']:.3f} s`"
+        ),
+        f"- Live scan duration: `{metrics['durations']['scan_seconds']:.3f} s`",
+        "",
+        "| Metric | Baseline | Candidate | Candidate / baseline |",
+        "| --- | ---: | ---: | ---: |",
+        _metric_row(
+            "Time to required cursor (s)",
+            metrics["cursor"]["baseline"]["time_to_boundary_seconds"],
+            metrics["cursor"]["candidate"]["time_to_boundary_seconds"],
+            metrics["cursor"]["candidate_to_baseline"]["time_to_boundary_ratio"],
+        ),
+        _metric_row(
+            "Effective cursor rate (slots/s)",
+            metrics["cursor"]["baseline"]["effective_slots_per_second"],
+            metrics["cursor"]["candidate"]["effective_slots_per_second"],
+            metrics["cursor"]["candidate_to_baseline"][
+                "effective_slots_per_second_ratio"
+            ],
+        ),
+        _metric_row(
+            "Mean CPU (%)",
+            metrics["resources"]["baseline"]["mean_cpu_percent"],
+            metrics["resources"]["candidate"]["mean_cpu_percent"],
+            metrics["resources"]["candidate_to_baseline"]["mean_cpu_ratio"],
+        ),
+        _metric_row(
+            "p95 CPU (%)",
+            metrics["resources"]["baseline"]["p95_cpu_percent"],
+            metrics["resources"]["candidate"]["p95_cpu_percent"],
+            None,
+        ),
+        _metric_row(
+            "Peak CPU (%)",
+            metrics["resources"]["baseline"]["peak_cpu_percent"],
+            metrics["resources"]["candidate"]["peak_cpu_percent"],
+            metrics["resources"]["candidate_to_baseline"]["peak_cpu_ratio"],
+        ),
+        _memory_row(
+            "Mean memory (MiB)",
+            metrics["resources"]["baseline"]["mean_memory_bytes"],
+            metrics["resources"]["candidate"]["mean_memory_bytes"],
+            metrics["resources"]["candidate_to_baseline"]["mean_memory_ratio"],
+        ),
+        _memory_row(
+            "Peak memory (MiB)",
+            metrics["resources"]["baseline"]["peak_memory_bytes"],
+            metrics["resources"]["candidate"]["peak_memory_bytes"],
+            metrics["resources"]["candidate_to_baseline"]["peak_memory_ratio"],
+        ),
+        _metric_row(
+            "Peak processes",
+            metrics["resources"]["baseline"]["peak_pids"],
+            metrics["resources"]["candidate"]["peak_pids"],
+            None,
+        ),
+        _metric_row(
+            "Container restarts",
+            metrics["resources"]["baseline"]["restart_count"],
+            metrics["resources"]["candidate"]["restart_count"],
+            None,
+        ),
+        "",
+        (
+            "These measurements are diagnostic, not pass/fail gates. Docker CPU "
+            "can exceed 100% on multi-core hosts; compare controlled repeated runs "
+            "before setting QoS thresholds."
+        ),
+        "Raw observations are in `cursor-samples.csv` and `resource-samples.csv`.",
+        "",
         "## Differences",
         "",
         f"- Duplicate baseline IDs: `{len(comparison.duplicate_baseline_ids)}`",
@@ -215,4 +296,45 @@ def write_reports(
         "",
         "See `report.json` for operation-level details.",
     ]
+    if metrics["warnings"]:
+        lines.extend(
+            ["", "## Measurement Warnings", ""]
+            + [f"- {warning}" for warning in metrics["warnings"]]
+        )
     (output_dir / "report.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def _display(value: float | int | None) -> str:
+    if value is None:
+        return "n/a"
+    if isinstance(value, float):
+        return f"{value:.3f}"
+    return str(value)
+
+
+def _metric_row(
+    label: str,
+    baseline: float | int | None,
+    candidate: float | int | None,
+    ratio: float | int | None,
+) -> str:
+    return (
+        f"| {label} | {_display(baseline)} | {_display(candidate)} | "
+        f"{_display(ratio)} |"
+    )
+
+
+def _memory_row(
+    label: str,
+    baseline_bytes: float | int | None,
+    candidate_bytes: float | int | None,
+    ratio: float | int | None,
+) -> str:
+    divisor = 1_024**2
+    baseline = (
+        None if baseline_bytes is None else float(baseline_bytes) / divisor
+    )
+    candidate = (
+        None if candidate_bytes is None else float(candidate_bytes) / divisor
+    )
+    return _metric_row(label, baseline, candidate, ratio)

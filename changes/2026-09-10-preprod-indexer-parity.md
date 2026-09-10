@@ -78,7 +78,15 @@ Each run writes:
 - a machine-readable JSON comparison report;
 - a human-readable Markdown summary;
 - container logs;
-- image identities, network, boundary, cursor positions, counts, and timing.
+- raw cursor and container-resource samples as CSV;
+- image identities, network, boundary, cursor positions, counts, and timing;
+- total and scan duration, time-to-boundary, effective cursor rate, sampled
+  CPU/memory/process usage, restart counts, and candidate-to-baseline ratios.
+
+Resource measurements are comparative diagnostics rather than acceptance gates.
+Docker CPU percentages can exceed 100% on multi-core hosts, and CPU/memory
+results depend on the runner, Docker runtime, relay, and concurrent workload.
+Hard QoS thresholds require repeated runs on a controlled runner first.
 
 Generated evidence lives under `artifacts/indexer-parity/` and is not committed.
 
@@ -91,6 +99,8 @@ Generated evidence lives under `artifacts/indexer-parity/` and is not committed.
 - Missing, extra, duplicate, or changed operations return failure with
   actionable evidence.
 - Offline unit tests cover normalization and difference reporting.
+- Raw and summarized QoS evidence is retained without making an uncalibrated
+  local resource measurement a semantic parity failure.
 - Local documentation explains image preparation, execution, evidence, cost,
   and limitations.
 
@@ -111,6 +121,24 @@ This proves the harness and an early Preprod prefix. It is not the final
 historical parity claim: release evidence still requires an explicit target
 slot covering a materially larger operation set.
 
+The first instrumented run used Docker Desktop on arm64 with 12 Docker CPUs
+and an 8.32 GB Docker memory allocation. It completed in 136.060 seconds, of
+which 134.269 seconds was the live scan. Sixteen samples per indexer found:
+
+| Metric | Published `0.14.2` | sdk-rust candidate | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| Time to shared required cursor | 93.022 s | 93.022 s | 1.000 |
+| Mean CPU | 0.867% | 0.954% | 1.100 |
+| Peak CPU | 2.010% | 1.900% | 0.945 |
+| Mean memory | 10.447 MiB | 10.071 MiB | 0.964 |
+| Peak memory | 10.980 MiB | 10.700 MiB | 0.975 |
+| Peak process count | 19 | 19 | — |
+| Container restarts | 0 | 0 | — |
+
+There were no measurement warnings. This short local smoke run shows that the
+instrumentation works and did not reveal an obvious resource regression. It is
+not a statistically meaningful performance conclusion.
+
 ## Limitations
 
 - Equality proves parity only through the recorded slot boundary and for the
@@ -121,3 +149,6 @@ slot covering a materially larger operation set.
 - A database snapshot or pre-seeded cursor can be added later if repeated
   PRISM-genesis synchronization becomes too expensive; both versions must then
   receive logically identical starting state.
+- A single run can identify a large regression, but it does not establish a
+  stable performance baseline. QoS gates need repeated measurements on a fixed
+  runner with controlled resource limits and an agreed variance budget.
