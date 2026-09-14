@@ -58,6 +58,10 @@
         ];
 
         shellHook = ''
+          # Python-based tools can propagate a different interpreter ahead of
+          # pythonEnv. Keep Compose generation on the environment that carries
+          # its declared pydantic and PyYAML dependencies.
+          export PATH="${pythonEnv}/bin:$PATH"
           export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
           ${pkgs.cowsay}/bin/cowsay "Working on project root directory: $ROOT_DIR"
           cd "$ROOT_DIR"
