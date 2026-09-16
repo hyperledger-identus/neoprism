@@ -1575,7 +1575,7 @@ dependencies = [
 [[package]]
 name = "identus-core"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=523c64d4ff71d97f71c44b55c99594f065896b56#523c64d4ff71d97f71c44b55c99594f065896b56"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=1d5283105678a4e62253416454a60859111e635c#1d5283105678a4e62253416454a60859111e635c"
 dependencies = [
  "identus-derive",
  "serde",
@@ -1584,7 +1584,7 @@ dependencies = [
 [[package]]
 name = "identus-crypto"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=523c64d4ff71d97f71c44b55c99594f065896b56#523c64d4ff71d97f71c44b55c99594f065896b56"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=1d5283105678a4e62253416454a60859111e635c#1d5283105678a4e62253416454a60859111e635c"
 dependencies = [
  "base64",
  "ed25519-dalek",
@@ -1601,7 +1601,7 @@ dependencies = [
 [[package]]
 name = "identus-derive"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=523c64d4ff71d97f71c44b55c99594f065896b56#523c64d4ff71d97f71c44b55c99594f065896b56"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=1d5283105678a4e62253416454a60859111e635c#1d5283105678a4e62253416454a60859111e635c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1611,7 +1611,7 @@ dependencies = [
 [[package]]
 name = "identus-did"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=523c64d4ff71d97f71c44b55c99594f065896b56#523c64d4ff71d97f71c44b55c99594f065896b56"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=1d5283105678a4e62253416454a60859111e635c#1d5283105678a4e62253416454a60859111e635c"
 dependencies = [
  "base64",
  "bs58",
@@ -1717,7 +1717,7 @@ dependencies = [
 [[package]]
 name = "identus-did-resolver-http"
 version = "0.0.0"
-source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=523c64d4ff71d97f71c44b55c99594f065896b56#523c64d4ff71d97f71c44b55c99594f065896b56"
+source = "git+https://github.com/hyperledger-identus/sdk-rust.git?rev=1d5283105678a4e62253416454a60859111e635c#1d5283105678a4e62253416454a60859111e635c"
 dependencies = [
  "axum",
  "headers-accept",
