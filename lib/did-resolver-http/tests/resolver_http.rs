@@ -510,7 +510,7 @@ async fn binding_creates_functional_router() {
     // Verify the binding creates a router that can handle requests
     let binding = did_resolver_http_binding("/resolve/{did}", Default::default());
     let state = DidResolverStateDyn {
-        resolver: Arc::new(MockResolver::success()),
+        resolver: Arc::new(MockResolver::echo()),
     };
     let app = binding.router.with_state(state);
 
@@ -552,11 +552,13 @@ async fn deactivated_result_has_null_did_document() {
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn resolve_unsupported_public_key_type_returns_not_implemented() {
+async fn resolve_unsupported_public_key_type_uses_sdk_extension_error_policy() {
     let app = make_app(MockResolver::unsupported_public_key_type());
     let (status, content_type, body) = send_request(app, "did:example:unsupported", None).await;
 
-    assert_eq!(status, StatusCode::NOT_IMPLEMENTED);
+    // sdk-rust retains the extension error URI but maps unknown error kinds to
+    // the safe catch-all status instead of assigning transport semantics.
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     assert_eq!(content_type, "application/did-resolution");
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
     let error = &json["didResolutionMetadata"]["error"];
