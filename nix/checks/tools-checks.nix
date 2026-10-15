@@ -42,10 +42,13 @@ stdenv.mkDerivation {
     cd tools
 
     echo "Linting Python files..."
-    ruff check compose_gen
+    ruff check compose_gen indexer_parity
 
     echo "Type checking Python files..."
-    pyright compose_gen
+    pyright compose_gen indexer_parity
+
+    echo "Testing Python tools..."
+    python -m unittest discover -s indexer_parity/tests
   '';
 
   installPhase = "touch $out";

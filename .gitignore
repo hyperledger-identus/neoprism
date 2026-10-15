@@ -8,6 +8,7 @@ node_modules/
 result
 __pycache__
 lcov.info
+artifacts/indexer-parity/
 
 # bv (beads viewer) local config and caches
 .bv/
