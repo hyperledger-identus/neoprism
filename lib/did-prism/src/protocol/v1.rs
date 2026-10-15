@@ -187,6 +187,7 @@ impl OperationProcessorOps for V1Processor {
         operation: ProtoCreateStorageEntry,
         prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
+        ensure_no_vdr_unknown_fields(&prism_operation_special_fields, &operation.special_fields)?;
         let parsed_operation = CreateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
         // clone and mutate candidate state
@@ -211,6 +212,7 @@ impl OperationProcessorOps for V1Processor {
         operation: ProtoUpdateStorageEntry,
         prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
+        ensure_no_vdr_unknown_fields(&prism_operation_special_fields, &operation.special_fields)?;
         let parsed_operation = UpdateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
         // clone and mutate candidate state
@@ -238,6 +240,7 @@ impl OperationProcessorOps for V1Processor {
         operation: ProtoDeactivateStorageEntry,
         prism_operation_special_fields: SpecialFields,
     ) -> Result<DidStateRc, ProcessError> {
+        ensure_no_vdr_unknown_fields(&prism_operation_special_fields, &operation.special_fields)?;
         let parsed_operation = DeactivateStorageOperation::parse(&operation).map_err(DidError::from)?;
 
         // clone and mutate candidate state
@@ -253,6 +256,21 @@ impl OperationProcessorOps for V1Processor {
         UpdateDidValidator::validate_candidate_state(&self.parameters, &candidate_state)?;
         Ok(candidate_state)
     }
+}
+
+/// Returns `Err(VdrOperationContainsUnknownFields)` if either `outer` (the `PrismOperation`
+/// wrapper) or `inner` (the storage-entry message itself) contains unknown protobuf fields.
+///
+/// VDR (storage) operations are strict: unknown fields indicate a schema the current
+/// implementation does not understand, so the operation is rejected.  SSI (DID) operations
+/// are intentionally NOT guarded this way to remain forward-compatible with future
+/// protocol extensions.
+fn ensure_no_vdr_unknown_fields(outer: &SpecialFields, inner: &SpecialFields) -> Result<(), ProcessError> {
+    let has_unknown = |sf: &SpecialFields| sf.unknown_fields().iter().next().is_some();
+    if has_unknown(outer) || has_unknown(inner) {
+        return Err(ProcessError::VdrOperationContainsUnknownFields);
+    }
+    Ok(())
 }
 
 trait Validator {
