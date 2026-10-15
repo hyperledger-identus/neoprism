@@ -229,7 +229,7 @@ async fn run_server(
 ) -> anyhow::Result<()> {
     let layer = ServiceBuilder::new()
         .layer(TraceLayer::new_for_http())
-        .option_layer(Some(CorsLayer::permissive()).filter(|_| server_args.cors_enabled));
+        .option_layer(server_args.cors_enabled.then_some(CorsLayer::permissive()));
     let routers = http::router(
         &server_args.assets_path,
         app_state.run_mode,
