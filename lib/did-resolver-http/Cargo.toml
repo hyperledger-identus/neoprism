@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 identus-did-core              = { workspace = true }
-identus-sdk-did-resolver-http = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "1d5283105678a4e62253416454a60859111e635c" }
+identus-sdk-did-resolver-http = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
 axum                          = { workspace = true }
 utoipa                        = { workspace = true, optional = true, features = [ "chrono" ] }
 

@@ -10,7 +10,7 @@ utoipa      = { workspace = true, optional = true }
 
 # Beta consumption of the generic crypto implementation extracted from
 # NeoPRISM. Keep this immutable until sdk-rust publishes versioned crates.
-identus-crypto = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "1d5283105678a4e62253416454a60859111e635c", default-features = false }
+identus-crypto = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03", default-features = false }
 
 # Compatibility-only encoding DTOs. Cryptographic primitives are delegated to
 # identus-crypto; codec convergence can follow without coupling the first beta
