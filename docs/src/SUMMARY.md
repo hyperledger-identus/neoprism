@@ -8,6 +8,8 @@
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
 - [Architecture](./architecture/README.md)
+  - [Decisions](./architecture/decisions/README.md)
+    - [ADR 0001: adopt the SDK-Rust PRISM method kernel](./architecture/decisions/0001-adopt-sdk-rust-prism-method-kernel.md)
 - [Configuration](./configuration/README.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
