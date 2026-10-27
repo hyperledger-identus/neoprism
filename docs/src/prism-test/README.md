@@ -10,31 +10,67 @@ All automation assumes you are inside the Nix development shell:
 nix develop
 ```
 
-From there, run every stack (PostgreSQL + SQLite, developer + CI topologies) in one go:
+From there, run every supported stack in one go:
 
 ```bash
 just e2e::run
 ```
 
-`just e2e::run` performs the following loop:
+`just e2e::run` uses a unique Compose project for each profile and performs the following loop:
 
-1. Builds and `docker load`s the NeoPRISM image (`just e2e::docker-publish-local`).
-2. Iterates through the compose stacks below, running `sbt test` for each.
-3. Executes `docker-compose ... down --volumes --remove-orphans` so no containers linger between runs.
+1. Acquires a non-blocking, per-user host lock shared by all worktrees because the generated profiles use fixed host ports and a shared Docker image tag.
+2. Runs read-only Docker, disk-space, Compose-file, and stale-network preflight checks.
+3. Builds and loads the NeoPRISM image.
+4. Iterates through the compose stacks below. The embedded-wallet profile waits, with a 120-second bound, until its deterministic test address has a spendable UTXO.
+5. Runs `sbt "clean;Test / testOnly *"` for each profile and requires a non-zero conformance test receipt.
+6. Executes `docker-compose ... down --volumes --remove-orphans` in a failure-safe cleanup path.
+7. Writes a JSON receipt and per-profile logs under `target/e2e-receipts/`.
 
 | Target | Backend | Compose file | Notes |
 |--------|---------|--------------|-------|
-| `dev` | PostgreSQL | `docker/prism-test/compose-dev.yml` | Mirrors “developer friendly” defaults with Postgres |
-| `dev-sqlite` | SQLite | `docker/prism-test/compose-dev-sqlite.yml` | Fastest loop, great for laptop smoke tests |
+| `sqlite-dev` | SQLite | `docker/prism-test/compose-sqlite-dev.yml` | Fast laptop smoke topology |
 | `ci` | PostgreSQL | `docker/prism-test/compose-ci.yml` | Heavier topology that matches the CI pipeline |
 | `ci-sqlite` | SQLite | `docker/prism-test/compose-ci-sqlite.yml` | Ensures the embedded backend stays compatible under CI load |
+| `ci-blockfrost` | PostgreSQL | `docker/prism-test/compose-ci-blockfrost.yml` | Exercises Blockfrost indexing and submission paths |
+| `ci-embedded-wallet` | PostgreSQL | `docker/prism-test/compose-ci-embedded-wallet.yml` | Exercises the embedded-wallet submission path |
+
+Run one or more selected profiles with the runner directly:
+
+```bash
+python tools/e2e_runner.py --profile sqlite-dev
+python tools/e2e_runner.py --profile ci-sqlite --profile ci-embedded-wallet
+```
+
+Each receipt records the exact Git revision, dirty state, Docker architecture and version, loaded NeoPRISM image ID, profile durations, embedded-wallet readiness time, conformance test count, missing images at profile start, result, and cleanup result. A profile with missing images is marked `cold_cache`; its total duration includes image download time. CPU and RAM are intentionally non-gating until controlled runs establish a useful baseline.
 
 Need to focus on a single stack? Use `just e2e::up <name>` / `just e2e::down <name>` and run the Scala tests manually:
 
 ```bash
-just e2e::up dev-sqlite
-(cd tests/prism-test && sbt test)
-just e2e::down dev-sqlite
+just e2e::up sqlite-dev
+(cd tests/prism-test && sbt "clean;Test / testOnly *")
+just e2e::down sqlite-dev
+```
+
+The manual `up` and `down` recipes retain the historical shared Compose project name. Prefer the runner for automated sessions. Full matrix sessions are deliberately serialized because the generated stacks bind fixed host ports such as `18080`.
+
+## Preflight and recovery
+
+The runner never removes global Docker resources automatically. It only tears down the unique project it created. If unused NeoPRISM test networks are found, preflight prints their exact names and a narrowly scoped `docker network rm ...` command without executing it.
+
+If Docker reports `all predefined address pools have been fully subnetted`, inspect the listed networks before running the suggested command. If no stale NeoPRISM networks are listed, use `docker network ls` and coordinate with the owners of other projects instead of running a global prune.
+
+The Cardano and Blockfrost test images currently target `linux/amd64`. Docker Desktop on Apple Silicon may print architecture-emulation warnings; these are expected when the services become healthy and the conformance suite passes.
+
+By default, preflight requires 10 GiB of free host disk space for the cold-cache matrix. Override this only when the Docker images are already present:
+
+```bash
+NEOPRISM_E2E_MIN_FREE_GIB=5 just e2e::run
+```
+
+Run the runner's offline tests without Docker:
+
+```bash
+just e2e::test-runner
 ```
 
 ## Full repository check
@@ -51,18 +87,18 @@ It chains formatting, `cargo build`, `just test`, Docker image builds, and the f
 
 The compose files live in `docker/prism-test/` and are generated via `just build-config`. If you need to inspect or tweak them manually:
 
-1. Start the desired stack (for example the developer Postgres topology):
+1. Start the desired stack (for example the SQLite development topology):
 
    ```bash
    cd docker/prism-test
-   docker-compose -f compose-dev.yml up
+   docker-compose -f compose-sqlite-dev.yml up
    ```
 
 2. In another terminal, run the Scala suite:
 
    ```bash
    cd tests/prism-test
-   sbt test
+   sbt "clean;Test / testOnly *"
    ```
 
 Manually editing the YAML files is discouraged—change the Python sources under `tools/compose_gen/` and rerun `just build-config` instead.

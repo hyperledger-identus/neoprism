@@ -18,17 +18,13 @@ up NAME:
 down NAME:
     docker-compose -f docker/prism-test/compose-{{ NAME }}.yml down --volumes --remove-orphans
 
-# Run all PRISM conformance test suites
-run: docker-publish-local
-    #!/usr/bin/env bash
-    set -euo pipefail
+# Run all PRISM conformance test suites with isolated cleanup and receipts
+run:
+    python tools/e2e_runner.py
 
-    for cfg in sqlite-dev ci ci-sqlite ci-blockfrost ci-embedded-wallet; do
-        cowsay "Testing ${cfg} configuration"
-        just e2e::up ${cfg}
-        (cd tests/prism-test && sbt test)
-        just e2e::down ${cfg}
-    done
+# Run the offline E2E runner tests
+test-runner:
+    PYTHONPATH=tools python -m unittest discover -s tools/tests -p 'test_e2e_runner.py'
 
 # Build and load Docker images for local testing
 docker-publish-local:
