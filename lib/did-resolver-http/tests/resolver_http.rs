@@ -256,6 +256,34 @@ async fn resolve_success_default_accept_returns_application_did() {
 }
 
 #[tokio::test]
+async fn resolve_rejects_unknown_query_options_instead_of_ignoring_them() {
+    let app = make_app(MockResolver::success());
+    let (status, content_type, body) = send_request_raw(app, "/did/did%3Aexample%3A123?_=123", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(
+        json["didResolutionMetadata"]["error"]["type"],
+        "https://www.w3.org/ns/did#INVALID_OPTIONS"
+    );
+}
+
+#[tokio::test]
+async fn resolve_rejects_version_queries_until_neoprism_can_honor_them() {
+    let app = make_app(MockResolver::success());
+    let (status, content_type, body) = send_request_raw(app, "/did/did%3Aexample%3A123?versionId=42", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(
+        json["didResolutionMetadata"]["error"]["type"],
+        "https://www.w3.org/ns/did#INVALID_OPTIONS"
+    );
+}
+
+#[tokio::test]
 async fn resolve_success_accept_application_json() {
     let app = make_app(MockResolver::success());
     let (status, content_type, body) = send_request(app, "did:example:123", Some("application/json")).await;

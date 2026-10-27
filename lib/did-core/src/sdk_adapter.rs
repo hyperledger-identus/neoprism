@@ -47,7 +47,12 @@ pub fn did_from_sdk(value: &identus_did::Did) -> Result<Did, SdkProjectionError>
 pub fn resolution_options_from_sdk(
     value: &identus_did::ResolutionOptions,
 ) -> Result<ResolutionOptions, SdkProjectionError> {
-    if value.no_cache().is_some() || !value.extensions().is_empty() {
+    if value.expand_relative_urls().is_some()
+        || value.no_cache().is_some()
+        || value.version_id().is_some()
+        || value.version_time().is_some()
+        || !value.extensions().is_empty()
+    {
         return Err(SdkProjectionError::UnsupportedSdkResolutionOptions);
     }
     let wire = serde_json::to_vec(value).map_err(|_| SdkProjectionError::EncodeNeoPrism)?;

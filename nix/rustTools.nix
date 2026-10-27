@@ -43,7 +43,7 @@ rec {
   cargoLock = {
     lockFile = ../Cargo.lock;
     outputHashes = {
-      "identus-core-0.0.0" = "sha256-IX5FpDT9WirbaJ3xWhrkAfCGTjipDsdwfXICgmOjXOo=";
+      "identus-core-0.1.0-rc.1" = "sha256-/rmJ2PQKsoM3mPCLQYaF/Z2uB4y0K7NJdfj1osjg0qQ=";
       "oura-1.9.4" = "sha256-SaSJOlxnM2+BDg9uE4GUxKync37DJQD+P4VVZA2NO3g=";
     };
   };

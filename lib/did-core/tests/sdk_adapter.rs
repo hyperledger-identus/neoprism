@@ -74,29 +74,40 @@ fn projects_sdk_did_into_legacy_facade() {
 fn projects_resolution_options_from_sdk() {
     let sdk = identus_did::ResolutionOptions::builder()
         .accept(identus_did::MediaType::parse("application/did").unwrap())
-        .expand_relative_urls(true)
-        .version_id(identus_did::VersionId::parse("42").unwrap())
-        .version_time(identus_did::DidResolutionDateTime::parse("2026-09-10T07:00:00Z").unwrap())
         .build()
         .unwrap();
 
     let projected = resolution_options_from_sdk(&sdk).unwrap();
     assert_eq!(projected.accept.as_deref(), Some("application/did"));
-    assert_eq!(projected.expand_relative_urls, Some(true));
-    assert_eq!(projected.version_id.as_deref(), Some("42"));
-    assert_eq!(
-        projected.version_time,
-        Some(Utc.with_ymd_and_hms(2026, 9, 10, 7, 0, 0).unwrap())
-    );
 }
 
 #[test]
 fn rejects_sdk_options_the_legacy_resolver_cannot_honor() {
-    let sdk = identus_did::ResolutionOptions::builder()
-        .no_cache(true)
-        .build()
-        .unwrap();
-    assert!(resolution_options_from_sdk(&sdk).is_err());
+    let unsupported = [
+        identus_did::ResolutionOptions::builder()
+            .expand_relative_urls(true)
+            .build()
+            .unwrap(),
+        identus_did::ResolutionOptions::builder()
+            .no_cache(true)
+            .build()
+            .unwrap(),
+        identus_did::ResolutionOptions::builder()
+            .version_id(identus_did::VersionId::parse("42").unwrap())
+            .build()
+            .unwrap(),
+        identus_did::ResolutionOptions::builder()
+            .version_time(identus_did::DidResolutionDateTime::parse("2026-09-10T07:00:00Z").unwrap())
+            .build()
+            .unwrap(),
+    ];
+
+    for sdk in unsupported {
+        assert!(matches!(
+            resolution_options_from_sdk(&sdk),
+            Err(identus_did_core::sdk_adapter::SdkProjectionError::UnsupportedSdkResolutionOptions)
+        ));
+    }
 }
 
 #[derive(Debug)]
