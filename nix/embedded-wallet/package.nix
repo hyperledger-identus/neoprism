@@ -10,10 +10,29 @@
 }:
 
 let
-  bunDepsHash = "sha256-NUZE53F3BT5nXajXKZBCaiO3zccwY7uHhGyg/rxq1HQ=";
+  dependencyInputsHash = builtins.hashString "sha256" (
+    builtins.readFile ../../packages/embedded-wallet/package.json
+    + builtins.readFile ../../packages/embedded-wallet/bun.lock
+    + bun.version
+    + stdenv.buildPlatform.system
+  );
+
+  # Bun materializes platform-specific node_modules trees, so keep each hash
+  # aligned with `bun install --frozen-lockfile` on its build platform. The
+  # derivation name changes with declared inputs and the build platform so
+  # normal CI builds cannot reuse stale output.
+  # Build `.#embedded-wallet.deps` once, then audit same-input reproducibility
+  # with `nix build .#embedded-wallet.deps --rebuild` (see issue #326).
+  bunDepsHash =
+    if stdenv.buildPlatform.isDarwin then
+      "sha256-+fXtrsiupnGq0d4c5nt6R5qf/EJBxbv0PEkldCnZFi8="
+    else if stdenv.buildPlatform.isLinux then
+      "sha256-NUZE53F3BT5nXajXKZBCaiO3zccwY7uHhGyg/rxq1HQ="
+    else
+      throw "unsupported embedded-wallet dependency build platform: ${stdenv.buildPlatform.system}";
 
   bunDeps = stdenv.mkDerivation {
-    name = "embedded-wallet-deps";
+    name = "embedded-wallet-deps-${dependencyInputsHash}";
     nativeBuildInputs = [ bun ];
 
     src = ./../..;
@@ -42,6 +61,8 @@ let
 in
 stdenv.mkDerivation {
   inherit pname version;
+
+  passthru.deps = bunDeps;
 
   src = ./../..;
 
