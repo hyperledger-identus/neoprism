@@ -49,9 +49,7 @@ class MetricsTest(unittest.TestCase):
             self.assertIn(
                 "baseline_cursor", (output / "cursor-samples.csv").read_text()
             )
-            self.assertIn(
-                "memory_bytes", (output / "resource-samples.csv").read_text()
-            )
+            self.assertIn("memory_bytes", (output / "resource-samples.csv").read_text())
 
 
 if __name__ == "__main__":

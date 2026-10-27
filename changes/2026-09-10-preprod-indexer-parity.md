@@ -45,7 +45,8 @@ payload, and processing outcome:
 - absolute transaction sequence and operation sequence;
 - indexed flag;
 - indexed operation kind (SSI, VDR, or none);
-- canonical DID assigned by indexing.
+- canonical DID assigned by indexing; and
+- persisted VDR operation, root, and predecessor hashes.
 
 Database-generated UUIDs, migration metadata, ingestion timestamps, and
 indexing timestamps are deliberately excluded. Rows are sorted by operation ID
@@ -66,6 +67,8 @@ reports.
 - The default relay is the public Cardano Preprod relay already used by the
   repository example.
 - A timeout prevents an endless synchronization run.
+- Each run has a unique Compose project. Normal subprocesses share the global
+  run deadline; final log capture and teardown use a separate 30-second bound.
 - The harness submits no transactions and requires no wallet keys.
 - Ordinary pull-request checks do not run the live-network test. A future
   scheduled or manually dispatched workflow may run it as a slow lane.
@@ -101,8 +104,18 @@ Generated evidence lives under `artifacts/indexer-parity/` and is not committed.
 - Offline unit tests cover normalization and difference reporting.
 - Raw and summarized QoS evidence is retained without making an uncalibrated
   local resource measurement a semantic parity failure.
+- The comparison slot cannot precede the selected network's PRISM genesis.
+- Drain evidence requires zero pending rows, stable counts for the configured
+  quiescence interval while cursors remain at least two lags beyond the boundary.
+  Reports record the observed cursors, operation counts, and stable duration.
 - Local documentation explains image preparation, execution, evidence, cost,
   and limitations.
+
+The persisted DLT cursor is not an ingestion acknowledgment. The bounded drain
+rule materially reduces false-positive risk but does not prove that no event is
+still buffered between Oura and raw-operation persistence. A promotion receipt
+therefore requires repeated fixed-boundary agreement until an independent chain
+oracle or persisted ingestion high-water mark is available.
 
 ## Initial Preprod Evidence
 

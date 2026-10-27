@@ -7,21 +7,27 @@ import subprocess
 import sys
 import threading
 import time
+import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
 
 from .manifest import compare, read_manifest, write_manifest, write_reports
-from .metrics import MetricsRecorder, parse_memory_bytes, parse_percent
+from .metrics import (
+    NETWORK_GENESIS_SLOT,
+    MetricsRecorder,
+    parse_memory_bytes,
+    parse_percent,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 COMPOSE_FILE = REPO_ROOT / "docker" / "indexer-parity" / "compose.yml"
 DEFAULT_BASELINE_IMAGE = "hyperledgeridentus/identus-neoprism:0.14.2"
 DEFAULT_PREPROD_RELAY = "preprod-node.play.dev.cardano.org:3001"
 DEFAULT_MAINNET_RELAY = "backbone.mainnet.cardanofoundation.org:3001"
-PROJECT_NAME = "neoprism-indexer-parity"
 POLL_SECONDS = 5
+FINALIZATION_TIMEOUT_SECONDS = 30
 
 MANIFEST_QUERY = """
 COPY (
@@ -39,7 +45,10 @@ COPY (
             WHEN vdr.raw_operation_id IS NOT NULL THEN 'vdr'
             ELSE 'none'
         END AS operation_kind,
-        COALESCE(encode(ssi.did, 'hex'), encode(vdr.did, 'hex'), '') AS did
+        COALESCE(encode(ssi.did, 'hex'), encode(vdr.did, 'hex'), '') AS did,
+        COALESCE(encode(vdr.operation_hash, 'hex'), '') AS operation_hash,
+        COALESCE(encode(vdr.init_operation_hash, 'hex'), '') AS init_operation_hash,
+        COALESCE(encode(vdr.prev_operation_hash, 'hex'), '') AS prev_operation_hash
     FROM raw_operation AS ro
     LEFT JOIN indexed_ssi_operation AS ssi ON ssi.raw_operation_id = ro.id
     LEFT JOIN indexed_vdr_operation AS vdr ON vdr.raw_operation_id = ro.id
@@ -64,8 +73,17 @@ class RunOptions:
     boundary_lag: int
     timeout_seconds: int
     metrics_sample_seconds: int
+    drain_seconds: int
     output_dir: Path
     keep: bool
+
+
+@dataclass(frozen=True, slots=True)
+class DrainEvidence:
+    baseline_state: tuple[int, int]
+    candidate_state: tuple[int, int]
+    cursors: tuple[int, int]
+    stable_seconds: float
 
 
 def _run(
@@ -73,15 +91,31 @@ def _run(
     *,
     env: dict[str, str] | None = None,
     check: bool = True,
+    deadline: float | None = None,
+    timeout_seconds: float | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    result = subprocess.run(
-        command,
-        cwd=REPO_ROOT,
-        env=env,
-        text=True,
-        capture_output=True,
-        check=False,
-    )
+    if deadline is not None and timeout_seconds is not None:
+        raise ValueError("deadline and timeout_seconds are mutually exclusive")
+    timeout = timeout_seconds
+    if deadline is not None:
+        timeout = deadline - time.monotonic()
+        if timeout <= 0:
+            raise HarnessError(
+                f"deadline expired before command: {shlex.join(command)}"
+            )
+    try:
+        result = subprocess.run(
+            command,
+            cwd=REPO_ROOT,
+            env=env,
+            text=True,
+            capture_output=True,
+            check=False,
+            timeout=timeout,
+        )
+    except subprocess.TimeoutExpired as error:
+        rendered = shlex.join(command)
+        raise HarnessError(f"command timed out: {rendered}") from error
     if check and result.returncode != 0:
         rendered = shlex.join(command)
         raise HarnessError(
@@ -91,8 +125,15 @@ def _run(
 
 
 class ComposeHarness:
-    def __init__(self, options: RunOptions) -> None:
+    def __init__(
+        self,
+        options: RunOptions,
+        deadline: float,
+        project_name: str | None = None,
+    ) -> None:
         self.options = options
+        self.deadline = deadline
+        self.project_name = project_name or f"neoprism-parity-{uuid.uuid4().hex[:12]}"
         self.environment = os.environ.copy()
         self.environment.update(
             {
@@ -106,18 +147,23 @@ class ComposeHarness:
             "docker",
             "compose",
             "--project-name",
-            PROJECT_NAME,
+            self.project_name,
             "--file",
             str(COMPOSE_FILE),
         ]
 
     def compose(
-        self, *arguments: str, check: bool = True
+        self,
+        *arguments: str,
+        check: bool = True,
+        bounded_by_run: bool = True,
     ) -> subprocess.CompletedProcess[str]:
         return _run(
             [*self.command_prefix, *arguments],
             env=self.environment,
             check=check,
+            deadline=self.deadline if bounded_by_run else None,
+            timeout_seconds=(None if bounded_by_run else FINALIZATION_TIMEOUT_SECONDS),
         )
 
     def query(self, database_service: str, sql: str) -> str:
@@ -171,9 +217,10 @@ class ComposeHarness:
                 image,
             ],
             check=False,
+            deadline=self.deadline,
         )
         if result.returncode != 0:
-            _run(["docker", "pull", image])
+            _run(["docker", "pull", image], deadline=self.deadline)
             result = _run(
                 [
                     "docker",
@@ -182,7 +229,8 @@ class ComposeHarness:
                     "--format",
                     '{{.Id}} {{join .RepoDigests ","}}',
                     image,
-                ]
+                ],
+                deadline=self.deadline,
             )
         return result.stdout.strip()
 
@@ -195,19 +243,26 @@ class ComposeHarness:
 
     def restart_count(self, container_id: str) -> int:
         result = _run(
-            ["docker", "inspect", "--format", "{{.RestartCount}}", container_id]
+            ["docker", "inspect", "--format", "{{.RestartCount}}", container_id],
+            deadline=self.deadline,
         )
         return int(result.stdout.strip())
 
     def write_logs(self) -> None:
-        logs = self.compose("logs", "--no-color", check=False)
+        logs = self.compose("logs", "--no-color", check=False, bounded_by_run=False)
         (self.options.output_dir / "containers.log").write_text(
             logs.stdout + logs.stderr,
             encoding="utf-8",
         )
 
     def cleanup(self) -> None:
-        self.compose("down", "--volumes", "--remove-orphans", check=False)
+        self.compose(
+            "down",
+            "--volumes",
+            "--remove-orphans",
+            check=False,
+            bounded_by_run=False,
+        )
 
 
 class ResourceSampler:
@@ -245,17 +300,24 @@ class ResourceSampler:
             self._stop.wait(max(0.0, self.interval_seconds - sample_duration))
 
     def _sample_all(self) -> None:
-        result = _run(
-            [
-                "docker",
-                "stats",
-                "--no-stream",
-                "--format",
-                "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.PIDs}}",
-                *self.container_ids.values(),
-            ],
-            check=False,
-        )
+        try:
+            result = _run(
+                [
+                    "docker",
+                    "stats",
+                    "--no-stream",
+                    "--format",
+                    "{{.ID}}|{{.CPUPerc}}|{{.MemUsage}}|{{.MemPerc}}|{{.PIDs}}",
+                    *self.container_ids.values(),
+                ],
+                check=False,
+                deadline=self.harness.deadline,
+            )
+        except HarnessError as error:
+            warning = f"Docker stats failed: {error}"
+            if warning not in self.warnings:
+                self.warnings.append(warning)
+            return
         if result.returncode != 0:
             warning = f"Docker stats failed: {result.stderr.strip()}"
             if warning not in self.warnings:
@@ -338,9 +400,7 @@ def _wait_for_databases(harness: ComposeHarness, deadline: float) -> None:
     raise HarnessError("timed out waiting for both database schemas")
 
 
-def _read_cursors(
-    harness: ComposeHarness, metrics: MetricsRecorder
-) -> tuple[int, int]:
+def _read_cursors(harness: ComposeHarness, metrics: MetricsRecorder) -> tuple[int, int]:
     cursors = harness.cursor("db-baseline"), harness.cursor("db-candidate")
     metrics.record_cursors(*cursors)
     return cursors
@@ -365,7 +425,7 @@ def _select_boundary(
     deadline: float,
 ) -> int:
     if options.target_slot is not None:
-        return options.target_slot
+        return _validate_comparison_slot(options.network, options.target_slot)
 
     cursors = _wait_for_initial_progress(harness, metrics, deadline)
     sample_deadline = min(deadline, time.monotonic() + options.sample_seconds)
@@ -379,7 +439,17 @@ def _select_boundary(
             "unable to derive a positive comparison slot; "
             "increase sample time or reduce boundary lag"
         )
-    return boundary
+    return _validate_comparison_slot(options.network, boundary)
+
+
+def _validate_comparison_slot(network: str, comparison_slot: int) -> int:
+    genesis_slot = NETWORK_GENESIS_SLOT[network]
+    if comparison_slot < genesis_slot:
+        raise HarnessError(
+            f"comparison slot {comparison_slot} precedes {network} PRISM genesis "
+            f"slot {genesis_slot}"
+        )
+    return comparison_slot
 
 
 def _wait_for_boundary(
@@ -404,25 +474,46 @@ def _wait_for_boundary(
 
 
 def _wait_for_drain(
-    harness: ComposeHarness, comparison_slot: int, deadline: float
-) -> tuple[tuple[int, int], tuple[int, int]]:
+    harness: ComposeHarness,
+    metrics: MetricsRecorder,
+    comparison_slot: int,
+    boundary_lag: int,
+    drain_seconds: int,
+    deadline: float,
+) -> DrainEvidence:
     previous_counts: tuple[int, int] | None = None
-    stable_polls = 0
+    stable_since: float | None = None
+    drain_cursor = comparison_slot + (2 * boundary_lag)
     while time.monotonic() < deadline:
         baseline = harness.operation_state("db-baseline", comparison_slot)
         candidate = harness.operation_state("db-candidate", comparison_slot)
         counts = (baseline[0], candidate[0])
+        cursors = _read_cursors(harness, metrics)
         print(
             f"drain baseline={baseline[0]}/{baseline[1]}-pending "
-            f"candidate={candidate[0]}/{candidate[1]}-pending",
+            f"candidate={candidate[0]}/{candidate[1]}-pending "
+            f"cursor={cursors[0]}/{cursors[1]}",
             flush=True,
         )
-        if baseline[1] == 0 and candidate[1] == 0 and counts == previous_counts:
-            stable_polls += 1
-            if stable_polls >= 2:
-                return baseline, candidate
+        drain_conditions_hold = (
+            baseline[1] == 0
+            and candidate[1] == 0
+            and counts == previous_counts
+            and min(cursors) >= drain_cursor
+        )
+        if drain_conditions_hold:
+            if stable_since is None:
+                stable_since = time.monotonic()
+            stable_for = time.monotonic() - stable_since
+            if stable_for >= drain_seconds:
+                return DrainEvidence(
+                    baseline_state=baseline,
+                    candidate_state=candidate,
+                    cursors=cursors,
+                    stable_seconds=stable_for,
+                )
         else:
-            stable_polls = 0
+            stable_since = None
         previous_counts = counts
         time.sleep(POLL_SECONDS)
     raise HarnessError("timed out waiting for operation indexing queues to drain")
@@ -432,20 +523,23 @@ def run(options: RunOptions) -> int:
     if options.network == "mainnet" and options.relay_address == DEFAULT_PREPROD_RELAY:
         raise HarnessError("mainnet requires an explicit mainnet relay address")
     options.output_dir.mkdir(parents=True, exist_ok=False)
-    harness = ComposeHarness(options)
     deadline = time.monotonic() + options.timeout_seconds
+    harness = ComposeHarness(options, deadline)
+    print(f"compose project: {harness.project_name}", flush=True)
     started_at = datetime.now(UTC)
     run_started_monotonic = time.monotonic()
     metrics: MetricsRecorder | None = None
     sampler: ResourceSampler | None = None
     succeeded = False
+    samples_written = False
     try:
-        _run(["docker", "info"])
+        _run(["docker", "info"], deadline=deadline)
         baseline_identity = harness.image_identity(options.baseline_image)
         candidate_identity = harness.image_identity(options.candidate_image)
-        if baseline_identity.split(maxsplit=1)[0] == candidate_identity.split(
-            maxsplit=1
-        )[0]:
+        if (
+            baseline_identity.split(maxsplit=1)[0]
+            == candidate_identity.split(maxsplit=1)[0]
+        ):
             raise HarnessError(
                 "baseline and candidate resolve to the same image ID; "
                 "a differential run requires two distinct images"
@@ -457,10 +551,17 @@ def run(options: RunOptions) -> int:
         sampler.start()
         _wait_for_databases(harness, deadline)
         comparison_slot = _select_boundary(harness, metrics, options, deadline)
-        cursors = _wait_for_boundary(
+        _wait_for_boundary(
             harness, metrics, comparison_slot, options.boundary_lag, deadline
         )
-        _wait_for_drain(harness, comparison_slot, deadline)
+        drain = _wait_for_drain(
+            harness,
+            metrics,
+            comparison_slot,
+            options.boundary_lag,
+            options.drain_seconds,
+            deadline,
+        )
         sampler.stop()
         scan_duration_seconds = time.monotonic() - scan_started_monotonic
         restart_counts = sampler.restart_counts()
@@ -477,6 +578,7 @@ def run(options: RunOptions) -> int:
         comparison = compare(baseline, candidate)
         total_duration_seconds = time.monotonic() - run_started_monotonic
         metrics.write_samples(options.output_dir)
+        samples_written = True
         metrics_summary = metrics.summarize(
             network=options.network,
             required_cursor=comparison_slot + options.boundary_lag,
@@ -489,12 +591,22 @@ def run(options: RunOptions) -> int:
             "network": options.network,
             "relay_address": options.relay_address,
             "comparison_slot": comparison_slot,
-            "baseline_cursor": cursors[0],
-            "candidate_cursor": cursors[1],
+            "baseline_cursor": drain.cursors[0],
+            "candidate_cursor": drain.cursors[1],
             "baseline_image": options.baseline_image,
             "baseline_identity": baseline_identity,
             "candidate_image": options.candidate_image,
             "candidate_identity": candidate_identity,
+            "compose_project": harness.project_name,
+            "drain_assurance": {
+                "minimum_quiescence_seconds": options.drain_seconds,
+                "observed_quiescence_seconds": round(drain.stable_seconds, 3),
+                "required_cursor": comparison_slot + (2 * options.boundary_lag),
+                "baseline_operation_count": drain.baseline_state[0],
+                "candidate_operation_count": drain.candidate_state[0],
+                "baseline_pending_count": drain.baseline_state[1],
+                "candidate_pending_count": drain.candidate_state[1],
+            },
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
         }
@@ -504,15 +616,33 @@ def run(options: RunOptions) -> int:
         print(f"report: {options.output_dir / 'report.md'}")
         return 0 if comparison.equal else 1
     finally:
+        finalizers: list[tuple[str, Any]] = []
         if sampler is not None:
-            sampler.stop()
-        if metrics is not None:
-            metrics.write_samples(options.output_dir)
-        harness.write_logs()
+            finalizers.append(("stop resource sampler", sampler.stop))
+        if metrics is not None and not samples_written:
+            finalizers.append(
+                (
+                    "write partial metric samples",
+                    lambda: metrics.write_samples(options.output_dir),
+                )
+            )
+        finalizers.append(("write container logs", harness.write_logs))
         if not options.keep:
-            harness.cleanup()
-        elif not succeeded:
-            print("containers retained for diagnostics", file=sys.stderr)
+            finalizers.append(("remove parity containers", harness.cleanup))
+        for description, action in finalizers:
+            try:
+                action()
+            except Exception as error:
+                print(
+                    f"indexer parity finalization warning ({description}): {error}",
+                    file=sys.stderr,
+                )
+        if options.keep:
+            outcome = "successful run" if succeeded else "diagnostics"
+            print(
+                f"containers retained for {outcome}: project={harness.project_name}",
+                file=sys.stderr,
+            )
 
 
 def _positive_int(value: str) -> int:
@@ -535,12 +665,21 @@ def parse_args(arguments: list[str] | None = None) -> RunOptions:
     parser.add_argument("--boundary-lag", type=_positive_int, default=1_000)
     parser.add_argument("--timeout-seconds", type=_positive_int, default=7_200)
     parser.add_argument("--metrics-sample-seconds", type=_positive_int, default=5)
+    parser.add_argument("--drain-seconds", type=_positive_int, default=60)
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--allow-mainnet", action="store_true")
     parser.add_argument("--keep", action="store_true")
     args = parser.parse_args(arguments)
     if args.network == "mainnet" and not args.allow_mainnet:
         parser.error("mainnet execution requires --allow-mainnet")
+    if (
+        args.target_slot is not None
+        and args.target_slot < NETWORK_GENESIS_SLOT[args.network]
+    ):
+        parser.error(
+            f"target slot {args.target_slot} precedes {args.network} PRISM genesis "
+            f"slot {NETWORK_GENESIS_SLOT[args.network]}"
+        )
     relay = args.relay_address
     if relay is None:
         relay = (
@@ -562,6 +701,7 @@ def parse_args(arguments: list[str] | None = None) -> RunOptions:
         boundary_lag=args.boundary_lag,
         timeout_seconds=args.timeout_seconds,
         metrics_sample_seconds=args.metrics_sample_seconds,
+        drain_seconds=args.drain_seconds,
         output_dir=output_dir.resolve(),
         keep=args.keep,
     )
@@ -570,7 +710,7 @@ def parse_args(arguments: list[str] | None = None) -> RunOptions:
 def main() -> NoReturn:
     try:
         raise SystemExit(run(parse_args()))
-    except (HarnessError, ValueError) as error:
+    except (HarnessError, OSError, ValueError) as error:
         print(f"indexer parity failed: {error}", file=sys.stderr)
         raise SystemExit(2) from error
 

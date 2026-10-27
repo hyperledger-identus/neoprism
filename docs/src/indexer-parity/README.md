@@ -35,6 +35,7 @@ slot when needed:
 just indexer-parity::run neoprism:sdk-rust-snapshot \
   --baseline-image hyperledgeridentus/identus-neoprism:0.14.2 \
   --target-slot 12345678 \
+  --drain-seconds 60 \
   --timeout-seconds 7200
 ```
 
@@ -63,6 +64,11 @@ Evidence is written beneath `artifacts/indexer-parity/`:
   indexer;
 - `containers.log` captures both indexers and databases.
 
+Every invocation uses a unique Compose project, including when `--keep` is
+used, so retained or concurrent runs cannot share containers or database
+volumes. Every Docker/Compose/SQL subprocess is bounded by the run deadline;
+evidence capture and teardown use their own short finalization timeout.
+
 The command exits with zero for equal manifests, one for a semantic difference,
 and two for configuration or harness failure. Containers and ephemeral database
 state are removed after the report is captured. Pass `--keep` to retain them for
@@ -88,3 +94,14 @@ runner before defining a performance budget or making QoS metrics gating.
 A passing report proves equality only through its recorded slot, with the Oura
 source and configuration shown in the report. It does not establish parity for
 DB-Sync, Blockfrost, or future operations beyond that boundary.
+
+The Oura cursor is a source high-water mark, not a database-ingestion
+acknowledgment. To reduce the risk of stopping with queued events, the harness
+requires zero pending operations, stable manifest counts for the configured
+drain interval while both cursors remain at least two boundary lags beyond the
+comparison slot. The report records the observed cursors, operation counts, and
+quiescence duration. Until NeoPRISM exposes a persisted
+ingestion acknowledgment or an independent chain oracle is supplied, treat a
+single live run as bounded operational evidence rather than a mathematical proof
+that no source event was omitted. Repeated fixed-boundary runs and manifest
+agreement are required for promotion evidence.

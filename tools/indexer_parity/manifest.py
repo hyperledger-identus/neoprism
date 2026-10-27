@@ -19,6 +19,9 @@ FIELDS = (
     "indexed",
     "operation_kind",
     "did",
+    "operation_hash",
+    "init_operation_hash",
+    "prev_operation_hash",
 )
 
 
@@ -38,6 +41,9 @@ class OperationRecord:
     indexed: bool
     operation_kind: str
     did: str
+    operation_hash: str
+    init_operation_hash: str
+    prev_operation_hash: str
 
     @classmethod
     def from_row(cls, row: dict[str, str]) -> OperationRecord:
@@ -62,6 +68,9 @@ class OperationRecord:
                 indexed=indexed_value == "true",
                 operation_kind=row["operation_kind"].lower(),
                 did=row["did"].lower(),
+                operation_hash=row["operation_hash"].lower(),
+                init_operation_hash=row["init_operation_hash"].lower(),
+                prev_operation_hash=row["prev_operation_hash"].lower(),
             )
         except ValueError as error:
             raise ManifestError(
@@ -207,8 +216,26 @@ def write_reports(
         f"- Baseline identity: `{metadata['baseline_identity']}`",
         f"- Candidate image: `{metadata['candidate_image']}`",
         f"- Candidate identity: `{metadata['candidate_identity']}`",
+        f"- Compose project: `{metadata['compose_project']}`",
         f"- Baseline cursor: `{metadata['baseline_cursor']}`",
         f"- Candidate cursor: `{metadata['candidate_cursor']}`",
+        (
+            "- Drain assurance: "
+            f"`{metadata['drain_assurance']['observed_quiescence_seconds']:.3f} s` "
+            "observed stable (minimum "
+            f"`{metadata['drain_assurance']['minimum_quiescence_seconds']} s`) "
+            "with zero pending rows and both cursors at or above "
+            f"`{metadata['drain_assurance']['required_cursor']}`"
+        ),
+        (
+            "  The performance boundary is comparison slot plus one lag; the "
+            "stricter drain threshold is comparison slot plus two lags."
+        ),
+        (
+            "- Drained operation counts: baseline "
+            f"`{metadata['drain_assurance']['baseline_operation_count']}`, candidate "
+            f"`{metadata['drain_assurance']['candidate_operation_count']}`"
+        ),
         f"- Baseline operations: `{comparison.baseline_count}`",
         f"- Candidate operations: `{comparison.candidate_count}`",
         "",
@@ -223,7 +250,7 @@ def write_reports(
         "| Metric | Baseline | Candidate | Candidate / baseline |",
         "| --- | ---: | ---: | ---: |",
         _metric_row(
-            "Time to required cursor (s)",
+            "Time to performance boundary (s)",
             metrics["cursor"]["baseline"]["time_to_boundary_seconds"],
             metrics["cursor"]["candidate"]["time_to_boundary_seconds"],
             metrics["cursor"]["candidate_to_baseline"]["time_to_boundary_ratio"],
@@ -331,10 +358,6 @@ def _memory_row(
     ratio: float | int | None,
 ) -> str:
     divisor = 1_024**2
-    baseline = (
-        None if baseline_bytes is None else float(baseline_bytes) / divisor
-    )
-    candidate = (
-        None if candidate_bytes is None else float(candidate_bytes) / divisor
-    )
+    baseline = None if baseline_bytes is None else float(baseline_bytes) / divisor
+    candidate = None if candidate_bytes is None else float(candidate_bytes) / divisor
     return _metric_row(label, baseline, candidate, ratio)
