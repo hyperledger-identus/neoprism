@@ -1,12 +1,15 @@
 {
   stdenv,
+  lib,
   bun,
+  patchelf,
   typescript,
   biome,
   version,
   targetBun ? null,
   bunTarget ? null,
   pnameSuffix ? null,
+  targetDynamicLinker ? null,
 }:
 
 let
@@ -70,7 +73,8 @@ stdenv.mkDerivation {
     bun
     typescript
     biome
-  ];
+  ]
+  ++ lib.optionals (targetDynamicLinker != null) [ patchelf ];
 
   # Disable stripping - it breaks bun-compiled executables by removing embedded bytecode
   dontStrip = true;
@@ -92,6 +96,12 @@ stdenv.mkDerivation {
     # For cross-compilation: uses --target and --compile-executable-path with nixpkgs bun
     # For native: uses --target=bun which embeds the current platform's bun runtime
     bun build ./src/cli.ts --compile ${targetFlag} ${executablePathFlag} --outfile embedded-wallet
+
+    ${lib.optionalString (targetDynamicLinker != null) ''
+      # Bun emits a conventional /lib interpreter for Linux cross-targets.
+      # Point it at the target Nix glibc so the loader enters the image closure.
+      patchelf --set-interpreter ${targetDynamicLinker} embedded-wallet
+    ''}
   '';
 
   installPhase = ''
