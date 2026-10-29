@@ -8,6 +8,7 @@
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
 - [Architecture](./architecture/README.md)
+  - [SDK-Rust adoption](./architecture/sdk-rust-adoption.md)
 - [Configuration](./configuration/README.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
@@ -17,6 +18,7 @@
 # Developer Guide
 
 - [PRISM specification tests](./prism-test/README.md)
+- [SDK-Rust adoption verification](./architecture/sdk-rust-adoption.md#verification-and-acceptance)
 - [Release process](./references/release-process.md)
 
 # Reference
