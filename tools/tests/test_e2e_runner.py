@@ -13,7 +13,9 @@ from e2e_runner import (
     RunReceipt,
     TerminationRequested,
     atomic_write_json,
+    captured,
     classify_test_networks,
+    cleanup,
     compose_command,
     conformance_test_count,
     defer_termination_signals,
@@ -83,6 +85,25 @@ class E2ERunnerTest(unittest.TestCase):
             RuntimeError, "failed to start required executable sbt"
         ):
             streamed(["sbt", "test"], Path("."), log)
+
+    @patch("e2e_runner.subprocess.run", side_effect=FileNotFoundError("missing"))
+    def test_captured_launch_failure_becomes_a_receiptable_error(
+        self, _run: object
+    ) -> None:
+        with self.assertRaisesRegex(
+            RuntimeError, "failed to start required executable docker"
+        ):
+            captured(["docker", "info"], Path("."))
+
+    @patch("e2e_runner.streamed", side_effect=RuntimeError("failed to start"))
+    def test_cleanup_launch_failure_is_recorded(self, _streamed: object) -> None:
+        with tempfile.TemporaryFile(mode="w+") as log, patch(
+            "e2e_runner.sys.stderr"
+        ):
+            self.assertEqual(
+                cleanup(Path("."), "neoprism-e2e-test", Path("compose.yml"), log),
+                "failed",
+            )
 
     def test_classify_networks_returns_only_unused_test_projects(self) -> None:
         networks = [

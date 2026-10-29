@@ -134,13 +134,19 @@ class TerminationRequested(Exception):
 
 
 def captured(command: Sequence[str], cwd: Path) -> str:
-    completed = subprocess.run(
-        command,
-        cwd=cwd,
-        check=False,
-        capture_output=True,
-        text=True,
-    )
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=cwd,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+    except OSError as error:
+        executable = command[0] if command else "command"
+        raise RuntimeError(
+            f"failed to start required executable {executable}: {error}"
+        ) from error
     if completed.returncode != 0:
         raise CommandFailure(command, completed.returncode, completed.stderr)
     return completed.stdout.strip()
@@ -531,7 +537,7 @@ def cleanup(repository: Path, project: str, compose_file: Path, log: TextIO) -> 
     )
     try:
         streamed(command, repository, log)
-    except CommandFailure as error:
+    except RuntimeError as error:
         print(f"cleanup failed for {project}: {error}", file=sys.stderr)
         return "failed"
     return "passed"
