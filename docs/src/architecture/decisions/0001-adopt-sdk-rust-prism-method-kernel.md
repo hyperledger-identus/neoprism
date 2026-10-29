@@ -202,13 +202,22 @@ before migrations, listeners, or ingestion.
 
 The record is signed by a cutover authority whose verification key is pinned
 outside the candidate database. Rehearsal cannot write guarded deployment
-configuration. At cutover, the authority opens a read-only snapshot, recomputes
-the identity and manifest digests, checks #325 and protected CI evidence,
-revokes rehearsal write access, and signs the exact record. Only afterward is a
-separate SDK runtime writer enabled. Node startup verifies the signature and
-the immutable baseline record, so candidate contents alone cannot authorize
-serving. Runtime rows after the signed source cursor are normal post-cutover
-ingestion and do not rewrite that baseline.
+configuration. At cutover, the legacy writer stops after durably committing an
+explicit handoff cursor `C`; no second writer may advance the selected network
+while ownership is transferring. The candidate replays exact source bytes
+through `C`, proves the ordered-operation, acceptance, composite-state, and
+projection manifests through `C`, and records `C` in the selection record. The
+authority then opens a read-only snapshot, recomputes the identity and manifest
+digests, checks #325 and protected CI evidence, revokes rehearsal write access,
+and signs the exact record. Resolution, listeners, and normal SDK ingestion
+remain unavailable until startup has verified the record and confirmed the
+candidate's durable cursor equals `C`. Only afterward is a separate SDK runtime
+writer enabled from the successor of `C`. Node startup verifies the signature
+and immutable baseline record, so candidate contents alone cannot authorize
+serving. Runtime rows after `C` are normal post-cutover ingestion and do not
+rewrite that baseline. A failed catch-up, cursor mismatch, manifest mismatch, or
+writer-handoff timeout leaves legacy ownership intact or restores it through the
+documented rollback route; it never serves the lagging candidate.
 
 The baseline revisions and schema digest identify the candidate that was
 validated; they are not an accidental permanent ban on upgrades. Every later
@@ -282,11 +291,14 @@ production legacy tables. Backend isolation is explicit:
 The rehearsal writer initializes only candidate-local identity and manifest
 metadata; neither is a selection authority. When `sdk` is enabled for an
 approved network, it serves only after that candidate has been rebuilt from
-exact source bytes, validated, bound to the externally signed selection record,
-and atomically selected. Selecting the candidate database is the
-promotion/cutover event, not a pre-promotion evidence step. For SQLite the
-selection record remains outside the database file, so the cutover authority
-never needs write access to candidate rows.
+exact source bytes, caught up through the stopped legacy writer's handoff cursor
+`C`, validated at `C`, bound to the externally signed selection record, and
+atomically selected. Selecting the candidate database and transferring writer
+ownership at `C` is the promotion/cutover event, not a pre-promotion evidence
+step. Resolution stays unavailable across that bounded handoff; the system does
+not serve either an older candidate or the legacy database after SDK ownership
+is selected. For SQLite the selection record remains outside the database file,
+so the cutover authority never needs write access to candidate rows.
 
 Candidate endpoint/role credentials or SQLite volume access are never
 provisioned to legacy deployments, including already-published binaries.
@@ -477,6 +489,11 @@ The implementation PR must attach:
   external selection records, and wrong database identity, manifest, schema,
   network, revision, or source receipts fail before migration, listeners, or
   ingestion;
+- cutover-barrier evidence that the legacy writer stops at durable cursor `C`,
+  the candidate replays and matches every required manifest through `C`,
+  resolution remains unavailable during ownership transfer, SDK ingestion
+  resumes exactly at the successor of `C`, and a lagging or mismatched candidate
+  cannot serve;
 - authority-separation evidence that rehearsal cannot write guarded selection
   configuration, its write access is revoked before signing, the cutover
   identity cannot rewrite candidate data, and startup rejects forged, unsigned,
