@@ -8,7 +8,8 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    # Pin an sdk-rust-era overlay; NeoPRISM still requires post-1.98 nightly.
+    rust-overlay.url = "github:oxalica/rust-overlay/ca7f624be3935a5bc46d2c240515491ab8675503";
     flake-parts.url = "github:hercules-ci/flake-parts";
     cardano-node.url = "github:IntersectMBO/cardano-node/10.5.3";
     cardano-db-sync.url = "github:IntersectMBO/cardano-db-sync/13.6.0.5";

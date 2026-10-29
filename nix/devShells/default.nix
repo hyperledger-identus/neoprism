@@ -58,6 +58,10 @@
         ];
 
         shellHook = ''
+          # Python-based tools can propagate a different interpreter ahead of
+          # pythonEnv. Keep Compose generation on the environment that carries
+          # its declared pydantic and PyYAML dependencies.
+          export PATH="${pythonEnv}/bin:$PATH"
           export ROOT_DIR=$(${pkgs.git}/bin/git rev-parse --show-toplevel)
           ${pkgs.cowsay}/bin/cowsay "Working on project root directory: $ROOT_DIR"
           cd "$ROOT_DIR"
@@ -66,8 +70,6 @@
         # envs
         LANG = "C.utf8";
         RUST_LOG = "info,oura=warn,tower_http::trace=debug";
-        LLVM_COV = "${pkgs.llvmPackages_19.llvm}/bin/llvm-cov";
-        LLVM_PROFDATA = "${pkgs.llvmPackages_19.llvm}/bin/llvm-profdata";
         PROTOC = "${pkgs.protobuf}/bin/protoc";
 
         JAVA_HOME = "${pkgs.jdk}/lib/openjdk";

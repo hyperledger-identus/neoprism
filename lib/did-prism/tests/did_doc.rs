@@ -5,6 +5,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
+use identus_did_core::sdk_adapter::resolution_result_to_sdk;
 use identus_did_core::{
     Did, ServiceEndpoint as CoreServiceEndpoint, ServiceType as CoreServiceType, StringOrMap, VerificationMethodOrRef,
 };
@@ -496,6 +497,7 @@ fn to_resolution_result_active_canonical_not_published() {
     // version_id should be the hex of the operation hash
     let expected_version_id = HexStr::from(state.last_operation_hash.as_bytes()).to_string();
     assert_eq!(result.did_document_metadata.version_id, Some(expected_version_id));
+    assert!(resolution_result_to_sdk(&result).unwrap().document().is_some());
 }
 
 #[test]
@@ -510,6 +512,7 @@ fn to_resolution_result_active_canonical_published() {
     // Canonical DID: canonical_id is None even if published
     assert!(result.did_document_metadata.canonical_id.is_none());
     assert!(result.did_document.is_some());
+    assert!(resolution_result_to_sdk(&result).unwrap().document().is_some());
 }
 
 #[test]
@@ -546,7 +549,12 @@ fn to_resolution_result_active_long_form_published_has_canonical_id() {
 
     // Published long-form → canonical_id should be set
     assert!(result.did_document_metadata.canonical_id.is_some());
-    let canonical_id = result.did_document_metadata.canonical_id.unwrap();
+    let sdk_result = resolution_result_to_sdk(&result).unwrap();
+    assert_eq!(
+        sdk_result.document_metadata().canonical_id().unwrap().as_str(),
+        canonical.to_did().to_string()
+    );
+    let canonical_id = result.did_document_metadata.canonical_id.as_ref().unwrap();
     assert_eq!(canonical_id.to_string(), canonical.to_did().to_string());
 }
 
@@ -562,6 +570,13 @@ fn to_resolution_result_deactivated_state() {
     assert_eq!(result.did_document_metadata.deactivated, Some(true));
     // did_resolution_metadata should not have content_type
     assert!(result.did_resolution_metadata.content_type.is_none());
+    assert_eq!(
+        resolution_result_to_sdk(&result)
+            .unwrap()
+            .document_metadata()
+            .deactivated(),
+        Some(true)
+    );
 }
 
 #[test]

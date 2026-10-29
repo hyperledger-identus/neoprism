@@ -1532,6 +1532,17 @@ fn non_op_public_key_parse_ed25519_bad_data() {
 }
 
 #[test]
+fn non_op_public_key_rejects_ed25519_trailing_bytes() {
+    let key_data = proto::prism_ssi::public_key::Key_data::CompressedEcKeyData(proto::prism_ssi::CompressedECKeyData {
+        curve: "Ed25519".to_string(),
+        data: vec![42u8; 33],
+        special_fields: Default::default(),
+    });
+
+    assert!(NonOperationPublicKey::parse(&key_data).is_err());
+}
+
+#[test]
 fn non_op_public_key_parse_x25519_bad_data() {
     let key_data = proto::prism_ssi::public_key::Key_data::CompressedEcKeyData(proto::prism_ssi::CompressedECKeyData {
         curve: "X25519".to_string(),

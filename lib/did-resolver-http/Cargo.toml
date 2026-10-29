@@ -1,13 +1,13 @@
 [package]
-name              = "identus-did-resolver-http"
+name              = "identus-neoprism-did-resolver-http"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
-identus-did-core = { workspace = true }
-axum             = { workspace = true }
-derive_more      = { workspace = true, features = [ "from" ] }
-utoipa           = { workspace = true, optional = true, features = [ "chrono" ] }
+identus-did-core              = { workspace = true }
+identus-sdk-did-resolver-http = { workspace = true }
+axum                          = { workspace = true }
+utoipa                        = { workspace = true, optional = true, features = [ "chrono" ] }
 
 [dev-dependencies]
 async-trait    = { workspace = true }
@@ -18,4 +18,8 @@ serde_json     = { workspace = true }
 
 [features]
 default = [  ]
-openapi = [ "dep:utoipa", "identus-did-core/openapi" ]
+openapi = [
+  "dep:utoipa",
+  "identus-did-core/openapi",
+  "identus-sdk-did-resolver-http/openapi",
+]

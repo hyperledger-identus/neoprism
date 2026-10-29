@@ -478,7 +478,6 @@ mod tests {
     use identus_apollo::hash::sha256;
     use identus_did_prism::did::CanonicalPrismDid;
     use identus_did_prism::dlt::{BlockMetadata, DltCursor, OperationMetadata, TxId};
-    use identus_did_prism::prelude::*;
     use identus_did_prism::proto;
     use identus_did_prism_indexer::repo::{
         DltCursorRepo, IndexedOperation, IndexedOperationRepo, IndexerStateRepo, RawOperationRepo,

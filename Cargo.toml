@@ -27,19 +27,29 @@ identus-did-prism           = { path = "lib/did-prism" }
 identus-did-prism-indexer   = { path = "lib/did-prism-indexer" }
 identus-did-prism-ledger    = { path = "lib/did-prism-ledger" }
 identus-did-prism-submitter = { path = "lib/did-prism-submitter" }
-identus-did-resolver-http   = { path = "lib/did-resolver-http" }
+identus-did-resolver-http   = { package = "identus-neoprism-did-resolver-http", path = "lib/did-resolver-http" }
 node-storage                = { path = "lib/node-storage" }
+# sdk-rust beta dependencies are centralized here so an immutable revision
+# refresh cannot accidentally leave workspace members on different SDK heads.
+identus-crypto                    = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03", default-features = false }
+identus-did                       = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
+identus-sdk-did-resolver-http     = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
 # general
 anyhow             = { version = "1" }
 async-trait        = { version = "0.1" }
-axum               = { version = "0.8" }
+base64             = { version = "0.22" }
+# These exact versions are the SDK's public Axum/OpenAPI type boundary. They
+# must move together with the immutable SDK revision above.
+axum               = { version = "=0.8.9" }
 blockfrost         = { version = "1.2", default-features = false }
 blockfrost-openapi = { version = "0.1", default-features = false }
 chrono             = { version = "0.4" }
 clap               = { version = "4" }
 derive_more        = { version = "2" }
+ed25519-dalek      = { version = "2" }
 enum_dispatch      = { version = "0.3" }
 graphql_client     = { version = "0.14" }
+hex                = { version = "0.4" }
 im-rc              = { version = "15" }
 lazybe             = { version = "0.2" }
 maud               = { version = "0.27" }
@@ -54,8 +64,7 @@ tower-http         = { version = "0.6" }
 tracing            = { version = "0.1" }
 tracing-subscriber = { version = "0.3" }
 ts-rs              = { version = "11.0" }
-uriparse           = { version = "0.6" }
-utoipa             = { version = "5" }
+utoipa             = { version = "=5.5.0" }
 utoipa-scalar      = { version = "0.3" }
 uuid               = { version = "1" }
 # db

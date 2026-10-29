@@ -8,6 +8,7 @@
   - [Docker installation](./installation/docker.md)
   - [Nix installation](./installation/nix.md)
 - [Architecture](./architecture/README.md)
+  - [SDK-Rust adoption](./architecture/sdk-rust-adoption.md)
 - [Configuration](./configuration/README.md)
   - [Indexer](./configuration/indexer.md)
   - [Submitter](./configuration/submitter.md)
