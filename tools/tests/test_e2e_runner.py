@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from e2e_runner import (
     ProfileReceipt,
@@ -20,6 +20,8 @@ from e2e_runner import (
     embedded_wallet_funding_target,
     exclusive_run_lock,
     generate_project_name,
+    missing_required_executables,
+    streamed,
     termination_signal_handlers,
     trusted_streamed_command,
     wait_for_embedded_wallet_funding,
@@ -62,6 +64,25 @@ class E2ERunnerTest(unittest.TestCase):
             trusted_streamed_command(["sh", "-c", "echo unsafe"])
         with self.assertRaisesRegex(ValueError, "null byte"):
             trusted_streamed_command(["docker", "bad\0argument"])
+
+    @patch("e2e_runner.shutil.which")
+    def test_missing_required_executables_are_reported_before_docker(
+        self, which: MagicMock
+    ) -> None:
+        which.side_effect = lambda executable: (
+            None if executable in {"nix", "sbt"} else f"/bin/{executable}"
+        )
+
+        self.assertEqual(missing_required_executables(), ["nix", "sbt"])
+
+    @patch("e2e_runner.subprocess.Popen", side_effect=FileNotFoundError("missing"))
+    def test_streamed_launch_failure_becomes_a_receiptable_error(
+        self, _popen: object
+    ) -> None:
+        with tempfile.TemporaryFile(mode="w+") as log, self.assertRaisesRegex(
+            RuntimeError, "failed to start required executable sbt"
+        ):
+            streamed(["sbt", "test"], Path("."), log)
 
     def test_classify_networks_returns_only_unused_test_projects(self) -> None:
         networks = [

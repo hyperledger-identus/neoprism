@@ -10,6 +10,11 @@ All automation assumes you are inside the Nix development shell:
 nix develop
 ```
 
+Before creating a Compose project, the runner verifies that `docker`,
+`docker-compose`, `nix`, and `sbt` are available. A missing tool fails the
+preflight without starting containers; a tool that disappears later is recorded
+as a terminal failed receipt after scoped cleanup.
+
 From there, run every supported stack in one go:
 
 ```bash

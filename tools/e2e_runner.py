@@ -35,6 +35,7 @@ DEFAULT_MIN_FREE_GIB = 10
 EMBEDDED_WALLET_READY_TIMEOUT_SECONDS = 120
 EMBEDDED_WALLET_READY_POLL_SECONDS = 1
 STREAMED_EXECUTABLES = frozenset({"docker", "docker-compose", "nix", "sbt"})
+REQUIRED_EXECUTABLES = ("docker", "docker-compose", "nix", "sbt")
 _termination_defer_depth = 0
 _pending_termination: int | None = None
 
@@ -169,17 +170,22 @@ def streamed(
     # Every executable is allowlisted above, arguments are constructed internally
     # from argparse choices, and shell expansion is disabled. This is not an LLM
     # command sink.
-    process = subprocess.Popen(  # NOSONAR
-        trusted_command,
-        cwd=cwd,
-        env=environment,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-        start_new_session=True,
-        shell=False,
-    )
+    try:
+        process = subprocess.Popen(  # NOSONAR
+            trusted_command,
+            cwd=cwd,
+            env=environment,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            start_new_session=True,
+            shell=False,
+        )
+    except OSError as error:
+        raise RuntimeError(
+            f"failed to start required executable {trusted_command[0]}: {error}"
+        ) from error
     output: deque[str] = deque(maxlen=2_000)
     assert process.stdout is not None
     try:
@@ -259,6 +265,15 @@ def atomic_write_json(path: Path, receipt: RunReceipt) -> None:
     temporary = path.with_suffix(f"{path.suffix}.tmp")
     temporary.write_text(json.dumps(asdict(receipt), indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def missing_required_executables() -> list[str]:
+    """Return host tools that must exist before the matrix touches Docker."""
+    return [
+        executable
+        for executable in REQUIRED_EXECUTABLES
+        if shutil.which(executable) is None
+    ]
 
 
 def parse_json_object(value: str) -> dict[str, Any]:
@@ -438,9 +453,11 @@ def inspect_test_networks(repository: Path) -> tuple[int, list[tuple[str, str]]]
 def preflight(
     repository: Path, profiles: Sequence[str], min_free_gib: int
 ) -> dict[str, str]:
-    if shutil.which("docker") is None or shutil.which("docker-compose") is None:
+    missing_executables = missing_required_executables()
+    if missing_executables:
         raise RuntimeError(
-            "docker and docker-compose must be available in the Nix development shell"
+            "required E2E executables are unavailable: "
+            f"{', '.join(missing_executables)}; enter the Nix development shell"
         )
 
     docker_info = parse_json_object(
