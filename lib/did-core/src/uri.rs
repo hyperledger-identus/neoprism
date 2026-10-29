@@ -101,6 +101,11 @@ mod tests {
     }
 
     #[test]
+    fn sdk_uri_policy_rejects_multiple_fragments() {
+        assert!(!is_uri("https://example.com/path#first#second"));
+    }
+
+    #[test]
     fn test_uri_from_str_enforces_sdk_bound() {
         let oversized = format!("urn:{}", "a".repeat(identus_did::MAX_URI_BYTES));
         assert!(Uri::from_str(&oversized).is_err());

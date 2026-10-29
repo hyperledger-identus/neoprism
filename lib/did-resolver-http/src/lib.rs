@@ -32,32 +32,23 @@ pub struct HttpBindingOptions {
 }
 
 /// Deferred router composition preserving NeoPRISM's `with_state` call site.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct DidResolverRouter {
-    path: String,
-}
-
-impl Default for DidResolverRouter {
-    fn default() -> Self {
-        Self {
-            path: SDK_RESOLVER_PATH.to_owned(),
-        }
-    }
+    prefix: Option<String>,
 }
 
 impl DidResolverRouter {
     /// Bind one NeoPRISM resolver and return a state-closed Axum router.
     pub fn with_state(self, state: DidResolverStateDyn) -> Router {
+        let Some(prefix) = self.prefix else {
+            return Router::new();
+        };
         let resolver = Arc::new(SdkDidResolverAdapter::new(state.resolver));
         let sdk_router = identus_sdk_did_resolver_http::did_resolver_http_router(resolver);
-        let prefix = self
-            .path
-            .strip_suffix(SDK_RESOLVER_PATH)
-            .expect("DID resolver path must end with `/{did}`");
         if prefix.is_empty() {
             sdk_router
         } else {
-            Router::new().nest(prefix, sdk_router)
+            Router::new().nest(&prefix, sdk_router)
         }
     }
 }
@@ -65,10 +56,9 @@ impl DidResolverRouter {
 /// Build the historical NeoPRISM facade around the sdk-rust HTTP adapter.
 #[must_use]
 pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> DidResolverHttpBinding {
-    assert!(
-        path.ends_with(SDK_RESOLVER_PATH),
-        "DID resolver path must end with `/{{did}}`"
-    );
+    let prefix = path
+        .strip_suffix(SDK_RESOLVER_PATH)
+        .expect("DID resolver path must end with `/{did}`");
 
     #[cfg(not(feature = "openapi"))]
     let _ = options;
@@ -87,7 +77,9 @@ pub fn did_resolver_http_binding(path: &str, options: HttpBindingOptions) -> Did
     };
 
     DidResolverHttpBinding {
-        router: DidResolverRouter { path: path.to_owned() },
+        router: DidResolverRouter {
+            prefix: Some(prefix.to_owned()),
+        },
         #[cfg(feature = "openapi")]
         openapi,
     }

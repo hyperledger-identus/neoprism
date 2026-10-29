@@ -121,11 +121,15 @@ where
         Box::pin(async move {
             let did = match did_from_sdk(did) {
                 Ok(did) => did,
-                Err(_) => return sdk_failure(identus_did::DidResolutionErrorKind::InvalidDid),
+                Err(error) => {
+                    tracing::warn!(%error, did = %did, "could not project SDK DID into NeoPRISM");
+                    return sdk_failure(identus_did::DidResolutionErrorKind::InvalidDid);
+                }
             };
             let options = match resolution_options_from_sdk(options) {
                 Ok(options) => options,
-                Err(_) => {
+                Err(error) => {
+                    tracing::warn!(%error, did = %did, "could not project SDK resolution options into NeoPRISM");
                     return sdk_failure(identus_did::DidResolutionErrorKind::InvalidOptions);
                 }
             };
@@ -136,8 +140,13 @@ where
             {
                 result.did_resolution_metadata.content_type = Some(accept);
             }
-            resolution_result_to_sdk(&result)
-                .unwrap_or_else(|_| sdk_failure(identus_did::DidResolutionErrorKind::InternalError))
+            match resolution_result_to_sdk(&result) {
+                Ok(result) => result,
+                Err(error) => {
+                    tracing::error!(%error, did = %did, "NeoPRISM result failed the SDK resolution contract");
+                    sdk_failure(identus_did::DidResolutionErrorKind::InternalError)
+                }
+            }
         })
     }
 }

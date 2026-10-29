@@ -1,11 +1,11 @@
 [package]
-name              = "identus-did-resolver-http"
+name              = "identus-neoprism-did-resolver-http"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 identus-did-core              = { workspace = true }
-identus-sdk-did-resolver-http = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
+identus-sdk-did-resolver-http = { workspace = true }
 axum                          = { workspace = true }
 utoipa                        = { workspace = true, optional = true, features = [ "chrono" ] }
 

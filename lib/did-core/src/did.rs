@@ -49,7 +49,7 @@ impl FromStr for Did {
         if did_url.fragment().is_some() {
             Err(InvalidDid::new("DID cannot contain fragment"))?;
         }
-        Ok(Self(SdkDid::parse(s).map_err(InvalidDid::from)?))
+        Ok(Self(did_url.to_did()))
     }
 }
 
