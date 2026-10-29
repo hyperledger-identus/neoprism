@@ -5,7 +5,7 @@ edition.workspace = true
 
 [dependencies]
 identus-apollo = { workspace = true, features = [ "base64", "serde", "jwk" ] }
-identus-did    = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
+identus-did    = { workspace = true }
 async-trait    = { workspace = true }
 chrono         = { workspace = true, features = [ "serde" ] }
 derive_more    = { workspace = true, features = [ "from", "display", "error" ] }
@@ -14,6 +14,7 @@ serde_json     = { workspace = true }
 ts-rs          = { workspace = true, optional = true }
 utoipa         = { workspace = true, optional = true, features = [ "chrono" ] }
 regex          = { workspace = true }
+tracing        = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = [ "macros", "rt" ] }

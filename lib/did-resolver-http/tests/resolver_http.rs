@@ -8,7 +8,7 @@ use identus_did_core::{
     Did, DidDocument, DidDocumentMetadata, DidResolutionError, DidResolutionErrorCode, DidResolutionMetadata,
     DidResolver, ResolutionResult,
 };
-use identus_did_resolver_http::{DidResolverStateDyn, did_resolver_http_binding};
+use identus_neoprism_did_resolver_http::{DidResolverStateDyn, did_resolver_http_binding};
 use tower::ServiceExt;
 
 // ---------------------------------------------------------------------------

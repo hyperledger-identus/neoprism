@@ -235,3 +235,20 @@ fn rejects_unbounded_legacy_document_at_sdk_boundary() {
 
     assert!(did_document_to_sdk(&document).is_err());
 }
+
+#[test]
+fn rejects_non_uri_context_at_sdk_boundary() {
+    let mut document = sample_document();
+    document.context = vec!["foo".to_owned()];
+
+    assert!(did_document_to_sdk(&document).is_err());
+}
+
+#[test]
+fn rejects_duplicate_service_members_at_sdk_boundary() {
+    let mut document = sample_document();
+    let service = document.service.as_mut().unwrap().first_mut().unwrap();
+    service.r#type = ServiceType::List(vec!["DIDCommMessaging".to_owned(), "DIDCommMessaging".to_owned()]);
+
+    assert!(did_document_to_sdk(&document).is_err());
+}

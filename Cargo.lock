@@ -1737,6 +1737,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "tracing",
  "ts-rs",
  "utoipa",
 ]
@@ -1832,14 +1833,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "identus-did-resolver-http"
+name = "identus-neoprism-did-resolver-http"
 version = "0.14.2"
 dependencies = [
  "async-trait",
  "axum",
  "http-body-util",
  "identus-did-core",
- "identus-did-resolver-http 0.0.0",
+ "identus-did-resolver-http",
  "serde_json",
  "tokio",
  "tower",
@@ -2314,7 +2315,7 @@ dependencies = [
  "identus-did-prism-indexer",
  "identus-did-prism-ledger",
  "identus-did-prism-submitter",
- "identus-did-resolver-http 0.14.2",
+ "identus-neoprism-did-resolver-http",
  "lazybe",
  "maud",
  "node-storage",
