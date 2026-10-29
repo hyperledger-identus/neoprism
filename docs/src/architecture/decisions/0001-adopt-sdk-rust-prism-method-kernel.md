@@ -196,9 +196,12 @@ Pre-promotion node startup rejects `did-method-engine=sdk`. After promotion,
 `sdk` startup requires a durable selected-candidate record in guarded deployment
 configuration outside the candidate database. It contains the candidate's
 backend identity, network, SDK/NeoPRISM revisions, schema/migration digest,
-immutable source range/cursor, and deterministic ordered-operation and
-composite-state/projection manifest digests from #325. Absence or mismatch fails closed
-before migrations, listeners, or ingestion.
+the immutable #325 parity-baseline range and manifest digests, and a separate
+cutover cursor `C` with deterministic ordered-operation, acceptance,
+composite-state, and projection manifest digests through `C`. Absence or
+mismatch in either receipt fails closed before migrations, listeners, or
+ingestion. The fixed #325 receipt remains the independently reviewed parity/QoS
+baseline; it is not relabelled as evidence for a later cursor.
 
 The record is signed by a cutover authority whose verification key is pinned
 outside the candidate database. Rehearsal cannot write guarded deployment
@@ -412,9 +415,11 @@ The SDK-backed path becomes the default for a specific network only when:
   versioned quarantine migration when required, without modifying production
   legacy tables;
 - a read-only candidate snapshot reproduces the #325 ordered-operation and
-  composite-state/projection manifest digests, and the signed selection record binds those
-  digests to the exact backend identity, schema, revisions, network, and source
-  cursor after rehearsal write access is revoked;
+  composite-state/projection manifest digests at the fixed parity boundary,
+  then separately reproduces the cutover manifests through `C`; the signed
+  selection record binds both receipts to the exact backend identity, schema,
+  revisions, network, and their respective source cursors after rehearsal write
+  access is revoked;
 - the complete pre-cutover legacy schema/data snapshot is captured and tested,
   or the clean legacy re-index route and immutable source are confirmed, before
   the candidate database can be selected; and
@@ -469,10 +474,15 @@ The implementation PR must attach:
 - reader-audit and mixed-row-prevention evidence for
   `raw_operation.signed_operation_data`, including identical legacy API output
   before and after the adapter is installed;
-- `sdk`-mode liveness fixtures proving that `profile-limit-exceeded` and
-  `unclassified-envelope` advance the ledger cursor, preserve raw evidence,
-  continue valid DIDs/transactions in the same block, emit critical alerts, and
-  reproduce the same result after restart and full re-index;
+- `sdk`-mode liveness fixtures proving that `profile-limit-exceeded` advances
+  the ledger cursor, retains the bounded raw operation and DID association,
+  continues valid DIDs/transactions in the same block, emits a critical alert,
+  and reproduces the same quarantine after restart and full re-index;
+- envelope-rejection fixtures proving that `unclassified-envelope` advances the
+  ledger cursor, retains only the bounded coordinate, stable reason, and safe
+  digest defined above, retains no unbounded attacker bytes, continues later
+  valid transactions, and reproduces the same rejection receipt after restart
+  and full re-index;
 - a concurrent-recovery fixture proving operations that arrive during replay
   are applied exactly once on the correct side of cutover cursor `C`, plus a
   failed-remediation fixture that retains quarantine at the newly computed
