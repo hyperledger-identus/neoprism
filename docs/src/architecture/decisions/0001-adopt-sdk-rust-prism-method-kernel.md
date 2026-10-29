@@ -294,11 +294,15 @@ production legacy tables. Backend isolation is explicit:
   Identity is the tuple of PostgreSQL system identifier, database OID, and a
   generated database UUID, allowing another database in the same cluster while
   detecting endpoint aliases.
-- **SQLite:** the production identity connection opens with read-only/immutable
-  flags. The candidate is a separate file on a candidate-only volume; canonical
-  path, device/inode identity, and a database UUID must all differ from the
-  production file. Filesystem ownership permits rehearsal/SDK writes but denies
-  the legacy deployment access to the candidate volume.
+- **SQLite:** the live production identity connection opens with normal
+  `mode=ro` locking and change detection so WAL-backed legacy writes remain
+  visible and consistent. `immutable=1` is permitted only for a frozen,
+  checkpointed or SQLite-backup snapshot that includes a consistent WAL state
+  and cannot be modified for the lifetime of the connection. The candidate is a
+  separate file on a candidate-only volume; canonical path, device/inode
+  identity, and a database UUID must all differ from the production file.
+  Filesystem ownership permits rehearsal/SDK writes but denies the legacy
+  deployment access to the candidate volume.
 
 The rehearsal writer initializes only candidate-local identity and manifest
 metadata; neither is a selection authority. When `sdk` is enabled for an
@@ -550,8 +554,9 @@ The implementation PR must attach:
 - privilege-denial evidence that the rehearsal production identity role cannot
   write tables, schemas, migrations, or roles, and that its candidate writer
   role has no authority outside the candidate database, plus SQLite evidence
-  for immutable production opens, distinct path/device/inode/UUID identities,
-  and candidate-volume permissions;
+  for normal read-only live opens, immutable access only to frozen
+  WAL-consistent snapshots, distinct path/device/inode/UUID identities, and
+  candidate-volume permissions;
 - PostgreSQL identity evidence for the system-identifier/database-OID/database-
   UUID tuple, including same-cluster databases and endpoint aliases;
 - NeoPRISM Nix check, strict Clippy, tests/doctests, conformance, coverage, and
