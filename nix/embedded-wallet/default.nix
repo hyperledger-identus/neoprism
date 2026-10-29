@@ -29,6 +29,7 @@ in
           bunTarget = "bun-linux-x64";
           pnameSuffix = "x86_64-linux";
           targetBun = fixCrossBun pkgs.pkgsCross.gnu64.bun;
+          targetDynamicLinker = pkgs.pkgsCross.gnu64.stdenv.cc.bintools.dynamicLinker;
         };
 
         embedded-wallet-aarch64-linux = pkgs.callPackage ./package.nix {
@@ -36,6 +37,7 @@ in
           bunTarget = "bun-linux-arm64";
           pnameSuffix = "aarch64-linux";
           targetBun = fixCrossBun pkgs.pkgsCross.aarch64-multiplatform.bun;
+          targetDynamicLinker = pkgs.pkgsCross.aarch64-multiplatform.stdenv.cc.bintools.dynamicLinker;
         };
       };
     };
