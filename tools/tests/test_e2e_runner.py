@@ -23,6 +23,7 @@ from e2e_runner import (
     exclusive_run_lock,
     generate_project_name,
     missing_required_executables,
+    run_profile,
     streamed,
     termination_signal_handlers,
     trusted_streamed_command,
@@ -104,6 +105,46 @@ class E2ERunnerTest(unittest.TestCase):
                 cleanup(Path("."), "neoprism-e2e-test", Path("compose.yml"), log),
                 "failed",
             )
+
+    @patch("e2e_runner.cleanup", return_value="passed")
+    @patch("e2e_runner.streamed", return_value="")
+    @patch("e2e_runner.missing_images", side_effect=RuntimeError("inventory failed"))
+    def test_image_inventory_failure_has_a_terminal_profile_receipt(
+        self, _images: object, _streamed: object, _cleanup: object
+    ) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            compose_directory = repository / "docker" / "prism-test"
+            compose_directory.mkdir(parents=True)
+            (compose_directory / "compose-sqlite-dev.yml").write_text(
+                "services: {}\n", encoding="utf-8"
+            )
+            receipt_path = repository / "target" / "receipt.json"
+            receipt = RunReceipt(
+                schema_version=1,
+                started_at="2026-10-29T00:00:00+00:00",
+                git_revision="abc123",
+                git_dirty=False,
+                host_platform="test",
+                docker_architecture="arm64",
+                docker_version="1",
+                project_prefix="neoprism-e2e-test",
+                receipt_path="target/receipt.json",
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "inventory failed"):
+                run_profile(
+                    repository,
+                    "sqlite-dev",
+                    "neoprism-e2e-test",
+                    repository / "target" / "logs",
+                    receipt_path,
+                    receipt,
+                )
+
+            decoded = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(decoded["profiles"][0]["status"], "failed")
+            self.assertEqual(decoded["profiles"][0]["cleanup_status"], "passed")
 
     def test_classify_networks_returns_only_unused_test_projects(self) -> None:
         networks = [

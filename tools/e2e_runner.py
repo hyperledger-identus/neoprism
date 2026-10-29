@@ -519,13 +519,18 @@ def missing_images(repository: Path, compose_file: Path) -> list[str]:
     for image in sorted(set(images.splitlines())):
         if not image:
             continue
-        completed = subprocess.run(
-            ["docker", "image", "inspect", image],
-            cwd=repository,
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
+        try:
+            completed = subprocess.run(
+                ["docker", "image", "inspect", image],
+                cwd=repository,
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as error:
+            raise RuntimeError(
+                f"failed to start required executable docker: {error}"
+            ) from error
         if completed.returncode != 0:
             missing.append(image)
     return missing
@@ -576,14 +581,11 @@ def run_profile(
     project = f"{run_id}-{profile}"
     log_path = log_directory / f"{profile}.log"
     profile_started = time.monotonic()
-    images = missing_images(repository, compose_file)
     profile_receipt = ProfileReceipt(
         name=profile,
         compose_file=str(compose_file.relative_to(repository)),
         project=project,
         started_at=utc_now(),
-        cold_cache=bool(images),
-        missing_images=images,
         log=str(log_path.relative_to(repository)),
     )
     receipt.profiles.append(profile_receipt)
@@ -592,6 +594,10 @@ def run_profile(
     log_path.parent.mkdir(parents=True, exist_ok=True)
     with log_path.open("w", encoding="utf-8") as profile_log:
         try:
+            images = missing_images(repository, compose_file)
+            profile_receipt.cold_cache = bool(images)
+            profile_receipt.missing_images = images
+            atomic_write_json(receipt_path, receipt)
             print(f"\n=== Testing {profile} ({project}) ===")
             streamed(
                 compose_command(project, compose_file, "up", "-d", "--wait"),
