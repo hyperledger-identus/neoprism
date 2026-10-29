@@ -18,7 +18,6 @@
 # Developer Guide
 
 - [PRISM specification tests](./prism-test/README.md)
-- [SDK-Rust adoption verification](./architecture/sdk-rust-adoption.md#verification-and-acceptance)
 - [Release process](./references/release-process.md)
 
 # Reference
