@@ -209,23 +209,27 @@ configuration. At cutover, the legacy writer stops after durably committing an
 explicit handoff cursor `C`; no second writer may advance the selected network
 while ownership is transferring. The candidate replays exact source bytes
 through `C`, proves the ordered-operation, acceptance, composite-state, and
-projection manifests through `C`, and records `C` in the selection record. The
-authority then opens a read-only snapshot, recomputes the identity and manifest
-digests, checks #325 and protected CI evidence, revokes rehearsal write access,
-and signs the exact record. During the initial handoff, resolution, listeners,
-and normal SDK ingestion remain unavailable until startup has verified the
-record and confirmed the candidate's durable cursor equals `C`. Only afterward
-is a separate SDK runtime writer enabled from the successor of `C` and an
-immutable cutover-complete marker is committed for that selected database.
-Later restarts verify the signed record, cutover-complete marker, and authorized
-post-cutover cursor history; they resume from the current durable cursor at or
-after `C` and do not require it to still equal `C`. Node startup therefore
-proves the immutable baseline without making normal progress unrestartable, and
-candidate contents alone cannot authorize serving. Runtime rows after `C` are
-normal post-cutover ingestion and do not rewrite that baseline. A failed
-catch-up, cursor mismatch, manifest mismatch, or writer-handoff timeout leaves
-legacy ownership intact or restores it through the documented rollback route;
-it never serves the lagging candidate.
+projection manifests through `C`, and records `C` in the selection record.
+Rehearsal write access is then revoked before the authority opens the read-only
+snapshot, recomputes the identity and manifest digests, checks #325 and
+protected CI evidence, and signs the exact frozen record. No rehearsal or
+runtime identity may mutate candidate rows during attestation.
+
+During the initial handoff, resolution, listeners, and normal SDK ingestion
+remain unavailable until startup has verified the record and confirmed the
+candidate's durable cursor equals `C`. A handoff-only SDK writer then atomically
+commits the immutable cutover-complete marker at `C`; it cannot process the
+successor of `C` in that transaction or before the marker is durable. Only after
+that commit may resolution become available and normal SDK ingestion resume at
+the successor of `C`. Later restarts verify the signed record, cutover-complete
+marker, and authorized post-cutover cursor history; they resume from the current
+durable cursor at or after `C` and do not require it to still equal `C`. Node
+startup therefore proves the immutable baseline without making normal progress
+unrestartable, and candidate contents alone cannot authorize serving. Runtime
+rows after `C` are normal post-cutover ingestion and do not rewrite that
+baseline. A failed catch-up, cursor mismatch, manifest mismatch, marker commit,
+or writer-handoff timeout leaves legacy ownership intact or restores it through
+the documented rollback route; it never serves the lagging candidate.
 
 The baseline revisions and schema digest identify the candidate that was
 validated; they are not an accidental permanent ban on upgrades. Every later
@@ -506,9 +510,10 @@ The implementation PR must attach:
   ingestion;
 - cutover-barrier evidence that the legacy writer stops at durable cursor `C`,
   the candidate replays and matches every required manifest through `C`,
-  resolution remains unavailable during ownership transfer, SDK ingestion
-  resumes exactly at the successor of `C`, and a lagging or mismatched candidate
-  cannot serve;
+  rehearsal writes are revoked before attestation, resolution remains
+  unavailable during ownership transfer, the cutover-complete marker commits at
+  `C` before SDK ingestion resumes exactly at its successor, and a mutable,
+  lagging, or mismatched candidate cannot serve;
 - restart evidence that the initial handoff requires exact cursor `C`, while a
   selected database that has durably advanced beyond `C` verifies the immutable
   cutover marker and resumes from its later authorized cursor without repeating
