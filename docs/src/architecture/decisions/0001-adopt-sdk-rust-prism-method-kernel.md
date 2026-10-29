@@ -212,15 +212,20 @@ through `C`, proves the ordered-operation, acceptance, composite-state, and
 projection manifests through `C`, and records `C` in the selection record. The
 authority then opens a read-only snapshot, recomputes the identity and manifest
 digests, checks #325 and protected CI evidence, revokes rehearsal write access,
-and signs the exact record. Resolution, listeners, and normal SDK ingestion
-remain unavailable until startup has verified the record and confirmed the
-candidate's durable cursor equals `C`. Only afterward is a separate SDK runtime
-writer enabled from the successor of `C`. Node startup verifies the signature
-and immutable baseline record, so candidate contents alone cannot authorize
-serving. Runtime rows after `C` are normal post-cutover ingestion and do not
-rewrite that baseline. A failed catch-up, cursor mismatch, manifest mismatch, or
-writer-handoff timeout leaves legacy ownership intact or restores it through the
-documented rollback route; it never serves the lagging candidate.
+and signs the exact record. During the initial handoff, resolution, listeners,
+and normal SDK ingestion remain unavailable until startup has verified the
+record and confirmed the candidate's durable cursor equals `C`. Only afterward
+is a separate SDK runtime writer enabled from the successor of `C` and an
+immutable cutover-complete marker is committed for that selected database.
+Later restarts verify the signed record, cutover-complete marker, and authorized
+post-cutover cursor history; they resume from the current durable cursor at or
+after `C` and do not require it to still equal `C`. Node startup therefore
+proves the immutable baseline without making normal progress unrestartable, and
+candidate contents alone cannot authorize serving. Runtime rows after `C` are
+normal post-cutover ingestion and do not rewrite that baseline. A failed
+catch-up, cursor mismatch, manifest mismatch, or writer-handoff timeout leaves
+legacy ownership intact or restores it through the documented rollback route;
+it never serves the lagging candidate.
 
 The baseline revisions and schema digest identify the candidate that was
 validated; they are not an accidental permanent ban on upgrades. Every later
@@ -504,6 +509,10 @@ The implementation PR must attach:
   resolution remains unavailable during ownership transfer, SDK ingestion
   resumes exactly at the successor of `C`, and a lagging or mismatched candidate
   cannot serve;
+- restart evidence that the initial handoff requires exact cursor `C`, while a
+  selected database that has durably advanced beyond `C` verifies the immutable
+  cutover marker and resumes from its later authorized cursor without repeating
+  or skipping post-cutover operations;
 - authority-separation evidence that rehearsal cannot write guarded selection
   configuration, its write access is revoked before signing, the cutover
   identity cannot rewrite candidate data, and startup rejects forged, unsigned,
