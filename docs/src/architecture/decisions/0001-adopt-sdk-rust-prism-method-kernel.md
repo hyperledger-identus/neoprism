@@ -207,13 +207,29 @@ The record is signed by a cutover authority whose verification key is pinned
 outside the candidate database. Rehearsal cannot write guarded deployment
 configuration. At cutover, the legacy writer stops after durably committing an
 explicit handoff cursor `C`; no second writer may advance the selected network
-while ownership is transferring. The candidate replays exact source bytes
-through `C`, proves the ordered-operation, acceptance, composite-state, and
-projection manifests through `C`, and records `C` in the selection record.
+while ownership is transferring. Before candidate replay, attestation, or
+selection begins, the deployment owner must durably activate a legacy ownership
+fence in guarded deployment configuration outside both databases. The fence
+survives host, container, and orchestrator restarts; prevents the legacy writer
+and listener from starting or serving; and revokes its database role or storage
+mount and serving route. Merely stopping a process or denying legacy access to
+the candidate is not a fence. The candidate replays exact source bytes through
+`C`, proves the ordered-operation, acceptance, composite-state, and projection
+manifests through `C`, and records `C` in the selection record.
 Rehearsal write access is then revoked before the authority opens the read-only
 snapshot, recomputes the identity and manifest digests, checks #325 and
 protected CI evidence, and signs the exact frozen record. No rehearsal or
 runtime identity may mutate candidate rows during attestation.
+
+Failure recovery leaves that fence active while candidate ownership is
+uncertain. Only the cutover authority may release it, using a signed rollback
+authorization after candidate ingestion and serving are durably disabled and
+the restored or freshly rebuilt legacy backend is verified at its authorized
+resume cursor. Release atomically restores the legacy database/storage access,
+serving route, and restart permission; it cannot overlap candidate ownership.
+The cutover and rollback fixtures must inject a legacy-host restart during
+handoff and after SDK selection and prove that the fenced legacy writer and
+listener remain unavailable until an authorized rollback releases the fence.
 
 During the initial handoff, resolution, listeners, and normal SDK ingestion
 remain unavailable until startup has verified the record and confirmed the
