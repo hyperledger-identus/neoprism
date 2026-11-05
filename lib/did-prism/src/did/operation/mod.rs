@@ -17,6 +17,8 @@ use crate::proto::prism::PrismObject;
 pub struct OperationParameters {
     pub max_services: usize,
     pub max_public_keys: usize,
+    pub max_contexts: usize,
+    pub max_context_size: usize,
     pub max_id_size: usize,
     pub max_type_size: usize,
     pub max_service_endpoint_size: usize,
@@ -27,6 +29,9 @@ impl OperationParameters {
         Self {
             max_services: 50,
             max_public_keys: 50,
+            // The resolved document always prepends the W3C DID context.
+            max_contexts: identus_did_core::MAX_DOCUMENT_ITEMS - 1,
+            max_context_size: identus_did_core::MAX_URI_BYTES,
             max_id_size: 50,
             max_type_size: 100,
             max_service_endpoint_size: 300,

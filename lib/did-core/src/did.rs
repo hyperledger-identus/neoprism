@@ -5,6 +5,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Error, InvalidDid};
 
+/// Maximum byte length accepted by the shared SDK DID representation.
+pub const MAX_DID_BYTES: usize = identus_did::MAX_DID_BYTES;
+
 #[derive(Clone, Serialize, Deserialize, derive_more::Debug, derive_more::Display)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(feature = "openapi", schema(value_type = String, example = "did:example:123456789abcdefghi"))]

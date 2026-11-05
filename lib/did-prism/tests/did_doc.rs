@@ -5,7 +5,7 @@ use chrono::{DateTime, TimeZone, Utc};
 use identus_apollo::crypto::secp256k1::Secp256k1PrivateKey;
 use identus_apollo::hash::Sha256Digest;
 use identus_apollo::hex::HexStr;
-use identus_did_core::sdk_adapter::resolution_result_to_sdk;
+use identus_did_core::sdk_adapter::{did_document_to_sdk, resolution_result_to_sdk};
 use identus_did_core::{
     Did, ServiceEndpoint as CoreServiceEndpoint, ServiceType as CoreServiceType, StringOrMap, VerificationMethodOrRef,
 };
@@ -391,6 +391,18 @@ fn to_did_document_with_multiple_custom_contexts() {
     assert_eq!(doc.context[0], "https://www.w3.org/ns/did/v1");
     assert_eq!(doc.context[1], "https://example.com/context/v1");
     assert_eq!(doc.context[2], "https://example.com/context/v2");
+}
+
+#[test]
+fn maximum_prism_contexts_fit_the_sdk_document_bound() {
+    let mut state = base_state();
+    state.context = (0..identus_did_core::MAX_DOCUMENT_ITEMS - 1)
+        .map(|index| format!("https://example.com/context/{index}"))
+        .collect();
+
+    let doc = state.to_did_document(&make_did());
+    assert_eq!(doc.context.len(), identus_did_core::MAX_DOCUMENT_ITEMS);
+    assert!(did_document_to_sdk(&doc).is_ok());
 }
 
 #[test]

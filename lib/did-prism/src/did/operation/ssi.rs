@@ -54,7 +54,7 @@ impl CreateDidOperation {
 
         Self::validate_public_key_list(param, &public_keys)?;
         Self::validate_service_list(param, &services)?;
-        Self::validate_context_list(&context)?;
+        Self::validate_context_list(param, &context)?;
 
         Ok(Self {
             public_keys,
@@ -100,12 +100,29 @@ impl CreateDidOperation {
         Ok(())
     }
 
-    fn validate_context_list(contexts: &[String]) -> Result<(), CreateDidOperationError> {
-        if is_slice_unique(contexts) {
-            Ok(())
-        } else {
-            Err(CreateDidOperationError::DuplicateContext)?
+    fn validate_context_list(param: &OperationParameters, contexts: &[String]) -> Result<(), CreateDidOperationError> {
+        if contexts.len() > param.max_contexts {
+            return Err(CreateDidOperationError::TooManyContexts {
+                source: InvalidInputSizeError::TooBig {
+                    limit: param.max_contexts,
+                    actual: contexts.len(),
+                    type_name: std::any::type_name_of_val(contexts),
+                    location: location!(),
+                },
+            });
         }
+        if let Some(context) = contexts
+            .iter()
+            .find(|context| context.len() > param.max_context_size || !is_uri(context))
+        {
+            return Err(CreateDidOperationError::InvalidContext {
+                context: context.clone(),
+            });
+        }
+        if !is_slice_unique(contexts) {
+            return Err(CreateDidOperationError::DuplicateContext);
+        }
+        Ok(())
     }
 }
 
@@ -249,7 +266,7 @@ impl UpdateOperationAction {
             }
             Action::PatchContext(patch_ctx) => {
                 let context = patch_ctx.context.clone();
-                Self::validate_context_list(&context)?;
+                Self::validate_context_list(param, &context)?;
                 Self::PatchContext(context)
             }
         };
@@ -257,12 +274,29 @@ impl UpdateOperationAction {
         Ok(Some(action))
     }
 
-    fn validate_context_list(contexts: &[String]) -> Result<(), UpdateDidOperationError> {
-        if is_slice_unique(contexts) {
-            Ok(())
-        } else {
-            Err(UpdateDidOperationError::DuplicateContext)?
+    fn validate_context_list(param: &OperationParameters, contexts: &[String]) -> Result<(), UpdateDidOperationError> {
+        if contexts.len() > param.max_contexts {
+            return Err(UpdateDidOperationError::TooManyContexts {
+                source: InvalidInputSizeError::TooBig {
+                    limit: param.max_contexts,
+                    actual: contexts.len(),
+                    type_name: std::any::type_name_of_val(contexts),
+                    location: location!(),
+                },
+            });
         }
+        if let Some(context) = contexts
+            .iter()
+            .find(|context| context.len() > param.max_context_size || !is_uri(context))
+        {
+            return Err(UpdateDidOperationError::InvalidContext {
+                context: context.clone(),
+            });
+        }
+        if !is_slice_unique(contexts) {
+            return Err(UpdateDidOperationError::DuplicateContext);
+        }
+        Ok(())
     }
 }
 

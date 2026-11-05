@@ -141,6 +141,23 @@ fn long_form_from_operation_success() {
 }
 
 #[test]
+fn long_form_from_operation_rejects_did_above_sdk_bound() {
+    let mut operation = new_create_operation();
+    let proto::prism::prism_operation::Operation::CreateDid(create) = operation.operation.as_mut().unwrap() else {
+        unreachable!("test helper always creates a create-did operation")
+    };
+    create.did_data.as_mut().unwrap().context = vec![format!(
+        "https://example.com/{}",
+        "a".repeat(identus_did_core::MAX_DID_BYTES)
+    )];
+
+    assert!(matches!(
+        LongFormPrismDid::from_operation(&operation),
+        Err(DidError::LongFormDidTooLong { .. })
+    ));
+}
+
+#[test]
 fn long_form_from_operation_none_operation() {
     let operation = proto::prism::PrismOperation {
         operation: None,

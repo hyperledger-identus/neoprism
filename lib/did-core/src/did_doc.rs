@@ -3,6 +3,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Did, Uri};
 
+/// Maximum number of entries accepted in one SDK DID document collection.
+pub const MAX_DOCUMENT_ITEMS: usize = identus_did::MAX_DOCUMENT_ITEMS;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "openapi", derive(utoipa::ToSchema))]
 #[cfg_attr(
