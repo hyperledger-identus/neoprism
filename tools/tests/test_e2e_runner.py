@@ -28,6 +28,7 @@ from e2e_runner import (
     generate_project_name,
     missing_required_executables,
     preflight,
+    pull_missing_images,
     run_profile,
     streamed,
     terminate_process_group,
@@ -38,6 +39,25 @@ from e2e_runner import (
 
 
 class E2ERunnerTest(unittest.TestCase):
+    @patch("e2e_runner.time.monotonic", side_effect=[10.0, 14.25])
+    @patch("e2e_runner.streamed")
+    def test_missing_image_pull_duration_is_isolated(
+        self, streamed_command: MagicMock, _monotonic: object
+    ) -> None:
+        with tempfile.TemporaryFile(mode="w+") as log:
+            duration = pull_missing_images(
+                Path("."), ["postgres:16", "caddy:2.10.2"], log
+            )
+
+        self.assertEqual(duration, 4.25)
+        self.assertEqual(
+            streamed_command.call_args_list,
+            [
+                call(["docker", "pull", "--quiet", "postgres:16"], Path("."), log),
+                call(["docker", "pull", "--quiet", "caddy:2.10.2"], Path("."), log),
+            ],
+        )
+
     def test_active_networks_can_exhaust_configured_address_pool(self) -> None:
         docker_info = {"DefaultAddressPools": [{"Base": "10.20.0.0/24", "Size": 25}]}
         networks = [

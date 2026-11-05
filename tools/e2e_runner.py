@@ -90,6 +90,9 @@ class ProfileReceipt:
     started_at: str
     ended_at: str | None = None
     duration_seconds: float | None = None
+    image_pull_duration_seconds: float | None = None
+    service_start_duration_seconds: float | None = None
+    test_duration_seconds: float | None = None
     readiness_duration_seconds: float | None = None
     cold_cache: bool = False
     missing_images: list[str] = field(default_factory=lambda: [])
@@ -667,6 +670,14 @@ def missing_images(repository: Path, compose_file: Path) -> list[str]:
     return missing
 
 
+def pull_missing_images(repository: Path, images: Sequence[str], log: TextIO) -> float:
+    """Pull only absent dependency images and return the isolated duration."""
+    started = time.monotonic()
+    for image in images:
+        streamed(["docker", "pull", "--quiet", image], repository, log)
+    return round(time.monotonic() - started, 3)
+
+
 def cleanup(repository: Path, project: str, compose_file: Path, log: TextIO) -> str:
     command = compose_command(
         project, compose_file, "down", "--volumes", "--remove-orphans"
@@ -730,6 +741,10 @@ def run_profile(
             profile_receipt.missing_images = images
             atomic_write_json(receipt_path, receipt)
             print(f"\n=== Testing {profile} ({project}) ===")
+            profile_receipt.image_pull_duration_seconds = pull_missing_images(
+                repository, images, profile_log
+            )
+            service_started = time.monotonic()
             streamed(
                 compose_command(project, compose_file, "up", "-d", "--wait"),
                 repository,
@@ -743,10 +758,17 @@ def run_profile(
                     "embedded-wallet funding ready after "
                     f"{profile_receipt.readiness_duration_seconds:.3f}s"
                 )
+            profile_receipt.service_start_duration_seconds = round(
+                time.monotonic() - service_started, 3
+            )
+            test_started = time.monotonic()
             test_output = streamed(
                 ["sbt", "clean;Test / testOnly *"],
                 repository / "tests" / "prism-test",
                 profile_log,
+            )
+            profile_receipt.test_duration_seconds = round(
+                time.monotonic() - test_started, 3
             )
             profile_receipt.tests_passed = conformance_test_count(test_output)
             profile_receipt.status = "passed"

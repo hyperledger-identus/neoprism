@@ -46,7 +46,7 @@ python tools/e2e_runner.py --profile sqlite-dev
 python tools/e2e_runner.py --profile ci-sqlite --profile ci-embedded-wallet
 ```
 
-Each receipt records the exact Git revision, dirty state, Docker architecture and version, loaded NeoPRISM image ID, profile durations, embedded-wallet readiness time, conformance test count, missing images at profile start, result, and cleanup result. A profile with missing images is marked `cold_cache`; its total duration includes image download time. CPU and RAM are intentionally non-gating until controlled runs establish a useful baseline.
+Each receipt records the exact Git revision, dirty state, Docker architecture and version, loaded NeoPRISM image ID, profile durations, embedded-wallet readiness time, conformance test count, missing images at profile start, result, and cleanup result. A profile with missing images is marked `cold_cache`. Missing dependency images are pulled before service startup so the receipt reports image-pull, service-start/readiness, and conformance-test durations separately; the total profile duration still includes all phases and cleanup. CPU and RAM are intentionally non-gating until controlled runs establish a useful baseline.
 
 Need to focus on a single stack? Use `just e2e::up <name>` / `just e2e::down <name>` and run the Scala tests manually:
 
