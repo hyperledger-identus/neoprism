@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import fcntl
 import http.client
+import ipaddress
 import json
 import os
 import platform
@@ -213,16 +214,17 @@ def streamed(
 
 def terminate_process_group(process: subprocess.Popen[str]) -> None:
     """Stop and reap a streamed command and any children it spawned."""
-    if process.poll() is not None:
-        return
-    with suppress(ProcessLookupError):
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
+    with defer_termination_signals():
+        if process.poll() is not None:
+            return
         with suppress(ProcessLookupError):
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait()
+            os.killpg(process.pid, signal.SIGTERM)
+        try:
+            process.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            with suppress(ProcessLookupError):
+                os.killpg(process.pid, signal.SIGKILL)
+            process.wait()
 
 
 @contextmanager
@@ -271,6 +273,27 @@ def atomic_write_json(path: Path, receipt: RunReceipt) -> None:
     temporary = path.with_suffix(f"{path.suffix}.tmp")
     temporary.write_text(json.dumps(asdict(receipt), indent=2) + "\n", encoding="utf-8")
     temporary.replace(path)
+
+
+def finalize_run_receipt(
+    path: Path, receipt: RunReceipt, started_monotonic: float
+) -> None:
+    """Persist a terminal receipt without allowing a signal to leave PASS behind."""
+
+    def write_terminal_receipt() -> None:
+        receipt.ended_at = utc_now()
+        receipt.duration_seconds = round(time.monotonic() - started_monotonic, 3)
+        atomic_write_json(path, receipt)
+        print(f"E2E result: {receipt.status}; receipt: {path}")
+
+    try:
+        with defer_termination_signals():
+            write_terminal_receipt()
+    except (KeyboardInterrupt, TerminationRequested):
+        receipt.status = "interrupted"
+        with defer_termination_signals():
+            write_terminal_receipt()
+        raise
 
 
 def missing_required_executables() -> list[str]:
@@ -443,7 +466,9 @@ def exclusive_run_lock(lock_path: Path | None = None) -> Generator[None]:
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
-def inspect_test_networks(repository: Path) -> tuple[int, list[tuple[str, str]]]:
+def inspect_network_inventory(
+    repository: Path,
+) -> tuple[int, list[dict[str, Any]]]:
     dangling_ids = captured(
         ["docker", "network", "ls", "-q", "--filter", "dangling=true"], repository
     ).splitlines()
@@ -453,7 +478,100 @@ def inspect_test_networks(repository: Path) -> tuple[int, list[tuple[str, str]]]
     networks = parse_json_array(
         captured(["docker", "network", "inspect", *all_ids], repository)
     )
-    return len(dangling_ids), classify_test_networks(networks)
+    return len(dangling_ids), networks
+
+
+def inspect_test_networks(repository: Path) -> tuple[int, list[tuple[str, str]]]:
+    dangling_count, networks = inspect_network_inventory(repository)
+    return dangling_count, classify_test_networks(networks)
+
+
+def default_address_pools() -> list[tuple[ipaddress.IPv4Network, int]]:
+    """Return Docker's built-in local-scope pools when none are configured."""
+    pools: list[tuple[ipaddress.IPv4Network, int]] = [
+        (ipaddress.IPv4Network(f"172.{octet}.0.0/16"), 16) for octet in range(17, 32)
+    ]
+    pools.extend(
+        (ipaddress.IPv4Network(f"192.168.{octet}.0/20"), 20)
+        for octet in range(0, 256, 16)
+    )
+    return pools
+
+
+def configured_address_pools(
+    docker_info: Mapping[str, Any],
+) -> list[tuple[ipaddress.IPv4Network, int]]:
+    value = docker_info.get("DefaultAddressPools")
+    if not isinstance(value, list) or not value:
+        return default_address_pools()
+
+    pools: list[tuple[ipaddress.IPv4Network, int]] = []
+    for item in cast(list[object], value):
+        if not isinstance(item, dict):
+            raise RuntimeError("Docker returned an invalid default address pool")
+        pool = cast(dict[str, Any], item)
+        base = pool.get("Base", pool.get("base"))
+        size = pool.get("Size", pool.get("size"))
+        if not isinstance(base, str) or not isinstance(size, int):
+            raise RuntimeError("Docker returned an invalid default address pool")
+        network = ipaddress.ip_network(base)
+        if not isinstance(network, ipaddress.IPv4Network):
+            continue
+        if size < network.prefixlen or size > network.max_prefixlen:
+            raise RuntimeError("Docker returned an invalid default address pool size")
+        pools.append((network, size))
+    if not pools:
+        raise RuntimeError("Docker reported no IPv4 default address pools")
+    return pools
+
+
+def allocated_ipv4_subnets(
+    networks: Sequence[Mapping[str, Any]],
+) -> list[ipaddress.IPv4Network]:
+    allocated: list[ipaddress.IPv4Network] = []
+    for network in networks:
+        ipam = network.get("IPAM")
+        if not isinstance(ipam, dict):
+            continue
+        configs = cast(dict[str, Any], ipam).get("Config")
+        if not isinstance(configs, list):
+            continue
+        for value in cast(list[object], configs):
+            if not isinstance(value, dict):
+                continue
+            subnet = cast(dict[str, Any], value).get("Subnet")
+            if not isinstance(subnet, str):
+                continue
+            try:
+                parsed = ipaddress.ip_network(subnet)
+            except ValueError:
+                continue
+            if isinstance(parsed, ipaddress.IPv4Network):
+                allocated.append(parsed)
+    return allocated
+
+
+def address_pool_capacity(
+    docker_info: Mapping[str, Any], networks: Sequence[Mapping[str, Any]]
+) -> tuple[int, int, int]:
+    """Return configured, occupied, and remaining Docker IPv4 pool slots."""
+    occupied: set[tuple[int, int]] = set()
+    total = 0
+    allocations = allocated_ipv4_subnets(networks)
+    for pool_index, (base, size) in enumerate(configured_address_pools(docker_info)):
+        block_size = 1 << (base.max_prefixlen - size)
+        slots = 1 << (size - base.prefixlen)
+        total += slots
+        for allocation in allocations:
+            if not base.overlaps(allocation):
+                continue
+            start = max(int(base.network_address), int(allocation.network_address))
+            end = min(int(base.broadcast_address), int(allocation.broadcast_address))
+            first = (start - int(base.network_address)) // block_size
+            last = (end - int(base.network_address)) // block_size
+            occupied.update((pool_index, slot) for slot in range(first, last + 1))
+    used = len(occupied)
+    return total, used, max(0, total - used)
 
 
 def preflight(
@@ -483,7 +601,20 @@ def preflight(
             f"{min_free_gib} GiB"
         )
 
-    dangling_count, stale_test_networks = inspect_test_networks(repository)
+    dangling_count, networks = inspect_network_inventory(repository)
+    stale_test_networks = classify_test_networks(networks)
+    pool_total, pool_used, pool_remaining = address_pool_capacity(docker_info, networks)
+    if pool_remaining == 0:
+        recovery = (
+            " Remove only the stale NeoPRISM networks reported below, then retry."
+            if stale_test_networks
+            else " No stale NeoPRISM networks were found; inspect Docker networks "
+            "before removing unrelated resources."
+        )
+        raise RuntimeError(
+            "Docker default address pools are exhausted before E2E startup "
+            f"({pool_used}/{pool_total} subnets allocated).{recovery}"
+        )
     if dangling_count >= 16:
         print(
             f"warning: Docker has {dangling_count} unused networks; address-pool "
@@ -721,11 +852,7 @@ def run_matrix(repository: Path, profiles: Sequence[str], min_free_gib: int) -> 
         print(str(error), file=sys.stderr)
         return 1
     finally:
-        with defer_termination_signals():
-            receipt.ended_at = utc_now()
-            receipt.duration_seconds = round(time.monotonic() - started_monotonic, 3)
-            atomic_write_json(receipt_path, receipt)
-            print(f"E2E result: {receipt.status}; receipt: {receipt_path}")
+        finalize_run_receipt(receipt_path, receipt, started_monotonic)
 
 
 def parse_arguments(arguments: Sequence[str]) -> argparse.Namespace:

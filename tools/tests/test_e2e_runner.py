@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import json
 import signal
+import subprocess
 import tempfile
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import Any
+from unittest.mock import MagicMock, call, patch
 
 from e2e_runner import (
     ProfileReceipt,
     RunReceipt,
     TerminationRequested,
+    address_pool_capacity,
     atomic_write_json,
     captured,
     classify_test_networks,
@@ -21,10 +24,13 @@ from e2e_runner import (
     defer_termination_signals,
     embedded_wallet_funding_target,
     exclusive_run_lock,
+    finalize_run_receipt,
     generate_project_name,
     missing_required_executables,
+    preflight,
     run_profile,
     streamed,
+    terminate_process_group,
     termination_signal_handlers,
     trusted_streamed_command,
     wait_for_embedded_wallet_funding,
@@ -32,6 +38,43 @@ from e2e_runner import (
 
 
 class E2ERunnerTest(unittest.TestCase):
+    def test_active_networks_can_exhaust_configured_address_pool(self) -> None:
+        docker_info = {"DefaultAddressPools": [{"Base": "10.20.0.0/24", "Size": 25}]}
+        networks = [
+            {"IPAM": {"Config": [{"Subnet": "10.20.0.0/25"}]}},
+            {"IPAM": {"Config": [{"Subnet": "10.20.0.128/25"}]}},
+        ]
+
+        self.assertEqual(address_pool_capacity(docker_info, networks), (2, 2, 0))
+
+    @patch("e2e_runner.shutil.disk_usage")
+    @patch("e2e_runner.inspect_network_inventory", return_value=(0, []))
+    @patch("e2e_runner.address_pool_capacity", return_value=(2, 2, 0))
+    @patch("e2e_runner.missing_required_executables", return_value=[])
+    @patch(
+        "e2e_runner.captured",
+        return_value='{"Architecture":"arm64","ServerVersion":"1"}',
+    )
+    def test_preflight_rejects_address_pool_exhaustion_before_startup(
+        self,
+        _captured: object,
+        _executables: object,
+        _capacity: object,
+        _networks: object,
+        disk_usage: MagicMock,
+    ) -> None:
+        disk_usage.return_value.free = 100 * 1024**3
+        with tempfile.TemporaryDirectory() as directory:
+            repository = Path(directory)
+            compose_directory = repository / "docker" / "prism-test"
+            compose_directory.mkdir(parents=True)
+            (compose_directory / "compose-sqlite-dev.yml").write_text(
+                "services: {}\n", encoding="utf-8"
+            )
+
+            with self.assertRaisesRegex(RuntimeError, "before E2E startup"):
+                preflight(repository, ["sqlite-dev"], 10)
+
     def test_project_name_is_unique_and_compose_safe(self) -> None:
         started_at = datetime(2026, 10, 27, 12, 34, 56, tzinfo=UTC)
 
@@ -72,9 +115,10 @@ class E2ERunnerTest(unittest.TestCase):
     def test_missing_required_executables_are_reported_before_docker(
         self, which: MagicMock
     ) -> None:
-        which.side_effect = lambda executable: (
-            None if executable in {"nix", "sbt"} else f"/bin/{executable}"
-        )
+        def executable_path(executable: str) -> str | None:
+            return None if executable in {"nix", "sbt"} else f"/bin/{executable}"
+
+        which.side_effect = executable_path
 
         self.assertEqual(missing_required_executables(), ["nix", "sbt"])
 
@@ -82,8 +126,11 @@ class E2ERunnerTest(unittest.TestCase):
     def test_streamed_launch_failure_becomes_a_receiptable_error(
         self, _popen: object
     ) -> None:
-        with tempfile.TemporaryFile(mode="w+") as log, self.assertRaisesRegex(
-            RuntimeError, "failed to start required executable sbt"
+        with (
+            tempfile.TemporaryFile(mode="w+") as log,
+            self.assertRaisesRegex(
+                RuntimeError, "failed to start required executable sbt"
+            ),
         ):
             streamed(["sbt", "test"], Path("."), log)
 
@@ -98,9 +145,7 @@ class E2ERunnerTest(unittest.TestCase):
 
     @patch("e2e_runner.streamed", side_effect=RuntimeError("failed to start"))
     def test_cleanup_launch_failure_is_recorded(self, _streamed: object) -> None:
-        with tempfile.TemporaryFile(mode="w+") as log, patch(
-            "e2e_runner.sys.stderr"
-        ):
+        with tempfile.TemporaryFile(mode="w+") as log, patch("e2e_runner.sys.stderr"):
             self.assertEqual(
                 cleanup(Path("."), "neoprism-e2e-test", Path("compose.yml"), log),
                 "failed",
@@ -147,7 +192,7 @@ class E2ERunnerTest(unittest.TestCase):
             self.assertEqual(decoded["profiles"][0]["cleanup_status"], "passed")
 
     def test_classify_networks_returns_only_unused_test_projects(self) -> None:
-        networks = [
+        networks: list[dict[str, Any]] = [
             {
                 "Id": "stale-id",
                 "Name": "neoprism-e2e-old_default",
@@ -295,6 +340,71 @@ class E2ERunnerTest(unittest.TestCase):
             cleanup_finished = True
 
         self.assertTrue(cleanup_finished)
+
+    @patch("e2e_runner.os.killpg")
+    def test_repeated_signal_cannot_skip_child_escalation_and_reaping(
+        self, killpg: MagicMock
+    ) -> None:
+        process: MagicMock = MagicMock()
+        process.pid = 1234
+        process.poll.return_value = None
+
+        def wait(timeout: int | None = None) -> int:
+            if timeout is not None:
+                signal.raise_signal(signal.SIGTERM)
+                raise subprocess.TimeoutExpired("fixture", timeout)
+            return 0
+
+        process.wait.side_effect = wait
+
+        with self.assertRaises(TerminationRequested), termination_signal_handlers():
+            terminate_process_group(process)
+
+        self.assertEqual(
+            killpg.call_args_list,
+            [
+                call(1234, signal.SIGTERM),
+                call(1234, signal.SIGKILL),
+            ],
+        )
+        self.assertEqual(process.wait.call_count, 2)
+
+    def test_signal_during_final_write_rewrites_pass_as_interrupted(self) -> None:
+        receipt = RunReceipt(
+            schema_version=1,
+            started_at="2026-11-06T00:00:00+00:00",
+            git_revision="abc123",
+            git_dirty=False,
+            host_platform="test",
+            docker_architecture="arm64",
+            docker_version="1",
+            project_prefix="neoprism-e2e-test",
+            receipt_path="target/receipt.json",
+            status="passed",
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "receipt.json"
+            original_write = atomic_write_json
+            writes = 0
+
+            def interrupting_write(target: Path, value: RunReceipt) -> None:
+                nonlocal writes
+                writes += 1
+                signal.raise_signal(signal.SIGINT)
+                original_write(target, value)
+
+            with (
+                patch("e2e_runner.atomic_write_json", side_effect=interrupting_write),
+                self.assertRaises(TerminationRequested),
+                termination_signal_handlers(),
+            ):
+                finalize_run_receipt(path, receipt, 0.0)
+
+            decoded = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertGreaterEqual(writes, 2)
+        self.assertEqual(decoded["status"], "interrupted")
 
 
 if __name__ == "__main__":
