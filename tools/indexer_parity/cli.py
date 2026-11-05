@@ -13,7 +13,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
 
-from .manifest import compare, read_manifest, write_manifest, write_reports
+from .manifest import (
+    OperationRecord,
+    compare,
+    read_manifest,
+    write_manifest,
+    write_reports,
+)
 from .metrics import (
     NETWORK_GENESIS_SLOT,
     MetricsRecorder,
@@ -232,6 +238,23 @@ class ComposeHarness:
                 ],
                 deadline=self.deadline,
             )
+        return result.stdout.strip()
+
+    def pin_images(self, baseline_image_id: str, candidate_image_id: str) -> None:
+        self.environment["NEOPRISM_BASELINE_IMAGE"] = baseline_image_id
+        self.environment["NEOPRISM_CANDIDATE_IMAGE"] = candidate_image_id
+
+    def running_image_id(self, service: str) -> str:
+        result = _run(
+            [
+                "docker",
+                "inspect",
+                "--format",
+                "{{.Image}}",
+                self.container_id(service),
+            ],
+            deadline=self.deadline,
+        )
         return result.stdout.strip()
 
     def container_id(self, service: str) -> str:
@@ -519,6 +542,34 @@ def _wait_for_drain(
     raise HarnessError("timed out waiting for operation indexing queues to drain")
 
 
+def _verify_started_images(expected: tuple[str, str], actual: tuple[str, str]) -> None:
+    if actual != expected:
+        raise HarnessError(
+            "started image IDs do not match inspected image IDs: "
+            f"expected={expected[0]}/{expected[1]} actual={actual[0]}/{actual[1]}"
+        )
+    if actual[0] == actual[1]:
+        raise HarnessError(
+            "baseline and candidate containers use the same image ID; "
+            "a differential run requires two distinct images"
+        )
+
+
+def _validate_frozen_manifests(
+    baseline: list[OperationRecord], candidate: list[OperationRecord]
+) -> tuple[int, int]:
+    pending = (
+        sum(not record.indexed for record in baseline),
+        sum(not record.indexed for record in candidate),
+    )
+    if any(pending):
+        raise HarnessError(
+            "frozen manifests contain pending operations: "
+            f"baseline={pending[0]} candidate={pending[1]}"
+        )
+    return pending
+
+
 def run(options: RunOptions) -> int:
     if options.network == "mainnet" and options.relay_address == DEFAULT_PREPROD_RELAY:
         raise HarnessError("mainnet requires an explicit mainnet relay address")
@@ -536,17 +587,24 @@ def run(options: RunOptions) -> int:
         _run(["docker", "info"], deadline=deadline)
         baseline_identity = harness.image_identity(options.baseline_image)
         candidate_identity = harness.image_identity(options.candidate_image)
-        if (
-            baseline_identity.split(maxsplit=1)[0]
-            == candidate_identity.split(maxsplit=1)[0]
-        ):
+        inspected_image_ids = (
+            baseline_identity.split(maxsplit=1)[0],
+            candidate_identity.split(maxsplit=1)[0],
+        )
+        if inspected_image_ids[0] == inspected_image_ids[1]:
             raise HarnessError(
                 "baseline and candidate resolve to the same image ID; "
                 "a differential run requires two distinct images"
             )
+        harness.pin_images(*inspected_image_ids)
         scan_started_monotonic = time.monotonic()
         metrics = MetricsRecorder(scan_started_monotonic)
         harness.compose("up", "--detach")
+        started_image_ids = (
+            harness.running_image_id("baseline"),
+            harness.running_image_id("candidate"),
+        )
+        _verify_started_images(inspected_image_ids, started_image_ids)
         sampler = ResourceSampler(harness, metrics, options.metrics_sample_seconds)
         sampler.start()
         _wait_for_databases(harness, deadline)
@@ -575,6 +633,7 @@ def run(options: RunOptions) -> int:
         )
         write_manifest(options.output_dir / "baseline.csv", baseline)
         write_manifest(options.output_dir / "candidate.csv", candidate)
+        frozen_pending = _validate_frozen_manifests(baseline, candidate)
         comparison = compare(baseline, candidate)
         total_duration_seconds = time.monotonic() - run_started_monotonic
         metrics.write_samples(options.output_dir)
@@ -595,9 +654,20 @@ def run(options: RunOptions) -> int:
             "candidate_cursor": drain.cursors[1],
             "baseline_image": options.baseline_image,
             "baseline_identity": baseline_identity,
+            "baseline_started_image_id": started_image_ids[0],
             "candidate_image": options.candidate_image,
             "candidate_identity": candidate_identity,
+            "candidate_started_image_id": started_image_ids[1],
             "compose_project": harness.project_name,
+            "evidence_scope": {
+                "verdict": "persisted-manifest equality under bounded quiescence",
+                "source_ingestion_completeness_proven": False,
+                "limitation": (
+                    "source cursors are not persisted ingestion acknowledgments; "
+                    "complete ingestion remains unproven until issue #347"
+                ),
+                "follow_up": "https://github.com/hyperledger-identus/neoprism/issues/347",
+            },
             "drain_assurance": {
                 "minimum_quiescence_seconds": options.drain_seconds,
                 "observed_quiescence_seconds": round(drain.stable_seconds, 3),
@@ -606,13 +676,22 @@ def run(options: RunOptions) -> int:
                 "candidate_operation_count": drain.candidate_state[0],
                 "baseline_pending_count": drain.baseline_state[1],
                 "candidate_pending_count": drain.candidate_state[1],
+                "frozen_baseline_operation_count": len(baseline),
+                "frozen_candidate_operation_count": len(candidate),
+                "frozen_baseline_pending_count": frozen_pending[0],
+                "frozen_candidate_pending_count": frozen_pending[1],
             },
             "started_at": started_at.isoformat(),
             "completed_at": datetime.now(UTC).isoformat(),
         }
         write_reports(options.output_dir, comparison, metadata, metrics_summary)
         succeeded = comparison.equal
-        print(f"parity result: {'PASS' if comparison.equal else 'FAIL'}")
+        verdict = "PASS" if comparison.equal else "FAIL"
+        print(
+            f"parity result: {verdict} — persisted-manifest equality under "
+            "bounded quiescence; source ingestion completeness is not proven "
+            "(see #347)"
+        )
         print(f"report: {options.output_dir / 'report.md'}")
         return 0 if comparison.equal else 1
     finally:

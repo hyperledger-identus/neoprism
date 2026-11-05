@@ -81,8 +81,10 @@ class ManifestTest(unittest.TestCase):
             "comparison_slot": 100,
             "baseline_image": "baseline:immutable",
             "baseline_identity": "sha256:a",
+            "baseline_started_image_id": "sha256:a",
             "candidate_image": "candidate:immutable",
             "candidate_identity": "sha256:b",
+            "candidate_started_image_id": "sha256:b",
             "compose_project": "neoprism-parity-test",
             "baseline_cursor": 102,
             "candidate_cursor": 103,
@@ -94,6 +96,16 @@ class ManifestTest(unittest.TestCase):
                 "candidate_operation_count": 5,
                 "baseline_pending_count": 0,
                 "candidate_pending_count": 0,
+                "frozen_baseline_operation_count": 5,
+                "frozen_candidate_operation_count": 5,
+                "frozen_baseline_pending_count": 0,
+                "frozen_candidate_pending_count": 0,
+            },
+            "evidence_scope": {
+                "verdict": "persisted-manifest equality under bounded quiescence",
+                "source_ingestion_completeness_proven": False,
+                "limitation": "source ingestion completeness is not proven",
+                "follow_up": "https://example.com/347",
             },
         }
         cursor = {
@@ -142,6 +154,13 @@ class ManifestTest(unittest.TestCase):
 
         self.assertIn("11.250 s", report)
         self.assertIn("both cursors at or above `102`", report)
+        self.assertIn("persisted-manifest equality under bounded quiescence", report)
+        self.assertIn("source ingestion completeness is not proven", report)
+        self.assertFalse(
+            machine_report["metadata"]["evidence_scope"][
+                "source_ingestion_completeness_proven"
+            ]
+        )
         self.assertEqual(
             machine_report["metadata"]["drain_assurance"]["baseline_pending_count"],
             0,

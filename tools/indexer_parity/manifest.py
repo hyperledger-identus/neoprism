@@ -205,17 +205,26 @@ def write_reports(
     )
 
     status = "PASS" if comparison.equal else "FAIL"
+    evidence_scope = metadata["evidence_scope"]
     lines = [
         "# NeoPRISM Indexer Parity Report",
         "",
         f"Result: **{status}**",
         "",
+        (
+            f"Verdict scope: **{evidence_scope['verdict']}**. "
+            f"{evidence_scope['limitation']}. "
+            f"Follow-up: {evidence_scope['follow_up']}."
+        ),
+        "",
         f"- Network: `{metadata['network']}`",
         f"- Comparison slot: `{metadata['comparison_slot']}`",
         f"- Baseline image: `{metadata['baseline_image']}`",
         f"- Baseline identity: `{metadata['baseline_identity']}`",
+        f"- Baseline started image ID: `{metadata['baseline_started_image_id']}`",
         f"- Candidate image: `{metadata['candidate_image']}`",
         f"- Candidate identity: `{metadata['candidate_identity']}`",
+        f"- Candidate started image ID: `{metadata['candidate_started_image_id']}`",
         f"- Compose project: `{metadata['compose_project']}`",
         f"- Baseline cursor: `{metadata['baseline_cursor']}`",
         f"- Candidate cursor: `{metadata['candidate_cursor']}`",
@@ -232,9 +241,11 @@ def write_reports(
             "stricter drain threshold is comparison slot plus two lags."
         ),
         (
-            "- Drained operation counts: baseline "
-            f"`{metadata['drain_assurance']['baseline_operation_count']}`, candidate "
-            f"`{metadata['drain_assurance']['candidate_operation_count']}`"
+            "- Frozen operation counts: baseline "
+            f"`{metadata['drain_assurance']['frozen_baseline_operation_count']}`, "
+            "candidate "
+            f"`{metadata['drain_assurance']['frozen_candidate_operation_count']}`; "
+            "pending `0` / `0`"
         ),
         f"- Baseline operations: `{comparison.baseline_count}`",
         f"- Candidate operations: `{comparison.candidate_count}`",

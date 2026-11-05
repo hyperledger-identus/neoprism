@@ -99,8 +99,12 @@ The Oura cursor is a source high-water mark, not a database-ingestion
 acknowledgment. To reduce the risk of stopping with queued events, the harness
 requires zero pending operations, stable manifest counts for the configured
 drain interval while both cursors remain at least two boundary lags beyond the
-comparison slot. The report records the observed cursors, operation counts, and
-quiescence duration. Until NeoPRISM exposes a persisted
+comparison slot, then rejects the frozen exports if either contains a pending
+row. The report records the observed cursors, frozen operation and pending
+counts, quiescence duration, inspected image identities, and the exact image IDs
+used by the started containers. A `PASS` means persisted-manifest equality under
+bounded quiescence; it does not assert complete source ingestion. Until NeoPRISM
+exposes a persisted
 ingestion acknowledgment or an independent chain oracle is supplied, treat a
 single live run as bounded operational evidence rather than a mathematical proof
 that no source event was omitted. Repeated fixed-boundary runs and manifest

@@ -12,11 +12,14 @@ from indexer_parity.cli import (
     RunOptions,
     _run,  # pyright: ignore[reportPrivateUsage]
     _validate_comparison_slot,  # pyright: ignore[reportPrivateUsage]
+    _validate_frozen_manifests,  # pyright: ignore[reportPrivateUsage]
+    _verify_started_images,  # pyright: ignore[reportPrivateUsage]
     _wait_for_drain,  # pyright: ignore[reportPrivateUsage]
     main,
     parse_args,
     run,
 )
+from indexer_parity.manifest import OperationRecord
 
 
 def options(output_dir: Path) -> RunOptions:
@@ -37,6 +40,54 @@ def options(output_dir: Path) -> RunOptions:
 
 
 class CliTest(unittest.TestCase):
+    def test_compose_images_can_be_pinned_to_inspected_ids(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            harness = ComposeHarness(options(Path(directory)), deadline=10.0)
+            harness.pin_images("sha256:baseline", "sha256:candidate")
+
+        self.assertEqual(
+            harness.environment["NEOPRISM_BASELINE_IMAGE"], "sha256:baseline"
+        )
+        self.assertEqual(
+            harness.environment["NEOPRISM_CANDIDATE_IMAGE"], "sha256:candidate"
+        )
+
+    def test_started_images_must_match_distinct_inspected_ids(self) -> None:
+        _verify_started_images(
+            ("sha256:baseline", "sha256:candidate"),
+            ("sha256:baseline", "sha256:candidate"),
+        )
+        with self.assertRaisesRegex(HarnessError, "do not match"):
+            _verify_started_images(
+                ("sha256:baseline", "sha256:candidate"),
+                ("sha256:baseline", "sha256:other"),
+            )
+        with self.assertRaisesRegex(HarnessError, "same image ID"):
+            _verify_started_images(
+                ("sha256:baseline", "sha256:baseline"),
+                ("sha256:baseline", "sha256:baseline"),
+            )
+
+    def test_frozen_manifests_reject_pending_rows(self) -> None:
+        pending = OperationRecord(
+            operation_id="aa",
+            tx_hash="bb",
+            signed_operation_data="cc",
+            slot=10,
+            block_number=5,
+            absn=1,
+            osn=0,
+            indexed=False,
+            operation_kind="none",
+            did="",
+            operation_hash="",
+            init_operation_hash="",
+            prev_operation_hash="",
+        )
+
+        with self.assertRaisesRegex(HarnessError, "baseline=1 candidate=1"):
+            _validate_frozen_manifests([pending], [pending])
+
     def test_compose_project_is_unique_per_harness(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             run_options = options(Path(directory))
@@ -184,6 +235,7 @@ class CliTest(unittest.TestCase):
                 harness = harness_type.return_value
                 harness.project_name = "neoprism-parity-test"
                 harness.image_identity.side_effect = ["sha256:a", "sha256:b"]
+                harness.running_image_id.side_effect = ["sha256:a", "sha256:b"]
                 harness.write_logs.side_effect = OSError("logs unavailable")
                 harness.cleanup.side_effect = HarnessError("cleanup unavailable")
                 wait_for_drain.return_value.cursors = (102, 102)
