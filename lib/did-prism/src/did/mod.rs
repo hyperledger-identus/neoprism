@@ -99,7 +99,13 @@ impl PrismDidOps for LongFormPrismDid {
 
 impl CanonicalPrismDid {
     pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
-        Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
+        match operation.operation {
+            Some(Operation::CreateDid(_)) => Ok(Self {
+                suffix: operation.operation_hash(),
+            }),
+            None => Err(Error::OperationMissingFromPrismOperation),
+            Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
+        }
     }
 
     pub fn from_suffix_str(suffix: &str) -> Result<Self, DidSyntaxError> {

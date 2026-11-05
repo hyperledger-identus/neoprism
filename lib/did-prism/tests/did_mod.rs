@@ -11,6 +11,7 @@ use identus_did_prism::did::operation::StorageData;
 use identus_did_prism::did::{CanonicalPrismDid, DidState, LongFormPrismDid, PrismDid, PrismDidOps, StorageState};
 use identus_did_prism::proto;
 use identus_did_prism::proto::MessageExt;
+use identus_did_prism::protocol::resolver;
 
 mod test_utils;
 
@@ -141,7 +142,7 @@ fn long_form_from_operation_success() {
 }
 
 #[test]
-fn long_form_from_operation_rejects_did_above_sdk_bound() {
+fn oversized_operation_supports_canonical_did_but_rejects_long_form() {
     let mut operation = new_create_operation();
     let proto::prism::prism_operation::Operation::CreateDid(create) = operation.operation.as_mut().unwrap() else {
         unreachable!("test helper always creates a create-did operation")
@@ -150,6 +151,10 @@ fn long_form_from_operation_rejects_did_above_sdk_bound() {
         "https://example.com/{}",
         "a".repeat(identus_did_core::MAX_DID_BYTES)
     )];
+
+    let canonical = CanonicalPrismDid::from_operation(&operation).unwrap();
+    assert_eq!(canonical.suffix(), &operation.operation_hash());
+    assert!(resolver::resolve_unpublished(operation.clone()).is_ok());
 
     assert!(matches!(
         LongFormPrismDid::from_operation(&operation),
