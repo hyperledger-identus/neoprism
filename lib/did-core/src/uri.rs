@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Error, InvalidUri};
 
+/// Maximum byte length accepted by the shared SDK URI representation.
+pub const MAX_URI_BYTES: usize = identus_did::MAX_URI_BYTES;
+
 static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
 });

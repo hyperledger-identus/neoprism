@@ -31,9 +31,9 @@ identus-did-resolver-http   = { package = "identus-neoprism-did-resolver-http", 
 node-storage                = { path = "lib/node-storage" }
 # sdk-rust beta dependencies are centralized here so an immutable revision
 # refresh cannot accidentally leave workspace members on different SDK heads.
-identus-crypto                    = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03", default-features = false }
-identus-did                       = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
-identus-sdk-did-resolver-http     = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03" }
+identus-crypto                    = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "c429ac494a6eaeb2e22c0b38a5b1d70c0eb6ff62", default-features = false }
+identus-did                       = { git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "c429ac494a6eaeb2e22c0b38a5b1d70c0eb6ff62" }
+identus-sdk-did-resolver-http     = { package = "identus-did-resolver-http", git = "https://github.com/hyperledger-identus/sdk-rust.git", rev = "c429ac494a6eaeb2e22c0b38a5b1d70c0eb6ff62" }
 # general
 anyhow             = { version = "1" }
 async-trait        = { version = "0.1" }
