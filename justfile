@@ -2,6 +2,7 @@ mod e2e 'tools/just-recipes/e2e.just'
 mod tools 'tools/just-recipes/tools.just'
 mod release 'tools/just-recipes/release.just'
 mod embedded-wallet 'tools/just-recipes/embedded-wallet.just'
+mod indexer-parity 'tools/just-recipes/indexer-parity.just'
 
 # PostgreSQL configuration
 

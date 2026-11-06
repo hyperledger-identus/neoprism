@@ -42,10 +42,14 @@ stdenv.mkDerivation {
     cd tools
 
     echo "Linting Python files..."
-    ruff check compose_gen
+    ruff check compose_gen e2e_runner.py indexer_parity tests
 
     echo "Type checking Python files..."
-    pyright compose_gen
+    pyright compose_gen e2e_runner.py indexer_parity
+
+    echo "Running offline tools tests..."
+    PYTHONPATH=. python -m unittest discover -s tests -p 'test_*.py'
+    python -m unittest discover -s indexer_parity/tests
   '';
 
   installPhase = "touch $out";
