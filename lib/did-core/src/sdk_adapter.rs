@@ -63,8 +63,7 @@ pub fn resolution_options_from_sdk(
 pub fn did_document_to_sdk(value: &DidDocument) -> Result<identus_did::DidDocument, SdkProjectionError> {
     let mut wire = to_wire_value(value)?;
     normalize_legacy_document(&mut wire);
-    let wire = serde_json::to_vec(&wire).map_err(|_| SdkProjectionError::EncodeNeoPrism)?;
-    identus_did::DidDocument::from_json_slice(&wire).map_err(|_| SdkProjectionError::InvalidSdkDidDocument)
+    serde_json::from_value(wire).map_err(|_| SdkProjectionError::InvalidSdkDidDocument)
 }
 
 /// Validate and project a NeoPRISM resolution result into the generic SDK model.
@@ -75,8 +74,7 @@ pub fn resolution_result_to_sdk(
     if let Some(document) = wire.get_mut("didDocument") {
         normalize_legacy_document(document);
     }
-    let wire = serde_json::to_vec(&wire).map_err(|_| SdkProjectionError::EncodeNeoPrism)?;
-    identus_did::DidResolutionResult::from_json_slice(&wire).map_err(|_| SdkProjectionError::InvalidSdkResolutionResult)
+    serde_json::from_value(wire).map_err(|_| SdkProjectionError::InvalidSdkResolutionResult)
 }
 
 /// Present an existing NeoPRISM resolver through the generic sdk-rust port.
