@@ -52,4 +52,4 @@ jobs:
       - name: Run test suite
         working-directory: ./tests/prism-test
         run:
-          nix develop .#prism-test --command sbt test
+          nix develop .#prism-test --command sbt "clean;Test / testOnly *"
