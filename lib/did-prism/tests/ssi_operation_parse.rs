@@ -267,6 +267,44 @@ fn create_did_parse_duplicate_context() {
 }
 
 #[test]
+fn create_did_parse_rejects_too_many_contexts() {
+    let param = v1_params();
+    let proto = proto::prism_ssi::ProtoCreateDID {
+        did_data: Some(proto::prism_ssi::proto_create_did::DIDCreationData {
+            public_keys: vec![master_key_proto("master-0")],
+            services: vec![],
+            context: (0..=param.max_contexts)
+                .map(|index| format!("https://example.com/context/{index}"))
+                .collect(),
+            special_fields: Default::default(),
+        })
+        .into(),
+        special_fields: Default::default(),
+    };
+
+    let err = CreateDidOperation::parse(&param, &proto).unwrap_err();
+    assert!(matches!(err, CreateDidOperationError::TooManyContexts { .. }));
+}
+
+#[test]
+fn create_did_parse_rejects_invalid_context() {
+    let param = v1_params();
+    let proto = proto::prism_ssi::ProtoCreateDID {
+        did_data: Some(proto::prism_ssi::proto_create_did::DIDCreationData {
+            public_keys: vec![master_key_proto("master-0")],
+            services: vec![],
+            context: vec!["not a uri".to_owned()],
+            special_fields: Default::default(),
+        })
+        .into(),
+        special_fields: Default::default(),
+    };
+
+    let err = CreateDidOperation::parse(&param, &proto).unwrap_err();
+    assert!(matches!(err, CreateDidOperationError::InvalidContext { .. }));
+}
+
+#[test]
 fn create_did_parse_success_with_services_and_context() {
     let param = v1_params();
     let proto = proto::prism_ssi::ProtoCreateDID {
@@ -664,6 +702,52 @@ fn update_did_parse_patch_context_duplicate() {
     let UpdateDidOperationError::DuplicateContext = err else {
         panic!("expected DuplicateContext error, got: {err:?}");
     };
+}
+
+#[test]
+fn update_did_parse_patch_context_rejects_too_many_contexts() {
+    let param = v1_params();
+    let proto = proto::prism_ssi::ProtoUpdateDID {
+        previous_operation_hash: valid_prev_op_hash(),
+        id: valid_did_suffix(),
+        actions: vec![proto::prism_ssi::UpdateDIDAction {
+            action: Some(proto::prism_ssi::update_didaction::Action::PatchContext(
+                proto::prism_ssi::PatchContextAction {
+                    context: (0..=param.max_contexts)
+                        .map(|index| format!("https://example.com/context/{index}"))
+                        .collect(),
+                    special_fields: Default::default(),
+                },
+            )),
+            special_fields: Default::default(),
+        }],
+        special_fields: Default::default(),
+    };
+
+    let err = UpdateDidOperation::parse(&param, &proto).unwrap_err();
+    assert!(matches!(err, UpdateDidOperationError::TooManyContexts { .. }));
+}
+
+#[test]
+fn update_did_parse_patch_context_rejects_invalid_context() {
+    let param = v1_params();
+    let proto = proto::prism_ssi::ProtoUpdateDID {
+        previous_operation_hash: valid_prev_op_hash(),
+        id: valid_did_suffix(),
+        actions: vec![proto::prism_ssi::UpdateDIDAction {
+            action: Some(proto::prism_ssi::update_didaction::Action::PatchContext(
+                proto::prism_ssi::PatchContextAction {
+                    context: vec!["not a uri".to_owned()],
+                    special_fields: Default::default(),
+                },
+            )),
+            special_fields: Default::default(),
+        }],
+        special_fields: Default::default(),
+    };
+
+    let err = UpdateDidOperation::parse(&param, &proto).unwrap_err();
+    assert!(matches!(err, UpdateDidOperationError::InvalidContext { .. }));
 }
 
 #[test]
@@ -1529,6 +1613,17 @@ fn non_op_public_key_parse_ed25519_bad_data() {
 
     let result = NonOperationPublicKey::parse(&key_data);
     assert!(result.is_err());
+}
+
+#[test]
+fn non_op_public_key_rejects_ed25519_trailing_bytes() {
+    let key_data = proto::prism_ssi::public_key::Key_data::CompressedEcKeyData(proto::prism_ssi::CompressedECKeyData {
+        curve: "Ed25519".to_string(),
+        data: vec![42u8; 33],
+        special_fields: Default::default(),
+    });
+
+    assert!(NonOperationPublicKey::parse(&key_data).is_err());
 }
 
 #[test]

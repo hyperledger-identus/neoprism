@@ -321,6 +321,6 @@ fn prism_object_hex_str_from_into() {
 #[test]
 fn operation_id_from_sha256_digest() {
     let digest = Sha256Digest::from_bytes(&[0xff; 32]).unwrap();
-    let op_id: OperationId = digest.clone().into();
+    let op_id: OperationId = digest.into();
     assert_eq!(op_id.as_bytes(), digest.as_bytes());
 }

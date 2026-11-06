@@ -13,6 +13,8 @@ use regex::Regex;
 
 use self::operation::{PublicKey, Service};
 use crate::did::operation::StorageData;
+use crate::error::InvalidInputSizeError;
+use crate::location;
 use crate::prelude::*;
 use crate::proto::node_api;
 use crate::proto::prism::PrismOperation;
@@ -97,7 +99,13 @@ impl PrismDidOps for LongFormPrismDid {
 
 impl CanonicalPrismDid {
     pub fn from_operation(operation: &PrismOperation) -> Result<Self, Error> {
-        Ok(LongFormPrismDid::from_operation(operation)?.into_canonical())
+        match operation.operation {
+            Some(Operation::CreateDid(_)) => Ok(Self {
+                suffix: operation.operation_hash(),
+            }),
+            None => Err(Error::OperationMissingFromPrismOperation),
+            Some(_) => Err(Error::LongFormDidNotFromCreateOperation),
+        }
     }
 
     pub fn from_suffix_str(suffix: &str) -> Result<Self, DidSyntaxError> {
@@ -122,6 +130,17 @@ impl LongFormPrismDid {
                 let bytes = operation.encode_to_vec();
                 let suffix = operation.operation_hash();
                 let encoded_state = Base64UrlStrNoPad::from(bytes);
+                let did_size = "did:prism:".len() + 64 + 1 + encoded_state.to_string().len();
+                if did_size > identus_did_core::MAX_DID_BYTES {
+                    return Err(Error::LongFormDidTooLong {
+                        source: InvalidInputSizeError::TooBig {
+                            limit: identus_did_core::MAX_DID_BYTES,
+                            actual: did_size,
+                            type_name: std::any::type_name::<Self>(),
+                            location: location!(),
+                        },
+                    });
+                }
                 Ok(Self { suffix, encoded_state })
             }
             None => Err(Error::OperationMissingFromPrismOperation),

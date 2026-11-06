@@ -36,6 +36,12 @@ fn parse_did_fail() {
 }
 
 #[test]
+fn parse_did_enforces_sdk_bound() {
+    let oversized = format!("did:example:{}", "a".repeat(identus_did::MAX_DID_BYTES));
+    assert!(Did::from_str(&oversized).is_err());
+}
+
+#[test]
 fn parse_did_url() {
     let did: DidUrl = "did:example:abcdefghi".parse().unwrap();
     assert_eq!(did.to_string(), "did:example:abcdefghi");
@@ -47,6 +53,12 @@ fn parse_did_url() {
         did.to_string(),
         "did:prism:9bf36a6dd4090ad66e359a0c041e25662c3f84c00467e9a61eeba68477c8a595"
     );
+}
+
+#[test]
+fn parse_did_url_enforces_sdk_bound() {
+    let oversized = format!("did:example:{}", "a".repeat(identus_did::MAX_DID_URL_BYTES));
+    assert!(DidUrl::from_str(&oversized).is_err());
 }
 
 #[test]

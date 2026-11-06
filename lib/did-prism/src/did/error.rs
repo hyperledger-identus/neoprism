@@ -10,6 +10,8 @@ pub enum Error {
     LongFormDidNotFromCreateOperation,
     #[display("operation missing from prism-operation")]
     OperationMissingFromPrismOperation,
+    #[display("long-form DID exceeds the shared SDK size limit")]
+    LongFormDidTooLong { source: InvalidInputSizeError },
     #[from]
     #[display("invalid DID syntax")]
     InvalidDidSyntax { source: DidSyntaxError },
@@ -82,6 +84,10 @@ pub enum CreateDidOperationError {
     TooManyServices { source: InvalidInputSizeError },
     #[display("duplicate context found in create-did-operation")]
     DuplicateContext,
+    #[display("invalid context {context} found in create-did-operation")]
+    InvalidContext { context: String },
+    #[display("invalid input size for contexts")]
+    TooManyContexts { source: InvalidInputSizeError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]
@@ -107,6 +113,10 @@ pub enum UpdateDidOperationError {
     InvalidService { source: ServiceError },
     #[display("duplicate context found in update-did-operation")]
     DuplicateContext,
+    #[display("invalid context {context} found in update-did-operation")]
+    InvalidContext { context: String },
+    #[display("invalid input size for contexts")]
+    TooManyContexts { source: InvalidInputSizeError },
 }
 
 #[derive(Debug, derive_more::From, derive_more::Display, derive_more::Error)]

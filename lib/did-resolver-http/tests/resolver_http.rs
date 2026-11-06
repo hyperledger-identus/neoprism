@@ -8,7 +8,7 @@ use identus_did_core::{
     Did, DidDocument, DidDocumentMetadata, DidResolutionError, DidResolutionErrorCode, DidResolutionMetadata,
     DidResolver, ResolutionResult,
 };
-use identus_did_resolver_http::{DidResolverStateDyn, did_resolver_http_binding};
+use identus_neoprism_did_resolver_http::{DidResolverStateDyn, did_resolver_http_binding};
 use tower::ServiceExt;
 
 // ---------------------------------------------------------------------------
@@ -253,6 +253,34 @@ async fn resolve_success_default_accept_returns_application_did() {
     // Body should be the DID document (not the full resolution result)
     assert!(json.get("@context").is_some());
     assert_eq!(json["id"], "did:example:123");
+}
+
+#[tokio::test]
+async fn resolve_rejects_unknown_query_options_instead_of_ignoring_them() {
+    let app = make_app(MockResolver::success());
+    let (status, content_type, body) = send_request_raw(app, "/did/did%3Aexample%3A123?_=123", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(
+        json["didResolutionMetadata"]["error"]["type"],
+        "https://www.w3.org/ns/did#INVALID_OPTIONS"
+    );
+}
+
+#[tokio::test]
+async fn resolve_rejects_version_queries_until_neoprism_can_honor_them() {
+    let app = make_app(MockResolver::success());
+    let (status, content_type, body) = send_request_raw(app, "/did/did%3Aexample%3A123?versionId=42", None).await;
+
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(content_type, "application/did-resolution");
+    let json: serde_json::Value = serde_json::from_str(&body).unwrap();
+    assert_eq!(
+        json["didResolutionMetadata"]["error"]["type"],
+        "https://www.w3.org/ns/did#INVALID_OPTIONS"
+    );
 }
 
 #[tokio::test]
@@ -510,7 +538,7 @@ async fn binding_creates_functional_router() {
     // Verify the binding creates a router that can handle requests
     let binding = did_resolver_http_binding("/resolve/{did}", Default::default());
     let state = DidResolverStateDyn {
-        resolver: Arc::new(MockResolver::success()),
+        resolver: Arc::new(MockResolver::echo()),
     };
     let app = binding.router.with_state(state);
 
@@ -552,11 +580,13 @@ async fn deactivated_result_has_null_did_document() {
 // ---------------------------------------------------------------------------
 
 #[tokio::test]
-async fn resolve_unsupported_public_key_type_returns_not_implemented() {
+async fn resolve_unsupported_public_key_type_uses_sdk_extension_error_policy() {
     let app = make_app(MockResolver::unsupported_public_key_type());
     let (status, content_type, body) = send_request(app, "did:example:unsupported", None).await;
 
-    assert_eq!(status, StatusCode::NOT_IMPLEMENTED);
+    // sdk-rust retains the extension error URI but maps unknown error kinds to
+    // the safe catch-all status instead of assigning transport semantics.
+    assert_eq!(status, StatusCode::INTERNAL_SERVER_ERROR);
     assert_eq!(content_type, "application/did-resolution");
     let json: serde_json::Value = serde_json::from_str(&body).unwrap();
     let error = &json["didResolutionMetadata"]["error"];

@@ -55,15 +55,22 @@ fn from_slice_too_short_returns_invalid_key_size() {
 }
 
 #[test]
-fn from_slice_ignores_trailing_bytes() {
-    // Pins current behavior: from_slice reads the first 32 bytes and silently
-    // ignores anything after them.
+fn from_slice_rejects_trailing_bytes() {
+    // sdk-rust requires the exact public-key width instead of silently
+    // accepting an ambiguous prefix.
     let signing = sample_signing_key();
     let mut bytes = signing.verifying_key().as_bytes().to_vec();
     bytes.extend_from_slice(&[0xFF; 8]);
 
-    let pk = Ed25519PublicKey::from_slice(&bytes).unwrap();
-    assert_eq!(pk, sample_public_key());
+    let err = Ed25519PublicKey::from_slice(&bytes).unwrap_err();
+    assert!(matches!(
+        err,
+        Error::InvalidKeySize {
+            expected: 32,
+            actual: 40,
+            ..
+        }
+    ));
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +192,7 @@ fn encode_jwk_x_matches_encode_array() {
 // ---------------------------------------------------------------------------
 
 #[test]
+#[allow(clippy::clone_on_copy)] // This compatibility test intentionally exercises Clone.
 fn public_key_clone_is_equal() {
     let pk = sample_public_key();
     let clone = pk.clone();

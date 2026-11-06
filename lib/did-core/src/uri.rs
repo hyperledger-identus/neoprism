@@ -6,6 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{Error, InvalidUri};
 
+/// Maximum byte length accepted by the shared SDK URI representation.
+pub const MAX_URI_BYTES: usize = identus_did::MAX_URI_BYTES;
+
 static URI_FRAGMENT_RE: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"^([A-Za-z0-9\-._~!$&'()*+,;=:@/?]|%[0-9A-Fa-f]{2})*$").expect("URI regex is invalid")
 });
@@ -51,8 +54,7 @@ impl FromStr for Uri {
 /// assert_eq!(is_uri("hello world"), false);
 /// ```
 pub fn is_uri(s: &str) -> bool {
-    let parsed = uriparse::URI::try_from(s);
-    parsed.is_ok()
+    identus_did::Uri::parse(s).is_ok()
 }
 
 /// Check if the given string is a valid URI fragment.
@@ -99,5 +101,16 @@ mod tests {
         } else {
             panic!("Expected InvalidUri error");
         }
+    }
+
+    #[test]
+    fn sdk_uri_policy_rejects_multiple_fragments() {
+        assert!(!is_uri("https://example.com/path#first#second"));
+    }
+
+    #[test]
+    fn test_uri_from_str_enforces_sdk_bound() {
+        let oversized = format!("urn:{}", "a".repeat(identus_did::MAX_URI_BYTES));
+        assert!(Uri::from_str(&oversized).is_err());
     }
 }

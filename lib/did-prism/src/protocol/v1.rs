@@ -89,7 +89,7 @@ impl OperationProcessorOps for V1Processor {
         // clone and mutate candidate state
         let mut candidate_state = state.clone();
         candidate_state.with_context(parsed_operation.context);
-        candidate_state.with_last_operation_hash(state.did.suffix.clone());
+        candidate_state.with_last_operation_hash(state.did.suffix);
         for pk in parsed_operation.public_keys {
             candidate_state.add_public_key(pk, &metadata)?;
         }

@@ -83,7 +83,7 @@ struct StorageStateRc {
 
 impl DidStateRc {
     fn new(did: CanonicalPrismDid, is_published: bool) -> Self {
-        let last_operation_hash = did.suffix.clone();
+        let last_operation_hash = did.suffix;
         Self {
             did: Rc::new(did),
             is_published,
@@ -199,15 +199,15 @@ impl DidStateRc {
     ) -> Result<(), DidStateConflictError> {
         if self.storage.contains_key(operation_hash) {
             return Err(DidStateConflictError::AddStorageEntryWithExistingHash {
-                initial_hash: operation_hash.clone(),
+                initial_hash: *operation_hash,
             });
         }
 
         let updated_map = self.storage.update(
-            operation_hash.clone(),
+            *operation_hash,
             Revocable::new(
                 StorageStateRc {
-                    prev_operation_hash: operation_hash.clone().into(),
+                    prev_operation_hash: (*operation_hash).into(),
                     data: data.into(),
                 },
                 added_at,
@@ -229,18 +229,18 @@ impl DidStateRc {
             .find_map(|(_, s)| Some(s).filter(|v| v.get().prev_operation_hash.deref() == prev_operation_hash))
         else {
             Err(DidStateConflictError::RevokeStorageEntryNotExists {
-                previous_operation_hash: prev_operation_hash.clone(),
+                previous_operation_hash: *prev_operation_hash,
             })?
         };
 
         if storage.is_revoked() {
             Err(DidStateConflictError::RevokeStorageEntryAlreadyRevoked {
-                previous_operation_hash: prev_operation_hash.clone(),
+                previous_operation_hash: *prev_operation_hash,
             })?
         }
 
         storage.revoke(revoke_at);
-        storage.get_mut().prev_operation_hash = operation_hash.clone().into();
+        storage.get_mut().prev_operation_hash = (*operation_hash).into();
         Ok(())
     }
 
@@ -256,18 +256,18 @@ impl DidStateRc {
             .find_map(|(_, s)| Some(s).filter(|v| v.get().prev_operation_hash.deref() == prev_operation_hash))
         else {
             Err(DidStateConflictError::UpdateStorageEntryNotExists {
-                prev_operation_hash: prev_operation_hash.clone(),
+                prev_operation_hash: *prev_operation_hash,
             })?
         };
 
         if storage.is_revoked() {
             Err(DidStateConflictError::UpdateStorageEntryAlreadyRevoked {
-                prev_operation_hash: prev_operation_hash.clone(),
+                prev_operation_hash: *prev_operation_hash,
             })?
         }
 
         let storage_inner = storage.get_mut();
-        storage_inner.prev_operation_hash = operation_hash.clone().into();
+        storage_inner.prev_operation_hash = (*operation_hash).into();
         storage_inner.data = data.into();
         Ok(())
     }
