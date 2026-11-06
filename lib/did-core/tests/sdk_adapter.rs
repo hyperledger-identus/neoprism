@@ -203,6 +203,40 @@ fn validates_active_document_and_resolution_result_with_sdk() {
 }
 
 #[test]
+fn projects_valid_generated_output_above_sdk_ingress_byte_limits() {
+    let mut document = sample_document();
+    let template = document.verification_method[0].clone();
+    document.verification_method.extend((3..50).map(|index| {
+        let mut method = template.clone();
+        method.id = format!("did:prism:1234#key-{index}-{}", "a".repeat(12_000));
+        method
+    }));
+
+    let document_wire = serde_json::to_vec(&document).unwrap();
+    assert!(document_wire.len() > identus_did::MAX_DID_DOCUMENT_BYTES);
+    assert!(identus_did::DidDocument::from_json_slice(&document_wire).is_err());
+
+    let projected_document = did_document_to_sdk(&document).unwrap();
+    assert_eq!(projected_document.verification_methods().unwrap().len(), 50);
+
+    let result = ResolutionResult::success(document);
+    let result_wire = serde_json::to_vec(&result).unwrap();
+    assert!(result_wire.len() > identus_did::MAX_DID_RESOLUTION_RESULT_BYTES);
+    assert!(identus_did::DidResolutionResult::from_json_slice(&result_wire).is_err());
+
+    let projected_result = resolution_result_to_sdk(&result).unwrap();
+    assert_eq!(
+        projected_result
+            .document()
+            .unwrap()
+            .verification_methods()
+            .unwrap()
+            .len(),
+        50
+    );
+}
+
+#[test]
 fn validates_deactivated_and_error_results_with_sdk() {
     let deactivated = resolution_result_to_sdk(&ResolutionResult::deactivated()).unwrap();
     assert_eq!(deactivated.document_metadata().deactivated(), Some(true));
