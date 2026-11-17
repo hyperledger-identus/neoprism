@@ -14,10 +14,13 @@ mod identity;
 mod keys;
 pub(in crate::http) mod models;
 mod operations;
+mod vdr;
 mod views;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod vdr_tests;
 
 pub fn router() -> Router<IndexerUiState> {
     Router::new().route(urls::Resolver::AXUM_PATH, get(index))
