@@ -293,6 +293,33 @@ body.prism {
 .prism-vdr pre { min-width: 0; max-width: 100%; margin: 12px 0; padding: 16px; border-radius: 12px; background: var(--prism-code); color: var(--prism-ink); font: 400 13px/21px "JetBrains Mono", monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
 .prism-vdr-raw-actions { display: flex; min-width: 0; }
 
+/* Resolver contexts and service endpoint inspection (#374). */
+.prism-contexts, .prism-services { min-width: 0; padding: 20px; }
+.prism-contexts > p, .prism-services > p { margin-top: 8px; }
+.prism-contexts details, .prism-services details { min-width: 0; }
+.prism-contexts summary, .prism-services summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; cursor: pointer; list-style: none; }
+.prism-contexts summary::-webkit-details-marker, .prism-services summary::-webkit-details-marker { display: none; }
+.prism-contexts details[open] > summary .prism-disclosure-icon svg, .prism-services details[open] > summary .prism-disclosure-icon svg { transform: rotate(180deg); }
+.prism-contexts summary:hover .prism-disclosure-icon, .prism-services summary:hover .prism-disclosure-icon { background: #eff0f8; }
+.prism-context-list { margin: 16px 0 0; padding-left: 24px; list-style: decimal; }
+.prism-context-list li + li { margin-top: 16px; }
+.prism-context-list li::marker { color: var(--prism-secondary); font-variant-numeric: tabular-nums; }
+.prism-context-value { display: flex; align-items: start; gap: 12px; min-width: 0; }
+.prism-context-value code { flex: 1; min-width: 0; align-self: center; font-size: 13px; line-height: 21px; overflow-wrap: anywhere; }
+.prism-context-value .prism-copy, .prism-service-code > .prism-copy { flex: none; width: 48px; min-height: 48px; padding: 12px; }
+.prism-service { border-bottom: 1px solid var(--prism-line); padding: 8px 0; }
+.prism-service:last-child { border-bottom: 0; padding-bottom: 0; }
+.prism-service-label { display: grid; gap: 4px; min-width: 0; padding: 8px 0; }
+.prism-service-label code { overflow-wrap: anywhere; }
+.prism-service-label > .prism-muted { font-size: 13px; line-height: 21px; }
+.prism-service-fields { min-width: 0; margin: 16px 0; }
+.prism-services pre { min-width: 0; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; line-height: 21px; }
+.prism-services .prism-data-field pre { flex: 1; align-self: center; }
+.prism-service-representation { border-top: 1px solid var(--prism-line); }
+.prism-service-representation > p { margin: 0 0 16px; color: var(--prism-secondary); }
+.prism-service-code { display: flex; align-items: start; gap: 12px; padding: 16px; margin-bottom: 16px; border-radius: 12px; background: var(--prism-code); min-width: 0; }
+.prism-service-code > pre { flex: 1; }
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }

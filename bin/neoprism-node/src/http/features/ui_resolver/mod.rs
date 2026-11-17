@@ -7,6 +7,7 @@ use models::DidQuery;
 use crate::IndexerUiState;
 use crate::http::urls;
 
+mod contexts_services;
 mod evidence;
 mod identity;
 mod keys;

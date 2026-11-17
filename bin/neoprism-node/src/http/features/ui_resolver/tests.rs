@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use identus_did_prism::did::operation::{OperationParameters, PublicKey};
+use identus_did_prism::did::operation::{OperationParameters, PublicKey, Service};
 use identus_did_prism::did::{DidState, PrismDid};
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
 use identus_did_prism::prelude::SignedPrismOperation;
@@ -95,6 +95,115 @@ fn curve_keys() -> Vec<PublicKey> {
     ]
 }
 
+fn detail_services() -> Vec<Service> {
+    [
+        ("messaging", "DIDCommMessaging", "https://example.test/didcomm?x=1&y=2"),
+        ("profile", r#"["LinkedDomains","Profile"]"#, r#"{ "z": {"accept": ["application/json",null,7,true]}, "a": "<profile>" }"#),
+        ("mirrors", r#"["LinkedDomains"]"#, r#"[ "https://example.test/one", { "uri": "https://example.test/two", "nested": {"empty": [], "object": {}} } ]"#),
+    ]
+    .into_iter()
+    .map(|(id, ty, endpoint)| Service::parse(&prism_ssi::Service {
+        id: id.into(), type_: ty.into(), service_endpoint: endpoint.into(), ..Default::default()
+    }, &OperationParameters::v1()).unwrap())
+    .collect()
+}
+
+#[test]
+fn services_expose_complete_types_and_uri_object_array_shapes_inline() {
+    let (did, mut state) = local_identity();
+    state.services = detail_services();
+    let body = views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string();
+    let services = body.split("id=\"services\"").nth(1).expect("services section");
+    let services = services.split("</section>").next().unwrap();
+    for expected in [
+        "Services · 3",
+        "<details",
+        "<summary",
+        "Service messaging",
+        "Service profile",
+        "Service mirrors",
+        "Single type",
+        "Multiple types · 2",
+        "Multiple types · 1",
+        "DIDCommMessaging",
+        "LinkedDomains",
+        "Profile",
+        "URI endpoint",
+        "Object endpoint",
+        "Array endpoints · 2",
+        "application/json",
+        "null",
+        "true",
+        "7",
+        "&lt;profile&gt;",
+        "https://example.test/one",
+        "https://example.test/two",
+        "empty",
+        "[]",
+        "{}",
+        "Readable service JSON",
+        "serviceEndpoint",
+    ] {
+        assert!(services.contains(expected), "missing {expected}");
+    }
+    assert!(services.find("Service messaging").unwrap() < services.find("Service profile").unwrap());
+    assert!(services.find("Service profile").unwrap() < services.find("Service mirrors").unwrap());
+}
+
+#[test]
+fn service_captured_fields_keep_spacing_order_and_exact_raw_typed_representation() {
+    let (did, mut state) = local_identity();
+    state.services = detail_services();
+    let body = views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string();
+    for expected in [
+        "Captured service representation",
+        "Captured Type",
+        "Captured Endpoint",
+        "Raw typed representation",
+        "Authored wire formatting is not available",
+        "Copy service profile captured endpoint",
+        r#"data-copy-value="{ &quot;z&quot;: {&quot;accept&quot;: [&quot;application/json&quot;,null,7,true]}, &quot;a&quot;: &quot;&lt;profile&gt;&quot; }""#,
+        r#"data-copy-value="[ &quot;https://example.test/one&quot;, { &quot;uri&quot;: &quot;https://example.test/two&quot;, &quot;nested&quot;: {&quot;empty&quot;: [], &quot;object&quot;: {}} } ]""#,
+        "Copy service messaging raw typed representation",
+        "ServiceId(&quot;messaging&quot;)",
+        "ServiceTypeValue(&quot;DIDCommMessaging&quot;)",
+    ] {
+        assert!(body.contains(expected), "missing {expected}");
+    }
+    assert!(!body.contains("Original authored JSON"));
+}
+
+#[test]
+fn empty_contexts_and_services_are_explicit_without_empty_disclosures() {
+    let body = views::resolve(None, LONG_FORM, Ok(local_identity()), vec![]).into_string();
+    for (id, message) in [("contexts", "No contexts"), ("services", "No services")] {
+        let section = body.split(&format!("id=\"{id}\"")).nth(1).expect("section");
+        let section = section.split("</section>").next().unwrap();
+        assert!(section.contains(message));
+        assert!(!section.contains("<details"));
+        assert!(!section.contains("data-copy-value"));
+    }
+}
+
+#[test]
+fn contexts_keep_supplied_order_exact_copy_values_and_native_disclosure() {
+    let (did, mut state) = local_identity();
+    state.context = vec![
+        "https://example.test/z?first=1&second=2".into(),
+        "https://example.test/a".into(),
+    ];
+    let body = views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string();
+    let contexts = body.split("id=\"contexts\"").nth(1).expect("contexts section");
+    let contexts = contexts.split("</section>").next().unwrap();
+    assert!(contexts.contains("<details"));
+    assert!(contexts.contains("<summary"));
+    assert!(contexts.contains("Contexts · 2"));
+    assert!(contexts.contains("<ol"));
+    assert!(contexts.find("https://example.test/z").unwrap() < contexts.find("https://example.test/a").unwrap());
+    assert!(contexts.contains("data-copy-value=\"https://example.test/z?first=1&amp;second=2\""));
+    assert!(contexts.contains("aria-label=\"Copy context 1\""));
+}
+
 #[test]
 fn key_disclosures_preserve_sorted_ids_usage_and_complete_curve_coordinates() {
     let (did, mut state) = local_identity();
@@ -169,6 +278,35 @@ fn export_identity_browser_fixtures() {
         let (did, mut state) = local_identity();
         state.is_published = published;
         state.public_keys = if empty { vec![] } else { curve_keys() };
+        if !empty {
+            state.context = vec![
+                "https://example.test/z?first=1&second=2".into(),
+                format!("https://example.test/a/{}", "long-context-".repeat(80)),
+            ];
+            state.services = detail_services();
+            state.services.push(
+                Service::parse(
+                    &prism_ssi::Service {
+                        id: "long-service-identifier-01234567890123456789012345".into(),
+                        type_: "LinkedDomains".into(),
+                        service_endpoint: format!("https://example.test/{}?x=1&y=2", "long-path-".repeat(25)),
+                        ..Default::default()
+                    },
+                    &OperationParameters::v1(),
+                )
+                .unwrap(),
+            );
+            let raw = state
+                .services
+                .iter()
+                .map(|service| format!("{service:?}"))
+                .collect::<Vec<_>>();
+            std::fs::write(
+                std::path::Path::new(&dir).join("services-raw.json"),
+                serde_json::to_string(&raw).unwrap(),
+            )
+            .unwrap();
+        }
         let history = if published { evidence_history() } else { vec![] };
         let body = views::resolve(None, LONG_FORM, Ok((did, state)), history).into_string();
         std::fs::write(std::path::Path::new(&dir).join(format!("{name}.html")), body).unwrap();
