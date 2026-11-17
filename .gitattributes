@@ -4,6 +4,7 @@
 # Scripts -- must be LF (executed in Docker/Linux)
 *.sh text eol=lf
 *.bash text eol=lf
+*.cmd text eol=crlf
 
 # Data/config
 *.sql text eol=lf

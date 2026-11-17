@@ -12,3 +12,7 @@ artifacts/indexer-parity/
 
 # bv (beads viewer) local config and caches
 .bv/
+
+# impeccable skill engine binary (downloaded per-platform by the launcher,
+# verified against .pi/skills/impeccable/scripts/engine-checksums.txt)
+.pi/skills/impeccable/scripts/bin/
