@@ -136,6 +136,31 @@ body.prism {
 .prism-format { display: block; align-self: stretch; padding: 16px; border-radius: 12px; background: var(--prism-code); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
 .prism-entry .prism-entry-note { align-self: stretch; padding-top: 16px; border-top: 1px solid var(--prism-line); }
 
+/* Explorer: source-reported cursor evidence (#379). */
+.prism-sync { min-width: 0; padding: 20px; margin-bottom: 24px; }
+.prism-sync-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.prism-sync-heading h2 { font-size: 18px; line-height: 27px; font-weight: 600; }
+.prism-sync-status { padding: 8px 12px; border-radius: 8px; background: var(--prism-code); color: var(--prism-secondary); font-size: 12px; }
+.prism-sync-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; margin: 16px 0; }
+.prism-sync dt { color: var(--prism-secondary); }
+.prism-sync dd { margin: 6px 0 0; overflow-wrap: anywhere; }
+.prism-sync-slot { font: 400 22px/1.5 "JetBrains Mono", monospace; font-variant-numeric: tabular-nums; }
+.prism-sync-receipt, .prism-sync-distance, .prism-sync-explanation { color: var(--prism-secondary); }
+.prism-sync .prism-sync-receipt { margin-top: 16px; }
+.prism-sync .prism-sync-distance { margin-top: 16px; }
+.prism-sync-details { margin-top: 16px; }
+.prism-sync-details > summary { min-height: 48px; padding: 12px; border: 1px solid var(--prism-line); border-radius: 12px; color: var(--prism-hover); cursor: pointer; }
+.prism-sync-raw { margin: 16px 0; }
+.prism-sync-raw > div { margin-top: 12px; }
+.prism-sync-raw dd { display: flex; align-items: start; gap: 12px; }
+.prism-sync-value { min-width: 0; flex: 1; }
+.prism-sync-raw code { font-size: 14px; line-height: 21px; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.prism-sync .prism-copy { flex: none; min-width: 48px; min-height: 48px; border: 1px solid var(--prism-line); border-radius: 12px; color: var(--prism-hover); background: transparent; cursor: pointer; }
+.prism-sync .prism-copy:hover { background: var(--prism-code); }
+@media (max-width: 600px) {
+  .prism-sync-summary { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
