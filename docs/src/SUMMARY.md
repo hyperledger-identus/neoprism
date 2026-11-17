@@ -22,6 +22,7 @@
 - [PRISM specification tests](./prism-test/README.md)
 - [Live indexer parity test](./indexer-parity/README.md)
 - [Release process](./references/release-process.md)
+- [TLS dependency remediation](./references/tls-dependency-remediation.md)
 
 # Reference
 
