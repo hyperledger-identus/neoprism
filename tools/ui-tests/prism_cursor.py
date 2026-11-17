@@ -16,11 +16,13 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from clipboard_permissions import grant_clipboard_permissions
+
 ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = Path(os.environ["PRISM_CURSOR_FIXTURES"])
 PORT = int(os.environ.get("PRISM_CURSOR_PORT", "18779"))
 BASE = f"http://127.0.0.1:{PORT}"
-SESSION = (
+SESSION = os.environ.get("PRISM_TEST_SESSION") or (
     "prism-379-"
     + subprocess.check_output(
         ["agent-browser", "session", "id", "--scope", "worktree"], text=True
@@ -263,10 +265,6 @@ class CursorBrowser(unittest.TestCase):
             evaluate("document.querySelector('.prism-sync-explanation').textContent"),
         )
 
-    @unittest.skipUnless(
-        (ROOT / "bin/neoprism-node/ui-assets/copy.js").is_file(),
-        "#378 shared copy integration is not available",
-    )
     def test_shared_copy_preserves_complete_values_and_offers_manual_fallback(
         self,
     ) -> None:
@@ -275,6 +273,7 @@ class CursorBrowser(unittest.TestCase):
         browser("open")
         browser("network", "route", "*htmx*", "--abort", "--resource-type", "script")
         try:
+            self.enterContext(grant_clipboard_permissions(browser, BASE))
             for fixture, values in (
                 ("supplied", ["1042816", "ab" * 32, "2026-11-17T14:51:00.123456789Z"]),
                 ("long", ["18446744073709551615", "ab" * 512]),
@@ -288,7 +287,11 @@ class CursorBrowser(unittest.TestCase):
                     )
                     browser("focus", selector)
                     browser("press", "Enter")
+                    browser("wait", "--text", "Copied to clipboard.")
                     self.assertEqual(browser("clipboard", "read")["text"], expected)
+                    evaluate(
+                        "document.querySelector('.prism-copy-status').textContent = ''"
+                    )
                     self.assertEqual(
                         evaluate("document.activeElement.dataset.copyValue"), expected
                     )

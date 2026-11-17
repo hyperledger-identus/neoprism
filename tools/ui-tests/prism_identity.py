@@ -13,6 +13,7 @@ import threading
 import unittest
 from pathlib import Path
 
+from clipboard_permissions import grant_clipboard_permissions
 from prism_shell import browser, evaluate
 
 FIXTURES = Path(os.environ["PRISM_FIXTURE_DIR"])
@@ -73,15 +74,10 @@ class PrismIdentity(unittest.TestCase):
                     .every(e => e.getBoundingClientRect().height >= 48)""")
                 )
 
-    @unittest.skipUnless(
-        (ROOT / "bin/neoprism-node/ui-assets/copy.js").exists(),
-        "shared copying awaits integration of #378",
-    )
     def test_copy_success_preserves_complete_did_coordinate_and_evidence(self) -> None:
+        self.enterContext(grant_clipboard_permissions(browser, URL))
         evaluate("""document.querySelectorAll('main details')
-            .forEach(e => e.open = true);
-            Object.defineProperty(navigator, 'clipboard', {configurable:true,
-                value:{writeText: async value => {window.copied = value;}}});""")
+            .forEach(e => e.open = true);""")
         for label in (
             "Copy DID",
             "Copy key a-master X coordinate",
@@ -93,20 +89,19 @@ class PrismIdentity(unittest.TestCase):
                 expected = browser("get", "attr", selector, "data-copy-value")["value"]
                 browser("focus", selector)
                 browser("press", "Space")
-                browser("wait", "--fn", "window.copied !== undefined")
-                self.assertEqual(evaluate("window.copied"), expected)
+                browser("wait", "--text", "Copied to clipboard.")
+                self.assertEqual(browser("clipboard", "read")["text"], expected)
                 self.assertEqual(evaluate("document.activeElement.ariaLabel"), label)
                 self.assertTrue(
                     evaluate("""Array.from(document.querySelectorAll(
                     '[aria-live=polite], [role=status]'))
                     .some(e => /copied/i.test(e.textContent))""")
                 )
-                evaluate("delete window.copied")
+                # Clear feedback so the next wait observes that copy's completion.
+                evaluate(
+                    "document.querySelector('.prism-copy-status').textContent = ''"
+                )
 
-    @unittest.skipUnless(
-        (ROOT / "bin/neoprism-node/ui-assets/copy.js").exists(),
-        "shared copying awaits integration of #378",
-    )
     def test_copy_failure_announces_and_offers_exact_selectable_fallback(self) -> None:
         evaluate("""Object.defineProperty(navigator, 'clipboard', {configurable:true,
             value:{writeText: async () => {throw new Error('denied');}}});""")
@@ -136,7 +131,20 @@ class PrismIdentity(unittest.TestCase):
         self.assertFalse(
             evaluate("!!document.querySelector('[role=dialog], dialog[open]')")
         )
-        self.assertTrue(evaluate("document.documentElement.scrollWidth <= innerWidth"))
+        for width in (320, 390, 600, 800, 1440):
+            with self.subTest(width=width):
+                browser("set", "viewport", str(width), "900")
+                self.assertTrue(
+                    evaluate("document.documentElement.scrollWidth <= innerWidth")
+                )
+                self.assertTrue(
+                    evaluate("""Array.from(document.querySelectorAll(
+                    '.prism-identity-actions > *, .prism-copy-fallback textarea'))
+                    .every(e => {
+                        const r = e.getBoundingClientRect();
+                        return r.left >= 0 && r.right <= innerWidth;
+                    })""")
+                )
 
     def test_pending_resolution_retains_value_and_control_geometry(self) -> None:
         browser("set", "viewport", "1440", "1000")

@@ -4,6 +4,15 @@ Run all commands inside `nix develop`. The browser suite requires `agent-browser
 and Chromium on `PATH`; it chooses a named session scoped to the current worktree
 and closes that session afterward. It does not use production data.
 
+Clipboard integration checks also require Node 24 (provided by the dev shell).
+The harness obtains only its owned session's loopback CDP WebSocket and grants
+`clipboardReadWrite`/`clipboardSanitizedWrite` only to the fixture server origin.
+It keeps that connection open during the test: Chromium revokes these overrides
+on CDP disconnect. Closing the test connection/browser removes the permission;
+no application code or global browser configuration changes. Permission failures
+fail tests rather than skip them. Do not point these suites at a shared/user
+browser. Run native clipboard suites serially to avoid system clipboard races.
+
 ```sh
 just build-assets
 cargo test -p neoprism-node
@@ -40,6 +49,11 @@ Run the standalone copy browser fixtures:
 ```sh
 PRISM_TEST_SESSION=prism-copy-check python tools/ui-tests/prism_copy.py
 ```
+
+The replacement-content case verifies a real native write/read round trip.
+Special-character/newline exact writes and missing/denied access are tested at
+the clipboard boundary stub. Explorer's row test also uses an exact-write stub;
+identity and cursor success tests use real native clipboard write/read.
 
 Explorer checks export actual HTTP-rendered responses from deterministic SQLite
 fixtures, then serve them and built assets on an ephemeral loopback port. No
@@ -80,11 +94,31 @@ python tools/ui-tests/prism_identity.py
 
 Checks include all three key curves, full-value copy controls, native keyboard
 and no-script disclosures, stable pending controls, and expanded-content bounds
-at 320–1440 CSS pixels. Copy success/failure checks require the shared `copy.js`
-from #378; until integrated, they explicitly skip rather than duplicate it.
+at 320–1440 CSS pixels. Shared `copy.js` is required: copy tests no longer skip
+when it is absent. Success checks read native clipboard values for the complete
+DID, key coordinate, transaction ID and operation ID. Failure uses a denied-write
+boundary stub and checks the adjacent selectable fallback without moving focus,
+including the mobile column action layout.
 Rendered-HTML tests additionally cover backend publication/deactivation, all
 usage enums, real counts, and selecting one latest applied operation for evidence
 without claiming a chain tip or exposing synthetic local metadata.
+
+## Explorer cursor fixtures
+
+```sh
+export PRISM_CURSOR_FIXTURES="$(mktemp -d)"
+cargo test -p neoprism-node export_cursor_browser_fixtures
+just build-assets
+PRISM_TEST_SESSION=prism-cursor-check python tools/ui-tests/prism_cursor.py -v
+```
+
+`PRISM_CURSOR_PORT` overrides loopback port 18779. The previously deferred copy
+case must execute: it reads complete slot, hash (including 1024 characters) and
+nanosecond UTC timestamp values from the native clipboard, checks focus, and
+uses a denied-write boundary stub for exact readonly fallback bounds at 320px.
+The suite also covers native/no-script disclosures, responsive evidence bounds,
+scoped accessibility audits and observable receipt/request states. It blocks
+HTMX only during the copy case; polling interaction preservation remains #380.
 
 ## Agreed seams
 

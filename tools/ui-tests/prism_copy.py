@@ -7,6 +7,7 @@ from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from clipboard_permissions import grant_clipboard_permissions
 from prism_shell import browser, evaluate
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -98,12 +99,16 @@ class CopyContract(unittest.TestCase):
     def test_delegation_handles_replaced_content_and_real_browser_clipboard(
         self,
     ) -> None:
+        self.enterContext(
+            grant_clipboard_permissions(browser, "http://127.0.0.1:18778")
+        )
         evaluate("""document.querySelector('button').outerHTML =
           '<button type="button" class="prism-copy"' +
           ' data-copy-value="complete original" aria-label="Copy replacement">' +
           '<span>Copy replacement</span></button>'""")
         browser("click", "button span")
         browser("wait", "--text", "Copied to clipboard.")
+        self.assertEqual(browser("clipboard", "read")["text"], "complete original")
         self.assertEqual(evaluate("document.activeElement.tagName"), "BUTTON")
         self.assertIsNone(evaluate("document.querySelector('textarea')"))
 
