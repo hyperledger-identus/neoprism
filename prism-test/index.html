@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-beb0b211.js";
+            window.path_to_searchindex_js = "../searchindex-ac8c2184.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-75f9a92b.js"></script>
+        <script src="../toc-909b1515.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -180,14 +180,22 @@
 <p>All automation assumes you are inside the Nix development shell:</p>
 <pre><code class="language-bash">nix develop
 </code></pre>
-<p>From there, run every stack (PostgreSQL + SQLite, developer + CI topologies) in one go:</p>
+<p>Before creating a Compose project, the runner verifies that <code>docker</code>,
+<code>docker-compose</code>, <code>nix</code>, and <code>sbt</code> are available. A missing tool fails the
+preflight without starting containers; a tool that disappears later is recorded
+as a terminal failed receipt after scoped cleanup.</p>
+<p>From there, run every supported stack in one go:</p>
 <pre><code class="language-bash">just e2e::run
 </code></pre>
-<p><code>just e2e::run</code> performs the following loop:</p>
+<p><code>just e2e::run</code> uses a unique Compose project for each profile and performs the following loop:</p>
 <ol>
-<li>Builds and <code>docker load</code>s the NeoPRISM image (<code>just e2e::docker-publish-local</code>).</li>
-<li>Iterates through the compose stacks below, running <code>sbt test</code> for each.</li>
-<li>Executes <code>docker-compose ... down --volumes --remove-orphans</code> so no containers linger between runs.</li>
+<li>Acquires a non-blocking, per-user host lock shared by all worktrees because the generated profiles use fixed host ports and a shared Docker image tag.</li>
+<li>Runs read-only Docker, disk-space, Compose-file, and stale-network preflight checks.</li>
+<li>Builds and loads the NeoPRISM image.</li>
+<li>Iterates through the compose stacks below. The embedded-wallet profile waits, with a 120-second bound, until its deterministic test address has a spendable UTXO.</li>
+<li>Runs <code>sbt "clean;Test / testOnly *"</code> for each profile and requires a non-zero conformance test receipt.</li>
+<li>Executes <code>docker-compose ... down --volumes --remove-orphans</code> in a failure-safe cleanup path.</li>
+<li>Writes a JSON receipt and per-profile logs under <code>target/e2e-receipts/</code>.</li>
 </ol>
 <div class="table-wrapper">
 <table>
@@ -195,17 +203,34 @@
 <tr><th>Target</th><th>Backend</th><th>Compose file</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td><code>dev</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-dev.yml</code></td><td>Mirrors “developer friendly” defaults with Postgres</td></tr>
-<tr><td><code>dev-sqlite</code></td><td>SQLite</td><td><code>docker/prism-test/compose-dev-sqlite.yml</code></td><td>Fastest loop, great for laptop smoke tests</td></tr>
+<tr><td><code>sqlite-dev</code></td><td>SQLite</td><td><code>docker/prism-test/compose-sqlite-dev.yml</code></td><td>Fast laptop smoke topology</td></tr>
 <tr><td><code>ci</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci.yml</code></td><td>Heavier topology that matches the CI pipeline</td></tr>
 <tr><td><code>ci-sqlite</code></td><td>SQLite</td><td><code>docker/prism-test/compose-ci-sqlite.yml</code></td><td>Ensures the embedded backend stays compatible under CI load</td></tr>
+<tr><td><code>ci-blockfrost</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci-blockfrost.yml</code></td><td>Exercises Blockfrost indexing and submission paths</td></tr>
+<tr><td><code>ci-embedded-wallet</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci-embedded-wallet.yml</code></td><td>Exercises the embedded-wallet submission path</td></tr>
 </tbody>
 </table>
 </div>
+<p>Run one or more selected profiles with the runner directly:</p>
+<pre><code class="language-bash">python tools/e2e_runner.py --profile sqlite-dev
+python tools/e2e_runner.py --profile ci-sqlite --profile ci-embedded-wallet
+</code></pre>
+<p>Each receipt records the exact Git revision, dirty state, Docker architecture and version, loaded NeoPRISM image ID, profile durations, embedded-wallet readiness time, conformance test count, missing images at profile start, result, and cleanup result. A profile with missing images is marked <code>cold_cache</code>. Missing dependency images are pulled before service startup so the receipt reports image-pull, service-start/readiness, and conformance-test durations separately; the total profile duration still includes all phases and cleanup. CPU and RAM are intentionally non-gating until controlled runs establish a useful baseline.</p>
 <p>Need to focus on a single stack? Use <code>just e2e::up &lt;name&gt;</code> / <code>just e2e::down &lt;name&gt;</code> and run the Scala tests manually:</p>
-<pre><code class="language-bash">just e2e::up dev-sqlite
-(cd tests/prism-test &amp;&amp; sbt test)
-just e2e::down dev-sqlite
+<pre><code class="language-bash">just e2e::up sqlite-dev
+(cd tests/prism-test &amp;&amp; sbt "clean;Test / testOnly *")
+just e2e::down sqlite-dev
+</code></pre>
+<p>The manual <code>up</code> and <code>down</code> recipes retain the historical shared Compose project name. Prefer the runner for automated sessions. Full matrix sessions are deliberately serialized because the generated stacks bind fixed host ports such as <code>18080</code>.</p>
+<h2 id="preflight-and-recovery"><a class="header" href="#preflight-and-recovery">Preflight and recovery</a></h2>
+<p>The runner never removes global Docker resources automatically. It only tears down the unique project it created. If unused NeoPRISM test networks are found, preflight prints their exact names and a narrowly scoped <code>docker network rm ...</code> command without executing it.</p>
+<p>If Docker reports <code>all predefined address pools have been fully subnetted</code>, inspect the listed networks before running the suggested command. If no stale NeoPRISM networks are listed, use <code>docker network ls</code> and coordinate with the owners of other projects instead of running a global prune.</p>
+<p>The Cardano and Blockfrost test images currently target <code>linux/amd64</code>. Docker Desktop on Apple Silicon may print architecture-emulation warnings; these are expected when the services become healthy and the conformance suite passes.</p>
+<p>By default, preflight requires 10 GiB of free host disk space for the cold-cache matrix. Override this only when the Docker images are already present:</p>
+<pre><code class="language-bash">NEOPRISM_E2E_MIN_FREE_GIB=5 just e2e::run
+</code></pre>
+<p>Run the runner’s offline tests without Docker:</p>
+<pre><code class="language-bash">just e2e::test-runner
 </code></pre>
 <h2 id="full-repository-check"><a class="header" href="#full-repository-check">Full repository check</a></h2>
 <p>Before opening a PR, run the umbrella command from the repository root:</p>
@@ -216,15 +241,15 @@ just e2e::down dev-sqlite
 <p>The compose files live in <code>docker/prism-test/</code> and are generated via <code>just build-config</code>. If you need to inspect or tweak them manually:</p>
 <ol>
 <li>
-<p>Start the desired stack (for example the developer Postgres topology):</p>
+<p>Start the desired stack (for example the SQLite development topology):</p>
 <pre><code class="language-bash">cd docker/prism-test
-docker-compose -f compose-dev.yml up
+docker-compose -f compose-sqlite-dev.yml up
 </code></pre>
 </li>
 <li>
 <p>In another terminal, run the Scala suite:</p>
 <pre><code class="language-bash">cd tests/prism-test
-sbt test
+sbt "clean;Test / testOnly *"
 </code></pre>
 </li>
 </ol>
@@ -250,7 +275,7 @@ sbt test
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../references/release-process.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../indexer-parity/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -264,7 +289,7 @@ sbt test
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../references/release-process.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../indexer-parity/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

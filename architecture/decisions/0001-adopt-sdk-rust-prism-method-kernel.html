@@ -1,0 +1,795 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>ADR 0001: adopt the SDK-Rust PRISM method kernel - NeoPRISM Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex-ac8c2184.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc-909b1515.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">NeoPRISM Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="adr-0001-adopt-the-sdk-rust-prism-method-kernel-behind-neoprism-facades"><a class="header" href="#adr-0001-adopt-the-sdk-rust-prism-method-kernel-behind-neoprism-facades">ADR 0001: adopt the SDK-Rust PRISM method kernel behind NeoPRISM facades</a></h1>
+<ul>
+<li><strong>Status:</strong> Proposed for issue
+<a href="https://github.com/hyperledger-identus/neoprism/issues/345">#345</a></li>
+<li><strong>Date:</strong> 2026-10-27</li>
+<li><strong>Depends on:</strong> NeoPRISM #324, SDK-Rust #521, SDK-Rust ADRs 0174–0176</li>
+<li><strong>Parity gate:</strong> NeoPRISM #325</li>
+</ul>
+<h2 id="context"><a class="header" href="#context">Context</a></h2>
+<p>NeoPRISM currently owns both reusable PRISM method behavior and product/runtime
+behavior. Its <code>identus-did-prism</code> crate combines:</p>
+<ul>
+<li>canonical and long-form DID syntax;</li>
+<li>protobuf operation values and exact-wire hashing;</li>
+<li>create, update, and deactivate validation;</li>
+<li>deterministic DID state reduction and document projection;</li>
+<li>VDR storage operations;</li>
+<li>Cardano metadata, indexing, persistence-facing values, and resolver
+orchestration.</li>
+</ul>
+<p>SDK-Rust now contains the separately releasable <code>identus-prism-did</code> crate at
+merged revision <code>fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03</code>. It owns only the
+portable method kernel: bounded syntax, exact signed-operation bytes, typed
+CRUD operations, deterministic state reduction, document projection, and a
+local long-form resolver. Private-key custody, Cardano, VDR storage behavior,
+persistence, HTTP, and node lifecycle are outside that crate.</p>
+<p>PR #324 already establishes the generic SDK compatibility edge for crypto,
+DID values, DID resolution, and HTTP. Replacing NeoPRISM’s method behavior in
+the same PR would make review, rollback, and Preprod comparison too broad.
+Issue #345 therefore needs a second, adapter-first slice.</p>
+<p>NeoPRISM does not currently preserve the exact signed-operation bytes at that
+boundary. Its Cardano sources decode <code>PrismObject</code>, and persistence re-encodes
+each <code>SignedPrismOperation</code>. Protobuf duplicate singular fields and unknown
+fields can therefore be lost before SDK parsing. NeoPRISM state also combines
+SSI state, VDR storage state, protocol-version selection, and ledger timestamps,
+while <code>PrismDidState</code> deliberately owns only the portable SSI substate. Both
+differences must be resolved explicitly; a package substitution cannot do so.</p>
+<h2 id="decision"><a class="header" href="#decision">Decision</a></h2>
+<h3 id="adopt-one-immutable-method-kernel"><a class="header" href="#adopt-one-immutable-method-kernel">Adopt one immutable method kernel</a></h3>
+<p>NeoPRISM will consume <code>identus-prism-did</code> from one immutable SDK-Rust commit.
+The first implementation revision is selected only after PR #324 lands and
+must be recorded in <code>Cargo.toml</code>, <code>Cargo.lock</code>, the PR, and the parity receipt.
+All SDK crates used by one NeoPRISM revision must resolve from the same SDK-Rust
+commit.</p>
+<p>SDK-Rust is authoritative for the supported Rust method profile. The pinned
+PRISM method specification is normative for protocol semantics. NeoPRISM,
+SDK-TS, and historical Apollo/JVM behavior are compatibility evidence, not
+authority over public Rust DTOs or errors.</p>
+<h3 id="preserve-the-neoprism-boundary-during-the-canary"><a class="header" href="#preserve-the-neoprism-boundary-during-the-canary">Preserve the NeoPRISM boundary during the canary</a></h3>
+<p>The existing <code>identus-did-prism</code> package remains NeoPRISM’s public and runtime
+facade during the canary. Its method-facing modules delegate inward to
+<code>identus-prism-did</code> and translate explicitly at the boundary.</p>
+<p>The facade may preserve deprecated NeoPRISM names temporarily, but no new
+SDK-facing type may use Apollo, Castor, Mercury, or other historical domain
+names. Generated protobuf types remain private on both sides and do not become
+the compatibility API.</p>
+<p>The initial mapping is:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>NeoPRISM responsibility</th><th>SDK-Rust owner</th><th>Canary disposition</th></tr>
+</thead>
+<tbody>
+<tr><td><code>did::{PrismDid, CanonicalPrismDid, LongFormPrismDid}</code></td><td><code>identus_prism_did::{PrismDid, CanonicalPrismDid, LongFormPrismDid}</code></td><td>delegate syntax and conversion; retain deprecated facade types only where callers require them</td></tr>
+<tr><td>SSI create/update/deactivate values and validation</td><td>typed SDK operation values and builders</td><td>translate at one fallible adapter; do not expose SDK private wire structs</td></tr>
+<tr><td>signed envelope parsing, operation hash, operation ID</td><td><code>RawPrismOperation</code> and <code>SignedPrismOperation</code></td><td>add an observational NeoPRISM raw-envelope scanner before protobuf materialization; preserve legacy derived values while the SDK shadow uses the exact slice</td></tr>
+<tr><td>SSI DID state transition</td><td><code>PrismDidState</code></td><td>use as the SSI substate inside a NeoPRISM-owned composite shadow reducer</td></tr>
+<tr><td>DID document projection</td><td>SDK projection functions</td><td>project through SDK, then map to the existing NeoPRISM response facade while #324 remains active</td></tr>
+<tr><td>local long-form resolution</td><td><code>PrismDidResolver</code></td><td>use SDK local resolution; short-form history continues through NeoPRISM adapters</td></tr>
+<tr><td>storage/VDR operations</td><td>none in this slice</td><td>retain in NeoPRISM and evaluate them against the composite’s current SDK SSI substate; later <code>identus-prism-vdr</code> adoption needs a separate issue</td></tr>
+<tr><td>protocol-version updates</td><td>none in this slice</td><td>NeoPRISM retains processor selection; the SDK SSI substate rejects these as non-SSI operations</td></tr>
+<tr><td>ledger timestamps and storage cascade</td><td>none in this slice</td><td>NeoPRISM composite sidecars retain key/service lifecycle metadata and revoke storage entries on DID deactivation</td></tr>
+<tr><td>Cardano/indexing/persistence/runtime</td><td>none in this slice</td><td>retain ownership in NeoPRISM; add an in-memory SDK shadow index, build an isolated exact-byte candidate during rehearsal, and select it only at an approved cutover</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="preserve-exact-bytes-before-sdk-parsing"><a class="header" href="#preserve-exact-bytes-before-sdk-parsing">Preserve exact bytes before SDK parsing</a></h3>
+<p>NeoPRISM will add a bounded observational scanner at the raw <code>PrismObject</code>
+metadata boundary. In <code>legacy</code> and <code>shadow</code> modes, the current protobuf decoder
+remains authoritative for the accepted <code>block_content</code>, operation set, and OSN
+ordering. The scanner aligns exact signed-operation slices with that decoded
+sequence. Duplicate <code>block_content</code>, empty/unknown operations, unknown fields,
+and alignment failure must not change legacy acceptance or renumber operations;
+they fall back to the current decode, mark the SDK shadow comparison
+non-comparable, and emit a bounded divergence metric.</p>
+<p><code>sdk</code> mode never consumes a re-encoded fallback row. Its re-index and live
+ingestion read raw chain-source bytes. An envelope that cannot be bounded,
+decoded, or aligned receives a specifically classified envelope rejection or
+the governance-approved catch-all rejection <code>unclassified-envelope</code>. The
+catch-all covers oversized, malformed, unknown, and non-aligning envelopes not
+matched by a more specific rule. Rejecting an envelope rejects all of its
+operations. It records the bounded ledger coordinate, reason, and safe digest
+but no derived operation/state mutation or unbounded attacker bytes.</p>
+<p>Once an envelope is aligned, every exact signed-operation slice is parsed and
+validated independently in OSN order. A stable operation-level rejection,
+including duplicate signed fields, rejects only that operation; valid siblings
+continue through the reducer. <code>ResourceLimitExceeded</code> is the exception defined
+below: it quarantines that DID from its first failing operation onward. Envelope
+and operation rejection both advance the observed ledger cursor, emit bounded
+critical telemetry, and do not halt the indexer. Other valid transactions and
+DIDs in the same block continue. Only an internal invariant failure may stop
+ingestion; attacker-controlled syntax always maps to deterministic rejection.
+The catch-all and all specific rejection categories require protocol-governance
+approval before <code>sdk</code> mode can be promoted on a network.</p>
+<p>For aligned operations, <code>legacy</code> mode continues to persist bytes produced by
+<code>encode_to_vec</code>; upgrading or enabling the default mode therefore does not
+silently change an existing storage/API contract. <code>shadow</code> keeps the exact
+slice only in its bounded in-memory index. The legacy path continues to decode
+and re-encode for its historical operation hash, operation ID, signature
+verification, DID grouping, derived index rows, and indexer API output. The SDK
+shadow alone uses exact bytes for those decisions. Any difference is evidence
+to classify.</p>
+<p><code>sdk</code> mode persists the exact aligned slice in
+<code>raw_operation.signed_operation_data</code>, but only in a clean candidate database
+built by the offline full-chain rehearsal and later selected atomically. It must
+not update production legacy rows through the current conflict-ignoring upsert,
+because that would mix exact and re-encoded rows. Before promotion, the
+implementation audits every reader of the field,
+including raw-operation parsing, database views, hash derivation, and the
+indexer HTTP API, and proves which representation each external response uses.
+Fixtures prove that <code>legacy</code> output is unchanged and that <code>sdk</code> output is
+reproducible from exact source bytes.</p>
+<p>Exact-byte retention alone changes no database schema, but existing rows cannot
+prove their original encoding. Promotion therefore requires a clean full
+re-index from the immutable chain source. A database assembled from re-encoded
+legacy rows is not valid parity evidence. Any durable profile-limit quarantine
+marker introduced below uses a versioned migration when the existing schema
+cannot represent it. Duplicate security-relevant fields must reach the SDK
+scanner so its strict rejection remains effective. Fixtures cover duplicate
+<code>block_content</code>, duplicate signed fields, unknown fields, empty/unknown
+operations, scanner fallback, stable legacy OSN assignment, and clean cutover
+without mixed raw-row encodings.</p>
+<h3 id="compose-portable-ssi-state-with-neoprism-owned-state"><a class="header" href="#compose-portable-ssi-state-with-neoprism-owned-state">Compose portable SSI state with NeoPRISM-owned state</a></h3>
+<p><code>PrismDidState</code> replaces only the SSI method substate. NeoPRISM owns a composite
+shadow state containing:</p>
+<ul>
+<li>the SDK SSI state;</li>
+<li>existing VDR storage entries and their terminal/head relationships;</li>
+<li>ledger-derived key/service creation and revocation timestamps; and</li>
+<li>the active protocol-version processor.</li>
+</ul>
+<p>The composite applies operations in ledger order. SSI operations first update
+a cloned SDK state and then update ledger metadata sidecars. Storage operations
+remain NeoPRISM-owned and verify against the active VDR key exposed by the SDK
+SSI state. DID deactivation commits atomically with the existing storage-entry
+revocation cascade. Protocol-version updates change only the NeoPRISM processor.
+Any failure leaves the whole composite unchanged.</p>
+<p>This composite is an adopter adapter, not a second method implementation. It
+may be deleted only after the corresponding SDK VDR/indexer capabilities are
+adopted in later issues.</p>
+<h3 id="use-dual-path-differential-execution-before-deletion"><a class="header" href="#use-dual-path-differential-execution-before-deletion">Use dual-path differential execution before deletion</a></h3>
+<p>The first implementation keeps the legacy method path as the only writer of
+production legacy tables. A <code>did-method-engine</code> configuration key accepts
+<code>legacy</code>, <code>shadow</code>, or <code>sdk</code> and defaults to <code>legacy</code>. <code>shadow</code> reads the same exact raw operation
+stream, executes the SDK composite in memory, records comparison telemetry,
+and never mutates persisted derived state. It builds a separate in-memory
+DID/operation/VDR index from exact bytes instead of querying legacy-derived DID
+or hash rows.</p>
+<p>The shadow runs in an isolated, supervised worker with bounded non-blocking
+input, entry, raw-byte, and estimated retained-memory budgets. Budget accounting
+happens before allocation. Queue saturation, budget exhaustion, worker failure,
+or an unwinding panic disables comparison, marks the remaining range
+non-comparable, and emits bounded critical telemetry; it never blocks, applies
+backpressure to, or changes the result of legacy ingestion. Production builds
+must preserve an isolation mechanism that cannot turn a shadow panic into a
+process abort. Tests inject queue saturation, budget exhaustion, and worker
+failure while proving that the legacy cursor continues.</p>
+<p>Because this first shadow index is not persisted, every shadow start or late
+enablement rebuilds it from the immutable chain source starting at the agreed
+network origin before reporting comparisons. It never bootstraps from legacy
+raw or derived rows. The #325 promotion receipt comes from one uninterrupted,
+complete origin-to-tip scan; a restart invalidates that receipt and starts a
+new run. Peak shadow memory and all configured budgets are part of its QoS
+evidence.</p>
+<p>Pre-promotion node startup rejects <code>did-method-engine=sdk</code>. After promotion,
+<code>sdk</code> startup requires a durable selected-candidate record in guarded deployment
+configuration outside the candidate database. It contains the candidate’s
+backend identity, network, SDK/NeoPRISM revisions, schema/migration digest,
+the immutable #325 parity-baseline range and manifest digests, and a separate
+cutover cursor <code>C</code> with deterministic ordered-operation, acceptance,
+composite-state, and projection manifest digests through <code>C</code>. Absence or
+mismatch in either receipt fails closed before migrations, listeners, or
+ingestion. The fixed #325 receipt remains the independently reviewed parity/QoS
+baseline; it is not relabelled as evidence for a later cursor.</p>
+<p>The record is signed by a cutover authority whose verification key is pinned
+outside the candidate database. Rehearsal cannot write guarded deployment
+configuration. At cutover, the legacy writer stops after durably committing an
+explicit handoff cursor <code>C</code>; no second writer may advance the selected network
+while ownership is transferring. Before candidate replay, attestation, or
+selection begins, the deployment owner must durably activate a legacy ownership
+fence in guarded deployment configuration outside both databases. The fence
+survives host, container, and orchestrator restarts; prevents the legacy writer
+and listener from starting or serving; and revokes its database role or storage
+mount and serving route. Merely stopping a process or denying legacy access to
+the candidate is not a fence. The candidate replays exact source bytes through
+<code>C</code>, proves the ordered-operation, acceptance, composite-state, and projection
+manifests through <code>C</code>, and records <code>C</code> in the selection record.
+Rehearsal write access is then revoked before the authority opens the read-only
+snapshot, recomputes the identity and manifest digests, checks #325 and
+protected CI evidence, and signs the exact frozen record. No rehearsal or
+runtime identity may mutate candidate rows during attestation.</p>
+<p>Failure recovery leaves that fence active while candidate ownership is
+uncertain. Only the cutover authority may release it, using a signed rollback
+authorization after candidate ingestion and serving are durably disabled and
+the restored or freshly rebuilt legacy backend is verified at its authorized
+resume cursor. Release atomically restores the legacy database/storage access,
+serving route, and restart permission; it cannot overlap candidate ownership.
+The cutover and rollback fixtures must inject a legacy-host restart during
+handoff and after SDK selection and prove that the fenced legacy writer and
+listener remain unavailable until an authorized rollback releases the fence.</p>
+<p>During the initial handoff, resolution, listeners, and normal SDK ingestion
+remain unavailable until startup has verified the record and confirmed the
+candidate’s durable cursor equals <code>C</code>. A handoff-only SDK writer then atomically
+commits the immutable cutover-complete marker at <code>C</code>; it cannot process the
+successor of <code>C</code> in that transaction or before the marker is durable. Only after
+that commit may resolution become available and normal SDK ingestion resume at
+the successor of <code>C</code>. Later restarts verify the signed record, cutover-complete
+marker, and authorized post-cutover cursor history; they resume from the current
+durable cursor at or after <code>C</code> and do not require it to still equal <code>C</code>. Node
+startup therefore proves the immutable baseline without making normal progress
+unrestartable, and candidate contents alone cannot authorize serving. Runtime
+rows after <code>C</code> are normal post-cutover ingestion and do not rewrite that
+baseline. A failed catch-up, cursor mismatch, manifest mismatch, marker commit,
+or writer-handoff timeout leaves legacy ownership intact or restores it through
+the documented rollback route; it never serves the lagging candidate.</p>
+<p>The baseline revisions and schema digest identify the candidate that was
+validated; they are not an accidental permanent ban on upgrades. Every later
+runtime binary requires a separate signed runtime authorization that references
+the immutable baseline receipt, exact allowed SDK/NeoPRISM revisions, network,
+and the previous and target schema digests. Normal startup never applies an
+unapproved migration. A guarded offline <code>sdk-upgrade</code> flow rehearses the
+migration on a snapshot, captures backup/rollback and invariant evidence,
+applies the approved chain with a migration-only role, and publishes a signed
+migration receipt.</p>
+<p>The migration executor cannot sign either artifact. After migration it loses
+write access; an independent upgrade authority opens a read-only snapshot,
+recomputes the schema and evidence digests, and verifies that the migrated
+database through the pinned cursor equals the target runtime’s signed manifests
+before signing the receipt and runtime authorization with a separately pinned
+key. For the bounded profile-remediation exception below, this pre-authorization
+equality applies to unaffected DIDs; each affected DID must equal its target
+full-replay per-DID manifest through the actual cutover cursor <code>C</code> inside the
+atomic targeted cutover before commit. Authorizations carry a monotonic
+sequence and superseded/revoked revisions in guarded external configuration.
+Startup accepts only the latest non-revoked sequence and verifies the complete
+signed authorization/receipt chain from the baseline to the current schema and
+exact runtime revisions before listeners or ingestion. Starting an older
+authorization requires an explicit signed rollback authorization and its
+compatible restored snapshot; restoring a database backup alone is insufficient.</p>
+<p>Every upgrade pins one immutable upgrade cursor and differentially replays both
+the currently authorized and target runtimes from network origin through that
+cursor on isolated clones. The upgrade authority signs the paired cursor,
+ordered-operation/acceptance digest, composite-state digest, and projection
+digest as a new link in the authorization chain; it does not compare a later
+tip directly with the older cutover baseline. Exact acceptance and composite-
+state equality permits an in-place behavior-neutral upgrade. A projection-only
+difference may use an explicitly signed non-semantic authorization only after
+classification as a presentation defect, API compatibility evidence, and
+release notes; it cannot hide an acceptance or internal-state difference.</p>
+<p>A change in ledger acceptance, exact operation IDs, or composite SSI/VDR/
+timestamp/protocol state is otherwise not an in-place upgrade: it requires
+protocol governance or version activation, a new isolated full re-index, and a
+new promotion baseline/cutover. The sole exception is an approved SDK profile-
+limit remediation for already quarantined DIDs. Its signed authorization names
+the profile revision, affected DIDs and first failing operations, proves exact
+manifest equality for every unaffected DID, and uses the targeted sole-writer
+replay/cutover defined below for each affected DID. It cannot change acceptance
+for a previously unquarantined DID. An unapproved build, broken chain,
+unexpected schema, or unexplained manifest difference fails closed.</p>
+<p>A separate offline <code>sdk-rehearsal</code> command is the only pre-promotion SDK writer.
+It has no listener or service endpoint and can write only to a dedicated
+candidate database, never merely another schema in the production database.
+The command requires both production and candidate connections, compares
+backend-owned immutable identities rather than connection strings, and refuses
+equal identities. Rehearsal re-indexes and quarantine migrations never modify
+production legacy tables. Backend isolation is explicit:</p>
+<ul>
+<li><strong>PostgreSQL:</strong> the production connection uses a read-only identity role with
+no table, schema, migration, or role-management writes. A candidate writer
+role is provisioned out of band with privileges limited to the candidate
+database; rehearsal never holds cluster-global role-creation credentials.
+Identity is the tuple of PostgreSQL system identifier, database OID, and a
+generated database UUID, allowing another database in the same cluster while
+detecting endpoint aliases.</li>
+<li><strong>SQLite:</strong> the live production identity connection opens with normal
+<code>mode=ro</code> locking and change detection so WAL-backed legacy writes remain
+visible and consistent. <code>immutable=1</code> is permitted only for a frozen,
+checkpointed or SQLite-backup snapshot that includes a consistent WAL state
+and cannot be modified for the lifetime of the connection. The candidate is a
+separate file on a candidate-only volume; canonical path, device/inode
+identity, and a database UUID must all differ from the production file.
+Filesystem ownership permits rehearsal/SDK writes but denies the legacy
+deployment access to the candidate volume.</li>
+</ul>
+<p>The rehearsal writer initializes only candidate-local identity and manifest
+metadata; neither is a selection authority. When <code>sdk</code> is enabled for an
+approved network, it serves only after that candidate has been rebuilt from
+exact source bytes, caught up through the stopped legacy writer’s handoff cursor
+<code>C</code>, validated at <code>C</code>, bound to the externally signed selection record, and
+atomically selected. Selecting the candidate database and transferring writer
+ownership at <code>C</code> is the promotion/cutover event, not a pre-promotion evidence
+step. Resolution stays unavailable across that bounded handoff; the system does
+not serve either an older candidate or the legacy database after SDK ownership
+is selected. For SQLite the selection record remains outside the database file,
+so the cutover authority never needs write access to candidate rows.</p>
+<p>Candidate endpoint/role credentials or SQLite volume access are never
+provisioned to legacy deployments, including already-published binaries.
+Network, database, and filesystem controls reject legacy access to the
+candidate. The promotion and rollback receipts prove this separation; rollback
+points the legacy deployment only at the restored or freshly rebuilt legacy
+endpoint/file.</p>
+<p>For every operation in the shared supported profile, the harness compares:</p>
+<ol>
+<li>parse outcome and stable error category;</li>
+<li>exact operation hash and operation ID;</li>
+<li>ordered state transition outcome;</li>
+<li>terminal composite state, including SSI state, storage state, timestamps,
+and protocol version, but excluding presentation projection;</li>
+<li>projected DID document through its separate projection digest; and</li>
+<li>deactivation and unsupported-version behavior.</li>
+</ol>
+<p>Differences are classified as:</p>
+<ul>
+<li><strong>spec correction:</strong> SDK behavior follows the pinned specification but changes
+ledger acceptance; promotion stops until PRISM protocol governance approves
+the rule for all implementations or activates it through a protocol version;</li>
+<li><strong>historical compatibility requirement:</strong> ledger evidence requires a bounded
+compatibility rule in SDK-Rust;</li>
+<li><strong>NeoPRISM presentation defect/dead behavior:</strong> projection, error text, or
+telemetry differences that cannot change whether an operation is accepted
+may be corrected with evidence and release notes. Every acceptance difference
+still requires protocol governance or version activation.</li>
+<li><strong>SDK profile limit:</strong> finite SDK resources would make an otherwise accepted
+DID unresolvable. Promotion requires zero occurrences in the complete history
+of the target network and explicit network/profile approval. After promotion,
+any new occurrence fails closed, emits a critical metric/alert, and must not
+skip the operation or fall back to stale state. The failure is isolated to
+that DID: the raw operation and DID association are recorded, the ledger
+cursor advances, other DIDs continue indexing, and resolution returns a
+stable <code>profile-limit-exceeded</code> error from the first failing operation onward.
+Every later operation for the quarantined DID, including storage and
+deactivation operations, is retained as raw evidence but does not mutate its
+derived SSI or VDR state. The last good derived state is never served as
+current. A durable quarantine marker identifies the first failing operation;
+restart and re-index reproduce it deterministically. Raising a limit does not
+resume incrementally: a governed profile revision triggers a targeted
+origin-to-tip replay for that DID (or a full network re-index) using the
+recorded protocol-version timeline. Resolution continues returning the error
+while replay and live catch-up run. Final cutover executes inside the sole
+ingestion writer’s ordering. It locks the DID and fixes the global indexer’s
+committed cursor <code>C</code>. Before commit, an isolated target replay consumes every
+retained raw operation through that same <code>C</code>; its per-DID manifest must equal
+the staged replacement. Only then does the transaction replace every DID-
+derived SSI row, VDR row, key/service timestamp sidecar, and projection,
+record <code>C</code>, and clear the quarantine marker. A mismatch rolls back the whole
+transaction, retains quarantine, and emits a critical alert. An
+operation ordered after <code>C</code> is processed normally only after that transaction;
+no cursor gap can be skipped. Resolution resumes only after the complete
+cutover succeeds. If replay still exceeds the revised profile, no derived
+state is replaced and the marker atomically moves to the first operation that
+fails under that profile. The global protocol-version processor is not
+replaced by a DID replay.</li>
+</ul>
+<p>No donor code is deleted merely because unit tests pass.</p>
+<h3 id="keep-security-and-resource-invariants-at-the-sdk-edge"><a class="header" href="#keep-security-and-resource-invariants-at-the-sdk-edge">Keep security and resource invariants at the SDK edge</a></h3>
+<p>The adapter must preserve the SDK invariants:</p>
+<ul>
+<li>signature verification and hashes consume the exact bounded nested operation
+bytes received on the wire;</li>
+<li>duplicate security-relevant protobuf fields are rejected;</li>
+<li>Ed25519 and X25519 public keys require exact widths;</li>
+<li>the Apollo/JVM secp256k1 compatibility fallback remains covered by the pinned
+50-vector suite;</li>
+<li>update actions are ordered and atomic, retired identifiers cannot be reused,
+and active limits do not count tombstones;</li>
+<li>long-form and projection limits are enforced before attacker-controlled
+allocation or work; and</li>
+<li>authentication, authorization, and previous-operation linkage are verified
+before a state-growth limit can quarantine a DID;</li>
+<li><code>ResourceLimitExceeded</code> fails current resolution and shadow processing from
+the first failing operation onward; an immutable earlier version may resolve
+only when the public API explicitly supports versioned resolution. The error
+is never mapped to NeoPRISM’s legacy skip-invalid-operation path; and</li>
+<li>errors crossing public/HTTP boundaries remain stable and redact sensitive
+bytes.</li>
+</ul>
+<p>The adapter may narrow an SDK capability that NeoPRISM cannot honor. It must
+never silently accept and ignore an SDK option or operation.</p>
+<h3 id="measure-operational-parity-before-switching-the-default"><a class="header" href="#measure-operational-parity-before-switching-the-default">Measure operational parity before switching the default</a></h3>
+<p>Issue #325 is the Preprod promotion gate. The published legacy node and the SDK-backed
+candidate scan the complete agreed immutable Preprod history and produce comparable ordered
+operation, composite-state, and projection manifests. The receipt also records scan duration,
+CPU time/utilization, peak resident memory, exact binaries/images, revisions,
+configuration, network, range, and host characteristics.</p>
+<p>The SDK-backed path becomes the default for a specific network only when:</p>
+<ul>
+<li>operation, composite-state, and projection parity is exact at the agreed boundary;</li>
+<li>every non-comparable scanner occurrence in the complete target-network
+history is either eliminated by an exact-byte adapter improvement or
+classified and resolved through the same presentation, compatibility,
+protocol-governance, or profile-limit rules; unresolved occurrences block
+promotion;</li>
+<li>every acceptance difference is either removed or activated by an approved
+network-wide protocol-version decision, not a local NeoPRISM migration;</li>
+<li>QoS change is understood and accepted;</li>
+<li>exact-head protected CI and independent review are green;</li>
+<li>a rehearsal full-chain re-index has produced exact raw-operation storage and
+SDK-derived index rows in an isolated candidate database, plus a
+versioned quarantine migration when required, without modifying production
+legacy tables;</li>
+<li>a read-only candidate snapshot reproduces the #325 ordered-operation and
+composite-state/projection manifest digests at the fixed parity boundary,
+then separately reproduces the cutover manifests through <code>C</code>; the signed
+selection record binds both receipts to the exact backend identity, schema,
+revisions, network, and their respective source cursors after rehearsal write
+access is revoked;</li>
+<li>the complete pre-cutover legacy schema/data snapshot is captured and tested,
+or the clean legacy re-index route and immutable source are confirmed, before
+the candidate database can be selected; and</li>
+<li>the rollback receipt covers a code revert plus either restoration of the
+complete pre-cutover legacy schema/data snapshot followed by replay from that
+snapshot’s cursor, or a clean legacy re-index from network origin into a fresh
+legacy schema. The legacy binary never opens or writes SDK-cutover tables.</li>
+</ul>
+<p>The #325 receipt authorizes Preprod only. Mainnet remains on <code>legacy</code> until a
+separate complete Mainnet shadow receipt and explicit promotion decision satisfy
+the same operation, composite-state, profile-limit, QoS, re-index, and rollback
+criteria.</p>
+<h2 id="consequences"><a class="header" href="#consequences">Consequences</a></h2>
+<ul>
+<li>NeoPRISM can shrink toward Cardano adapters, persistence, service composition,
+and operations without making the migration irreversible.</li>
+<li>Temporary method duplication is intentional and measurable.</li>
+<li>The compatibility facade and composite shadow state add temporary translation
+code, but isolate product effects from portable method behavior.</li>
+<li>Exact-byte persistence and SDK-derived index rows require a full target-network
+re-index before promotion. Existing table definitions can be reused only in
+the isolated candidate database; a durable quarantine marker may
+require a versioned migration there.</li>
+<li>A protocol correction that changes accepted ledger history cannot be shipped
+as a local migration.</li>
+<li><code>identus-prism-vdr</code> and <code>identus-prism-indexer</code> adoption remain independent
+milestones with their own operational evidence.</li>
+</ul>
+<h2 id="alternatives-rejected"><a class="header" href="#alternatives-rejected">Alternatives rejected</a></h2>
+<ul>
+<li><strong>Replace the whole <code>did-prism</code> crate at once:</strong> mixes portable method,
+storage, Cardano, and runtime behavior and makes parity failures hard to
+isolate.</li>
+<li><strong>Copy the SDK implementation back into NeoPRISM:</strong> restores duplication and
+defeats independent SDK release/adoption evidence.</li>
+<li><strong>Expose generated protobuf DTOs as the adapter contract:</strong> couples public
+APIs to one runtime and risks decode/re-encode security errors.</li>
+<li><strong>Treat SDK-TS or the old Rust implementation as normative:</strong> freezes donor
+DTO/error choices and known deviations instead of following the specification.</li>
+<li><strong>Delete the legacy path before Preprod comparison:</strong> removes the differential
+oracle and makes rollback operationally expensive.</li>
+</ul>
+<h2 id="verification"><a class="header" href="#verification">Verification</a></h2>
+<p>The implementation PR must attach:</p>
+<ul>
+<li>the exact SDK and NeoPRISM revisions and signed/DCO commit evidence;</li>
+<li>source-to-target and fixture provenance mappings;</li>
+<li>legacy/SDK differential vectors for syntax, exact wire bytes, CRUD/state,
+projection, limits, malformed input, and crypto compatibility;</li>
+<li>reader-audit and mixed-row-prevention evidence for
+<code>raw_operation.signed_operation_data</code>, including identical legacy API output
+before and after the adapter is installed;</li>
+<li><code>sdk</code>-mode liveness fixtures proving that <code>profile-limit-exceeded</code> advances
+the ledger cursor, retains the bounded raw operation and DID association,
+continues valid DIDs/transactions in the same block, emits a critical alert,
+and reproduces the same quarantine after restart and full re-index;</li>
+<li>envelope-rejection fixtures proving that <code>unclassified-envelope</code> advances the
+ledger cursor, retains only the bounded coordinate, stable reason, and safe
+digest defined above, retains no unbounded attacker bytes, continues later
+valid transactions, and reproduces the same rejection receipt after restart
+and full re-index;</li>
+<li>a concurrent-recovery fixture proving operations that arrive during replay
+are applied exactly once on the correct side of cutover cursor <code>C</code>, plus a
+failed-remediation fixture that retains quarantine at the newly computed
+first failing operation;</li>
+<li>aligned-operation fixtures proving one strict parse/validation rejection keeps
+valid sibling operations, while an envelope rejection drops the whole
+envelope with a stable category;</li>
+<li>a stable public <code>profile-limit-exceeded</code> error variant with specified HTTP
+status/body and redaction tests;</li>
+<li>shadow fault-injection evidence for queue saturation, entry/byte/memory budget
+exhaustion, worker failure, and panic isolation while legacy ingestion keeps
+advancing;</li>
+<li>startup/cutover evidence that pre-promotion <code>sdk</code>, absent or mismatched
+external selection records, and wrong database identity, manifest, schema,
+network, revision, or source receipts fail before migration, listeners, or
+ingestion;</li>
+<li>cutover-barrier evidence that the legacy writer stops at durable cursor <code>C</code>,
+the candidate replays and matches every required manifest through <code>C</code>,
+rehearsal writes are revoked before attestation, resolution remains
+unavailable during ownership transfer, the cutover-complete marker commits at
+<code>C</code> before SDK ingestion resumes exactly at its successor, and a mutable,
+lagging, or mismatched candidate cannot serve;</li>
+<li>restart evidence that the initial handoff requires exact cursor <code>C</code>, while a
+selected database that has durably advanced beyond <code>C</code> verifies the immutable
+cutover marker and resumes from its later authorized cursor without repeating
+or skipping post-cutover operations;</li>
+<li>authority-separation evidence that rehearsal cannot write guarded selection
+configuration, its write access is revoked before signing, the cutover
+identity cannot rewrite candidate data, and startup rejects forged, unsigned,
+incorrectly signed, or digest-mismatched promotion receipts;</li>
+<li>post-cutover upgrade fixtures proving an exactly authorized binary and
+rehearsed migration chain can start, while an unapproved revision, unexpected
+schema, missing receipt, failed migration, or broken signature chain fails
+closed and preserves the rollback backup;</li>
+<li>migrated-snapshot evidence proving its rows through the pinned upgrade cursor
+reproduce the target runtime’s signed acceptance, composite-state, and
+projection manifests before authorization, except that profile remediation
+compares unaffected DIDs before cutover and each affected DID against an
+isolated target replay through the same live cutover cursor <code>C</code> inside the
+transaction, with mismatch rollback evidence;</li>
+<li>upgrade authority-separation and anti-rollback evidence proving the migration
+executor cannot sign, write access is revoked before independent read-only
+attestation, superseded authorizations cannot start, and a database backup
+alone cannot roll back the authorized runtime sequence;</li>
+<li>origin-to-pinned-cursor differential evidence for every SDK upgrade, comparing
+current and target runtimes at the same cursor, with signed acceptance,
+composite-state, and projection digest pairs; exact acceptance/state equality
+for behavior-neutral upgrades; documented authorization for projection-only
+fixes; and a new governed promotion baseline for other semantic changes;</li>
+<li>profile-remediation evidence naming every quarantined DID/first failure,
+proving all unaffected manifests remain equal, and exercising atomic targeted
+replay without changing any previously unquarantined DID;</li>
+<li>isolation evidence that <code>sdk-rehearsal</code> rejects the production database by
+backend-owned identity even through endpoint/path aliases, and that candidate
+endpoint or file controls deny legacy deployment credentials/access;</li>
+<li>privilege-denial evidence that the rehearsal production identity role cannot
+write tables, schemas, migrations, or roles, and that its candidate writer
+role has no authority outside the candidate database, plus SQLite evidence
+for normal read-only live opens, immutable access only to frozen
+WAL-consistent snapshots, distinct path/device/inode/UUID identities, and
+candidate-volume permissions;</li>
+<li>PostgreSQL identity evidence for the system-identifier/database-OID/database-
+UUID tuple, including same-cluster databases and endpoint aliases;</li>
+<li>NeoPRISM Nix check, strict Clippy, tests/doctests, conformance, coverage, and
+file-hygiene evidence;</li>
+<li>the issue #325 complete Preprod operation/state/profile-limit/QoS receipt;</li>
+<li>an independent exact-commit review receipt; and</li>
+<li>delivery metrics permitted by project policy.</li>
+</ul>
+<h2 id="rollback"><a class="header" href="#rollback">Rollback</a></h2>
+<p>Before promotion, select <code>did-method-engine=legacy</code> and remove the read-only
+shadow adapter; no SDK-derived database rows or exact-slice replacements exist
+in the production legacy tables, and legacy storage/output semantics remain
+unchanged. The unselected rehearsal candidate is discarded or remains clearly
+marked unselected and is never opened by the legacy binary; it must be rebuilt
+or fully revalidated before any later selection. After promotion, rollback
+never runs the reverted binary against the SDK-cutover database. It requires a
+code revert plus either restoration of the complete pre-cutover legacy
+schema/data snapshot followed by replay from its recorded cursor, or a clean
+legacy re-index from network origin into a fresh legacy schema. Migration
+forward/backward compatibility may be tested as supplemental evidence, but
+never authorizes in-place rollback or replaces either clean rollback route.
+Changing SDK public method semantics requires an SDK-Rust issue and ADR;
+NeoPRISM must not carry an unreviewed local fork.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../architecture/decisions/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../../configuration/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../architecture/decisions/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../../configuration/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
+
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

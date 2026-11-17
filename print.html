@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-beb0b211.js";
+            window.path_to_searchindex_js = "searchindex-ac8c2184.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-75f9a92b.js"></script>
+        <script src="toc-909b1515.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -581,6 +581,879 @@ You may also add a reverse proxy to handle authentication and routing for the su
 <p><strong>Note:</strong> These modes are subsets of the distributed deployment, and can be scaled or combined as needed.</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="sdk-rust-adoption"><a class="header" href="#sdk-rust-adoption">SDK-Rust adoption</a></h1>
+<p>NeoPRISM reuses generic cryptography, DID syntax, DID resolution, and HTTP
+resolver mechanics from
+<a href="https://github.com/hyperledger-identus/sdk-rust">SDK-Rust</a>. NeoPRISM remains the
+owner of PRISM operations, Cardano integration, persistence, service runtime,
+OpenAPI composition, and product policy.</p>
+<p>This boundary reduces duplicate security-sensitive code without turning the
+generic SDK into a Cardano or NeoPRISM-specific component.</p>
+<h2 id="ownership-boundary"><a class="header" href="#ownership-boundary">Ownership boundary</a></h2>
+<pre><!--?xml version="1.0" encoding="utf-8"?--><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.8.1-HEAD" preserveaspectratio="xMinYMin meet" viewbox="0 0 1192 1093"><svg class="d2-376076847 d2-svg" width="1192" height="1093" viewbox="-91 -121 1192 1093"><rect x="-91.000000" y="-121.000000" width="1192.000000" height="1093.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-376076847 .text {
+	font-family: "d2-376076847-font-regular";
+}
+@font-face {
+	font-family: d2-376076847-font-regular;
+	src: url("data:application/font-woff;base64,d09GRgABAAAAABDoAAoAAAAAGXwAAguFAAAAAAAAAAAAAAAAAAAAAAAAAABPUy8yAAAA9AAAAGAAAABgXd/Vo2NtYXAAAAFUAAAAqQAAAN4EHQUFZ2x5ZgAAAgAAAAoPAAANvK5QAspoZWFkAAAMEAAAADYAAAA2G4Ue32hoZWEAAAxIAAAAJAAAACQKhAXyaG10eAAADGwAAACxAAAAwFdHCaBsb2NhAAANIAAAAGIAAABiWCRU1G1heHAAAA2EAAAAIAAAACAASAD2bmFtZQAADaQAAAMjAAAIFAbDVU1wb3N0AAAQyAAAAB0AAAAg/9EAMgADAgkBkAAFAAACigJYAAAASwKKAlgAAAFeADIBIwAAAgsFAwMEAwICBGAAAvcAAAADAAAAAAAAAABBREJPAEAAIP//Au7/BgAAA9gBESAAAZ8AAAAAAeYClAAAACAAA3icdM1JLsUAHIDxX1+f6SlqpqaaWyrOICxIIxGJA7iB2LkUe0PCFdzAPchf0v37tt/ih0QqQabvG4VcaqBUO3HqzIUrrRt3HjxFoFRpunfuUuvarXuPEfGjF7/xF1/xGR/xHm/xGi/x3AnDShw5Vqk1elJ9I0aNGTdhYFJmyrQZuVlz5i1YtGTZilWFNes2bNpS2rZj1559Bw75BwAA//8BAAD//yu1Iw8AAAB4nGxXfWwb9fl/vl9ffElsJ7n65ezEju27xBfbcez4bF9TO3YTv8R5d85J26RNStu0aRPor02lVuUX2h+/FlppGrMECMTKiwbT1IkNGFLZxH8wumwMGNLEy6AVYpJBA8bIwjSN5jzd2TEp4q+zTvd9nu/z+Xyez/MYamAaAIfxQ6CCOmiEbWAE4Ckn1e7kOJYUeEFgaZXAIYqcRh9KBYQGQ0QkQnT3f9Z/9vx5tOccfmjjzh0XFxZemztzRvph8VMpiN78FDCoALANF6AOKAA9yXMuF8eq1So9r2c5lnzd/pp9m6OJaHT85ebczen4lwn0P/Pzwl09PXdJM7iwcWJ1FQAAQai0jlvwFbAB1DAuVzgUifBBE026XCyjVhsNJhMfjAi0Wo1E8d7hkYv52D6rr7nfE5/lg3vj/iF7F3dQO/Ho0uKjYrcjYmX6Tovi2f4OJuQLAgCGGQAcwgWole/JU3zQZDSoWY4PRsIhF8vOPPPoE48/PDV86tSpU8O4cPXK479M/WBl5T7lbvLZIC6ARjlJOSmeYiknNZNH3ZOT0lu4IH2B9BsnUFh6ffN7+AUuyNjI38/k5UIrcRK4ANryex7xpJ5VkcaZvApRc298Mfvbk7ggvYQG/yMtoqn7/rSZ+x5ckHHhKV5vMtF8JCLo5RuEIgJLqlgVx5pMRmpm/pyW1hJao3bl8FitigitCCshQkXigvQTJs0waQbNbZxAxzqXvA9Lz6LJh71LndIj1fp8uAD6cg6ad7nCco2bkXd9MUCoyPFdfx8gCDne/OXgUgjlN06gxy91Hw1JVwEr/B3GV6DxOwzKMKu5YESBmVGIRCPi+YGB82L+XDZ7Lh/dHVjcs2cxsEc7+dixY49MTDxy7Nhjk4PJs+LdDzxwt3g2CVX+NAoHhgp/CoEsRVUpfHnoePz+O+88uCu/e9ccLrRNZRfmpVso25cZEKoxHLgADUBviSFzsDXMG8mj0VzqZ3NPnDk+Koqjx3GBnUiNzFLSx8gofYamEzv7QmXNekrr6Et8BXxKxZygaDQccrk4rgvfrmC5bppuxTIaqCl92htk9/N9WVu3fc7e6w7PRaPzrK91sEtIOoPNs67etsi8Nty5o90XDTAd1ga3ztMfCI77fG0RmzPUaXc3azqafH3doakgILACoFu4AKRcFRt2Glnq4+voo+t4KJPZuFa+6+7SOu7CBbnvFXYonir3VET5qVajZHIpnnenvZ0Zdy6+qI2sHEP3SveM73W59o6jC9L5YyuRMs/oBbQGzdAGQDMyzUJIKZHklIKNFCsbABeMCGGlcV/pnfjRjylvh2fI5mAO7ZjOpUgVM2Fi4+zZA0HtYF9uirJvZx2GHpP7rr3SOzusnn7Gfqkx5ne3AwaxtI6+waugB0cZZZZkKd5IlnOVtVWWFmk0mZCbGXSoyH4RO8c79h+M7s/ExqNp+07WkdA6bUG8+soeG3f/yfzpeHphJneIcZSsdBmfrtI6eg6tyVh+v/9s2s+2nUdjfUvxQNriMfptnWkun2R2mNqcOW1sOScuxxg6ojf7p7bnF2wGweaUdecvraP3N2soY6YE58L8JlhCuJro33uPRw8InriDyKdIlXXEsjNm72nlEq6M9r6z46firc35lze291jd6aRkpf357bsPAVbu/we0Bmaw31aBLHBn1TxVTgUqRPctxhPzwuxhhKVf1+zOsNEWm338dUQkevgJbe/yeG45vnJUZ6kb3WekIoZW5BoaHVdwagVACfzn8vxgw0I4VMGJZYxG3shSd/T3pwdpT9O2FmtqYQE9Ha8ZHdpdRya0c6NJaRYAVOArOdDnaA26oRdGqyoKu7Y8lKC8kS37B8twZQ4qnKuC39qJvtK3jKv8zb+mT7ic2yyM3swFJ7sNbbqr8xQdyAU5RretvXtuaip2fMTTG/N6Y72RzCTvn2xwNjWbhz9KJew9JkLTYbV36QhDyhse85A1iaawPTTipjQtBrpV6PWN+NELiXA4FguHE9LlXhfTTBB6j5HrUrARAdC7eLXiUJsalZ1a0Scliip2NDg6IHYG2qPtePWVeaf/wKz0R+ROxV3t0lNQKkEaAF7E17BLdhVQQ9cKAJRKpfdKHPxKee8vv/9fqOYs4tXqTNHLM4UjjeKE6q29T/9m5oG9eFVqRfCqdONvi/9XOVNah/fwKjSWsVesoCKQq11usaGOIElNrUnbE8ZHNh7SUwjFCaKcC3+F1sCp5JIHkczSbVWS1aeYIlWOEe/2RKNrrHN4UOzsiqTETn8khYoZ1t/d6Q5tlj4sPVV5bGKI1ioYVnJsxTBFqtixKohKsNswrPTCP9AaNELL986iqnZQY3QhkViIxo4kEkdiidHRRHxsrNLHsWUxtxxLLeQnjx6dzC+A4kU8+gatVfr429spCnVxtFG/1YvkmzrHvXMHo/u3M0kGn1GsKNHmjL+BX9xu7bh0Ujwdb22eegapv+NFMgZzaK2yqZSzVJyoDIAl67bRTVpDoz1pQcU9XZH6LEEE41Jll7KW1tEFtAYehd+tc0kZS9+ZSuWh9HZojnU7Ut5AwMm3MP2e6XHfmLXDEnF0eVsDLWzK5x7XclbB4vTZLQxdr3OG3dFxBx3Smz1W2mbU6JxCF9ffoeQ3l9ZRGh+Xp6yiLzYsCLxiDlWdfTbWmx2pT1+44PToWrVNBr92Jot08ZrLl5PSmq+7joiTGiXWcGkdvYmKsh5u0ypVsc6PRrN5b8AVZWRcmBHtgVkUkt5NxTkvmpaaRzoCgOTeQL9DRdAB8KotO5Tq5eem9mloDaGh6/dNPIuK0udtWZbNtiGD1CzXAYCvoaKi963ntkRgVeV9l1Q9eWkyW9tAErVNdcO5kTqqlqhtJAfG/n8+U9dYR9Q21adQUfqESTJMkkGWLb+aUQ2bam9Ps9ItQNAAgJ5HRbAA8ALH05VUAk/SbGW3JsmGJx+c7tOYdYTGpInuevCJ6QFdcwOhM2v7pU+X9B6DwaNf+urrk6ZOo9FLn1Rw1Jb8CgYtWzUhCLfB0YBnmmzaplpDnTvSqHl16pDGoiE0hvrduZcof/ptNdGHa6K+NvSJ9E97lnFmHUi3sRYY8cnx/aVdcB2WYRsAzUUinJphFVsv90fS4A0grMZmts3iaM/8PKBPdCCbtcUe8u08oNzPDR+gRtQs78xCmDe6ix8kEmWvyqE6/KHMHV0eELRi8/Q78Uwmzu/o6dnx/OEbFy/enDfvv7G8fGM/IHCVcnCjcoZTNk+5XqNBPa18z8czmecrX5vnb168eAMQ1JfuQBP4upyfRjyqR5qY9PVTqiO3Hqv2JDyDips7vSiioqyR0u/xEAj4mvzfgNpSsNluN5vtdjxks5hbW80WGwBSPPynqFjx3c2+VNYvh6ldR9WZdW1mMfZ+bU1cVcN3YtvGX4f2/BcAAP//AQAA//8Lx++wAAABAAAAAguFzFymSV8PPPUAAwPoAAAAANhdoKEAAAAA3WYvNv46/tsIbwPIAAAAAwACAAAAAAAAAAEAAAPY/u8AAAiY/jr+OghvAAEAAAAAAAAAAAAAAAAAAAAweJwczKFKxXAYhvHnfU8QRIyycDgMFGGK+5ehiJjEZPuK+AlWr0Qs2u3eh3kWi0HvQtOcaTLbEx5+fuSKHlyz8Amdb0k/kFojfUb6g/Q96Sc6H5I+Jr3FniuWvuNSI50bQj2t9yn6ptUOK40cuCYYOOdn+tQXwUQsTglvE179/6FrQs8sFVSuudA7G36j0gubc/NL0RGNCqHCrm5YZyBgep3dPwAAAP//AQAA//9n7SciAAAAAAAALAAsAFAAgACeALYAwgDcAQ4BMAFgAYIBqgHuAgACJAJcApACvgLwAyQDRgOyA9QD4APsBAYEIgRUBHYEogTWBPYFNgVcBX4FmgXUBgAGMAZQBlwGdgaQBqAGrAbCBt4AAAABAAAAMACMAAwAZgAHAAEAAAAAAAAAAAAAAAAABAADeJyclN1OG1cUhT8H221UNRcVisgNOpdtlYzdCKIErkwJilWEU4/TH6mqNHjGP2I8M/IMUKo+QK/7Fn2LXPU5+hBVr6uzvA02qhSBELDOnL33WWevtQ+wyb9sUKs/BP5q/mC4xnZzz/ADHjWfGt7guPG34fpKTIO48ZvhJl82+oY/4n39D8Mfs1P/2fBDtupHhj/heX3T8Kcbjn8MP2KH9wtcg5f8brjGFoXhB2zyk+ENHmM1a3Ue0zbc4DO2DTfZBgZMqUiZkjHGMWLKmHPmJJSEJMyZMiIhxtGlQ0qlrxmRkGP8v18jQirmRKo4ocKREpISUTKxir8qK+etThxpNbe9DhUTIk6VcUZEhiNnTE5GwpnqVFQU7NGiRclQfAsqSgJKpqQE5MwZ06LHEccMmDClxHGkSp5ZSM6Iiksine8swndmSEJGaazOyYjF04lfouwuxzh6FIpdrXy8VuEpju+U7bnliv2KQL9uhdn6uUs2ERfqZ6qupNq5lIIT7fpzO3wrXLGHu1d/1pl8uEex/leqfMq59I+lVCYmGc5t0SGUg0L3BMeB1l1CdeR7ugx4Q493DLTu0KdPhxMGdHmt3B59HF/T44RDZXSFF3tHcswJP+L4hq5ifO3E+rNQLOEXCnN3KY5z3WNGoZ575oHumuiGd1fYz1C+5o5SOUPNkY900i/TnEWMzRWFGM7Uy6U3SutfbI6Y6S5e25t9Pw0XNnvLKb4i1wx7ty44eeUWjD6kanDLM5f6CYiIyTlVxJCcGS0qrsT7LRHnpDgO1b03mpKKznWOP+dKLkmYiUGXTHXmFPobmW9C4z5c872ztyRWvmd6dn2r+5zi1Ksbjd6pe8u90LqcrCjQMlXzFTcNxTUz7yeaqVX+oXJLvW45z+iTSPVUN7j9DjwnoM0Ou+wz0TlD7VzYG9HWO9HmFfvqwRmJokZydWIVdgl4wS67vOLFWs0OhxzQY/8OHBdZPQ54fWtnXadlFWd1/hSbtvg6nl2vXt5br8/v4MsvNFE3L2Nf2vhuX1i1G/+fEDHzXNzW6p3cE4L/AAAA//8BAAD//wdbTDAAeJxiYGYAg//nGIwYsAAAAAAA//8BAAD//y8BAgMAAAA=");
+}
+.d2-376076847 .text-bold {
+	font-family: "d2-376076847-font-bold";
+}
+@font-face {
+	font-family: d2-376076847-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}
+.d2-376076847 .text-italic {
+	font-family: "d2-376076847-font-italic";
+}
+@font-face {
+	font-family: d2-376076847-font-italic;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-376076847 .fill-N1{fill:#0A0F25;}
+		.d2-376076847 .fill-N2{fill:#676C7E;}
+		.d2-376076847 .fill-N3{fill:#9499AB;}
+		.d2-376076847 .fill-N4{fill:#CFD2DD;}
+		.d2-376076847 .fill-N5{fill:#DEE1EB;}
+		.d2-376076847 .fill-N6{fill:#EEF1F8;}
+		.d2-376076847 .fill-N7{fill:#FFFFFF;}
+		.d2-376076847 .fill-B1{fill:#0D32B2;}
+		.d2-376076847 .fill-B2{fill:#0D32B2;}
+		.d2-376076847 .fill-B3{fill:#E3E9FD;}
+		.d2-376076847 .fill-B4{fill:#E3E9FD;}
+		.d2-376076847 .fill-B5{fill:#EDF0FD;}
+		.d2-376076847 .fill-B6{fill:#F7F8FE;}
+		.d2-376076847 .fill-AA2{fill:#4A6FF3;}
+		.d2-376076847 .fill-AA4{fill:#EDF0FD;}
+		.d2-376076847 .fill-AA5{fill:#F7F8FE;}
+		.d2-376076847 .fill-AB4{fill:#EDF0FD;}
+		.d2-376076847 .fill-AB5{fill:#F7F8FE;}
+		.d2-376076847 .stroke-N1{stroke:#0A0F25;}
+		.d2-376076847 .stroke-N2{stroke:#676C7E;}
+		.d2-376076847 .stroke-N3{stroke:#9499AB;}
+		.d2-376076847 .stroke-N4{stroke:#CFD2DD;}
+		.d2-376076847 .stroke-N5{stroke:#DEE1EB;}
+		.d2-376076847 .stroke-N6{stroke:#EEF1F8;}
+		.d2-376076847 .stroke-N7{stroke:#FFFFFF;}
+		.d2-376076847 .stroke-B1{stroke:#0D32B2;}
+		.d2-376076847 .stroke-B2{stroke:#0D32B2;}
+		.d2-376076847 .stroke-B3{stroke:#E3E9FD;}
+		.d2-376076847 .stroke-B4{stroke:#E3E9FD;}
+		.d2-376076847 .stroke-B5{stroke:#EDF0FD;}
+		.d2-376076847 .stroke-B6{stroke:#F7F8FE;}
+		.d2-376076847 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-376076847 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-376076847 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-376076847 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-376076847 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-376076847 .background-color-N1{background-color:#0A0F25;}
+		.d2-376076847 .background-color-N2{background-color:#676C7E;}
+		.d2-376076847 .background-color-N3{background-color:#9499AB;}
+		.d2-376076847 .background-color-N4{background-color:#CFD2DD;}
+		.d2-376076847 .background-color-N5{background-color:#DEE1EB;}
+		.d2-376076847 .background-color-N6{background-color:#EEF1F8;}
+		.d2-376076847 .background-color-N7{background-color:#FFFFFF;}
+		.d2-376076847 .background-color-B1{background-color:#0D32B2;}
+		.d2-376076847 .background-color-B2{background-color:#0D32B2;}
+		.d2-376076847 .background-color-B3{background-color:#E3E9FD;}
+		.d2-376076847 .background-color-B4{background-color:#E3E9FD;}
+		.d2-376076847 .background-color-B5{background-color:#EDF0FD;}
+		.d2-376076847 .background-color-B6{background-color:#F7F8FE;}
+		.d2-376076847 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-376076847 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-376076847 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-376076847 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-376076847 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-376076847 .color-N1{color:#0A0F25;}
+		.d2-376076847 .color-N2{color:#676C7E;}
+		.d2-376076847 .color-N3{color:#9499AB;}
+		.d2-376076847 .color-N4{color:#CFD2DD;}
+		.d2-376076847 .color-N5{color:#DEE1EB;}
+		.d2-376076847 .color-N6{color:#EEF1F8;}
+		.d2-376076847 .color-N7{color:#FFFFFF;}
+		.d2-376076847 .color-B1{color:#0D32B2;}
+		.d2-376076847 .color-B2{color:#0D32B2;}
+		.d2-376076847 .color-B3{color:#E3E9FD;}
+		.d2-376076847 .color-B4{color:#E3E9FD;}
+		.d2-376076847 .color-B5{color:#EDF0FD;}
+		.d2-376076847 .color-B6{color:#F7F8FE;}
+		.d2-376076847 .color-AA2{color:#4A6FF3;}
+		.d2-376076847 .color-AA4{color:#EDF0FD;}
+		.d2-376076847 .color-AA5{color:#F7F8FE;}
+		.d2-376076847 .color-AB4{color:#EDF0FD;}
+		.d2-376076847 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.sketch-overlay-B1{fill:url(#streaks-darker-d2-376076847);mix-blend-mode:lighten}.sketch-overlay-B2{fill:url(#streaks-darker-d2-376076847);mix-blend-mode:lighten}.sketch-overlay-B3{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-B4{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-B5{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-B6{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-AA2{fill:url(#streaks-dark-d2-376076847);mix-blend-mode:overlay}.sketch-overlay-AA4{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-AA5{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-AB4{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-AB5{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-N1{fill:url(#streaks-darker-d2-376076847);mix-blend-mode:lighten}.sketch-overlay-N2{fill:url(#streaks-dark-d2-376076847);mix-blend-mode:overlay}.sketch-overlay-N3{fill:url(#streaks-normal-d2-376076847);mix-blend-mode:color-burn}.sketch-overlay-N4{fill:url(#streaks-normal-d2-376076847);mix-blend-mode:color-burn}.sketch-overlay-N5{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-N6{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.sketch-overlay-N7{fill:url(#streaks-bright-d2-376076847);mix-blend-mode:darken}.light-code{display: block}.dark-code{display: none}]]></style><g class="c2Rr"><g class="shape"><rect x="10.000000" y="20.000000" width="990.000000" height="142.000000" stroke="#0D32B2" fill="#E3E9FD" class=" stroke-B1 fill-B4" style="stroke-width:2;" /></g><text x="505.000000" y="7.000000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:28px">SDK-Rust (generic, reusable)</text></g><g class="bmVvcHJpc20="><g class="shape"><rect x="70.000000" y="323.000000" width="872.000000" height="548.000000" stroke="#0D32B2" fill="#E3E9FD" class=" stroke-B1 fill-B4" style="stroke-width:2;" /></g><text x="506.000000" y="310.000000" fill="#0A0F25" class="text fill-N1" style="text-anchor:middle;font-size:28px">NeoPRISM (product and PRISM ownership)</text></g><g class="c2RrLmNyeXB0bw=="><g class="shape"><rect x="40.000000" y="50.000000" width="218.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="149.000000" y="88.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="149.000000" dy="0.000000">identus-crypto</tspan><tspan x="149.000000" dy="18.500000">keys, signatures, hashes</tspan></text></g><g class="c2RrLmRpZA=="><g class="shape"><rect x="318.000000" y="50.000000" width="313.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="474.500000" y="88.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="474.500000" dy="0.000000">identus-did</tspan><tspan x="474.500000" dy="18.500000">DID/URI types and resolution contract</tspan></text></g><g class="c2RrLmh0dHA="><g class="shape"><rect x="691.000000" y="50.000000" width="279.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="830.500000" y="88.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="830.500000" dy="0.000000">identus-did-resolver-http</tspan><tspan x="830.500000" dy="18.500000">generic HTTP resolver mechanics</tspan></text></g><g class="bmVvcHJpc20uZmFjYWRl"><g class="shape"><rect x="183.000000" y="353.000000" width="257.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="311.500000" y="391.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="311.500000" dy="0.000000">compatibility facades</tspan><tspan x="311.500000" dy="18.500000">legacy API and DTO projection</tspan></text></g><g class="bmVvcHJpc20ucHJpc20="><g class="shape"><rect x="202.000000" y="556.000000" width="220.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="312.000000" y="594.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="312.000000" dy="0.000000">PRISM protocol</tspan><tspan x="312.000000" dy="18.500000">operations and DID state</tspan></text></g><g class="bmVvcHJpc20uY2FyZGFubw=="><g class="shape"><rect x="100.000000" y="759.000000" width="196.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="198.000000" y="797.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="198.000000" dy="0.000000">Cardano</tspan><tspan x="198.000000" dy="18.500000">index, submit, ledger</tspan></text></g><g class="bmVvcHJpc20ucnVudGltZQ=="><g class="shape"><rect x="684.000000" y="759.000000" width="228.000000" height="82.000000" stroke="#0D32B2" fill="#EDF0FD" class=" stroke-B1 fill-B5" style="stroke-width:2;" /></g><text x="798.000000" y="797.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="798.000000" dy="0.000000">service runtime</tspan><tspan x="798.000000" dy="18.500000">storage, routing, OpenAPI</tspan></text></g><g class="KHNkay5jcnlwdG8gLSZndDsgbmVvcHJpc20uZmFjYWRlKVswXQ=="><marker id="mk-d2-376076847-3488378134" markerwidth="10.000000" markerheight="12.000000" refx="7.000000" refy="6.000000" viewbox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerunits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 149.000000 134.000000 C 149.000000 172.000000 149.000000 194.100006 149.000000 212.250000 C 149.000000 230.399994 166.800003 313.000000 234.512652 351.040816" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="156.000000" y="269.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">reusable primitives</text></g><g class="KHNkay5kaWQgLSZndDsgbmVvcHJpc20uZmFjYWRlKVswXQ=="><path d="M 474.500000 134.000000 C 474.500000 172.000000 474.500000 194.100006 474.500000 212.250000 C 474.500000 230.399994 456.700012 313.000000 388.987348 351.040816" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="467.500000" y="269.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">bounded domain types</text></g><g class="KHNkay5odHRwIC0mZ3Q7IG5lb3ByaXNtLnJ1bnRpbWUpWzBd"><path d="M 830.500000 134.000000 C 830.500000 172.000000 830.500000 194.100006 830.500000 212.250000 C 830.500000 230.399994 830.500000 254.600006 830.500000 272.750000 C 830.500000 290.899994 830.500000 321.200012 830.500000 348.500000 C 830.500000 375.799988 830.500000 414.299988 830.500000 444.750000 C 830.500000 475.200012 830.500000 515.799011 830.500000 546.250000 C 830.500000 576.700012 826.500000 710.700012 811.746203 755.699082" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="831.000000" y="453.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">transport mechanics</text></g><g class="bmVvcHJpc20uKGZhY2FkZSAtJmd0OyBwcmlzbSlbMF0="><path d="M 311.750000 436.500000 C 311.750000 483.299988 311.750000 507.700012 311.750000 552.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="312.000000" y="501.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">stable local contract</text></g><g class="bmVvcHJpc20uKHByaXNtIC0mZ3Q7IGNhcmRhbm8pWzBd"><path d="M 264.511236 638.835508 C 211.600006 686.299988 198.000000 710.700012 198.000000 755.500000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="210.500000" y="693.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">operation lifecycle</text></g><g class="bmVvcHJpc20uKHByaXNtIC0mZ3Q7IHJ1bnRpbWUpWzBd"><path d="M 423.400226 634.123812 C 579.900024 685.500000 640.500000 710.700012 721.041306 757.490664" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-376076847-3488378134)" mask="url(#d2-376076847)" /><text x="578.000000" y="690.000000" fill="#676C7E" class="text-italic fill-N2" style="text-anchor:middle;font-size:16px">resolved state</text></g><mask id="d2-376076847" maskunits="userSpaceOnUse" x="-91" y="-121" width="1192" height="1093">
+<rect x="-91" y="-121" width="1192" height="1093" fill="white"></rect>
+<rect x="91.000000" y="253.000000" width="130" height="21" fill="black"></rect>
+<rect x="390.000000" y="253.000000" width="155" height="21" fill="black"></rect>
+<rect x="761.000000" y="437.000000" width="140" height="21" fill="black"></rect>
+<rect x="242.000000" y="485.000000" width="140" height="21" fill="black"></rect>
+<rect x="148.000000" y="677.000000" width="125" height="21" fill="black"></rect>
+<rect x="530.000000" y="674.000000" width="96" height="21" fill="black"></rect>
+</mask></svg></svg>
+</pre>
+
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Capability</th><th>SDK-Rust owns</th><th>NeoPRISM owns</th></tr>
+</thead>
+<tbody>
+<tr><td>Cryptography</td><td>Generic key, signature, hash, and JWK primitives</td><td>Compatibility facade and PRISM-specific key policy</td></tr>
+<tr><td>DID model</td><td>Bounded DID, DID URL, URI, document, and resolution types</td><td>Projection to legacy DTOs and PRISM state</td></tr>
+<tr><td>Resolution</td><td>Generic resolver contract and result validation</td><td>PRISM resolution and error mapping</td></tr>
+<tr><td>HTTP</td><td>Generic DID resolver request/response mechanics</td><td>Router mount path, dynamic state, OpenAPI, and deployment policy</td></tr>
+<tr><td>Ledger/runtime</td><td>Nothing Cardano-specific</td><td>Cardano indexer, submitter, ledger, storage, node, and UI</td></tr>
+</tbody>
+</table>
+</div>
+<p>The reusable-module criteria are governed by
+<a href="https://github.com/hyperledger-identus/sdk-rust/blob/develop/docs/adr/0110-define-reusable-module-extraction-criteria.md">SDK-Rust ADR 0110</a>.
+The extraction inventory and rationale are maintained in
+<a href="https://github.com/hyperledger-identus/neoprism/discussions/320">NeoPRISM discussion 320</a>.</p>
+<h2 id="compatibility-contract"><a class="header" href="#compatibility-contract">Compatibility contract</a></h2>
+<p>The SDK is authoritative for generic validation. NeoPRISM exposes explicit,
+fallible adapters where its established API differs:</p>
+<ul>
+<li>empty optional arrays from legacy DID documents are omitted before SDK
+validation;</li>
+<li>only the <code>accept</code> resolution option is supported; unsupported or unknown
+options fail with <code>INVALID_OPTIONS</code> instead of being ignored;</li>
+<li>successful resolution responses honor the requested media type;</li>
+<li>mismatched result and document DIDs are rejected;</li>
+<li>Ed25519 public keys must have their exact encoded width;</li>
+<li>the established Apollo/JVM secp256k1 fallback remains covered by compatibility
+vectors;</li>
+<li>unknown extension error URIs use the SDK safe HTTP 500 fallback.</li>
+</ul>
+<p>Adapters are migration boundaries, not copies of generic SDK behavior. New
+generic functionality belongs in SDK-Rust; PRISM, Cardano, storage, and product
+behavior belongs in NeoPRISM.</p>
+<h2 id="dependency-policy"><a class="header" href="#dependency-policy">Dependency policy</a></h2>
+<p>SDK-Rust Git dependencies are declared once in the workspace and pinned to an
+immutable reviewed commit. Member crates inherit those declarations. Updating
+the pin is a deliberate integration change and requires the same local,
+protected-CI, review, and parity evidence as other adoption changes.</p>
+<p>NeoPRISM’s Rust/Nix toolchain may remain newer than SDK-Rust’s baseline when the
+application requires it. The SDK baseline must not force the application to
+downgrade its own development environment.</p>
+<h2 id="verification-and-acceptance"><a class="header" href="#verification-and-acceptance">Verification and acceptance</a></h2>
+<pre><!--?xml version="1.0" encoding="utf-8"?--><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" data-d2-version="v0.8.1-HEAD" preserveaspectratio="xMinYMin meet" viewbox="0 0 476 1692"><svg class="d2-1186028121 d2-svg" width="476" height="1692" viewbox="-101 -101 476 1692"><rect x="-101.000000" y="-101.000000" width="476.000000" height="1692.000000" rx="0.000000" fill="#FFFFFF" class=" fill-N7" stroke-width="0" /><style type="text/css"><![CDATA[
+.d2-1186028121 .text-bold {
+	font-family: "d2-1186028121-font-bold";
+}
+@font-face {
+	font-family: d2-1186028121-font-bold;
+	src: url("data:application/font-woff;base64,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");
+}]]></style><style type="text/css"><![CDATA[.shape {
+  shape-rendering: geometricPrecision;
+  stroke-linejoin: round;
+}
+.connection {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.blend {
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+		.d2-1186028121 .fill-N1{fill:#0A0F25;}
+		.d2-1186028121 .fill-N2{fill:#676C7E;}
+		.d2-1186028121 .fill-N3{fill:#9499AB;}
+		.d2-1186028121 .fill-N4{fill:#CFD2DD;}
+		.d2-1186028121 .fill-N5{fill:#DEE1EB;}
+		.d2-1186028121 .fill-N6{fill:#EEF1F8;}
+		.d2-1186028121 .fill-N7{fill:#FFFFFF;}
+		.d2-1186028121 .fill-B1{fill:#0D32B2;}
+		.d2-1186028121 .fill-B2{fill:#0D32B2;}
+		.d2-1186028121 .fill-B3{fill:#E3E9FD;}
+		.d2-1186028121 .fill-B4{fill:#E3E9FD;}
+		.d2-1186028121 .fill-B5{fill:#EDF0FD;}
+		.d2-1186028121 .fill-B6{fill:#F7F8FE;}
+		.d2-1186028121 .fill-AA2{fill:#4A6FF3;}
+		.d2-1186028121 .fill-AA4{fill:#EDF0FD;}
+		.d2-1186028121 .fill-AA5{fill:#F7F8FE;}
+		.d2-1186028121 .fill-AB4{fill:#EDF0FD;}
+		.d2-1186028121 .fill-AB5{fill:#F7F8FE;}
+		.d2-1186028121 .stroke-N1{stroke:#0A0F25;}
+		.d2-1186028121 .stroke-N2{stroke:#676C7E;}
+		.d2-1186028121 .stroke-N3{stroke:#9499AB;}
+		.d2-1186028121 .stroke-N4{stroke:#CFD2DD;}
+		.d2-1186028121 .stroke-N5{stroke:#DEE1EB;}
+		.d2-1186028121 .stroke-N6{stroke:#EEF1F8;}
+		.d2-1186028121 .stroke-N7{stroke:#FFFFFF;}
+		.d2-1186028121 .stroke-B1{stroke:#0D32B2;}
+		.d2-1186028121 .stroke-B2{stroke:#0D32B2;}
+		.d2-1186028121 .stroke-B3{stroke:#E3E9FD;}
+		.d2-1186028121 .stroke-B4{stroke:#E3E9FD;}
+		.d2-1186028121 .stroke-B5{stroke:#EDF0FD;}
+		.d2-1186028121 .stroke-B6{stroke:#F7F8FE;}
+		.d2-1186028121 .stroke-AA2{stroke:#4A6FF3;}
+		.d2-1186028121 .stroke-AA4{stroke:#EDF0FD;}
+		.d2-1186028121 .stroke-AA5{stroke:#F7F8FE;}
+		.d2-1186028121 .stroke-AB4{stroke:#EDF0FD;}
+		.d2-1186028121 .stroke-AB5{stroke:#F7F8FE;}
+		.d2-1186028121 .background-color-N1{background-color:#0A0F25;}
+		.d2-1186028121 .background-color-N2{background-color:#676C7E;}
+		.d2-1186028121 .background-color-N3{background-color:#9499AB;}
+		.d2-1186028121 .background-color-N4{background-color:#CFD2DD;}
+		.d2-1186028121 .background-color-N5{background-color:#DEE1EB;}
+		.d2-1186028121 .background-color-N6{background-color:#EEF1F8;}
+		.d2-1186028121 .background-color-N7{background-color:#FFFFFF;}
+		.d2-1186028121 .background-color-B1{background-color:#0D32B2;}
+		.d2-1186028121 .background-color-B2{background-color:#0D32B2;}
+		.d2-1186028121 .background-color-B3{background-color:#E3E9FD;}
+		.d2-1186028121 .background-color-B4{background-color:#E3E9FD;}
+		.d2-1186028121 .background-color-B5{background-color:#EDF0FD;}
+		.d2-1186028121 .background-color-B6{background-color:#F7F8FE;}
+		.d2-1186028121 .background-color-AA2{background-color:#4A6FF3;}
+		.d2-1186028121 .background-color-AA4{background-color:#EDF0FD;}
+		.d2-1186028121 .background-color-AA5{background-color:#F7F8FE;}
+		.d2-1186028121 .background-color-AB4{background-color:#EDF0FD;}
+		.d2-1186028121 .background-color-AB5{background-color:#F7F8FE;}
+		.d2-1186028121 .color-N1{color:#0A0F25;}
+		.d2-1186028121 .color-N2{color:#676C7E;}
+		.d2-1186028121 .color-N3{color:#9499AB;}
+		.d2-1186028121 .color-N4{color:#CFD2DD;}
+		.d2-1186028121 .color-N5{color:#DEE1EB;}
+		.d2-1186028121 .color-N6{color:#EEF1F8;}
+		.d2-1186028121 .color-N7{color:#FFFFFF;}
+		.d2-1186028121 .color-B1{color:#0D32B2;}
+		.d2-1186028121 .color-B2{color:#0D32B2;}
+		.d2-1186028121 .color-B3{color:#E3E9FD;}
+		.d2-1186028121 .color-B4{color:#E3E9FD;}
+		.d2-1186028121 .color-B5{color:#EDF0FD;}
+		.d2-1186028121 .color-B6{color:#F7F8FE;}
+		.d2-1186028121 .color-AA2{color:#4A6FF3;}
+		.d2-1186028121 .color-AA4{color:#EDF0FD;}
+		.d2-1186028121 .color-AA5{color:#F7F8FE;}
+		.d2-1186028121 .color-AB4{color:#EDF0FD;}
+		.d2-1186028121 .color-AB5{color:#F7F8FE;}.appendix text.text{fill:#0A0F25}.md{--color-fg-default:#0A0F25;--color-fg-muted:#676C7E;--color-fg-subtle:#9499AB;--color-canvas-default:#FFFFFF;--color-canvas-subtle:#EEF1F8;--color-border-default:#0D32B2;--color-border-muted:#0D32B2;--color-neutral-muted:#EEF1F8;--color-accent-fg:#0D32B2;--color-accent-emphasis:#0D32B2;--color-attention-subtle:#676C7E;--color-danger-fg:red;}.sketch-overlay-B1{fill:url(#streaks-darker-d2-1186028121);mix-blend-mode:lighten}.sketch-overlay-B2{fill:url(#streaks-darker-d2-1186028121);mix-blend-mode:lighten}.sketch-overlay-B3{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-B4{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-B5{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-B6{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-AA2{fill:url(#streaks-dark-d2-1186028121);mix-blend-mode:overlay}.sketch-overlay-AA4{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-AA5{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-AB4{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-AB5{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-N1{fill:url(#streaks-darker-d2-1186028121);mix-blend-mode:lighten}.sketch-overlay-N2{fill:url(#streaks-dark-d2-1186028121);mix-blend-mode:overlay}.sketch-overlay-N3{fill:url(#streaks-normal-d2-1186028121);mix-blend-mode:color-burn}.sketch-overlay-N4{fill:url(#streaks-normal-d2-1186028121);mix-blend-mode:color-burn}.sketch-overlay-N5{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-N6{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.sketch-overlay-N7{fill:url(#streaks-bright-d2-1186028121);mix-blend-mode:darken}.light-code{display: block}.dark-code{display: none}]]></style><g class="Y2FuZGlkYXRl"><g class="shape"><rect x="30.000000" y="0.000000" width="215.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.500000" y="38.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">exact candidate commit</text></g><g class="bG9jYWw="><g class="shape"><rect x="0.000000" y="166.000000" width="274.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.000000" y="204.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.000000" dy="0.000000">local gates</tspan><tspan x="137.000000" dy="18.500000">fmt, check, Clippy, focused tests</tspan></text></g><g class="bml4"><g class="shape"><rect x="33.000000" y="348.000000" width="208.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.000000" y="386.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.000000" dy="0.000000">reproducible Nix check</tspan><tspan x="137.000000" dy="18.500000">immutable vendoring</tspan></text></g><g class="cmV2aWV3"><g class="shape"><rect x="21.000000" y="530.000000" width="232.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.000000" y="568.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.000000" dy="0.000000">independent agent review</tspan><tspan x="137.000000" dy="18.500000">Claude or Codex</tspan></text></g><g class="Y2k="><g class="shape"><rect x="4.000000" y="712.000000" width="267.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.500000" y="750.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.500000" dy="0.000000">protected hosted CI</tspan><tspan x="137.500000" dy="18.500000">checks, coverage, conformance</tspan></text></g><g class="aW1hZ2U="><g class="shape"><rect x="26.000000" y="894.000000" width="222.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.000000" y="932.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.000000" dy="0.000000">multi-architecture image</tspan><tspan x="137.000000" dy="18.500000">build and runtime</tspan></text></g><g class="cGFyaXR5"><g class="shape"><rect x="6.000000" y="1076.000000" width="263.000000" height="82.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.500000" y="1114.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px"><tspan x="137.500000" dy="0.000000">fixed-boundary Preprod parity</tspan><tspan x="137.500000" dy="18.500000">old vs SDK-backed</tspan></text></g><g class="YXBwcm92YWw="><g class="shape"><rect x="9.000000" y="1258.000000" width="256.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.000000" y="1296.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">independent human approval</text></g><g class="bWVyZ2U="><g class="shape"><rect x="61.000000" y="1424.000000" width="153.000000" height="66.000000" stroke="#0D32B2" fill="#F7F8FE" class=" stroke-B1 fill-B6" style="stroke-width:2;" /></g><text x="137.500000" y="1462.500000" fill="#0A0F25" class="text-bold fill-N1" style="text-anchor:middle;font-size:16px">guarded merge</text></g><g class="KGNhbmRpZGF0ZSAtJmd0OyBsb2NhbClbMF0="><marker id="mk-d2-1186028121-3488378134" markerwidth="10.000000" markerheight="12.000000" refx="7.000000" refy="6.000000" viewbox="0.000000 0.000000 10.000000 12.000000" orient="auto" markerunits="userSpaceOnUse"> <polygon points="0.000000,0.000000 10.000000,6.000000 0.000000,12.000000" fill="#0D32B2" class="connection fill-B1" stroke-width="2" /> </marker><path d="M 137.000000 68.000000 C 137.000000 106.000000 137.000000 126.000000 137.000000 162.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KGxvY2FsIC0mZ3Q7IG5peClbMF0="><path d="M 137.000000 250.000000 C 137.000000 288.000000 137.000000 308.000000 137.000000 344.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KG5peCAtJmd0OyByZXZpZXcpWzBd"><path d="M 137.000000 432.000000 C 137.000000 470.000000 137.000000 490.000000 137.000000 526.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KHJldmlldyAtJmd0OyBjaSlbMF0="><path d="M 137.000000 614.000000 C 137.000000 652.000000 137.000000 672.000000 137.000000 708.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KGNpIC0mZ3Q7IGltYWdlKVswXQ=="><path d="M 137.000000 796.000000 C 137.000000 834.000000 137.000000 854.000000 137.000000 890.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KGltYWdlIC0mZ3Q7IHBhcml0eSlbMF0="><path d="M 137.000000 978.000000 C 137.000000 1016.000000 137.000000 1036.000000 137.000000 1072.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KHBhcml0eSAtJmd0OyBhcHByb3ZhbClbMF0="><path d="M 137.000000 1160.000000 C 137.000000 1198.000000 137.000000 1218.000000 137.000000 1254.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><g class="KGFwcHJvdmFsIC0mZ3Q7IG1lcmdlKVswXQ=="><path d="M 137.000000 1326.000000 C 137.000000 1364.000000 137.000000 1384.000000 137.000000 1420.000000" stroke="#0D32B2" fill="none" class="connection stroke-B1" style="stroke-width:2;" marker-end="url(#mk-d2-1186028121-3488378134)" mask="url(#d2-1186028121)" /></g><mask id="d2-1186028121" maskunits="userSpaceOnUse" x="-101" y="-101" width="476" height="1692">
+<rect x="-101" y="-101" width="476" height="1692" fill="white"></rect>
+
+</mask></svg></svg>
+</pre>
+
+<p>Acceptance requires all of the following against the exact candidate:</p>
+<ol>
+<li>formatting, workspace checks, strict Clippy, and focused crypto/DID/resolver
+tests pass locally;</li>
+<li>the repository Nix check passes without mutable dependency resolution;</li>
+<li>an independent Claude or Codex review has no unresolved blocker, high, or
+medium finding;</li>
+<li>every required protected GitHub check is green;</li>
+<li>native and cross-platform container builds are reproducible and runnable;</li>
+<li>the published baseline and SDK-backed candidate scan the same fixed Preprod
+boundary and produce equivalent indexed operations;</li>
+<li>scan duration, CPU, and memory evidence is recorded so QoS regression is
+visible;</li>
+<li>an independent engineer approves the pull request.</li>
+</ol>
+<p>The reproducible old/new harness, commands, artifacts, and metric definitions
+are tracked in
+<a href="https://github.com/hyperledger-identus/neoprism/issues/325">issue 325</a>. The
+deterministic embedded-wallet packaging prerequisite is tracked in
+<a href="https://github.com/hyperledger-identus/neoprism/issues/326">issue 326</a> and its
+<a href="https://github.com/hyperledger-identus/neoprism/pull/348">implementation PR 348</a>.
+The SDK adoption itself is reviewed in
+<a href="https://github.com/hyperledger-identus/neoprism/pull/324">PR 324</a>.</p>
+<h2 id="rollback"><a class="header" href="#rollback">Rollback</a></h2>
+<p>Revert the adoption pull request. The compatibility facades keep the local API
+boundary explicit, and immutable SDK revisions make the previous dependency
+graph reproducible. A rollback must retain the parity artifacts and incident
+evidence rather than deleting them.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="architecture-decisions"><a class="header" href="#architecture-decisions">Architecture decisions</a></h1>
+<p>Architecture decision records capture material NeoPRISM boundaries and the
+evidence required to change them. An accepted ADR authorizes only the scope it
+defines; implementation, protected CI, parity, and release gates still apply.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ADR</th><th>Status</th><th>Decision</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="#adr-0001-adopt-the-sdk-rust-prism-method-kernel-behind-neoprism-facades">0001</a></td><td>Proposed</td><td>Adopt <code>identus-prism-did</code> behind NeoPRISM compatibility facades</td></tr>
+</tbody>
+</table>
+</div>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="adr-0001-adopt-the-sdk-rust-prism-method-kernel-behind-neoprism-facades"><a class="header" href="#adr-0001-adopt-the-sdk-rust-prism-method-kernel-behind-neoprism-facades">ADR 0001: adopt the SDK-Rust PRISM method kernel behind NeoPRISM facades</a></h1>
+<ul>
+<li><strong>Status:</strong> Proposed for issue
+<a href="https://github.com/hyperledger-identus/neoprism/issues/345">#345</a></li>
+<li><strong>Date:</strong> 2026-10-27</li>
+<li><strong>Depends on:</strong> NeoPRISM #324, SDK-Rust #521, SDK-Rust ADRs 0174–0176</li>
+<li><strong>Parity gate:</strong> NeoPRISM #325</li>
+</ul>
+<h2 id="context"><a class="header" href="#context">Context</a></h2>
+<p>NeoPRISM currently owns both reusable PRISM method behavior and product/runtime
+behavior. Its <code>identus-did-prism</code> crate combines:</p>
+<ul>
+<li>canonical and long-form DID syntax;</li>
+<li>protobuf operation values and exact-wire hashing;</li>
+<li>create, update, and deactivate validation;</li>
+<li>deterministic DID state reduction and document projection;</li>
+<li>VDR storage operations;</li>
+<li>Cardano metadata, indexing, persistence-facing values, and resolver
+orchestration.</li>
+</ul>
+<p>SDK-Rust now contains the separately releasable <code>identus-prism-did</code> crate at
+merged revision <code>fe3a14b767a6b13f8aa2fb2acf92bc6e37d93c03</code>. It owns only the
+portable method kernel: bounded syntax, exact signed-operation bytes, typed
+CRUD operations, deterministic state reduction, document projection, and a
+local long-form resolver. Private-key custody, Cardano, VDR storage behavior,
+persistence, HTTP, and node lifecycle are outside that crate.</p>
+<p>PR #324 already establishes the generic SDK compatibility edge for crypto,
+DID values, DID resolution, and HTTP. Replacing NeoPRISM’s method behavior in
+the same PR would make review, rollback, and Preprod comparison too broad.
+Issue #345 therefore needs a second, adapter-first slice.</p>
+<p>NeoPRISM does not currently preserve the exact signed-operation bytes at that
+boundary. Its Cardano sources decode <code>PrismObject</code>, and persistence re-encodes
+each <code>SignedPrismOperation</code>. Protobuf duplicate singular fields and unknown
+fields can therefore be lost before SDK parsing. NeoPRISM state also combines
+SSI state, VDR storage state, protocol-version selection, and ledger timestamps,
+while <code>PrismDidState</code> deliberately owns only the portable SSI substate. Both
+differences must be resolved explicitly; a package substitution cannot do so.</p>
+<h2 id="decision"><a class="header" href="#decision">Decision</a></h2>
+<h3 id="adopt-one-immutable-method-kernel"><a class="header" href="#adopt-one-immutable-method-kernel">Adopt one immutable method kernel</a></h3>
+<p>NeoPRISM will consume <code>identus-prism-did</code> from one immutable SDK-Rust commit.
+The first implementation revision is selected only after PR #324 lands and
+must be recorded in <code>Cargo.toml</code>, <code>Cargo.lock</code>, the PR, and the parity receipt.
+All SDK crates used by one NeoPRISM revision must resolve from the same SDK-Rust
+commit.</p>
+<p>SDK-Rust is authoritative for the supported Rust method profile. The pinned
+PRISM method specification is normative for protocol semantics. NeoPRISM,
+SDK-TS, and historical Apollo/JVM behavior are compatibility evidence, not
+authority over public Rust DTOs or errors.</p>
+<h3 id="preserve-the-neoprism-boundary-during-the-canary"><a class="header" href="#preserve-the-neoprism-boundary-during-the-canary">Preserve the NeoPRISM boundary during the canary</a></h3>
+<p>The existing <code>identus-did-prism</code> package remains NeoPRISM’s public and runtime
+facade during the canary. Its method-facing modules delegate inward to
+<code>identus-prism-did</code> and translate explicitly at the boundary.</p>
+<p>The facade may preserve deprecated NeoPRISM names temporarily, but no new
+SDK-facing type may use Apollo, Castor, Mercury, or other historical domain
+names. Generated protobuf types remain private on both sides and do not become
+the compatibility API.</p>
+<p>The initial mapping is:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>NeoPRISM responsibility</th><th>SDK-Rust owner</th><th>Canary disposition</th></tr>
+</thead>
+<tbody>
+<tr><td><code>did::{PrismDid, CanonicalPrismDid, LongFormPrismDid}</code></td><td><code>identus_prism_did::{PrismDid, CanonicalPrismDid, LongFormPrismDid}</code></td><td>delegate syntax and conversion; retain deprecated facade types only where callers require them</td></tr>
+<tr><td>SSI create/update/deactivate values and validation</td><td>typed SDK operation values and builders</td><td>translate at one fallible adapter; do not expose SDK private wire structs</td></tr>
+<tr><td>signed envelope parsing, operation hash, operation ID</td><td><code>RawPrismOperation</code> and <code>SignedPrismOperation</code></td><td>add an observational NeoPRISM raw-envelope scanner before protobuf materialization; preserve legacy derived values while the SDK shadow uses the exact slice</td></tr>
+<tr><td>SSI DID state transition</td><td><code>PrismDidState</code></td><td>use as the SSI substate inside a NeoPRISM-owned composite shadow reducer</td></tr>
+<tr><td>DID document projection</td><td>SDK projection functions</td><td>project through SDK, then map to the existing NeoPRISM response facade while #324 remains active</td></tr>
+<tr><td>local long-form resolution</td><td><code>PrismDidResolver</code></td><td>use SDK local resolution; short-form history continues through NeoPRISM adapters</td></tr>
+<tr><td>storage/VDR operations</td><td>none in this slice</td><td>retain in NeoPRISM and evaluate them against the composite’s current SDK SSI substate; later <code>identus-prism-vdr</code> adoption needs a separate issue</td></tr>
+<tr><td>protocol-version updates</td><td>none in this slice</td><td>NeoPRISM retains processor selection; the SDK SSI substate rejects these as non-SSI operations</td></tr>
+<tr><td>ledger timestamps and storage cascade</td><td>none in this slice</td><td>NeoPRISM composite sidecars retain key/service lifecycle metadata and revoke storage entries on DID deactivation</td></tr>
+<tr><td>Cardano/indexing/persistence/runtime</td><td>none in this slice</td><td>retain ownership in NeoPRISM; add an in-memory SDK shadow index, build an isolated exact-byte candidate during rehearsal, and select it only at an approved cutover</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="preserve-exact-bytes-before-sdk-parsing"><a class="header" href="#preserve-exact-bytes-before-sdk-parsing">Preserve exact bytes before SDK parsing</a></h3>
+<p>NeoPRISM will add a bounded observational scanner at the raw <code>PrismObject</code>
+metadata boundary. In <code>legacy</code> and <code>shadow</code> modes, the current protobuf decoder
+remains authoritative for the accepted <code>block_content</code>, operation set, and OSN
+ordering. The scanner aligns exact signed-operation slices with that decoded
+sequence. Duplicate <code>block_content</code>, empty/unknown operations, unknown fields,
+and alignment failure must not change legacy acceptance or renumber operations;
+they fall back to the current decode, mark the SDK shadow comparison
+non-comparable, and emit a bounded divergence metric.</p>
+<p><code>sdk</code> mode never consumes a re-encoded fallback row. Its re-index and live
+ingestion read raw chain-source bytes. An envelope that cannot be bounded,
+decoded, or aligned receives a specifically classified envelope rejection or
+the governance-approved catch-all rejection <code>unclassified-envelope</code>. The
+catch-all covers oversized, malformed, unknown, and non-aligning envelopes not
+matched by a more specific rule. Rejecting an envelope rejects all of its
+operations. It records the bounded ledger coordinate, reason, and safe digest
+but no derived operation/state mutation or unbounded attacker bytes.</p>
+<p>Once an envelope is aligned, every exact signed-operation slice is parsed and
+validated independently in OSN order. A stable operation-level rejection,
+including duplicate signed fields, rejects only that operation; valid siblings
+continue through the reducer. <code>ResourceLimitExceeded</code> is the exception defined
+below: it quarantines that DID from its first failing operation onward. Envelope
+and operation rejection both advance the observed ledger cursor, emit bounded
+critical telemetry, and do not halt the indexer. Other valid transactions and
+DIDs in the same block continue. Only an internal invariant failure may stop
+ingestion; attacker-controlled syntax always maps to deterministic rejection.
+The catch-all and all specific rejection categories require protocol-governance
+approval before <code>sdk</code> mode can be promoted on a network.</p>
+<p>For aligned operations, <code>legacy</code> mode continues to persist bytes produced by
+<code>encode_to_vec</code>; upgrading or enabling the default mode therefore does not
+silently change an existing storage/API contract. <code>shadow</code> keeps the exact
+slice only in its bounded in-memory index. The legacy path continues to decode
+and re-encode for its historical operation hash, operation ID, signature
+verification, DID grouping, derived index rows, and indexer API output. The SDK
+shadow alone uses exact bytes for those decisions. Any difference is evidence
+to classify.</p>
+<p><code>sdk</code> mode persists the exact aligned slice in
+<code>raw_operation.signed_operation_data</code>, but only in a clean candidate database
+built by the offline full-chain rehearsal and later selected atomically. It must
+not update production legacy rows through the current conflict-ignoring upsert,
+because that would mix exact and re-encoded rows. Before promotion, the
+implementation audits every reader of the field,
+including raw-operation parsing, database views, hash derivation, and the
+indexer HTTP API, and proves which representation each external response uses.
+Fixtures prove that <code>legacy</code> output is unchanged and that <code>sdk</code> output is
+reproducible from exact source bytes.</p>
+<p>Exact-byte retention alone changes no database schema, but existing rows cannot
+prove their original encoding. Promotion therefore requires a clean full
+re-index from the immutable chain source. A database assembled from re-encoded
+legacy rows is not valid parity evidence. Any durable profile-limit quarantine
+marker introduced below uses a versioned migration when the existing schema
+cannot represent it. Duplicate security-relevant fields must reach the SDK
+scanner so its strict rejection remains effective. Fixtures cover duplicate
+<code>block_content</code>, duplicate signed fields, unknown fields, empty/unknown
+operations, scanner fallback, stable legacy OSN assignment, and clean cutover
+without mixed raw-row encodings.</p>
+<h3 id="compose-portable-ssi-state-with-neoprism-owned-state"><a class="header" href="#compose-portable-ssi-state-with-neoprism-owned-state">Compose portable SSI state with NeoPRISM-owned state</a></h3>
+<p><code>PrismDidState</code> replaces only the SSI method substate. NeoPRISM owns a composite
+shadow state containing:</p>
+<ul>
+<li>the SDK SSI state;</li>
+<li>existing VDR storage entries and their terminal/head relationships;</li>
+<li>ledger-derived key/service creation and revocation timestamps; and</li>
+<li>the active protocol-version processor.</li>
+</ul>
+<p>The composite applies operations in ledger order. SSI operations first update
+a cloned SDK state and then update ledger metadata sidecars. Storage operations
+remain NeoPRISM-owned and verify against the active VDR key exposed by the SDK
+SSI state. DID deactivation commits atomically with the existing storage-entry
+revocation cascade. Protocol-version updates change only the NeoPRISM processor.
+Any failure leaves the whole composite unchanged.</p>
+<p>This composite is an adopter adapter, not a second method implementation. It
+may be deleted only after the corresponding SDK VDR/indexer capabilities are
+adopted in later issues.</p>
+<h3 id="use-dual-path-differential-execution-before-deletion"><a class="header" href="#use-dual-path-differential-execution-before-deletion">Use dual-path differential execution before deletion</a></h3>
+<p>The first implementation keeps the legacy method path as the only writer of
+production legacy tables. A <code>did-method-engine</code> configuration key accepts
+<code>legacy</code>, <code>shadow</code>, or <code>sdk</code> and defaults to <code>legacy</code>. <code>shadow</code> reads the same exact raw operation
+stream, executes the SDK composite in memory, records comparison telemetry,
+and never mutates persisted derived state. It builds a separate in-memory
+DID/operation/VDR index from exact bytes instead of querying legacy-derived DID
+or hash rows.</p>
+<p>The shadow runs in an isolated, supervised worker with bounded non-blocking
+input, entry, raw-byte, and estimated retained-memory budgets. Budget accounting
+happens before allocation. Queue saturation, budget exhaustion, worker failure,
+or an unwinding panic disables comparison, marks the remaining range
+non-comparable, and emits bounded critical telemetry; it never blocks, applies
+backpressure to, or changes the result of legacy ingestion. Production builds
+must preserve an isolation mechanism that cannot turn a shadow panic into a
+process abort. Tests inject queue saturation, budget exhaustion, and worker
+failure while proving that the legacy cursor continues.</p>
+<p>Because this first shadow index is not persisted, every shadow start or late
+enablement rebuilds it from the immutable chain source starting at the agreed
+network origin before reporting comparisons. It never bootstraps from legacy
+raw or derived rows. The #325 promotion receipt comes from one uninterrupted,
+complete origin-to-tip scan; a restart invalidates that receipt and starts a
+new run. Peak shadow memory and all configured budgets are part of its QoS
+evidence.</p>
+<p>Pre-promotion node startup rejects <code>did-method-engine=sdk</code>. After promotion,
+<code>sdk</code> startup requires a durable selected-candidate record in guarded deployment
+configuration outside the candidate database. It contains the candidate’s
+backend identity, network, SDK/NeoPRISM revisions, schema/migration digest,
+the immutable #325 parity-baseline range and manifest digests, and a separate
+cutover cursor <code>C</code> with deterministic ordered-operation, acceptance,
+composite-state, and projection manifest digests through <code>C</code>. Absence or
+mismatch in either receipt fails closed before migrations, listeners, or
+ingestion. The fixed #325 receipt remains the independently reviewed parity/QoS
+baseline; it is not relabelled as evidence for a later cursor.</p>
+<p>The record is signed by a cutover authority whose verification key is pinned
+outside the candidate database. Rehearsal cannot write guarded deployment
+configuration. At cutover, the legacy writer stops after durably committing an
+explicit handoff cursor <code>C</code>; no second writer may advance the selected network
+while ownership is transferring. Before candidate replay, attestation, or
+selection begins, the deployment owner must durably activate a legacy ownership
+fence in guarded deployment configuration outside both databases. The fence
+survives host, container, and orchestrator restarts; prevents the legacy writer
+and listener from starting or serving; and revokes its database role or storage
+mount and serving route. Merely stopping a process or denying legacy access to
+the candidate is not a fence. The candidate replays exact source bytes through
+<code>C</code>, proves the ordered-operation, acceptance, composite-state, and projection
+manifests through <code>C</code>, and records <code>C</code> in the selection record.
+Rehearsal write access is then revoked before the authority opens the read-only
+snapshot, recomputes the identity and manifest digests, checks #325 and
+protected CI evidence, and signs the exact frozen record. No rehearsal or
+runtime identity may mutate candidate rows during attestation.</p>
+<p>Failure recovery leaves that fence active while candidate ownership is
+uncertain. Only the cutover authority may release it, using a signed rollback
+authorization after candidate ingestion and serving are durably disabled and
+the restored or freshly rebuilt legacy backend is verified at its authorized
+resume cursor. Release atomically restores the legacy database/storage access,
+serving route, and restart permission; it cannot overlap candidate ownership.
+The cutover and rollback fixtures must inject a legacy-host restart during
+handoff and after SDK selection and prove that the fenced legacy writer and
+listener remain unavailable until an authorized rollback releases the fence.</p>
+<p>During the initial handoff, resolution, listeners, and normal SDK ingestion
+remain unavailable until startup has verified the record and confirmed the
+candidate’s durable cursor equals <code>C</code>. A handoff-only SDK writer then atomically
+commits the immutable cutover-complete marker at <code>C</code>; it cannot process the
+successor of <code>C</code> in that transaction or before the marker is durable. Only after
+that commit may resolution become available and normal SDK ingestion resume at
+the successor of <code>C</code>. Later restarts verify the signed record, cutover-complete
+marker, and authorized post-cutover cursor history; they resume from the current
+durable cursor at or after <code>C</code> and do not require it to still equal <code>C</code>. Node
+startup therefore proves the immutable baseline without making normal progress
+unrestartable, and candidate contents alone cannot authorize serving. Runtime
+rows after <code>C</code> are normal post-cutover ingestion and do not rewrite that
+baseline. A failed catch-up, cursor mismatch, manifest mismatch, marker commit,
+or writer-handoff timeout leaves legacy ownership intact or restores it through
+the documented rollback route; it never serves the lagging candidate.</p>
+<p>The baseline revisions and schema digest identify the candidate that was
+validated; they are not an accidental permanent ban on upgrades. Every later
+runtime binary requires a separate signed runtime authorization that references
+the immutable baseline receipt, exact allowed SDK/NeoPRISM revisions, network,
+and the previous and target schema digests. Normal startup never applies an
+unapproved migration. A guarded offline <code>sdk-upgrade</code> flow rehearses the
+migration on a snapshot, captures backup/rollback and invariant evidence,
+applies the approved chain with a migration-only role, and publishes a signed
+migration receipt.</p>
+<p>The migration executor cannot sign either artifact. After migration it loses
+write access; an independent upgrade authority opens a read-only snapshot,
+recomputes the schema and evidence digests, and verifies that the migrated
+database through the pinned cursor equals the target runtime’s signed manifests
+before signing the receipt and runtime authorization with a separately pinned
+key. For the bounded profile-remediation exception below, this pre-authorization
+equality applies to unaffected DIDs; each affected DID must equal its target
+full-replay per-DID manifest through the actual cutover cursor <code>C</code> inside the
+atomic targeted cutover before commit. Authorizations carry a monotonic
+sequence and superseded/revoked revisions in guarded external configuration.
+Startup accepts only the latest non-revoked sequence and verifies the complete
+signed authorization/receipt chain from the baseline to the current schema and
+exact runtime revisions before listeners or ingestion. Starting an older
+authorization requires an explicit signed rollback authorization and its
+compatible restored snapshot; restoring a database backup alone is insufficient.</p>
+<p>Every upgrade pins one immutable upgrade cursor and differentially replays both
+the currently authorized and target runtimes from network origin through that
+cursor on isolated clones. The upgrade authority signs the paired cursor,
+ordered-operation/acceptance digest, composite-state digest, and projection
+digest as a new link in the authorization chain; it does not compare a later
+tip directly with the older cutover baseline. Exact acceptance and composite-
+state equality permits an in-place behavior-neutral upgrade. A projection-only
+difference may use an explicitly signed non-semantic authorization only after
+classification as a presentation defect, API compatibility evidence, and
+release notes; it cannot hide an acceptance or internal-state difference.</p>
+<p>A change in ledger acceptance, exact operation IDs, or composite SSI/VDR/
+timestamp/protocol state is otherwise not an in-place upgrade: it requires
+protocol governance or version activation, a new isolated full re-index, and a
+new promotion baseline/cutover. The sole exception is an approved SDK profile-
+limit remediation for already quarantined DIDs. Its signed authorization names
+the profile revision, affected DIDs and first failing operations, proves exact
+manifest equality for every unaffected DID, and uses the targeted sole-writer
+replay/cutover defined below for each affected DID. It cannot change acceptance
+for a previously unquarantined DID. An unapproved build, broken chain,
+unexpected schema, or unexplained manifest difference fails closed.</p>
+<p>A separate offline <code>sdk-rehearsal</code> command is the only pre-promotion SDK writer.
+It has no listener or service endpoint and can write only to a dedicated
+candidate database, never merely another schema in the production database.
+The command requires both production and candidate connections, compares
+backend-owned immutable identities rather than connection strings, and refuses
+equal identities. Rehearsal re-indexes and quarantine migrations never modify
+production legacy tables. Backend isolation is explicit:</p>
+<ul>
+<li><strong>PostgreSQL:</strong> the production connection uses a read-only identity role with
+no table, schema, migration, or role-management writes. A candidate writer
+role is provisioned out of band with privileges limited to the candidate
+database; rehearsal never holds cluster-global role-creation credentials.
+Identity is the tuple of PostgreSQL system identifier, database OID, and a
+generated database UUID, allowing another database in the same cluster while
+detecting endpoint aliases.</li>
+<li><strong>SQLite:</strong> the live production identity connection opens with normal
+<code>mode=ro</code> locking and change detection so WAL-backed legacy writes remain
+visible and consistent. <code>immutable=1</code> is permitted only for a frozen,
+checkpointed or SQLite-backup snapshot that includes a consistent WAL state
+and cannot be modified for the lifetime of the connection. The candidate is a
+separate file on a candidate-only volume; canonical path, device/inode
+identity, and a database UUID must all differ from the production file.
+Filesystem ownership permits rehearsal/SDK writes but denies the legacy
+deployment access to the candidate volume.</li>
+</ul>
+<p>The rehearsal writer initializes only candidate-local identity and manifest
+metadata; neither is a selection authority. When <code>sdk</code> is enabled for an
+approved network, it serves only after that candidate has been rebuilt from
+exact source bytes, caught up through the stopped legacy writer’s handoff cursor
+<code>C</code>, validated at <code>C</code>, bound to the externally signed selection record, and
+atomically selected. Selecting the candidate database and transferring writer
+ownership at <code>C</code> is the promotion/cutover event, not a pre-promotion evidence
+step. Resolution stays unavailable across that bounded handoff; the system does
+not serve either an older candidate or the legacy database after SDK ownership
+is selected. For SQLite the selection record remains outside the database file,
+so the cutover authority never needs write access to candidate rows.</p>
+<p>Candidate endpoint/role credentials or SQLite volume access are never
+provisioned to legacy deployments, including already-published binaries.
+Network, database, and filesystem controls reject legacy access to the
+candidate. The promotion and rollback receipts prove this separation; rollback
+points the legacy deployment only at the restored or freshly rebuilt legacy
+endpoint/file.</p>
+<p>For every operation in the shared supported profile, the harness compares:</p>
+<ol>
+<li>parse outcome and stable error category;</li>
+<li>exact operation hash and operation ID;</li>
+<li>ordered state transition outcome;</li>
+<li>terminal composite state, including SSI state, storage state, timestamps,
+and protocol version, but excluding presentation projection;</li>
+<li>projected DID document through its separate projection digest; and</li>
+<li>deactivation and unsupported-version behavior.</li>
+</ol>
+<p>Differences are classified as:</p>
+<ul>
+<li><strong>spec correction:</strong> SDK behavior follows the pinned specification but changes
+ledger acceptance; promotion stops until PRISM protocol governance approves
+the rule for all implementations or activates it through a protocol version;</li>
+<li><strong>historical compatibility requirement:</strong> ledger evidence requires a bounded
+compatibility rule in SDK-Rust;</li>
+<li><strong>NeoPRISM presentation defect/dead behavior:</strong> projection, error text, or
+telemetry differences that cannot change whether an operation is accepted
+may be corrected with evidence and release notes. Every acceptance difference
+still requires protocol governance or version activation.</li>
+<li><strong>SDK profile limit:</strong> finite SDK resources would make an otherwise accepted
+DID unresolvable. Promotion requires zero occurrences in the complete history
+of the target network and explicit network/profile approval. After promotion,
+any new occurrence fails closed, emits a critical metric/alert, and must not
+skip the operation or fall back to stale state. The failure is isolated to
+that DID: the raw operation and DID association are recorded, the ledger
+cursor advances, other DIDs continue indexing, and resolution returns a
+stable <code>profile-limit-exceeded</code> error from the first failing operation onward.
+Every later operation for the quarantined DID, including storage and
+deactivation operations, is retained as raw evidence but does not mutate its
+derived SSI or VDR state. The last good derived state is never served as
+current. A durable quarantine marker identifies the first failing operation;
+restart and re-index reproduce it deterministically. Raising a limit does not
+resume incrementally: a governed profile revision triggers a targeted
+origin-to-tip replay for that DID (or a full network re-index) using the
+recorded protocol-version timeline. Resolution continues returning the error
+while replay and live catch-up run. Final cutover executes inside the sole
+ingestion writer’s ordering. It locks the DID and fixes the global indexer’s
+committed cursor <code>C</code>. Before commit, an isolated target replay consumes every
+retained raw operation through that same <code>C</code>; its per-DID manifest must equal
+the staged replacement. Only then does the transaction replace every DID-
+derived SSI row, VDR row, key/service timestamp sidecar, and projection,
+record <code>C</code>, and clear the quarantine marker. A mismatch rolls back the whole
+transaction, retains quarantine, and emits a critical alert. An
+operation ordered after <code>C</code> is processed normally only after that transaction;
+no cursor gap can be skipped. Resolution resumes only after the complete
+cutover succeeds. If replay still exceeds the revised profile, no derived
+state is replaced and the marker atomically moves to the first operation that
+fails under that profile. The global protocol-version processor is not
+replaced by a DID replay.</li>
+</ul>
+<p>No donor code is deleted merely because unit tests pass.</p>
+<h3 id="keep-security-and-resource-invariants-at-the-sdk-edge"><a class="header" href="#keep-security-and-resource-invariants-at-the-sdk-edge">Keep security and resource invariants at the SDK edge</a></h3>
+<p>The adapter must preserve the SDK invariants:</p>
+<ul>
+<li>signature verification and hashes consume the exact bounded nested operation
+bytes received on the wire;</li>
+<li>duplicate security-relevant protobuf fields are rejected;</li>
+<li>Ed25519 and X25519 public keys require exact widths;</li>
+<li>the Apollo/JVM secp256k1 compatibility fallback remains covered by the pinned
+50-vector suite;</li>
+<li>update actions are ordered and atomic, retired identifiers cannot be reused,
+and active limits do not count tombstones;</li>
+<li>long-form and projection limits are enforced before attacker-controlled
+allocation or work; and</li>
+<li>authentication, authorization, and previous-operation linkage are verified
+before a state-growth limit can quarantine a DID;</li>
+<li><code>ResourceLimitExceeded</code> fails current resolution and shadow processing from
+the first failing operation onward; an immutable earlier version may resolve
+only when the public API explicitly supports versioned resolution. The error
+is never mapped to NeoPRISM’s legacy skip-invalid-operation path; and</li>
+<li>errors crossing public/HTTP boundaries remain stable and redact sensitive
+bytes.</li>
+</ul>
+<p>The adapter may narrow an SDK capability that NeoPRISM cannot honor. It must
+never silently accept and ignore an SDK option or operation.</p>
+<h3 id="measure-operational-parity-before-switching-the-default"><a class="header" href="#measure-operational-parity-before-switching-the-default">Measure operational parity before switching the default</a></h3>
+<p>Issue #325 is the Preprod promotion gate. The published legacy node and the SDK-backed
+candidate scan the complete agreed immutable Preprod history and produce comparable ordered
+operation, composite-state, and projection manifests. The receipt also records scan duration,
+CPU time/utilization, peak resident memory, exact binaries/images, revisions,
+configuration, network, range, and host characteristics.</p>
+<p>The SDK-backed path becomes the default for a specific network only when:</p>
+<ul>
+<li>operation, composite-state, and projection parity is exact at the agreed boundary;</li>
+<li>every non-comparable scanner occurrence in the complete target-network
+history is either eliminated by an exact-byte adapter improvement or
+classified and resolved through the same presentation, compatibility,
+protocol-governance, or profile-limit rules; unresolved occurrences block
+promotion;</li>
+<li>every acceptance difference is either removed or activated by an approved
+network-wide protocol-version decision, not a local NeoPRISM migration;</li>
+<li>QoS change is understood and accepted;</li>
+<li>exact-head protected CI and independent review are green;</li>
+<li>a rehearsal full-chain re-index has produced exact raw-operation storage and
+SDK-derived index rows in an isolated candidate database, plus a
+versioned quarantine migration when required, without modifying production
+legacy tables;</li>
+<li>a read-only candidate snapshot reproduces the #325 ordered-operation and
+composite-state/projection manifest digests at the fixed parity boundary,
+then separately reproduces the cutover manifests through <code>C</code>; the signed
+selection record binds both receipts to the exact backend identity, schema,
+revisions, network, and their respective source cursors after rehearsal write
+access is revoked;</li>
+<li>the complete pre-cutover legacy schema/data snapshot is captured and tested,
+or the clean legacy re-index route and immutable source are confirmed, before
+the candidate database can be selected; and</li>
+<li>the rollback receipt covers a code revert plus either restoration of the
+complete pre-cutover legacy schema/data snapshot followed by replay from that
+snapshot’s cursor, or a clean legacy re-index from network origin into a fresh
+legacy schema. The legacy binary never opens or writes SDK-cutover tables.</li>
+</ul>
+<p>The #325 receipt authorizes Preprod only. Mainnet remains on <code>legacy</code> until a
+separate complete Mainnet shadow receipt and explicit promotion decision satisfy
+the same operation, composite-state, profile-limit, QoS, re-index, and rollback
+criteria.</p>
+<h2 id="consequences"><a class="header" href="#consequences">Consequences</a></h2>
+<ul>
+<li>NeoPRISM can shrink toward Cardano adapters, persistence, service composition,
+and operations without making the migration irreversible.</li>
+<li>Temporary method duplication is intentional and measurable.</li>
+<li>The compatibility facade and composite shadow state add temporary translation
+code, but isolate product effects from portable method behavior.</li>
+<li>Exact-byte persistence and SDK-derived index rows require a full target-network
+re-index before promotion. Existing table definitions can be reused only in
+the isolated candidate database; a durable quarantine marker may
+require a versioned migration there.</li>
+<li>A protocol correction that changes accepted ledger history cannot be shipped
+as a local migration.</li>
+<li><code>identus-prism-vdr</code> and <code>identus-prism-indexer</code> adoption remain independent
+milestones with their own operational evidence.</li>
+</ul>
+<h2 id="alternatives-rejected"><a class="header" href="#alternatives-rejected">Alternatives rejected</a></h2>
+<ul>
+<li><strong>Replace the whole <code>did-prism</code> crate at once:</strong> mixes portable method,
+storage, Cardano, and runtime behavior and makes parity failures hard to
+isolate.</li>
+<li><strong>Copy the SDK implementation back into NeoPRISM:</strong> restores duplication and
+defeats independent SDK release/adoption evidence.</li>
+<li><strong>Expose generated protobuf DTOs as the adapter contract:</strong> couples public
+APIs to one runtime and risks decode/re-encode security errors.</li>
+<li><strong>Treat SDK-TS or the old Rust implementation as normative:</strong> freezes donor
+DTO/error choices and known deviations instead of following the specification.</li>
+<li><strong>Delete the legacy path before Preprod comparison:</strong> removes the differential
+oracle and makes rollback operationally expensive.</li>
+</ul>
+<h2 id="verification"><a class="header" href="#verification">Verification</a></h2>
+<p>The implementation PR must attach:</p>
+<ul>
+<li>the exact SDK and NeoPRISM revisions and signed/DCO commit evidence;</li>
+<li>source-to-target and fixture provenance mappings;</li>
+<li>legacy/SDK differential vectors for syntax, exact wire bytes, CRUD/state,
+projection, limits, malformed input, and crypto compatibility;</li>
+<li>reader-audit and mixed-row-prevention evidence for
+<code>raw_operation.signed_operation_data</code>, including identical legacy API output
+before and after the adapter is installed;</li>
+<li><code>sdk</code>-mode liveness fixtures proving that <code>profile-limit-exceeded</code> advances
+the ledger cursor, retains the bounded raw operation and DID association,
+continues valid DIDs/transactions in the same block, emits a critical alert,
+and reproduces the same quarantine after restart and full re-index;</li>
+<li>envelope-rejection fixtures proving that <code>unclassified-envelope</code> advances the
+ledger cursor, retains only the bounded coordinate, stable reason, and safe
+digest defined above, retains no unbounded attacker bytes, continues later
+valid transactions, and reproduces the same rejection receipt after restart
+and full re-index;</li>
+<li>a concurrent-recovery fixture proving operations that arrive during replay
+are applied exactly once on the correct side of cutover cursor <code>C</code>, plus a
+failed-remediation fixture that retains quarantine at the newly computed
+first failing operation;</li>
+<li>aligned-operation fixtures proving one strict parse/validation rejection keeps
+valid sibling operations, while an envelope rejection drops the whole
+envelope with a stable category;</li>
+<li>a stable public <code>profile-limit-exceeded</code> error variant with specified HTTP
+status/body and redaction tests;</li>
+<li>shadow fault-injection evidence for queue saturation, entry/byte/memory budget
+exhaustion, worker failure, and panic isolation while legacy ingestion keeps
+advancing;</li>
+<li>startup/cutover evidence that pre-promotion <code>sdk</code>, absent or mismatched
+external selection records, and wrong database identity, manifest, schema,
+network, revision, or source receipts fail before migration, listeners, or
+ingestion;</li>
+<li>cutover-barrier evidence that the legacy writer stops at durable cursor <code>C</code>,
+the candidate replays and matches every required manifest through <code>C</code>,
+rehearsal writes are revoked before attestation, resolution remains
+unavailable during ownership transfer, the cutover-complete marker commits at
+<code>C</code> before SDK ingestion resumes exactly at its successor, and a mutable,
+lagging, or mismatched candidate cannot serve;</li>
+<li>restart evidence that the initial handoff requires exact cursor <code>C</code>, while a
+selected database that has durably advanced beyond <code>C</code> verifies the immutable
+cutover marker and resumes from its later authorized cursor without repeating
+or skipping post-cutover operations;</li>
+<li>authority-separation evidence that rehearsal cannot write guarded selection
+configuration, its write access is revoked before signing, the cutover
+identity cannot rewrite candidate data, and startup rejects forged, unsigned,
+incorrectly signed, or digest-mismatched promotion receipts;</li>
+<li>post-cutover upgrade fixtures proving an exactly authorized binary and
+rehearsed migration chain can start, while an unapproved revision, unexpected
+schema, missing receipt, failed migration, or broken signature chain fails
+closed and preserves the rollback backup;</li>
+<li>migrated-snapshot evidence proving its rows through the pinned upgrade cursor
+reproduce the target runtime’s signed acceptance, composite-state, and
+projection manifests before authorization, except that profile remediation
+compares unaffected DIDs before cutover and each affected DID against an
+isolated target replay through the same live cutover cursor <code>C</code> inside the
+transaction, with mismatch rollback evidence;</li>
+<li>upgrade authority-separation and anti-rollback evidence proving the migration
+executor cannot sign, write access is revoked before independent read-only
+attestation, superseded authorizations cannot start, and a database backup
+alone cannot roll back the authorized runtime sequence;</li>
+<li>origin-to-pinned-cursor differential evidence for every SDK upgrade, comparing
+current and target runtimes at the same cursor, with signed acceptance,
+composite-state, and projection digest pairs; exact acceptance/state equality
+for behavior-neutral upgrades; documented authorization for projection-only
+fixes; and a new governed promotion baseline for other semantic changes;</li>
+<li>profile-remediation evidence naming every quarantined DID/first failure,
+proving all unaffected manifests remain equal, and exercising atomic targeted
+replay without changing any previously unquarantined DID;</li>
+<li>isolation evidence that <code>sdk-rehearsal</code> rejects the production database by
+backend-owned identity even through endpoint/path aliases, and that candidate
+endpoint or file controls deny legacy deployment credentials/access;</li>
+<li>privilege-denial evidence that the rehearsal production identity role cannot
+write tables, schemas, migrations, or roles, and that its candidate writer
+role has no authority outside the candidate database, plus SQLite evidence
+for normal read-only live opens, immutable access only to frozen
+WAL-consistent snapshots, distinct path/device/inode/UUID identities, and
+candidate-volume permissions;</li>
+<li>PostgreSQL identity evidence for the system-identifier/database-OID/database-
+UUID tuple, including same-cluster databases and endpoint aliases;</li>
+<li>NeoPRISM Nix check, strict Clippy, tests/doctests, conformance, coverage, and
+file-hygiene evidence;</li>
+<li>the issue #325 complete Preprod operation/state/profile-limit/QoS receipt;</li>
+<li>an independent exact-commit review receipt; and</li>
+<li>delivery metrics permitted by project policy.</li>
+</ul>
+<h2 id="rollback-1"><a class="header" href="#rollback-1">Rollback</a></h2>
+<p>Before promotion, select <code>did-method-engine=legacy</code> and remove the read-only
+shadow adapter; no SDK-derived database rows or exact-slice replacements exist
+in the production legacy tables, and legacy storage/output semantics remain
+unchanged. The unselected rehearsal candidate is discarded or remains clearly
+marked unselected and is never opened by the legacy binary; it must be rebuilt
+or fully revalidated before any later selection. After promotion, rollback
+never runs the reverted binary against the SDK-cutover database. It requires a
+code revert plus either restoration of the complete pre-cutover legacy
+schema/data snapshot followed by replay from its recorded cursor, or a clean
+legacy re-index from network origin into a fresh legacy schema. Migration
+forward/backward compatibility may be tested as supplemental evidence, but
+never authorizes in-place rollback or replaces either clean rollback route.
+Changing SDK public method semantics requires an SDK-Rust issue and ADR;
+NeoPRISM must not carry an unreviewed local fork.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <p>NeoPRISM nodes offer flexible configuration to suit various deployment scenarios.</p>
 <p>This section explains the key configuration options.<br>For a complete list of available options, see <a href="#cli-options">CLI Options</a>.</p>
@@ -850,14 +1723,22 @@ just e2e::down dev-sqlite
 <p>All automation assumes you are inside the Nix development shell:</p>
 <pre><code class="language-bash">nix develop
 </code></pre>
-<p>From there, run every stack (PostgreSQL + SQLite, developer + CI topologies) in one go:</p>
+<p>Before creating a Compose project, the runner verifies that <code>docker</code>,
+<code>docker-compose</code>, <code>nix</code>, and <code>sbt</code> are available. A missing tool fails the
+preflight without starting containers; a tool that disappears later is recorded
+as a terminal failed receipt after scoped cleanup.</p>
+<p>From there, run every supported stack in one go:</p>
 <pre><code class="language-bash">just e2e::run
 </code></pre>
-<p><code>just e2e::run</code> performs the following loop:</p>
+<p><code>just e2e::run</code> uses a unique Compose project for each profile and performs the following loop:</p>
 <ol>
-<li>Builds and <code>docker load</code>s the NeoPRISM image (<code>just e2e::docker-publish-local</code>).</li>
-<li>Iterates through the compose stacks below, running <code>sbt test</code> for each.</li>
-<li>Executes <code>docker-compose ... down --volumes --remove-orphans</code> so no containers linger between runs.</li>
+<li>Acquires a non-blocking, per-user host lock shared by all worktrees because the generated profiles use fixed host ports and a shared Docker image tag.</li>
+<li>Runs read-only Docker, disk-space, Compose-file, and stale-network preflight checks.</li>
+<li>Builds and loads the NeoPRISM image.</li>
+<li>Iterates through the compose stacks below. The embedded-wallet profile waits, with a 120-second bound, until its deterministic test address has a spendable UTXO.</li>
+<li>Runs <code>sbt "clean;Test / testOnly *"</code> for each profile and requires a non-zero conformance test receipt.</li>
+<li>Executes <code>docker-compose ... down --volumes --remove-orphans</code> in a failure-safe cleanup path.</li>
+<li>Writes a JSON receipt and per-profile logs under <code>target/e2e-receipts/</code>.</li>
 </ol>
 <div class="table-wrapper">
 <table>
@@ -865,17 +1746,34 @@ just e2e::down dev-sqlite
 <tr><th>Target</th><th>Backend</th><th>Compose file</th><th>Notes</th></tr>
 </thead>
 <tbody>
-<tr><td><code>dev</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-dev.yml</code></td><td>Mirrors “developer friendly” defaults with Postgres</td></tr>
-<tr><td><code>dev-sqlite</code></td><td>SQLite</td><td><code>docker/prism-test/compose-dev-sqlite.yml</code></td><td>Fastest loop, great for laptop smoke tests</td></tr>
+<tr><td><code>sqlite-dev</code></td><td>SQLite</td><td><code>docker/prism-test/compose-sqlite-dev.yml</code></td><td>Fast laptop smoke topology</td></tr>
 <tr><td><code>ci</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci.yml</code></td><td>Heavier topology that matches the CI pipeline</td></tr>
 <tr><td><code>ci-sqlite</code></td><td>SQLite</td><td><code>docker/prism-test/compose-ci-sqlite.yml</code></td><td>Ensures the embedded backend stays compatible under CI load</td></tr>
+<tr><td><code>ci-blockfrost</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci-blockfrost.yml</code></td><td>Exercises Blockfrost indexing and submission paths</td></tr>
+<tr><td><code>ci-embedded-wallet</code></td><td>PostgreSQL</td><td><code>docker/prism-test/compose-ci-embedded-wallet.yml</code></td><td>Exercises the embedded-wallet submission path</td></tr>
 </tbody>
 </table>
 </div>
+<p>Run one or more selected profiles with the runner directly:</p>
+<pre><code class="language-bash">python tools/e2e_runner.py --profile sqlite-dev
+python tools/e2e_runner.py --profile ci-sqlite --profile ci-embedded-wallet
+</code></pre>
+<p>Each receipt records the exact Git revision, dirty state, Docker architecture and version, loaded NeoPRISM image ID, profile durations, embedded-wallet readiness time, conformance test count, missing images at profile start, result, and cleanup result. A profile with missing images is marked <code>cold_cache</code>. Missing dependency images are pulled before service startup so the receipt reports image-pull, service-start/readiness, and conformance-test durations separately; the total profile duration still includes all phases and cleanup. CPU and RAM are intentionally non-gating until controlled runs establish a useful baseline.</p>
 <p>Need to focus on a single stack? Use <code>just e2e::up &lt;name&gt;</code> / <code>just e2e::down &lt;name&gt;</code> and run the Scala tests manually:</p>
-<pre><code class="language-bash">just e2e::up dev-sqlite
-(cd tests/prism-test &amp;&amp; sbt test)
-just e2e::down dev-sqlite
+<pre><code class="language-bash">just e2e::up sqlite-dev
+(cd tests/prism-test &amp;&amp; sbt "clean;Test / testOnly *")
+just e2e::down sqlite-dev
+</code></pre>
+<p>The manual <code>up</code> and <code>down</code> recipes retain the historical shared Compose project name. Prefer the runner for automated sessions. Full matrix sessions are deliberately serialized because the generated stacks bind fixed host ports such as <code>18080</code>.</p>
+<h2 id="preflight-and-recovery"><a class="header" href="#preflight-and-recovery">Preflight and recovery</a></h2>
+<p>The runner never removes global Docker resources automatically. It only tears down the unique project it created. If unused NeoPRISM test networks are found, preflight prints their exact names and a narrowly scoped <code>docker network rm ...</code> command without executing it.</p>
+<p>If Docker reports <code>all predefined address pools have been fully subnetted</code>, inspect the listed networks before running the suggested command. If no stale NeoPRISM networks are listed, use <code>docker network ls</code> and coordinate with the owners of other projects instead of running a global prune.</p>
+<p>The Cardano and Blockfrost test images currently target <code>linux/amd64</code>. Docker Desktop on Apple Silicon may print architecture-emulation warnings; these are expected when the services become healthy and the conformance suite passes.</p>
+<p>By default, preflight requires 10 GiB of free host disk space for the cold-cache matrix. Override this only when the Docker images are already present:</p>
+<pre><code class="language-bash">NEOPRISM_E2E_MIN_FREE_GIB=5 just e2e::run
+</code></pre>
+<p>Run the runner’s offline tests without Docker:</p>
+<pre><code class="language-bash">just e2e::test-runner
 </code></pre>
 <h2 id="full-repository-check"><a class="header" href="#full-repository-check">Full repository check</a></h2>
 <p>Before opening a PR, run the umbrella command from the repository root:</p>
@@ -886,15 +1784,15 @@ just e2e::down dev-sqlite
 <p>The compose files live in <code>docker/prism-test/</code> and are generated via <code>just build-config</code>. If you need to inspect or tweak them manually:</p>
 <ol>
 <li>
-<p>Start the desired stack (for example the developer Postgres topology):</p>
+<p>Start the desired stack (for example the SQLite development topology):</p>
 <pre><code class="language-bash">cd docker/prism-test
-docker-compose -f compose-dev.yml up
+docker-compose -f compose-sqlite-dev.yml up
 </code></pre>
 </li>
 <li>
 <p>In another terminal, run the Scala suite:</p>
 <pre><code class="language-bash">cd tests/prism-test
-sbt test
+sbt "clean;Test / testOnly *"
 </code></pre>
 </li>
 </ol>
@@ -911,6 +1809,92 @@ sbt test
 <li>Implement a matching <code>NodeClient</code> adapter if your HTTP surface differs from the existing NeoPRISM resolver/submitter endpoints.</li>
 </ol>
 <p>This keeps the shared conformance suite portable across implementations.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="live-indexer-parity-test"><a class="header" href="#live-indexer-parity-test">Live Indexer Parity Test</a></h1>
+<p>The live parity harness runs a published NeoPRISM release and a candidate image
+against the same Cardano chain prefix. It is intended for release and migration
+evidence, especially when replacing internal components such as Apollo with
+sdk-rust.</p>
+<p>The harness is read-only. It runs two Oura indexers and two isolated PostgreSQL
+databases, submits no transactions, and needs no wallet credentials.</p>
+<h2 id="prepare-the-candidate"><a class="header" href="#prepare-the-candidate">Prepare the Candidate</a></h2>
+<p>Build and load the candidate snapshot before starting the test. For example:</p>
+<pre><code class="language-shell">nix build .#neoprism-docker-latest
+docker load &lt; result
+docker tag identus-neoprism:latest neoprism:sdk-rust-snapshot
+</code></pre>
+<p>The exact loaded tag can vary, but it must be supplied explicitly. The report
+captures the resolved local image ID and any registry digest.</p>
+<h2 id="run-on-preprod"><a class="header" href="#run-on-preprod">Run on Preprod</a></h2>
+<pre><code class="language-shell">just indexer-parity::run neoprism:sdk-rust-snapshot
+</code></pre>
+<p>The default baseline is
+<code>hyperledgeridentus/identus-neoprism:0.14.2</code>. Override it or pin a repeatable
+slot when needed:</p>
+<pre><code class="language-shell">just indexer-parity::run neoprism:sdk-rust-snapshot \
+  --baseline-image hyperledgeridentus/identus-neoprism:0.14.2 \
+  --target-slot 12345678 \
+  --drain-seconds 60 \
+  --timeout-seconds 7200
+</code></pre>
+<p>Without <code>--target-slot</code>, the harness samples both cursors for five minutes and
+chooses a boundary 1,000 slots behind the slower indexer. This is useful for an
+exploratory comparison. Release evidence should use an explicit historical
+slot.</p>
+<p>Mainnet is deliberately guarded:</p>
+<pre><code class="language-shell">just indexer-parity::run neoprism:sdk-rust-snapshot \
+  --network mainnet \
+  --allow-mainnet
+</code></pre>
+<h2 id="evidence-and-exit-codes"><a class="header" href="#evidence-and-exit-codes">Evidence and Exit Codes</a></h2>
+<p>Evidence is written beneath <code>artifacts/indexer-parity/</code>:</p>
+<ul>
+<li><code>baseline.csv</code> and <code>candidate.csv</code> contain normalized operation manifests;</li>
+<li><code>report.json</code> contains machine-readable differences and run metadata;</li>
+<li><code>report.md</code> is the review summary;</li>
+<li><code>cursor-samples.csv</code> contains elapsed time and both persisted cursors;</li>
+<li><code>resource-samples.csv</code> contains sampled CPU, memory, and process use for each
+indexer;</li>
+<li><code>containers.log</code> captures both indexers and databases.</li>
+</ul>
+<p>Every invocation uses a unique Compose project, including when <code>--keep</code> is
+used, so retained or concurrent runs cannot share containers or database
+volumes. Every Docker/Compose/SQL subprocess is bounded by the run deadline;
+evidence capture and teardown use their own short finalization timeout.</p>
+<p>The command exits with zero for equal manifests, one for a semantic difference,
+and two for configuration or harness failure. Containers and ephemeral database
+state are removed after the report is captured. Pass <code>--keep</code> to retain them for
+diagnosis.</p>
+<p>The report summarizes total duration, live scan duration, time-to-boundary,
+effective cursor rate, average/p95/peak CPU, average/p95/peak memory, peak
+process count, and container restarts. It also calculates candidate-to-baseline
+ratios for the most useful comparative values. Change the five-second sampling
+cadence with <code>--metrics-sample-seconds</code> when needed.</p>
+<h2 id="cost-and-interpretation"><a class="header" href="#cost-and-interpretation">Cost and Interpretation</a></h2>
+<p>Runtime depends on relay throughput and the selected boundary. Both images start
+from NeoPRISM’s fixed PRISM genesis point, not Cardano absolute genesis. The
+default timeout is two hours.</p>
+<p>Resource telemetry is diagnostic. Docker CPU percentages may exceed 100% on
+multi-core hosts, and results vary with the runner, Docker runtime, relay, and
+other workloads. Establish a distribution from repeated runs on a controlled
+runner before defining a performance budget or making QoS metrics gating.</p>
+<p>A passing report proves equality only through its recorded slot, with the Oura
+source and configuration shown in the report. It does not establish parity for
+DB-Sync, Blockfrost, or future operations beyond that boundary.</p>
+<p>The Oura cursor is a source high-water mark, not a database-ingestion
+acknowledgment. To reduce the risk of stopping with queued events, the harness
+requires zero pending operations, stable manifest counts for the configured
+drain interval while both cursors remain at least two boundary lags beyond the
+comparison slot, then rejects the frozen exports if either contains a pending
+row. The report records the observed cursors, frozen operation and pending
+counts, quiescence duration, inspected image identities, and the exact image IDs
+used by the started containers. A <code>PASS</code> means persisted-manifest equality under
+bounded quiescence; it does not assert complete source ingestion. Until NeoPRISM
+exposes a persisted
+ingestion acknowledgment or an independent chain oracle is supplied, treat a
+single live run as bounded operational evidence rather than a mathematical proof
+that no source event was omitted. Repeated fixed-boundary runs and manifest
+agreement are required for promotion evidence.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="release-process"><a class="header" href="#release-process">Release Process</a></h1>
 <p>This document describes the step-by-step process for creating a new release of NeoPRISM.</p>
@@ -1258,7 +2242,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.14.2
+  version: 0.15.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -1304,69 +2288,130 @@ paths:
     get:
       tags:
         - Indexer API
-      summary: Resolve DID
-      description: |-
-        This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
-
-        Optional resolution options may be provided as query parameters, but are not yet supported in this implementation.
-      operationId: did_resolver
+      summary: Resolve a DID
+      description: Resolve one DID through the injected resolver. The aggregate `Accept` header is limited to 8192 bytes and 32 media ranges. The raw query is limited to 8192 bytes, 32 parameters, 256 bytes per decoded name, and 4096 bytes per decoded value. Unknown query names are retained as bounded extension options.
+      operationId: resolveDid
       parameters:
         - name: did
           in: path
-          description: The Decentralized Identifier (DID) to resolve.
+          description: DID path value to resolve.
           required: true
           schema:
             type: string
-          example: did:example:123456789abcdefghi
+        - name: Accept
+          in: header
+          description: Requested response media ranges. Supported representations are `application/did`, `application/json`, and `application/did-resolution`; absence defaults to `application/did`.
+          required: false
+          schema:
+            type: string
+        - name: expandRelativeUrls
+          in: query
+          description: Whether relative DID document URLs should be expanded.
+          required: false
+          schema:
+            type: boolean
+        - name: noCache
+          in: query
+          description: Whether cached resolution results should be bypassed.
+          required: false
+          schema:
+            type: boolean
+        - name: versionId
+          in: query
+          description: Requested DID document version identifier.
+          required: false
+          schema:
+            type: string
+        - name: versionTime
+          in: query
+          description: Requested DID document version time as an RFC 3339 timestamp.
+          required: false
+          schema:
+            type: string
       responses:
         "200":
-          description: Successfully resolved the DID.
-          content:
-            application/json:
+          description: DID document or complete DID Resolution result.
+          headers:
+            Vary:
               schema:
-                $ref: '#/components/schemas/DidDocument'
+                type: string
+              description: Always `Accept`.
+          content:
             application/did:
               schema:
                 $ref: '#/components/schemas/DidDocument'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "400":
-          description: The provided DID is invalid.
+          description: The DID or resolution options are invalid.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "404":
-          description: The DID does not exist or not found.
+          description: The DID was not found.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "406":
-          description: The requested representation is not supported.
+          description: No requested representation is available.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "410":
-          description: The DID has been deactivated.
+          description: The DID is deactivated.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "500":
-          description: An unexpected error occurred during resolution.
+          description: Resolution failed internally.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "501":
-          description: A functionality is not implemented.
+          description: The DID method is not supported.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
   /api/dids/{did}/protobuf:
     get:
       tags:
@@ -1668,17 +2713,6 @@ components:
         - Indexer
         - Submitter
         - Standalone
-    Base64UrlStrNoPad:
-      type: string
-      description: |-
-        # Example
-        ```
-        use identus_apollo::base64::Base64UrlStrNoPad;
-
-        let b = b"hello world";
-        let b64 = Base64UrlStrNoPad::from(b);
-        assert!(b64.to_string() == "aGVsbG8gd29ybGQ");
-        ```
     BlockNo:
       type: integer
       format: int64
@@ -1689,134 +2723,32 @@ components:
       example: did:example:123456789abcdefghi
     DidDocument:
       type: object
+      description: Extensible W3C DID document. Method-specific and extension properties are preserved.
       required:
-        - '@context'
         - id
-        - verificationMethod
       properties:
-        '@context':
-          type: array
-          items:
-            type: string
-        alsoKnownAs:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/Uri'
-        assertionMethod:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        authentication:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        capabilityDelegation:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        capabilityInvocation:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
         id:
-          $ref: '#/components/schemas/Did'
-        keyAgreement:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        service:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/Service'
-        verificationMethod:
-          type: array
-          items:
-            $ref: '#/components/schemas/VerificationMethod'
-    DidDocumentMetadata:
+          type: string
+      additionalProperties: true
+    DidResolutionResult:
       type: object
-      properties:
-        canonicalId:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Did'
-        created:
-          type:
-            - string
-            - "null"
-          format: date-time
-        deactivated:
-          type:
-            - boolean
-            - "null"
-        updated:
-          type:
-            - string
-            - "null"
-          format: date-time
-        versionId:
-          type:
-            - string
-            - "null"
-    DidResolutionError:
-      type: object
+      description: W3C DID Resolution result envelope.
       required:
-        - type
+        - didResolutionMetadata
+        - didDocument
+        - didDocumentMetadata
       properties:
-        detail:
+        didDocument:
           type:
-            - string
+            - object
             - "null"
-        title:
-          type:
-            - string
-            - "null"
-        type:
-          $ref: '#/components/schemas/DidResolutionErrorCode'
-    DidResolutionErrorCode:
-      type: string
-      enum:
-        - https://www.w3.org/ns/did#INVALID_DID
-        - https://www.w3.org/ns/did#INVALID_DID_DOCUMENT
-        - https://www.w3.org/ns/did#NOT_FOUND
-        - https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED
-        - https://www.w3.org/ns/did#INVALID_DID_URL
-        - https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED
-        - https://www.w3.org/ns/did#INVALID_OPTIONS
-        - https://www.w3.org/ns/did#INTERNAL_ERROR
-        - https://w3id.org/security#INVALID_PUBLIC_KEY
-        - https://w3id.org/security#INVALID_PUBLIC_KEY_LENGTH
-        - https://w3id.org/security#INVALID_PUBLIC_KEY_TYPE
-        - https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE
-        - https://w3id.org/security#INVALID_VERIFICATION_METHOD_URL
-        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID
-        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT
-        - https://w3id.org/security#INVALID_VERIFICATION_METHOD
-        - https://w3id.org/security#INVALID_RELATIONSHIP_FOR_VERIFICATION_METHOD
-    DidResolutionMetadata:
-      type: object
-      properties:
-        contentType:
-          type:
-            - string
-            - "null"
-        error:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/DidResolutionError'
+          additionalProperties: true
+        didDocumentMetadata:
+          type: object
+          additionalProperties: true
+        didResolutionMetadata:
+          type: object
+          additionalProperties: true
     IndexerStats:
       type: object
       properties:
@@ -1828,24 +2760,6 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/SlotNo'
-    Jwk:
-      type: object
-      required:
-        - kty
-        - crv
-      properties:
-        crv:
-          type: string
-        kty:
-          type: string
-        x:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Base64UrlStrNoPad'
-        "y":
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Base64UrlStrNoPad'
     ObjectSubmissionRequest:
       type: object
       required:
@@ -1914,45 +2828,6 @@ components:
       type: string
       description: 'A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.'
       example: 22d60112d3010a086d61737465722d3012463044022036393f3602cc2c17552cf72a6af1d12dc45cdf549707e76491b06d0becbd2ece02203ff703fabf4db876059aaf1ffb7803e40f5c707695ad215fd562b2f418aaded11a7f0a7d0a7b123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123b0a0769737375652d3010024a2e0a09736563703235366b311221037ee52f2a266aa874dc83feb8fcb15ab96282f67132bc7821c08ac524955114f1
-    ResolutionResult:
-      type: object
-      required:
-        - didResolutionMetadata
-        - didDocumentMetadata
-      properties:
-        didDocument:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/DidDocument'
-        didDocumentMetadata:
-          $ref: '#/components/schemas/DidDocumentMetadata'
-        didResolutionMetadata:
-          $ref: '#/components/schemas/DidResolutionMetadata'
-    Service:
-      type: object
-      required:
-        - id
-        - type
-        - serviceEndpoint
-      properties:
-        id:
-          type: string
-        serviceEndpoint:
-          $ref: '#/components/schemas/ServiceEndpoint'
-        type:
-          $ref: '#/components/schemas/ServiceType'
-    ServiceEndpoint:
-      oneOf:
-        - $ref: '#/components/schemas/StringOrMap'
-        - type: array
-          items:
-            $ref: '#/components/schemas/StringOrMap'
-    ServiceType:
-      oneOf:
-        - type: string
-        - type: array
-          items:
-            type: string
     SignedOperationSubmissionRequest:
       type: object
       required:
@@ -1971,13 +2846,6 @@ components:
       format: int64
       example: 8086
       minimum: 0
-    StringOrMap:
-      oneOf:
-        - type: string
-        - type: object
-          additionalProperties: {}
-          propertyNames:
-            type: string
     SubmissionResponse:
       type: object
       required:
@@ -2025,9 +2893,6 @@ components:
     TxId:
       type: string
       example: 5ab0cf7e4c7cd4b63ba84a4fe299409be12ba85607cb6d1a149e80bc2eac070d
-    Uri:
-      type: string
-      example: http://example.com
     VdrEntryMetadataResponse:
       type: object
       required:
@@ -2041,27 +2906,6 @@ components:
           type: string
         status:
           type: string
-    VerificationMethod:
-      type: object
-      required:
-        - id
-        - type
-        - controller
-      properties:
-        controller:
-          type: string
-        id:
-          type: string
-        publicKeyJwk:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Jwk'
-        type:
-          type: string
-    VerificationMethodOrRef:
-      oneOf:
-        - $ref: '#/components/schemas/VerificationMethod'
-        - type: string
 </code></pre>
 
                     </main>

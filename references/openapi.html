@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-beb0b211.js";
+            window.path_to_searchindex_js = "../searchindex-ac8c2184.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-75f9a92b.js"></script>
+        <script src="../toc-909b1515.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -181,7 +181,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.14.2
+  version: 0.15.0
 servers:
   - url: http://localhost:8080
     description: Local
@@ -227,69 +227,130 @@ paths:
     get:
       tags:
         - Indexer API
-      summary: Resolve DID
-      description: |-
-        This endpoint is fully compliant with the W3C DID Resolution specification. It returns a DID Resolution Result object, including metadata and the resolved DID Document, following the standard resolution process.
-
-        Optional resolution options may be provided as query parameters, but are not yet supported in this implementation.
-      operationId: did_resolver
+      summary: Resolve a DID
+      description: Resolve one DID through the injected resolver. The aggregate `Accept` header is limited to 8192 bytes and 32 media ranges. The raw query is limited to 8192 bytes, 32 parameters, 256 bytes per decoded name, and 4096 bytes per decoded value. Unknown query names are retained as bounded extension options.
+      operationId: resolveDid
       parameters:
         - name: did
           in: path
-          description: The Decentralized Identifier (DID) to resolve.
+          description: DID path value to resolve.
           required: true
           schema:
             type: string
-          example: did:example:123456789abcdefghi
+        - name: Accept
+          in: header
+          description: Requested response media ranges. Supported representations are `application/did`, `application/json`, and `application/did-resolution`; absence defaults to `application/did`.
+          required: false
+          schema:
+            type: string
+        - name: expandRelativeUrls
+          in: query
+          description: Whether relative DID document URLs should be expanded.
+          required: false
+          schema:
+            type: boolean
+        - name: noCache
+          in: query
+          description: Whether cached resolution results should be bypassed.
+          required: false
+          schema:
+            type: boolean
+        - name: versionId
+          in: query
+          description: Requested DID document version identifier.
+          required: false
+          schema:
+            type: string
+        - name: versionTime
+          in: query
+          description: Requested DID document version time as an RFC 3339 timestamp.
+          required: false
+          schema:
+            type: string
       responses:
         "200":
-          description: Successfully resolved the DID.
-          content:
-            application/json:
+          description: DID document or complete DID Resolution result.
+          headers:
+            Vary:
               schema:
-                $ref: '#/components/schemas/DidDocument'
+                type: string
+              description: Always `Accept`.
+          content:
             application/did:
               schema:
                 $ref: '#/components/schemas/DidDocument'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DidDocument'
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "400":
-          description: The provided DID is invalid.
+          description: The DID or resolution options are invalid.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "404":
-          description: The DID does not exist or not found.
+          description: The DID was not found.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "406":
-          description: The requested representation is not supported.
+          description: No requested representation is available.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "410":
-          description: The DID has been deactivated.
+          description: The DID is deactivated.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "500":
-          description: An unexpected error occurred during resolution.
+          description: Resolution failed internally.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
         "501":
-          description: A functionality is not implemented.
+          description: The DID method is not supported.
+          headers:
+            Vary:
+              schema:
+                type: string
+              description: Always `Accept`.
           content:
             application/did-resolution:
               schema:
-                $ref: '#/components/schemas/ResolutionResult'
+                $ref: '#/components/schemas/DidResolutionResult'
   /api/dids/{did}/protobuf:
     get:
       tags:
@@ -591,17 +652,6 @@ components:
         - Indexer
         - Submitter
         - Standalone
-    Base64UrlStrNoPad:
-      type: string
-      description: |-
-        # Example
-        ```
-        use identus_apollo::base64::Base64UrlStrNoPad;
-
-        let b = b"hello world";
-        let b64 = Base64UrlStrNoPad::from(b);
-        assert!(b64.to_string() == "aGVsbG8gd29ybGQ");
-        ```
     BlockNo:
       type: integer
       format: int64
@@ -612,134 +662,32 @@ components:
       example: did:example:123456789abcdefghi
     DidDocument:
       type: object
+      description: Extensible W3C DID document. Method-specific and extension properties are preserved.
       required:
-        - '@context'
         - id
-        - verificationMethod
       properties:
-        '@context':
-          type: array
-          items:
-            type: string
-        alsoKnownAs:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/Uri'
-        assertionMethod:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        authentication:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        capabilityDelegation:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        capabilityInvocation:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
         id:
-          $ref: '#/components/schemas/Did'
-        keyAgreement:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/VerificationMethodOrRef'
-        service:
-          type:
-            - array
-            - "null"
-          items:
-            $ref: '#/components/schemas/Service'
-        verificationMethod:
-          type: array
-          items:
-            $ref: '#/components/schemas/VerificationMethod'
-    DidDocumentMetadata:
+          type: string
+      additionalProperties: true
+    DidResolutionResult:
       type: object
-      properties:
-        canonicalId:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Did'
-        created:
-          type:
-            - string
-            - "null"
-          format: date-time
-        deactivated:
-          type:
-            - boolean
-            - "null"
-        updated:
-          type:
-            - string
-            - "null"
-          format: date-time
-        versionId:
-          type:
-            - string
-            - "null"
-    DidResolutionError:
-      type: object
+      description: W3C DID Resolution result envelope.
       required:
-        - type
+        - didResolutionMetadata
+        - didDocument
+        - didDocumentMetadata
       properties:
-        detail:
+        didDocument:
           type:
-            - string
+            - object
             - "null"
-        title:
-          type:
-            - string
-            - "null"
-        type:
-          $ref: '#/components/schemas/DidResolutionErrorCode'
-    DidResolutionErrorCode:
-      type: string
-      enum:
-        - https://www.w3.org/ns/did#INVALID_DID
-        - https://www.w3.org/ns/did#INVALID_DID_DOCUMENT
-        - https://www.w3.org/ns/did#NOT_FOUND
-        - https://www.w3.org/ns/did#REPRESENTATION_NOT_SUPPORTED
-        - https://www.w3.org/ns/did#INVALID_DID_URL
-        - https://www.w3.org/ns/did#METHOD_NOT_SUPPORTED
-        - https://www.w3.org/ns/did#INVALID_OPTIONS
-        - https://www.w3.org/ns/did#INTERNAL_ERROR
-        - https://w3id.org/security#INVALID_PUBLIC_KEY
-        - https://w3id.org/security#INVALID_PUBLIC_KEY_LENGTH
-        - https://w3id.org/security#INVALID_PUBLIC_KEY_TYPE
-        - https://w3id.org/security#UNSUPPORTED_PUBLIC_KEY_TYPE
-        - https://w3id.org/security#INVALID_VERIFICATION_METHOD_URL
-        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT_ID
-        - https://w3id.org/security#INVALID_CONTROLLED_IDENTIFIER_DOCUMENT
-        - https://w3id.org/security#INVALID_VERIFICATION_METHOD
-        - https://w3id.org/security#INVALID_RELATIONSHIP_FOR_VERIFICATION_METHOD
-    DidResolutionMetadata:
-      type: object
-      properties:
-        contentType:
-          type:
-            - string
-            - "null"
-        error:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/DidResolutionError'
+          additionalProperties: true
+        didDocumentMetadata:
+          type: object
+          additionalProperties: true
+        didResolutionMetadata:
+          type: object
+          additionalProperties: true
     IndexerStats:
       type: object
       properties:
@@ -751,24 +699,6 @@ components:
           oneOf:
             - type: "null"
             - $ref: '#/components/schemas/SlotNo'
-    Jwk:
-      type: object
-      required:
-        - kty
-        - crv
-      properties:
-        crv:
-          type: string
-        kty:
-          type: string
-        x:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Base64UrlStrNoPad'
-        "y":
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Base64UrlStrNoPad'
     ObjectSubmissionRequest:
       type: object
       required:
@@ -837,45 +767,6 @@ components:
       type: string
       description: 'A hexadecimal string representing a PrismObject protobuf message (see: https://github.com/hyperledger-identus/neoprism/blob/main/lib/did-prism/proto/prism.proto). The bytes are hex-encoded after protobuf serialization.'
       example: 22d60112d3010a086d61737465722d3012463044022036393f3602cc2c17552cf72a6af1d12dc45cdf549707e76491b06d0becbd2ece02203ff703fabf4db876059aaf1ffb7803e40f5c707695ad215fd562b2f418aaded11a7f0a7d0a7b123c0a086d61737465722d3010014a2e0a09736563703235366b31122103b20404f350d87eec98982131c176acfea520f26f8901fe08b619a56a0dd9e417123b0a0769737375652d3010024a2e0a09736563703235366b311221037ee52f2a266aa874dc83feb8fcb15ab96282f67132bc7821c08ac524955114f1
-    ResolutionResult:
-      type: object
-      required:
-        - didResolutionMetadata
-        - didDocumentMetadata
-      properties:
-        didDocument:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/DidDocument'
-        didDocumentMetadata:
-          $ref: '#/components/schemas/DidDocumentMetadata'
-        didResolutionMetadata:
-          $ref: '#/components/schemas/DidResolutionMetadata'
-    Service:
-      type: object
-      required:
-        - id
-        - type
-        - serviceEndpoint
-      properties:
-        id:
-          type: string
-        serviceEndpoint:
-          $ref: '#/components/schemas/ServiceEndpoint'
-        type:
-          $ref: '#/components/schemas/ServiceType'
-    ServiceEndpoint:
-      oneOf:
-        - $ref: '#/components/schemas/StringOrMap'
-        - type: array
-          items:
-            $ref: '#/components/schemas/StringOrMap'
-    ServiceType:
-      oneOf:
-        - type: string
-        - type: array
-          items:
-            type: string
     SignedOperationSubmissionRequest:
       type: object
       required:
@@ -894,13 +785,6 @@ components:
       format: int64
       example: 8086
       minimum: 0
-    StringOrMap:
-      oneOf:
-        - type: string
-        - type: object
-          additionalProperties: {}
-          propertyNames:
-            type: string
     SubmissionResponse:
       type: object
       required:
@@ -948,9 +832,6 @@ components:
     TxId:
       type: string
       example: 5ab0cf7e4c7cd4b63ba84a4fe299409be12ba85607cb6d1a149e80bc2eac070d
-    Uri:
-      type: string
-      example: http://example.com
     VdrEntryMetadataResponse:
       type: object
       required:
@@ -964,27 +845,6 @@ components:
           type: string
         status:
           type: string
-    VerificationMethod:
-      type: object
-      required:
-        - id
-        - type
-        - controller
-      properties:
-        controller:
-          type: string
-        id:
-          type: string
-        publicKeyJwk:
-          oneOf:
-            - type: "null"
-            - $ref: '#/components/schemas/Jwk'
-        type:
-          type: string
-    VerificationMethodOrRef:
-      oneOf:
-        - $ref: '#/components/schemas/VerificationMethod'
-        - type: string
 </code></pre>
 
                     </main>
