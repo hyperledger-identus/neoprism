@@ -80,7 +80,7 @@ class CopyContract(unittest.TestCase):
             )
             self.assertTrue(evaluate("document.querySelector('textarea').readOnly"))
             self.assertIn(
-                "Copy unavailable",
+                "Couldn’t copy",
                 evaluate("document.querySelector('[role=status]').textContent"),
             )
             browser("press", "Tab")
@@ -106,6 +106,27 @@ class CopyContract(unittest.TestCase):
         browser("wait", "--text", "Copied to clipboard.")
         self.assertEqual(evaluate("document.activeElement.tagName"), "BUTTON")
         self.assertIsNone(evaluate("document.querySelector('textarea')"))
+
+    def test_manual_fallback_wraps_in_constrained_flex_consumer(self) -> None:
+        browser("set", "viewport", "320", "900")
+        evaluate("""const row = document.createElement('div');
+          row.style.cssText = 'display:flex;gap:12px;width:180px';
+          const text = document.createElement('code');
+          text.textContent = 'original value';
+          text.style.cssText = 'flex:1;min-width:0;overflow-wrap:anywhere';
+          document.body.append(row); row.append(text, document.querySelector('button'));
+          Object.defineProperty(navigator, 'clipboard', {configurable:true,
+            value:{writeText: async () => {throw new Error('denied')}}})""")
+        browser("click", "button")
+        browser("wait", "--fn", "document.querySelector('textarea') !== null")
+        self.assertTrue(
+            evaluate("""const field = document.querySelector('textarea');
+          const rowRect = field.parentElement.parentElement.getBoundingClientRect();
+          const rect = field.getBoundingClientRect();
+          rect.width >= 140 && rect.right <= rowRect.right
+            && rect.top >= document.querySelector('button')
+              .getBoundingClientRect().bottom""")
+        )
 
     def test_no_script_value_is_selectable_and_button_has_touch_target(self) -> None:
         self.assertNotEqual(

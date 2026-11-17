@@ -193,7 +193,8 @@ body.prism {
 .prism .prism-copy:disabled { color: var(--prism-secondary); cursor: not-allowed; }
 .prism .prism-copy-status:empty { display: none; }
 .prism .prism-copy-status { position: fixed; z-index: 10; bottom: 20px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 40px); padding: 12px 16px; border: 1px solid var(--prism-line); border-radius: 12px; background: #fff; color: var(--prism-ink); box-shadow: 0 8px 24px #1820331a; }
-.prism .prism-copy-fallback { display: block; flex-basis: 100%; min-width: 0; max-width: 100%; padding: 12px; color: var(--prism-secondary); font-size: 14px; }
+.prism .prism-copy-container { flex-wrap: wrap; }
+.prism .prism-copy-fallback { display: block; grid-column: 1 / -1; flex-basis: 100%; min-width: 0; max-width: 100%; padding: 12px; color: var(--prism-secondary); font-size: 14px; }
 .prism .prism-copy-fallback textarea { display: block; width: 100%; min-height: 72px; margin-top: 8px; padding: 12px; border: 1px solid var(--prism-line); border-radius: 12px; background: var(--prism-code); color: var(--prism-ink); font-family: 'JetBrains Mono', monospace; overflow-wrap: anywhere; resize: vertical; }
 
 /* Explorer: source-reported cursor evidence (#379). */

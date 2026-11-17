@@ -31,8 +31,9 @@ The reusable copy contract is a `type="button"` element with `class="prism-copy"
 `data-copy-value` containing the complete original and a descriptive `aria-label`.
 Keep the displayed value selectable. `copy.js` delegates events (including later
 HTMX content), announces polite feedback without moving focus, and inserts an
-adjacent labelled readonly textarea if clipboard writing fails. Flex parents
-should wrap; grid parents should let `.prism-copy-fallback` span their columns.
+adjacent labelled readonly textarea if clipboard writing fails. The enhancement
+marks its parent `.prism-copy-container` to wrap flex children; the fallback spans
+grid columns. This also supports constrained cursor and identity consumers.
 
 Run the standalone copy browser fixtures:
 

@@ -30,10 +30,11 @@
         field.readOnly = true;
         field.rows = 2;
         fallback.append(field);
+        button.parentElement.classList.add('prism-copy-container');
         button.after(fallback);
       }
       fallback.querySelector('textarea').value = value;
-      status.textContent = 'Copy unavailable. Select the value beside the button and copy it manually.';
+      status.textContent = 'Couldn’t copy. Select the value beside the button to copy manually.';
     }
   });
 })();

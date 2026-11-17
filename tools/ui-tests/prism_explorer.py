@@ -172,7 +172,7 @@ class ExplorerBrowser(unittest.TestCase):
             "{configurable: true, value: undefined})"
         )
         browser("press", "Enter")
-        browser("wait", "--text", "Copy unavailable.")
+        browser("wait", "--text", "Couldn’t copy.")
         self.assertTrue(
             evaluate("document.activeElement.matches('button[data-copy-value]')")
         )
