@@ -189,7 +189,8 @@ class PrismShell(unittest.TestCase):
             parse_qs(urlparse(browser("get", "url")["url"]).query)["did"], [canonical]
         )
         self.assertIn(
-            "Resolution error", evaluate("document.querySelector('main').textContent")
+            "No indexed state on this node",
+            evaluate("document.querySelector('main').textContent"),
         )
 
     def test_native_validation_precedes_pending_feedback_and_pageshow_recovers(
@@ -204,11 +205,9 @@ class PrismShell(unittest.TestCase):
             evaluate("document.querySelector('button[type=submit]').disabled")
         )
         browser("fill", "#did", "did:prism:" + "ab" * 32)
-        # Hold the navigation request to inspect pending feedback.
-        evaluate(
-            """document.querySelector('form').addEventListener(
-              'submit', e => e.preventDefault(), {once:true})"""
-        )
+        # Hold the HTTP boundary, not the submit event. The outcome suite also
+        # verifies real delayed GETs and network/HTTP failure recovery.
+        evaluate("""window.fetch = () => new Promise(() => {})""")
         browser("press", "Enter")
         self.assertTrue(
             evaluate("document.querySelector('button[type=submit]').disabled")

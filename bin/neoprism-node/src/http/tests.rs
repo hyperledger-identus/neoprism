@@ -133,7 +133,8 @@ async fn resolver_get_retains_escaped_input_and_hands_long_form_to_existing_reso
     let (_, invalid) = get(app.clone(), "/resolver?did=%22%3E%3Cscript%3E").await;
     assert!(invalid.contains("value=\"&quot;&gt;&lt;script&gt;\""));
     assert!(!invalid.contains("<script>"));
-    assert!(invalid.contains("Resolution error"));
+    assert!(invalid.contains("Check the DID format"));
+    assert!(invalid.contains("aria-invalid=\"true\""));
 
     // Published documentation's deterministic long-form DID; never emitted as entry sample data.
     const LONG_FORM: &str = "did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU";
@@ -152,6 +153,7 @@ async fn static_assets_are_served_locally_with_browser_content_types() {
         ("/assets/neoprism.svg", "image/svg+xml"),
         ("/assets/prism.css", "text/css"),
         ("/assets/prism.js", "text/javascript"),
+        ("/assets/resolver.js", "text/javascript"),
         ("/assets/copy.js", "text/javascript"),
         ("/assets/fonts/Poppins-Regular.ttf", "font/ttf"),
         ("/assets/fonts/Poppins-Medium.ttf", "font/ttf"),

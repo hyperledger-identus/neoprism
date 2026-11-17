@@ -11,6 +11,9 @@ use identus_did_prism::proto::prism_ssi::{self, KeyUsage};
 use identus_did_prism::protocol::error::ProcessError;
 use identus_did_prism::protocol::resolver::resolve_unpublished;
 
+#[path = "outcome_tests.rs"]
+mod outcome_tests;
+
 type History = Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>;
 
 #[derive(Clone)]
@@ -61,6 +64,122 @@ async fn html_success_response_masks_internal_causes_and_logs_the_full_chain() {
     let logged = String::from_utf8(log.0.lock().unwrap().clone()).unwrap();
     assert!(logged.contains("filesystem /private/storage/resolver.db failed"));
     assert!(logged.contains("postgres://secret-user:secret-password@private-db/path"));
+}
+
+#[test]
+fn node_local_absence_preserves_input_and_offers_bookmarkable_recovery() {
+    use crate::app::service::error::ResolutionError;
+
+    let input = format!("did:prism:{}", "ab".repeat(32));
+    let body = views::resolve(None, &input, Err(ResolutionError::NotFound), vec![]).into_string();
+    for expected in [
+        "No indexed state on this node",
+        "No stored operations were found on this node",
+        "does not prove that the DID does not exist on-chain",
+        "Try again",
+        "Correct DID",
+        "Browse Explorer",
+        "href=\"#did\"",
+        "No indexed operations",
+        &format!("value=\"{input}\""),
+        &format!("href=\"/resolver?did=did%3Aprism%3A{}\"", "ab".repeat(32)),
+    ] {
+        assert!(body.contains(expected), "missing recovery: {expected}");
+    }
+    assert!(!body.contains("server interruption"));
+}
+
+#[test]
+fn stored_operations_without_initial_state_are_not_an_infrastructure_failure() {
+    use crate::app::service::error::ResolutionError;
+
+    let mut entry = history_entry(8, "retained-rejection");
+    entry.2 = Some(ProcessError::DidStateInitFromNonCreateOperation);
+    let body = views::resolve(None, LONG_FORM, Err(ResolutionError::NotFound), vec![entry]).into_string();
+    for expected in [
+        "Stored operations cannot initialize DID state",
+        "not a server interruption",
+        "Inspect the rejected operations",
+        "retained-rejection",
+        "Rejected",
+        "Safe domain diagnostics",
+    ] {
+        assert!(body.contains(expected), "missing unusable outcome: {expected}");
+    }
+    assert!(!body.contains("No stored operations were found"));
+    assert!(!body.contains("Couldn’t retrieve identity state"));
+}
+
+#[test]
+fn retrieval_failure_does_not_claim_empty_storage_or_fabricate_operations() {
+    use crate::app::service::error::ResolutionError;
+
+    let body = views::resolve(
+        None,
+        LONG_FORM,
+        Err(ResolutionError::InternalError {
+            source: anyhow::anyhow!("secret-password /private/db"),
+        }),
+        vec![],
+    )
+    .into_string();
+    for expected in [
+        "Couldn’t retrieve identity state",
+        "could not retrieve stored operations",
+        "No operation history was retrieved",
+        "Retry resolution",
+        "unexpected server error",
+    ] {
+        assert!(body.contains(expected), "missing retrieval recovery: {expected}");
+    }
+    for absent in [
+        "secret-password",
+        "/private/db",
+        "No indexed operations",
+        "No stored operations were found",
+        "class=\"prism-operation\"",
+    ] {
+        assert!(!body.contains(absent), "incorrect retrieval claim: {absent}");
+    }
+}
+
+#[test]
+fn invalid_input_and_initial_state_have_safe_actionable_diagnostics_and_retained_values() {
+    use crate::app::service::error::{InvalidDid, ResolutionError};
+
+    let malformed = "  did:prism:<bad>&\"entire input  ";
+    let cases = [
+        (
+            malformed,
+            InvalidDid::InvalidPrismDid {
+                source: malformed.parse::<PrismDid>().unwrap_err(),
+            },
+            "Check the DID format",
+        ),
+        (
+            LONG_FORM,
+            InvalidDid::ProcessStateFailed {
+                source: ProcessError::DidStateInitFromNonCreateOperation,
+            },
+            "Check the encoded initial state",
+        ),
+    ];
+    for (input, source, title) in cases {
+        let body = views::resolve(None, input, Err(ResolutionError::InvalidDid { source }), vec![]).into_string();
+        let escaped = maud::html! { (input) }.into_string();
+        for expected in [
+            title,
+            "Your complete input is preserved",
+            "Correct DID",
+            "Browse Explorer",
+            "Safe resolution diagnostics",
+            "aria-invalid=\"true\"",
+            &format!("value=\"{escaped}\""),
+        ] {
+            assert!(body.contains(expected), "missing invalid recovery: {expected}");
+        }
+        assert!(!body.contains("Couldn’t retrieve identity state"));
+    }
 }
 
 fn history_entry(block: u64, signer: &str) -> (OperationMetadata, SignedPrismOperation, Option<ProcessError>) {

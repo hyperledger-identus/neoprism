@@ -204,7 +204,9 @@ class PrismOperations(unittest.TestCase):
                 evaluate("document.querySelectorAll('.prism-operation').length"), 0
             )
             self.assertIn(
-                "No indexed operations",
+                "No operation history was retrieved"
+                if name == "internal"
+                else "No indexed operations",
                 evaluate("document.querySelector('#operation-history').textContent"),
             )
             self.assertNotIn(

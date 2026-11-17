@@ -380,3 +380,26 @@ body.prism {
   .prism-entry .prism-secondary { align-self: stretch; }
   .prism-format { font-size: 14px; line-height: 21px; }
 }
+
+/* Resolver outcomes and actual pending requests (#377). */
+.prism-outcome { padding: 20px; margin-bottom: 16px; min-width: 0; }
+.prism-outcome h2 { margin-bottom: 12px; }
+.prism-outcome p { color: var(--prism-secondary); max-width: 72ch; }
+.prism-outcome-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.prism-outcome-diagnostics { margin-top: 20px; border-top: 1px solid var(--prism-line); }
+.prism-outcome-diagnostics summary { min-height: 48px; padding: 12px 0; cursor: pointer; font-weight: 500; }
+.prism-outcome-diagnostics pre { margin: 8px 0 0; padding: 16px; border-radius: 12px; background: var(--prism-code); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.prism-did-input:has([aria-invalid="true"]) { border-color: #b42348; }
+.prism-resolution-status:not(:empty) { margin: 0 0 16px; color: var(--prism-secondary); }
+.prism-resolution-pending { padding: 20px; min-height: 264px; }
+.prism-resolution-pending div { height: 24px; margin-bottom: 20px; border-radius: 8px; background: var(--prism-line); }
+.prism-resolution-pending div:nth-child(2) { height: 72px; }
+.prism-resolution-pending div:last-child { width: 65%; }
+.prism #resolution-pending[hidden], .prism #resolution-result[hidden], .prism #resolution-recovery[hidden], .prism #resolution-previous[hidden] { display: none; }
+.prism-request-failure { border-color: #e6b5c3; }
+.prism-request-failure h2 { color: #a51d40; }
+.prism #resolution-previous:not([hidden]) { margin-top: 16px; font-weight: 500; }
+.prism [data-resolver-retry][aria-disabled="true"] { color: var(--prism-secondary); cursor: wait; }
+@media (max-width: 600px) {
+  .prism-outcome-actions { flex-direction: column; align-items: stretch; }
+}
