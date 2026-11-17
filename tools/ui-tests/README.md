@@ -104,6 +104,40 @@ Rendered-HTML tests additionally cover backend publication/deactivation, all
 usage enums, real counts, and selecting one latest applied operation for evidence
 without claiming a chain tip or exposing synthetic local metadata.
 
+The same fixture exporter/suite also covers ordered contexts and services with
+single/multiple types, URI/object/array endpoints, nested/null/boolean values,
+long identifiers and URLs, plus compact empty collections. Clipboard boundary
+stubs verify exact captured fields, full typed Debug text, readable parsed-state
+JSON, denied/missing writes, polite feedback and keyboard-selectable fallbacks.
+The full typed text is captured independently during fixture setup. Readable JSON
+is explicitly not a reconstruction of authored wire formatting; captured fields
+retain their spacing/order even when the readable projection changes them.
+Native script-blocked disclosures and expanded 320–1440px bounds are checked.
+
+## Resolver operation fixtures
+
+```sh
+export PRISM_OPERATION_FIXTURES="$(mktemp -d)"
+cargo test -p neoprism-node export_operation_browser_fixtures -- --ignored
+just build-assets
+PRISM_TEST_SESSION=prism-operations-check python tools/ui-tests/prism_operations.py -v
+```
+
+`PRISM_OPERATION_PORT` overrides private loopback port 18776. The suite verifies
+applied/rejected disclosures, real protocol failure to initialize final state,
+explicit empty history, 320–1440px expanded-content bounds, scoped axe checks,
+keyboard/no-script disclosures, and exact complete Debug inspection/copy/manual
+fallback. Clipboard success and denial use boundary stubs, not the OS-global
+clipboard, so this suite can run concurrently with the native clipboard suites.
+`PRISM_SCREENSHOT_DIR` optionally saves 390px/1440px page renders.
+
+The Rust rendered-HTML tests cover every metadata field, HTML-200 masking and
+full server-side logging of unexpected internal causes, and safe nested size,
+crypto/protobuf, service and state-conflict diagnostics. Client-safe projection
+lives in `ui_resolver/diagnostics.rs`; never replace it with a full error-chain
+formatter. Full signed payloads intentionally retain all captured Debug fields,
+including protobuf fields; they are not reconstructed authored wire bytes.
+
 ## Explorer cursor fixtures
 
 ```sh
@@ -122,6 +156,33 @@ scoped accessibility audits and actual HTTP receipt/request states. The refresh
 script remains active during copy checks; focused controls retain their evidence.
 Receipt assertions compare successful receipt timestamps, not merely changing
 age text. No obsolete synthetic HTMX request events are dispatched.
+
+## Resolver VDR fixtures
+
+The VDR suite exports actual Resolver rendering with deterministic typed storage
+fixtures (Bytes, IPFS and uninterpreted numeric StatusList). Normal, long-content
+and empty pages exist only in test output; no production sample route is added.
+Hashes use the complete 64-character SHA-256 values supported by the backend.
+
+```sh
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/375"
+export CARGO_BUILD_JOBS=2
+export PRISM_VDR_FIXTURES="$(mktemp -d)"
+cargo test -p neoprism-node vdr_tests
+cargo test -p neoprism-node export_vdr_browser_fixtures -- --ignored
+bun install --frozen-lockfile
+just build-assets
+PRISM_TEST_SESSION=prism-vdr-375 python tools/ui-tests/prism_vdr.py -v
+```
+
+`PRISM_VDR_PORT` overrides private loopback port 18775. Browser checks cover
+320–1440px expanded bounds, exact typed/raw copy writes and denied-write manual
+fallbacks without lost focus, native keyboard/script-blocked disclosures,
+selectable captured Debug text and scoped accessibility audits. Clipboard checks
+use deterministic boundary stubs, not the OS-global clipboard. Rust checks cover
+all typed shapes, numeric extremes, escaping, empty typed fields, ordering and a
+real native GET resolution with compact empty VDR state. Raw data is the complete
+captured Debug representation, explicitly not a reconstruction of wire bytes.
 
 ## Agreed seams
 

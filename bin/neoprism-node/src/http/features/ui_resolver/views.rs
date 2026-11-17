@@ -1,14 +1,10 @@
-use std::error::Report;
-
-use identus_apollo::hex::HexStr;
-use identus_did_prism::did::operation::Service;
-use identus_did_prism::did::{DidState, PrismDid, StorageState};
+use identus_did_prism::did::{DidState, PrismDid};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
-use super::{evidence, identity, keys};
+use super::{contexts_services, diagnostics, evidence, identity, keys, operations, vdr};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
@@ -33,13 +29,19 @@ pub fn resolve(
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,
 ) -> Markup {
+    // Capture Debug payloads before evidence hashing can update protobuf size caches.
+    // Unpublished resolution contributes synthetic metadata, not ledger history.
+    let operation_history = match &did_state {
+        Ok((_, state)) if !state.is_published => operations::history(&[]),
+        _ => operations::history(&did_debug),
+    };
     let body = html! {
         (search_box(Some(did_str)))
         div class="prism-resolver-result" {
             @match did_state.as_ref() {
                 Err(e) => {
                     (resolution_error_body(e))
-                    (did_debug_body(did_debug))
+                    (&operation_history)
                 }
                 Ok((did, state)) => {
                     @let ledger = evidence::ledger(state, &did_debug);
@@ -47,11 +49,7 @@ pub fn resolve(
                         div class="prism-dossier" {
                             (identity::summary(did, state, if state.is_published { did_debug.len() } else { 0 }))
                             (did_document_body(state))
-                            @if state.is_published {
-                                (did_debug_body(did_debug))
-                            } @else {
-                                (did_debug_body(vec![]))
-                            }
+                            (&operation_history)
                         }
                         aside class="prism-evidence-rail" aria-label="Identity evidence and API" {
                             (ledger)
@@ -89,12 +87,8 @@ fn search_box(did: Option<&str>) -> Markup {
 }
 
 fn resolution_error_body(error: &ResolutionError) -> Markup {
-    let error_lines = Report::new(error)
-        .pretty(true)
-        .to_string()
-        .split("\n")
-        .map(|s| html! { (s) br; })
-        .collect::<Vec<_>>();
+    let message = diagnostics::resolution(error);
+    let error_lines = message.split("\n").map(|s| html! { (s) br; }).collect::<Vec<_>>();
     html! {
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
@@ -112,162 +106,9 @@ fn did_document_body(state: &DidState) -> Markup {
         div class="prism-state-sections" {
             h2 class="sr-only" { "DID state" }
             (keys::public_keys(&state.public_keys))
-            (context_card(&state.context))
-            (service_card(&state.services))
-            (storage_card(&state.storage))
-        }
-    }
-}
-
-fn context_card(context: &[String]) -> Markup {
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "@context" }
-                @if context.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="list-disc list-inside" {
-                    @for ctx in context {
-                        li { (ctx) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn service_card(services: &[Service]) -> Markup {
-    let svc_elems = services
-        .iter()
-        .map(|svc| {
-            let svc_id = &svc.id;
-            let svc_ty = format!("{:?}", svc.r#type);
-            let svc_ep = format!("{:?}", svc.service_endpoint);
-            html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
-                    strong { "ID: " } (svc_id)
-                    br;
-                    strong { "Type: " } span class="font-mono" { (svc_ty) }
-                    br;
-                    strong { "Endpoint: " } span class="font-mono" { (svc_ep) }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "Services" }
-                @if svc_elems.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="space-y-2" {
-                    @for elem in svc_elems { (elem) }
-                }
-            }
-        }
-    }
-}
-
-fn storage_card(storages: &[StorageState]) -> Markup {
-    let mut sorted_storages = storages.to_vec();
-    sorted_storages.sort_by_key(|s| s.init_operation_hash.to_vec());
-
-    let storage_elems = sorted_storages
-        .iter()
-        .map(|s| {
-            let init_hash_hex = HexStr::from(s.init_operation_hash.as_bytes()).to_string();
-            let last_hash_hex = HexStr::from(s.last_operation_hash.as_bytes()).to_string();
-            let data = format!("{:?}", s.data);
-            html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
-                    strong { "Init operation hash: " } (init_hash_hex)
-                    br;
-                    strong { "Last operation hash: " } (last_hash_hex)
-                    br;
-                    strong { "Data: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        (data)
-                    }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "VDR entries" }
-                @if storage_elems.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="space-y-2" {
-                    @for elem in storage_elems { (elem) }
-                }
-            }
-        }
-    }
-}
-
-fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>) -> Markup {
-    let op_elems = did_debug
-        .iter()
-        .map(|(metadata, signed_op, error)| {
-            let block_time = metadata.block_metadata.cbt.to_rfc3339();
-            let operation_id = signed_op.operation_id();
-            let operation_payload = format!("{signed_op:?}");
-            let error_lines = error
-                .as_ref()
-                .map(|e| Report::new(e).pretty(true).to_string())
-                .unwrap_or_else(|| "-".to_string())
-                .split("\n")
-                .map(|s| html! { (s) br; })
-                .collect::<Vec<_>>();
-            html! {
-                li class="border p-2 rounded-md bg-base-200 border-gray-700 wrap-anywhere" {
-                    strong { "Block time: " } (block_time)
-                    br;
-                    strong { "Slot no: " } (metadata.block_metadata.slot_number)
-                    br;
-                    strong { "Block no: " } (metadata.block_metadata.block_number)
-                    br;
-                    strong { "Block seq no: " } (metadata.block_metadata.absn)
-                    br;
-                    strong { "Transaction ID: " } (metadata.block_metadata.tx_id)
-                    br;
-                    strong { "Operation ID: " } (operation_id)
-                    br;
-                    strong { "Operation seq no: " } (metadata.osn)
-                    br;
-                    strong { "Operation payload: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        (operation_payload)
-                    }
-                    strong { "Error: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        @for line in error_lines { (line) }
-                    }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="flex justify-center w-full" {
-            div class="w-full m-4 space-y-4" {
-                p class="text-2xl font-bold" { "Operation debug" }
-                @if op_elems.is_empty() {
-                    p { "No indexed operations" }
-                }
-                ul class="space-y-2" {
-                    @for elem in op_elems { (elem) }
-                }
-            }
+            (contexts_services::contexts(&state.context))
+            (contexts_services::services(&state.services))
+            (vdr::entries(&state.storage))
         }
     }
 }
