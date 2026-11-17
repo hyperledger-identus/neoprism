@@ -4,9 +4,9 @@ Run from the ticket worktree inside `nix develop`. The seams are real HTTP
 responses/rendered HTML and browser workflows, not upstream-indexer health.
 
 ```sh
-export CARGO_TARGET_DIR=/home/pat/.cache/neoprism-prism-implementation/targets/379
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-cursor"
 export CARGO_BUILD_JOBS=3
-export PRISM_CURSOR_FIXTURES=/home/pat/.cache/neoprism-prism-implementation/379-browser-fixtures
+export PRISM_CURSOR_FIXTURES="$(mktemp -d)"
 bun install --frozen-lockfile
 just build-assets
 cargo test -p neoprism-node cursor_tests
@@ -32,5 +32,10 @@ freshness, source failure, chain-tip distance or PRISM-operation indexing.
 Existing successful-response cursor polling stays at two seconds; polling
 recovery and interaction preservation are #380's separate responsibility.
 
+Square copy targets use the existing copy SVG with descriptive accessible names;
+visible labels must not wrap inside 48px icon targets. Native success checks
+retain exact originals and denied-write fallbacks without focus loss.
+
+See [combined validation](PRISM-VALIDATION.md) for final integration evidence.
 These checks do not certify visual fidelity, screen readers, other browser
 engines or native mobile clipboard behavior.

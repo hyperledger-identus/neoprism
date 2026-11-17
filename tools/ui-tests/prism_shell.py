@@ -114,6 +114,87 @@ class PrismShell(unittest.TestCase):
             "0s",
         )
 
+    def test_landmarks_keyboard_focus_and_full_page_accessibility(self) -> None:
+        for width in (390, 1440):
+            with self.subTest(width=width):
+                browser("set", "viewport", str(width), "900")
+                self.assertEqual(
+                    evaluate("document.querySelectorAll('main').length"), 1
+                )
+                self.assertEqual(evaluate("document.querySelectorAll('h1').length"), 1)
+                self.assertTrue(
+                    evaluate("document.querySelector('label[for=did]') !== null")
+                )
+                audit = browser("a11y")
+                self.assertEqual(audit["counts"]["violations"], 0, audit)
+                browser("focus", "#did")
+                browser("press", "Tab")
+                ring = evaluate("""(() => {
+                    const e = document.activeElement;
+                    const s = getComputedStyle(e);
+                    return {tag: e.tagName, width: s.outlineWidth,
+                        style: s.outlineStyle, offset: s.outlineOffset};
+                })()""")
+                self.assertEqual(
+                    ring,
+                    {
+                        "tag": "BUTTON",
+                        "width": "2px",
+                        "style": "solid",
+                        "offset": "2px",
+                    },
+                )
+
+    def test_two_hundred_percent_layout_zoom_and_opaque_capability_fallback(
+        self,
+    ) -> None:
+        browser("set", "viewport", "1440", "900")
+        # Layout magnification, not a claim about the native browser zoom UI.
+        evaluate("document.documentElement.style.zoom = '2'")
+        try:
+            self.assertTrue(
+                evaluate("document.documentElement.scrollWidth <= innerWidth")
+            )
+            self.assertTrue(
+                evaluate("document.querySelector('#did').checkVisibility()")
+            )
+            browser("focus", "#did")
+            browser("press", "Tab")
+            self.assertEqual(evaluate("document.activeElement.type"), "submit")
+        finally:
+            evaluate("document.documentElement.style.zoom = ''")
+        # At the stylesheet capability boundary, an unsupported @supports block
+        # is discarded. Exercise the shipped opaque base, not replacement CSS.
+        evaluate("""Array.from(document.styleSheets).forEach(sheet => {
+            for (let i = sheet.cssRules.length - 1; i >= 0; i--) {
+                const rule = sheet.cssRules[i];
+                if (rule instanceof CSSSupportsRule
+                    && rule.conditionText.includes('backdrop-filter')) {
+                    sheet.deleteRule(i);
+                }
+            }
+        })""")
+        self.assertEqual(
+            evaluate(
+                "getComputedStyle(document.querySelector('.prism-shell')).backgroundColor"
+            ),
+            "rgb(238, 238, 247)",
+        )
+        self.assertEqual(
+            evaluate(
+                "getComputedStyle(document.querySelector('.prism-shell')).backdropFilter"
+            ),
+            "none",
+        )
+        self.assertEqual(
+            evaluate(
+                "getComputedStyle(document.querySelector('.prism-sidebar')).backgroundColor"
+            ),
+            "rgb(247, 245, 252)",
+        )
+        audit = browser("a11y")
+        self.assertEqual(audit["counts"]["violations"], 0, audit)
+
     def test_without_scripts_native_menu_and_long_form_get_handoff_work(self) -> None:
         long_form = (
             "did:prism:9b5118411248d9663b6ab15128fba810"

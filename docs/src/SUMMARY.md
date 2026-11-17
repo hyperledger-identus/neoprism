@@ -21,6 +21,7 @@
 
 - [PRISM specification tests](./prism-test/README.md)
 - [Live indexer parity test](./indexer-parity/README.md)
+- [Prism UI system and interactions](./references/prism-ui.md)
 - [Release process](./references/release-process.md)
 - [TLS dependency remediation](./references/tls-dependency-remediation.md)
 

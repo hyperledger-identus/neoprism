@@ -3,7 +3,7 @@ use identus_apollo::hex::HexStr;
 use identus_did_prism::dlt::DltCursor;
 use maud::{Markup, html};
 
-use crate::http::urls;
+use crate::http::{components, urls};
 
 /// The watch snapshot is evidence of a reported DLT position, not source liveness.
 pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
@@ -88,7 +88,7 @@ fn technical_value(label: &str, copy_name: &str, value: Option<&str>) -> Markup 
                 }
                 @if let Some(value) = value {
                     button type="button" class="prism-copy" data-copy-value=(value)
-                        aria-label=(format!("Copy {copy_name}")) { "Copy" }
+                        aria-label=(format!("Copy {copy_name}")) { (components::icon("copy")) }
                 }
             }
         }

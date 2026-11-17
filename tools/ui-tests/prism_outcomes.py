@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import threading
+import time
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
@@ -40,6 +41,7 @@ class OutcomeServer(http.server.ThreadingHTTPServer):
     started = threading.Event()
     delayed: bool = False
     failure: int = 0
+    malformed: bool = False
     requests: list[str] = []
 
 
@@ -52,7 +54,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.server.requests.append(self.path)
             if self.server.delayed:
                 self.server.started.set()
-                self.server.hold.wait(20)
+                self.server.hold.wait(45)
             if self.server.failure < 0:
                 self.close_connection = True
                 return  # Deliberate network disconnect, no response fabricated.
@@ -60,7 +62,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(self.server.failure, "private-server-detail")
                 return
             name = self.server.outcome if "did" in query else "entry"
-            content = (FIXTURES / f"{name}.html").read_bytes()
+            content = (
+                b"<html><body>private-malformed-response</body></html>"
+                if self.server.malformed
+                else (FIXTURES / f"{name}.html").read_bytes()
+            )
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(content)))
@@ -99,6 +105,7 @@ class PrismOutcomes(unittest.TestCase):
     def setUp(self) -> None:
         self.server.delayed = False
         self.server.failure = 0
+        self.server.malformed = False
         self.server.requests.clear()
         self.server.hold.clear()
         self.server.started.clear()
@@ -521,6 +528,151 @@ class PrismOutcomes(unittest.TestCase):
         self.assertIn(
             "Check the DID format",
             evaluate("document.querySelector('#resolution-status').textContent"),
+        )
+
+    def test_malformed_success_retains_labelled_previous_result_and_can_retry(
+        self,
+    ) -> None:
+        self.server.outcome = "published"
+        browser("open", URL + "/resolver?" + urlencode({"did": INPUTS["published"]}))
+        browser("focus", ".prism-operation > summary")
+        browser("press", "Enter")
+        original = evaluate("document.querySelector('#operation-history').textContent")
+        self.server.malformed = True
+        browser("fill", "#did", INPUTS["invalid"])
+        browser("press", "Enter")
+        browser("wait", "--text", "Couldn’t load this resolution")
+        self.assertFalse(
+            evaluate("document.querySelector('button[type=submit]').disabled")
+        )
+        self.assertFalse(evaluate("document.querySelector('#did').readOnly"))
+        self.assertFalse(
+            evaluate("document.querySelector('#resolution-pending').checkVisibility()")
+        )
+        self.assertEqual(evaluate("document.activeElement.id"), "did")
+        self.assertEqual(
+            evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
+        )
+        self.assertEqual(
+            evaluate("document.querySelector('#operation-history').textContent"),
+            original,
+        )
+        self.assertTrue(evaluate("document.querySelector('.prism-operation').open"))
+        self.assertTrue(
+            evaluate("document.querySelector('#resolution-previous').checkVisibility()")
+        )
+        self.assertNotIn(
+            "private-malformed-response",
+            evaluate("document.querySelector('main').innerHTML"),
+        )
+        self.assertEqual(
+            parse_qs(urlparse(browser("get", "url")["url"]).query)["did"],
+            [INPUTS["published"]],
+        )
+        self.assertEqual(
+            parse_qs(
+                urlparse(
+                    evaluate("document.querySelector('#resolution-retry').href")
+                ).query
+            )["did"],
+            [INPUTS["invalid"]],
+        )
+        self.server.malformed = False
+        self.server.outcome = "invalid"
+        browser("focus", "#resolution-retry")
+        browser("press", "Enter")
+        browser("wait", "--text", OUTCOMES["invalid"])
+        self.assertFalse(
+            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
+        )
+        self.assertFalse(
+            evaluate("document.querySelector('button[type=submit]').disabled")
+        )
+        self.assertEqual(
+            evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
+        )
+
+    def test_real_thirty_second_timeout_recovers_controls_previous_history_and_retry(
+        self,
+    ) -> None:
+        self.server.outcome = "published"
+        browser("open", URL + "/resolver?" + urlencode({"did": INPUTS["published"]}))
+        browser("focus", ".prism-operation > summary")
+        browser("press", "Enter")
+        original = evaluate("document.querySelector('#operation-history').textContent")
+        self.server.delayed = True
+        browser("fill", "#did", INPUTS["invalid"])
+        started = time.monotonic()
+        browser("press", "Enter")
+        try:
+            self.assertTrue(self.server.started.wait(5), "no actual pending GET")
+            self.assertTrue(
+                evaluate("document.querySelector('button[type=submit]').disabled")
+            )
+            self.assertTrue(
+                evaluate(
+                    "document.querySelector('#resolution-pending').checkVisibility()"
+                )
+            )
+            browser(
+                "wait", "--text", "Couldn’t load this resolution", "--timeout", "40000"
+            )
+            elapsed = time.monotonic() - started
+            self.assertGreaterEqual(elapsed, 29)
+            self.assertLess(elapsed, 40)
+            self.assertFalse(
+                evaluate("document.querySelector('button[type=submit]').disabled")
+            )
+            self.assertFalse(evaluate("document.querySelector('#did').readOnly"))
+            self.assertFalse(
+                evaluate(
+                    "document.querySelector('#resolution-pending').checkVisibility()"
+                )
+            )
+            self.assertFalse(
+                evaluate("document.querySelector('form').hasAttribute('aria-busy')")
+            )
+            self.assertEqual(evaluate("document.activeElement.id"), "did")
+            self.assertEqual(
+                evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
+            )
+            self.assertEqual(
+                evaluate("document.querySelector('#operation-history').textContent"),
+                original,
+            )
+            self.assertTrue(evaluate("document.querySelector('.prism-operation').open"))
+            self.assertTrue(
+                evaluate(
+                    "document.querySelector('#resolution-previous').checkVisibility()"
+                )
+            )
+            self.assertEqual(
+                parse_qs(urlparse(browser("get", "url")["url"]).query)["did"],
+                [INPUTS["published"]],
+            )
+            self.assertEqual(
+                parse_qs(
+                    urlparse(
+                        evaluate("document.querySelector('#resolution-retry').href")
+                    ).query
+                )["did"],
+                [INPUTS["invalid"]],
+            )
+        finally:
+            self.server.delayed = False
+            self.server.hold.set()
+        self.server.outcome = "invalid"
+        browser("focus", "#resolution-retry")
+        browser("press", "Enter")
+        browser("wait", "--text", OUTCOMES["invalid"])
+        self.assertFalse(
+            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
+        )
+        self.assertFalse(
+            evaluate("document.querySelector('button[type=submit]').disabled")
+        )
+        self.assertEqual(
+            evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
         )
 
     def test_pending_is_real_repeat_protected_and_preserves_keyboard_focus(
