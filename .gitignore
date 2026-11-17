@@ -10,6 +10,13 @@ __pycache__
 lcov.info
 artifacts/indexer-parity/
 
+# Local design workspace: track only explicitly approved deliverables.
+/designs/*
+!/designs/neoprism.fig
+!/designs/neoprism.svg
+!/designs/README.md
+!/designs/PRISM-SPEC.md
+
 # bv (beads viewer) local config and caches
 .bv/
 
