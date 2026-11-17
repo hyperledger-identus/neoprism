@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.15.1) - 2026-11-17
+
+### Security fixes
+
+- Update TLS dependencies to `openssl` 0.10.80, `openssl-sys` 0.9.116,
+  and `rustls-webpki` 0.103.13 to address the advisories tracked in
+  [issue #369](https://github.com/hyperledger-identus/neoprism/issues/369)
+  via [PR #370](https://github.com/hyperledger-identus/neoprism/pull/370).
+- These targeted fixes do not resolve all repository security alerts.
+  The v0.15.0 compatibility notes and known limitations below still apply.
+
 ## [0.15.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.15.0) - 2026-11-17
 
 This release adopts SDK-Rust's generic cryptography, DID validation, resolution,
