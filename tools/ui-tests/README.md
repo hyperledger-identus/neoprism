@@ -113,6 +113,30 @@ is explicitly not a reconstruction of authored wire formatting; captured fields
 retain their spacing/order even when the readable projection changes them.
 Native script-blocked disclosures and expanded 320–1440px bounds are checked.
 
+## Resolver operation fixtures
+
+```sh
+export PRISM_OPERATION_FIXTURES="$(mktemp -d)"
+cargo test -p neoprism-node export_operation_browser_fixtures -- --ignored
+just build-assets
+PRISM_TEST_SESSION=prism-operations-check python tools/ui-tests/prism_operations.py -v
+```
+
+`PRISM_OPERATION_PORT` overrides private loopback port 18776. The suite verifies
+applied/rejected disclosures, real protocol failure to initialize final state,
+explicit empty history, 320–1440px expanded-content bounds, scoped axe checks,
+keyboard/no-script disclosures, and exact complete Debug inspection/copy/manual
+fallback. Clipboard success and denial use boundary stubs, not the OS-global
+clipboard, so this suite can run concurrently with the native clipboard suites.
+`PRISM_SCREENSHOT_DIR` optionally saves 390px/1440px page renders.
+
+The Rust rendered-HTML tests cover every metadata field, HTML-200 masking and
+full server-side logging of unexpected internal causes, and safe nested size,
+crypto/protobuf, service and state-conflict diagnostics. Client-safe projection
+lives in `ui_resolver/diagnostics.rs`; never replace it with a full error-chain
+formatter. Full signed payloads intentionally retain all captured Debug fields,
+including protobuf fields; they are not reconstructed authored wire bytes.
+
 ## Explorer cursor fixtures
 
 ```sh

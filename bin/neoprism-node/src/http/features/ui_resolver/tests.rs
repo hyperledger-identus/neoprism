@@ -1,4 +1,6 @@
+use std::io::Write;
 use std::str::FromStr;
+use std::sync::{Arc, Mutex};
 
 use identus_did_prism::did::operation::{OperationParameters, PublicKey, Service};
 use identus_did_prism::did::{DidState, PrismDid};
@@ -10,6 +12,56 @@ use identus_did_prism::protocol::error::ProcessError;
 use identus_did_prism::protocol::resolver::resolve_unpublished;
 
 type History = Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>;
+
+#[derive(Clone)]
+struct CapturedLog(Arc<Mutex<Vec<u8>>>);
+
+impl Write for CapturedLog {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0.lock().unwrap().extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn html_success_response_masks_internal_causes_and_logs_the_full_chain() {
+    use axum::body::to_bytes;
+    use axum::http::StatusCode;
+    use axum::response::IntoResponse;
+
+    use crate::app::service::error::ResolutionError;
+
+    let log = CapturedLog(Arc::new(Mutex::new(Vec::new())));
+    let writer = log.clone();
+    let subscriber = tracing_subscriber::fmt()
+        .without_time()
+        .with_ansi(false)
+        .with_writer(move || writer.clone())
+        .finish();
+    let _guard = tracing::subscriber::set_default(subscriber);
+    let error = anyhow::anyhow!("postgres://secret-user:secret-password@private-db/path")
+        .context("filesystem /private/storage/resolver.db failed");
+    let response = views::resolve(
+        None,
+        "did:prism:input",
+        Err(ResolutionError::InternalError { source: error }),
+        vec![],
+    )
+    .into_response();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = String::from_utf8(to_bytes(response.into_body(), usize::MAX).await.unwrap().to_vec()).unwrap();
+    assert!(body.contains("unexpected server error"));
+    for secret in ["secret-password", "private-db", "/private/storage", "postgres://"] {
+        assert!(!body.contains(secret), "internal cause leaked: {secret}");
+    }
+    let logged = String::from_utf8(log.0.lock().unwrap().clone()).unwrap();
+    assert!(logged.contains("filesystem /private/storage/resolver.db failed"));
+    assert!(logged.contains("postgres://secret-user:secret-password@private-db/path"));
+}
 
 fn history_entry(block: u64, signer: &str) -> (OperationMetadata, SignedPrismOperation, Option<ProcessError>) {
     let (did, _) = local_identity();
@@ -35,6 +87,177 @@ fn history_entry(block: u64, signer: &str) -> (OperationMetadata, SignedPrismOpe
     )
 }
 
+#[test]
+fn nested_size_diagnostics_keep_domain_limits_without_type_or_source_locations() {
+    use identus_did_prism::did::operation::PublicKeyId;
+
+    use crate::app::service::error::{InvalidDid, ResolutionError};
+
+    let invalid_signer = || ProcessError::SignedPrismOperationInvalidSignedWith {
+        source: PublicKeyId::parse("overlong-key", 3).unwrap_err(),
+    };
+    let mut rejected = history_entry(6, "overlong-key");
+    rejected.2 = Some(invalid_signer());
+    let body = views::resolve(
+        None,
+        "did:prism:input",
+        Err(ResolutionError::InvalidDid {
+            source: InvalidDid::ProcessStateFailed {
+                source: invalid_signer(),
+            },
+        }),
+        vec![rejected],
+    )
+    .into_string();
+    for expected in ["public key id is too long", "input size has a limit of 3 but got 12"] {
+        assert!(
+            body.matches(expected).count() >= 2,
+            "missing safe input/rejection detail: {expected}"
+        );
+    }
+    for absent in ["for type", "identus_did_prism::", "ssi.rs", "[at ", "lib/did-prism/src"] {
+        assert!(!body.contains(absent), "implementation detail leaked: {absent}");
+    }
+}
+
+#[test]
+fn operations_remain_inspectable_with_all_metadata_payloads_and_outcomes_when_final_state_is_unusable() {
+    use crate::app::service::error::ResolutionError;
+
+    let mut history = vec![
+        history_entry(7, "master<&\"-signer"),
+        history_entry(9, "rejected-signer"),
+    ];
+    history[1].2 = Some(ProcessError::DidStateInitFromNonCreateOperation);
+    let payload = format!("{:?}", history[0].1);
+    // Protobuf serialization caches sizes through interior mutability; derive the
+    // expected ID on a clone so it does not change our captured input fixture.
+    let operation_id = history[0].1.clone().operation_id().to_string();
+    let body = views::resolve(None, "did:prism:input", Err(ResolutionError::NotFound), history).into_string();
+    let operations = body
+        .split("id=\"operation-history\"")
+        .nth(1)
+        .expect("operation history independent of final state");
+    for expected in [
+        "Operation history",
+        "Signer",
+        "master&lt;&amp;&quot;-signer",
+        "Block time · UTC",
+        "2025-03-07T12:34:56+00:00",
+        "Slot",
+        "Block",
+        "Block sequence · absn",
+        "Operation sequence · osn",
+        "Transaction ID",
+        "Operation ID",
+        "data-copy-value=\"7\"",
+        "data-copy-value=\"84\"",
+        "data-copy-value=\"2\"",
+        "data-copy-value=\"3\"",
+        "0707070707070707070707070707070707070707070707070707070707070707",
+        &operation_id,
+        "Applied",
+        "Rejected",
+        "Processing outcome",
+        "Safe domain diagnostics",
+        "Complete signed payload · Debug",
+        "did state initialization requires operation to be CreateOperation",
+        "<details",
+        "<summary",
+    ] {
+        assert!(operations.contains(expected), "missing operation detail: {expected}");
+    }
+    let escaped_payload = maud::html! { (&payload) }.into_string();
+    assert!(operations.contains(&format!("data-copy-value=\"{escaped_payload}\"")));
+    assert!(operations.contains(&format!("<code>{escaped_payload}</code>")));
+    assert!(payload.contains("signature: [7]"));
+    assert!(payload.contains("CompressedECKeyData"));
+    assert!(!body.contains("Indexed state available"));
+    assert!(operations.contains("<summary>Safe domain diagnostics</summary>"));
+}
+
+#[test]
+fn safe_domain_diagnostics_keep_rejection_context_but_stop_at_crypto_and_protobuf_leaves() {
+    use identus_did_prism::did::error::{CreateDidOperationError, DidSyntaxError, Error, PublicKeyError, ServiceError};
+    use identus_did_prism::did::operation::{PublicKeyId, ServiceId};
+    use identus_did_prism::proto::MessageExt;
+    use identus_did_prism::protocol::error::DidStateConflictError;
+
+    use crate::app::service::error::{InvalidDid, ResolutionError};
+
+    let cases = [
+        (
+            ProcessError::DidOperationInvalid {
+                source: Error::CreateDidOperation {
+                    source: CreateDidOperationError::InvalidPublicKey {
+                        source: PublicKeyError::InvalidKeyData {
+                            id: PublicKeyId::parse("authentication-key", 50).unwrap(),
+                            source: identus_apollo::crypto::Error::KeyParsing {
+                                source: Box::new(std::io::Error::other("crypto-leaf-secret /private/implementation")),
+                            },
+                        },
+                    },
+                },
+            },
+            "failed to parse key data into public key for id authentication-key",
+        ),
+        (
+            ProcessError::DidOperationInvalid {
+                source: Error::CreateDidOperation {
+                    source: CreateDidOperationError::InvalidService {
+                        source: ServiceError::InvalidServiceId {
+                            id: "overlong-service".into(),
+                            source: ServiceId::parse("overlong-service", 4).unwrap_err(),
+                        },
+                    },
+                },
+            },
+            "service id is too long: input size has a limit of 4 but got 16",
+        ),
+        (
+            ProcessError::DidStateConflict {
+                source: DidStateConflictError::AfterUpdatePublicKeyExceedLimit { limit: 50, actual: 51 },
+            },
+            "did state has 51 public keys which exceed limit 50",
+        ),
+    ];
+    for (error, expected) in cases {
+        let mut entry = history_entry(8, "master0");
+        entry.2 = Some(error);
+        let body = views::resolve(None, LONG_FORM, Err(ResolutionError::NotFound), vec![entry]).into_string();
+        assert!(body.contains(expected), "missing safe domain detail: {expected}");
+        for absent in [
+            "crypto-leaf-secret",
+            "/private/implementation",
+            "for type",
+            "[at ",
+            "ssi.rs",
+        ] {
+            assert!(!body.contains(absent), "unsafe nested leaf: {absent}");
+        }
+    }
+    let protobuf_error = identus_did_prism::prelude::PrismOperation::decode(&[0x80]).unwrap_err();
+    let raw_leaf = protobuf_error.to_string();
+    let body = views::resolve(
+        None,
+        "submitted-input",
+        Err(ResolutionError::InvalidDid {
+            source: InvalidDid::InvalidPrismDid {
+                source: Error::InvalidDidSyntax {
+                    source: DidSyntaxError::DidEncodedStateInvalidProto {
+                        source: protobuf_error,
+                        did: "submitted-input".into(),
+                    },
+                },
+            },
+        }),
+        vec![],
+    )
+    .into_string();
+    assert!(body.contains("failed to decode did suffix submitted-input into protobuf message"));
+    assert!(!body.contains(&raw_leaf));
+}
+
 fn evidence_history() -> History {
     let mut rejected = history_entry(99, "rejected-signer");
     rejected.2 = Some(ProcessError::SignedPrismOperationInvalidSignature);
@@ -55,6 +278,61 @@ fn local_identity() -> (PrismDid, DidState) {
     let PrismDid::LongForm(long) = &did else { unreachable!() };
     let state = resolve_unpublished(long.operation().unwrap()).unwrap();
     (did, state)
+}
+
+#[test]
+#[ignore = "exports test-only operation fixtures for the browser seam"]
+fn export_operation_browser_fixtures() {
+    use identus_did_prism::protocol::resolver::resolve_published;
+
+    use crate::app::service::error::ResolutionError;
+
+    let dir = std::env::var("PRISM_OPERATION_FIXTURES").expect("set PRISM_OPERATION_FIXTURES outside the checkout");
+    let dir = std::path::Path::new(&dir);
+    std::fs::create_dir_all(dir).unwrap();
+    let long_signer = format!("signer<>&\"'\\\n{}", "long-original-".repeat(300));
+    let mut long = history_entry(99, &long_signer);
+    long.2 = Some(ProcessError::SignedPrismOperationInvalidSignature);
+    let history = vec![history_entry(7, "master<&\"-signer"), long];
+    for (index, (_, signed, _)) in history.iter().enumerate() {
+        std::fs::write(dir.join(format!("payload-{}.txt", index + 1)), format!("{signed:?}")).unwrap();
+    }
+    // Unusable final state is produced by the real protocol, not an invented outcome.
+    let (state, rejected) = resolve_published(history.iter().map(|(m, s, _)| (m.clone(), s.clone())).collect());
+    assert!(state.is_none());
+    assert_eq!(rejected.len(), 2);
+    assert!(rejected.iter().all(|(_, _, e)| e.is_some()));
+    std::fs::write(
+        dir.join("unusable.html"),
+        views::resolve(None, LONG_FORM, Err(ResolutionError::NotFound), rejected).into_string(),
+    )
+    .unwrap();
+    // Published view is separate: these captured outcomes test the rendering contract.
+    let (did, mut state) = local_identity();
+    state.is_published = true;
+    std::fs::write(
+        dir.join("operations.html"),
+        views::resolve(None, LONG_FORM, Ok((did, state)), history).into_string(),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("empty.html"),
+        views::resolve(None, LONG_FORM, Err(ResolutionError::NotFound), vec![]).into_string(),
+    )
+    .unwrap();
+    std::fs::write(
+        dir.join("internal.html"),
+        views::resolve(
+            None,
+            LONG_FORM,
+            Err(ResolutionError::InternalError {
+                source: anyhow::anyhow!("secret-password /private/db"),
+            }),
+            vec![],
+        )
+        .into_string(),
+    )
+    .unwrap();
 }
 
 fn key(id: &str, usage: KeyUsage, curve: &str, data: Vec<u8>) -> PublicKey {

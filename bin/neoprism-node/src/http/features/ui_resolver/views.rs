@@ -1,12 +1,10 @@
-use std::error::Report;
-
 use identus_did_prism::did::{DidState, PrismDid};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
-use super::{contexts_services, evidence, identity, keys, vdr};
+use super::{contexts_services, diagnostics, evidence, identity, keys, operations, vdr};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
@@ -31,13 +29,19 @@ pub fn resolve(
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,
 ) -> Markup {
+    // Capture Debug payloads before evidence hashing can update protobuf size caches.
+    // Unpublished resolution contributes synthetic metadata, not ledger history.
+    let operation_history = match &did_state {
+        Ok((_, state)) if !state.is_published => operations::history(&[]),
+        _ => operations::history(&did_debug),
+    };
     let body = html! {
         (search_box(Some(did_str)))
         div class="prism-resolver-result" {
             @match did_state.as_ref() {
                 Err(e) => {
                     (resolution_error_body(e))
-                    (did_debug_body(did_debug))
+                    (&operation_history)
                 }
                 Ok((did, state)) => {
                     @let ledger = evidence::ledger(state, &did_debug);
@@ -45,11 +49,7 @@ pub fn resolve(
                         div class="prism-dossier" {
                             (identity::summary(did, state, if state.is_published { did_debug.len() } else { 0 }))
                             (did_document_body(state))
-                            @if state.is_published {
-                                (did_debug_body(did_debug))
-                            } @else {
-                                (did_debug_body(vec![]))
-                            }
+                            (&operation_history)
                         }
                         aside class="prism-evidence-rail" aria-label="Identity evidence and API" {
                             (ledger)
@@ -87,12 +87,8 @@ fn search_box(did: Option<&str>) -> Markup {
 }
 
 fn resolution_error_body(error: &ResolutionError) -> Markup {
-    let error_lines = Report::new(error)
-        .pretty(true)
-        .to_string()
-        .split("\n")
-        .map(|s| html! { (s) br; })
-        .collect::<Vec<_>>();
+    let message = diagnostics::resolution(error);
+    let error_lines = message.split("\n").map(|s| html! { (s) br; }).collect::<Vec<_>>();
     html! {
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
@@ -113,66 +109,6 @@ fn did_document_body(state: &DidState) -> Markup {
             (contexts_services::contexts(&state.context))
             (contexts_services::services(&state.services))
             (vdr::entries(&state.storage))
-        }
-    }
-}
-
-fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>) -> Markup {
-    let op_elems = did_debug
-        .iter()
-        .map(|(metadata, signed_op, error)| {
-            let block_time = metadata.block_metadata.cbt.to_rfc3339();
-            let operation_id = signed_op.operation_id();
-            let operation_payload = format!("{signed_op:?}");
-            let error_lines = error
-                .as_ref()
-                .map(|e| Report::new(e).pretty(true).to_string())
-                .unwrap_or_else(|| "-".to_string())
-                .split("\n")
-                .map(|s| html! { (s) br; })
-                .collect::<Vec<_>>();
-            html! {
-                li class="border p-2 rounded-md bg-base-200 border-gray-700 wrap-anywhere" {
-                    strong { "Block time: " } (block_time)
-                    br;
-                    strong { "Slot no: " } (metadata.block_metadata.slot_number)
-                    br;
-                    strong { "Block no: " } (metadata.block_metadata.block_number)
-                    br;
-                    strong { "Block seq no: " } (metadata.block_metadata.absn)
-                    br;
-                    strong { "Transaction ID: " } (metadata.block_metadata.tx_id)
-                    br;
-                    strong { "Operation ID: " } (operation_id)
-                    br;
-                    strong { "Operation seq no: " } (metadata.osn)
-                    br;
-                    strong { "Operation payload: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        (operation_payload)
-                    }
-                    strong { "Error: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        @for line in error_lines { (line) }
-                    }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="flex justify-center w-full" {
-            div class="w-full m-4 space-y-4" {
-                p class="text-2xl font-bold" { "Operation debug" }
-                @if op_elems.is_empty() {
-                    p { "No indexed operations" }
-                }
-                ul class="space-y-2" {
-                    @for elem in op_elems { (elem) }
-                }
-            }
         }
     }
 }
