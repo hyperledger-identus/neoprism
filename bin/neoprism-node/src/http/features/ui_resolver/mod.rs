@@ -7,10 +7,12 @@ use models::DidQuery;
 use crate::IndexerUiState;
 use crate::http::urls;
 
+mod diagnostics;
 mod evidence;
 mod identity;
 mod keys;
 pub(in crate::http) mod models;
+mod operations;
 mod views;
 
 #[cfg(test)]

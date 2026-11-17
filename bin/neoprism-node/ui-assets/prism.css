@@ -276,6 +276,32 @@ body.prism {
   .prism-identity-actions > * { width: 100%; }
 }
 
+/* Resolver operation inspection (#376): exact text wraps visually, never in data. */
+.prism-operations { min-width: 0; padding: 20px; }
+.prism-operation-list { list-style: none; padding: 0; margin: 16px 0 0; }
+.prism-operation-list > li + li { margin-top: 16px; }
+.prism-operation { min-width: 0; border-top: 1px solid var(--prism-line); }
+.prism-operation > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 72px; padding: 12px 0; cursor: pointer; }
+.prism-operation > summary::after { content: ''; width: 8px; height: 8px; flex: none; border: solid var(--prism-hover); border-width: 0 2px 2px 0; transform: rotate(45deg); margin: 0 8px 4px; }
+.prism-operation[open] > summary::after { transform: rotate(225deg); margin-bottom: 0; }
+.prism-operation > summary::-webkit-details-marker { display: none; }
+.prism-operation-outcome { margin-left: auto; padding: 6px 10px; border-radius: 8px; background: #e3f3ed; color: #006b58; font-size: 12px; }
+.prism-operation-rejected { background: #fce9ed; color: #943046; }
+.prism-operation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; margin: 0 0 16px; }
+.prism-operation-fields .prism-data-field { min-width: 0; margin: 0; }
+.prism-operation-fields .prism-data-field:nth-last-child(-n+2) { grid-column: 1 / -1; }
+.prism-operation-fields code { white-space: pre-wrap; user-select: text; }
+.prism-operation-inspector { min-width: 0; border-top: 1px solid var(--prism-line); }
+.prism-operation-inspector > summary { min-height: 48px; padding: 12px 0; color: var(--prism-hover); cursor: pointer; }
+.prism-operation summary:hover { color: var(--prism-hover); }
+.prism-operation-diagnostic, .prism-operation-processing { padding: 16px; margin-bottom: 16px; border-radius: 12px; background: var(--prism-code); overflow-wrap: anywhere; }
+.prism-operation-copy { display: flex; justify-content: end; min-width: 0; }
+.prism-operation-payload pre { max-width: 100%; min-width: 0; padding: 16px; margin: 0 0 16px; border-radius: 12px; background: var(--prism-code); white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.prism-operation-payload pre code { font-size: 13px; line-height: 21px; }
+@media (max-width: 600px) {
+  .prism-operation-fields { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
