@@ -17,6 +17,7 @@ humantime          = { workspace = true }
 lazybe             = { workspace = true, features = [ "openapi" ] }
 maud               = { workspace = true, features = [ "axum" ] }
 serde              = { workspace = true, features = [ "derive" ] }
+serde_json         = { workspace = true }
 sqlx               = { workspace = true, features = [ "runtime-tokio" ] }
 tokio              = { workspace = true, features = [ "full" ] }
 tracing            = { workspace = true }
@@ -37,5 +38,4 @@ identus-did-resolver-http   = { workspace = true, features = [ "openapi" ] }
 node-storage                = { workspace = true, features = [ "sqlite-storage" ] }
 
 [dev-dependencies]
-serde_json = { workspace = true }
-tempfile   = { workspace = true }
+tempfile = { workspace = true }

@@ -1,12 +1,11 @@
 use identus_apollo::hex::HexStr;
-use identus_did_prism::did::operation::Service;
 use identus_did_prism::did::{DidState, PrismDid, StorageState};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
-use super::{diagnostics, evidence, identity, keys, operations};
+use super::{contexts_services, diagnostics, evidence, identity, keys, operations};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
@@ -108,61 +107,9 @@ fn did_document_body(state: &DidState) -> Markup {
         div class="prism-state-sections" {
             h2 class="sr-only" { "DID state" }
             (keys::public_keys(&state.public_keys))
-            (context_card(&state.context))
-            (service_card(&state.services))
+            (contexts_services::contexts(&state.context))
+            (contexts_services::services(&state.services))
             (storage_card(&state.storage))
-        }
-    }
-}
-
-fn context_card(context: &[String]) -> Markup {
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "@context" }
-                @if context.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="list-disc list-inside" {
-                    @for ctx in context {
-                        li { (ctx) }
-                    }
-                }
-            }
-        }
-    }
-}
-
-fn service_card(services: &[Service]) -> Markup {
-    let svc_elems = services
-        .iter()
-        .map(|svc| {
-            let svc_id = &svc.id;
-            let svc_ty = format!("{:?}", svc.r#type);
-            let svc_ep = format!("{:?}", svc.service_endpoint);
-            html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
-                    strong { "ID: " } (svc_id)
-                    br;
-                    strong { "Type: " } span class="font-mono" { (svc_ty) }
-                    br;
-                    strong { "Endpoint: " } span class="font-mono" { (svc_ep) }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "Services" }
-                @if svc_elems.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="space-y-2" {
-                    @for elem in svc_elems { (elem) }
-                }
-            }
         }
     }
 }
