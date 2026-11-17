@@ -1,13 +1,12 @@
 use std::error::Report;
 
-use identus_apollo::hex::HexStr;
-use identus_did_prism::did::{DidState, PrismDid, StorageState};
+use identus_did_prism::did::{DidState, PrismDid};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
-use super::{contexts_services, evidence, identity, keys};
+use super::{contexts_services, evidence, identity, keys, vdr};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
@@ -113,48 +112,7 @@ fn did_document_body(state: &DidState) -> Markup {
             (keys::public_keys(&state.public_keys))
             (contexts_services::contexts(&state.context))
             (contexts_services::services(&state.services))
-            (storage_card(&state.storage))
-        }
-    }
-}
-
-fn storage_card(storages: &[StorageState]) -> Markup {
-    let mut sorted_storages = storages.to_vec();
-    sorted_storages.sort_by_key(|s| s.init_operation_hash.to_vec());
-
-    let storage_elems = sorted_storages
-        .iter()
-        .map(|s| {
-            let init_hash_hex = HexStr::from(s.init_operation_hash.as_bytes()).to_string();
-            let last_hash_hex = HexStr::from(s.last_operation_hash.as_bytes()).to_string();
-            let data = format!("{:?}", s.data);
-            html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
-                    strong { "Init operation hash: " } (init_hash_hex)
-                    br;
-                    strong { "Last operation hash: " } (last_hash_hex)
-                    br;
-                    strong { "Data: " }
-                    br;
-                    div class="bg-base-300 font-mono text-sm text-neutral-content p-3" {
-                        (data)
-                    }
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "VDR entries" }
-                @if storage_elems.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="space-y-2" {
-                    @for elem in storage_elems { (elem) }
-                }
-            }
+            (vdr::entries(&state.storage))
         }
     }
 }

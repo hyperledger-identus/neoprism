@@ -130,6 +130,33 @@ The suite also covers native/no-script disclosures, responsive evidence bounds,
 scoped accessibility audits and observable receipt/request states. It blocks
 HTMX only during the copy case; polling interaction preservation remains #380.
 
+## Resolver VDR fixtures
+
+The VDR suite exports actual Resolver rendering with deterministic typed storage
+fixtures (Bytes, IPFS and uninterpreted numeric StatusList). Normal, long-content
+and empty pages exist only in test output; no production sample route is added.
+Hashes use the complete 64-character SHA-256 values supported by the backend.
+
+```sh
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/375"
+export CARGO_BUILD_JOBS=2
+export PRISM_VDR_FIXTURES="$(mktemp -d)"
+cargo test -p neoprism-node vdr_tests
+cargo test -p neoprism-node export_vdr_browser_fixtures -- --ignored
+bun install --frozen-lockfile
+just build-assets
+PRISM_TEST_SESSION=prism-vdr-375 python tools/ui-tests/prism_vdr.py -v
+```
+
+`PRISM_VDR_PORT` overrides private loopback port 18775. Browser checks cover
+320–1440px expanded bounds, exact typed/raw copy writes and denied-write manual
+fallbacks without lost focus, native keyboard/script-blocked disclosures,
+selectable captured Debug text and scoped accessibility audits. Clipboard checks
+use deterministic boundary stubs, not the OS-global clipboard. Rust checks cover
+all typed shapes, numeric extremes, escaping, empty typed fields, ordering and a
+real native GET resolution with compact empty VDR state. Raw data is the complete
+captured Debug representation, explicitly not a reconstruction of wire bytes.
+
 ## Agreed seams
 
 - Rust HTTP tests cover root redirects, mode-dependent destinations, runtime
