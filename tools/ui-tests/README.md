@@ -103,6 +103,16 @@ Rendered-HTML tests additionally cover backend publication/deactivation, all
 usage enums, real counts, and selecting one latest applied operation for evidence
 without claiming a chain tip or exposing synthetic local metadata.
 
+The same fixture exporter/suite also covers ordered contexts and services with
+single/multiple types, URI/object/array endpoints, nested/null/boolean values,
+long identifiers and URLs, plus compact empty collections. Clipboard boundary
+stubs verify exact captured fields, full typed Debug text, readable parsed-state
+JSON, denied/missing writes, polite feedback and keyboard-selectable fallbacks.
+The full typed text is captured independently during fixture setup. Readable JSON
+is explicitly not a reconstruction of authored wire formatting; captured fields
+retain their spacing/order even when the readable projection changes them.
+Native script-blocked disclosures and expanded 320–1440px bounds are checked.
+
 ## Explorer cursor fixtures
 
 ```sh
