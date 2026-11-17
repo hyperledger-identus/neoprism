@@ -209,6 +209,12 @@ handoff crop index identify original captures, exact regions and pinned sources.
   7.32:1, white/primary 5.13:1, secondary action/panel 6.17:1. These are samples,
   not a claim that every possible browser/data/assistive-technology state was
   manually certified. Feature axe audits additionally check displayed contrast.
+  The Explorer main-region audit leaves one contrast rule incomplete for five
+  gradient-backed labels (heading, subtitle, both page-count labels and list
+  note) at each size. This is not an automated pass: the full raw result is
+  retained in `renders/refresh-render-checks.json`. Regional inspection and the
+  solid-palette samples supplement it; parent independent review must retain
+  this limitation rather than treating zero violations as complete coverage.
 - Reduced motion is tested. Owned CDP emulation of reduced transparency/motion
   verifies opaque shell/sidebar, no backdrop filter, no text filter and zero
   transition duration (`preferences-contrast.json`). The shell suite also drops
