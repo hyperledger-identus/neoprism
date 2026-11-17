@@ -7,8 +7,14 @@ use models::DidQuery;
 use crate::IndexerUiState;
 use crate::http::urls;
 
+mod evidence;
+mod identity;
+mod keys;
 pub(in crate::http) mod models;
 mod views;
+
+#[cfg(test)]
+mod tests;
 
 pub fn router() -> Router<IndexerUiState> {
     Router::new().route(urls::Resolver::AXUM_PATH, get(index))

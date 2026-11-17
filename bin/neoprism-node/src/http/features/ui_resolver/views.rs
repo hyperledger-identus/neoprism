@@ -1,15 +1,14 @@
 use std::error::Report;
 
 use identus_apollo::hex::HexStr;
-use identus_apollo::jwk::EncodeJwk;
-use identus_did_core::Did;
-use identus_did_prism::did::operation::{self, PublicKey, Service};
-use identus_did_prism::did::{DidState, PrismDid, PrismDidOps, StorageState};
+use identus_did_prism::did::operation::Service;
+use identus_did_prism::did::{DidState, PrismDid, StorageState};
 use identus_did_prism::dlt::{NetworkIdentifier, OperationMetadata};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
+use super::{evidence, identity, keys};
 use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
@@ -34,16 +33,32 @@ pub fn resolve(
     did_state: Result<(PrismDid, DidState), ResolutionError>,
     did_debug: Vec<(OperationMetadata, SignedPrismOperation, Option<ProcessError>)>,
 ) -> Markup {
-    let resolution_body = match did_state.as_ref() {
-        Err(e) => resolution_error_body(e),
-        Ok((did, state)) => did_document_body(&did.to_did(), state),
-    };
     let body = html! {
         (search_box(Some(did_str)))
-        div class="flex flex-row w-full justify-center" {
-            div class="flex flex-col w-full max-w-4xl items-center" {
-                (resolution_body)
-                (did_debug_body(did_debug))
+        div class="prism-resolver-result" {
+            @match did_state.as_ref() {
+                Err(e) => {
+                    (resolution_error_body(e))
+                    (did_debug_body(did_debug))
+                }
+                Ok((did, state)) => {
+                    @let ledger = evidence::ledger(state, &did_debug);
+                    div class="prism-resolution-grid" {
+                        div class="prism-dossier" {
+                            (identity::summary(did, state, if state.is_published { did_debug.len() } else { 0 }))
+                            (did_document_body(state))
+                            @if state.is_published {
+                                (did_debug_body(did_debug))
+                            } @else {
+                                (did_debug_body(vec![]))
+                            }
+                        }
+                        aside class="prism-evidence-rail" aria-label="Identity evidence and API" {
+                            (ledger)
+                            (identity::api(did))
+                        }
+                    }
+                }
             }
         }
     };
@@ -92,22 +107,14 @@ fn resolution_error_body(error: &ResolutionError) -> Markup {
     }
 }
 
-fn did_document_body(did: &Did, state: &DidState) -> Markup {
-    let contexts = state.context.as_slice();
-    let public_keys = state.public_keys.as_slice();
-    let services = state.services.as_slice();
-    let did_doc_url = urls::ApiDid::new_uri(did.to_string());
-    let storages = &state.storage;
+fn did_document_body(state: &DidState) -> Markup {
     html! {
-        div class="flex justify-center w-full" {
-            div class="w-full m-4 space-y-4" {
-                p class="text-2xl font-bold" { "DID state" }
-                a class="btn btn-xs btn-outline" href=(did_doc_url) target="_blank" { "Resolver API" }
-                (context_card(contexts))
-                (public_key_card(public_keys))
-                (service_card(services))
-                (storage_card(storages))
-            }
+        div class="prism-state-sections" {
+            h2 class="sr-only" { "DID state" }
+            (keys::public_keys(&state.public_keys))
+            (context_card(&state.context))
+            (service_card(&state.services))
+            (storage_card(&state.storage))
         }
     }
 }
@@ -124,54 +131,6 @@ fn context_card(context: &[String]) -> Markup {
                     @for ctx in context {
                         li { (ctx) }
                     }
-                }
-            }
-        }
-    }
-}
-
-fn public_key_card(public_keys: &[PublicKey]) -> Markup {
-    let mut sorted_pks = public_keys.to_vec();
-    sorted_pks.sort_by_key(|i| i.id.to_string());
-
-    let pk_elems = sorted_pks
-        .iter()
-        .map(|pk| {
-            let jwk = match &pk.data {
-                operation::PublicKeyData::Master { data } => data.encode_jwk(),
-                operation::PublicKeyData::Vdr { data } => data.encode_jwk(),
-                operation::PublicKeyData::Other { data, .. } => data.encode_jwk(),
-            };
-            let key_id = pk.id.to_string();
-            let key_usage = format!("{:?}", pk.data.usage());
-            let curve = jwk.crv;
-            let encoded_x = jwk.x.map(|i| i.to_string()).unwrap_or_default();
-            let encoded_y = jwk.y.map(|i| i.to_string()).unwrap_or_default();
-            html! {
-                li class="border p-2 rounded-md border-gray-700 wrap-anywhere" {
-                    strong { "ID: " } (key_id)
-                    br;
-                    strong { "Usage: " } (key_usage)
-                    br;
-                    strong { "Curve: " } (curve)
-                    br;
-                    strong { "X: " } (encoded_x)
-                    br;
-                    strong { "Y: " } (encoded_y)
-                }
-            }
-        })
-        .collect::<Vec<_>>();
-
-    html! {
-        div class="card bg-base-200 border border-gray-700" {
-            div class="card-body" {
-                h2 class="card-title" { "Public Keys" }
-                @if pk_elems.is_empty() {
-                    p class="text-neutral-content" { "Empty" }
-                }
-                ul class="space-y-2" {
-                    @for elem in pk_elems { (elem) }
                 }
             }
         }
@@ -302,6 +261,9 @@ fn did_debug_body(did_debug: Vec<(OperationMetadata, SignedPrismOperation, Optio
         div class="flex justify-center w-full" {
             div class="w-full m-4 space-y-4" {
                 p class="text-2xl font-bold" { "Operation debug" }
+                @if op_elems.is_empty() {
+                    p { "No indexed operations" }
+                }
                 ul class="space-y-2" {
                     @for elem in op_elems { (elem) }
                 }

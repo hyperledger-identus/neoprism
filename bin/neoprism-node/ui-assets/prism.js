@@ -15,6 +15,13 @@
     });
   }
 
+  // Native details remains usable without scripts. Only choose the initial
+  // presentation here; never override a reader's expansion on later resizing.
+  const evidence = document.getElementById("ledger-evidence");
+  if (evidence && window.matchMedia("(min-width: 1280px)").matches) {
+    evidence.open = true;
+  }
+
   const form = document.querySelector(".prism-resolve-form");
   const button = form?.querySelector('button[type="submit"]');
   const status = document.getElementById("resolution-status");
