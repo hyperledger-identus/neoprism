@@ -2,6 +2,64 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.15.0) - 2026-11-17
+
+This release adopts SDK-Rust's generic cryptography, DID validation, resolution,
+and HTTP resolver components. NeoPRISM retains ownership of PRISM operations,
+Cardano integration, storage, and runtime policy.
+
+### Compatibility notes
+
+- Only the `accept` resolution option is supported. Unsupported or unknown
+  options now return `INVALID_OPTIONS` instead of being ignored.
+- DID and DID-document validation is stricter, including exact Ed25519 public-key
+  widths and matching result/document identifiers.
+- SDK-backed resolution can omit optional empty arrays and null fields previously
+  emitted by NeoPRISM. Consumers should not require these optional fields.
+- The documented PRISM method-kernel adoption is future work, not enabled by this
+  release.
+
+### Known limitations
+
+- In-memory/dev-ledger fractional timestamps can cause DID resolution to return
+  HTTP 500. This was accepted as nonblocking in the SDK adoption review; equivalent
+  production Cardano impact has not been demonstrated.
+- Oura source cursors and HTTP health do not establish complete ingestion or
+  indexing progress. Parity evidence must be interpreted within its recorded
+  comparison boundary and known-operation scope.
+
+### 🐛 Bug Fixes
+
+- *(docs)* Remove obsolete mdbook-linkcheck dependency ([#319](https://github.com/hyperledger-identus/neoprism/pull/319))
+- *(nix)* Refresh embedded-wallet dependency hash ([#348](https://github.com/hyperledger-identus/neoprism/pull/348))
+
+### 🚜 Refactor
+
+- Adopt sdk-rust crypto and DID components ([#324](https://github.com/hyperledger-identus/neoprism/pull/324))
+
+### 📚 Documentation
+
+- *(architecture)* Define PRISM SDK adoption boundary ([#346](https://github.com/hyperledger-identus/neoprism/pull/346))
+
+### 🧪 Testing
+
+- *(e2e)* Isolate matrix runs and emit receipts ([#350](https://github.com/hyperledger-identus/neoprism/pull/350))
+- *(indexer)* Add Preprod parity harness ([#327](https://github.com/hyperledger-identus/neoprism/pull/327))
+
+### ⚙️ Miscellaneous Tasks
+
+- Update zio-http from 3.11.4 to 3.11.5 ([#328](https://github.com/hyperledger-identus/neoprism/pull/328))
+- Update sbt from 2.0.8 to 2.0.9 ([#331](https://github.com/hyperledger-identus/neoprism/pull/331))
+- Update zio-http from 3.11.5 to 3.11.6 ([#330](https://github.com/hyperledger-identus/neoprism/pull/330))
+- Update sbt from 2.0.9 to 2.0.10 ([#334](https://github.com/hyperledger-identus/neoprism/pull/334))
+- Update zio, zio-test, zio-test-magnolia, ... from 2.1.26 to 2.1.27 ([#338](https://github.com/hyperledger-identus/neoprism/pull/338))
+- Update grpc-netty-shaded from 1.84.0 to 1.84.3 ([#339](https://github.com/hyperledger-identus/neoprism/pull/339))
+- Update grpc-netty-shaded from 1.84.3 to 1.85.0 ([#340](https://github.com/hyperledger-identus/neoprism/pull/340))
+- Update sbt from 2.0.10 to 2.0.11 ([#341](https://github.com/hyperledger-identus/neoprism/pull/341))
+- Update grpc-netty-shaded from 1.85.0 to 1.85.1 ([#343](https://github.com/hyperledger-identus/neoprism/pull/343))
+- Update sbt from 2.0.11 to 2.0.12 ([#351](https://github.com/hyperledger-identus/neoprism/pull/351))
+- Update sbt from 2.0.12 to 2.1.0 ([#367](https://github.com/hyperledger-identus/neoprism/pull/367))
+
 ## [0.14.2](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.14.2) - 2026-09-08
 
 ### 🐛 Bug Fixes
