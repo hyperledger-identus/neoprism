@@ -22,28 +22,4 @@
     evidence.open = true;
   }
 
-  const form = document.querySelector(".prism-resolve-form");
-  const button = form?.querySelector('button[type="submit"]');
-  const status = document.getElementById("resolution-status");
-  if (form && button && status) {
-    const ready = () => {
-      button.disabled = false;
-      button.textContent = "Resolve";
-      form.removeAttribute("aria-busy");
-      status.textContent = "";
-    };
-    // Native input handles Enter, required validation and IME composition.
-    // Never rewrite its value or intercept its keystrokes.
-    form.addEventListener("submit", (event) => {
-      if (button.disabled) {
-        event.preventDefault();
-        return;
-      }
-      button.disabled = true;
-      button.textContent = "Resolving…";
-      form.setAttribute("aria-busy", "true");
-      status.textContent = "Resolving identity…";
-    });
-    window.addEventListener("pageshow", ready);
-  }
 })();

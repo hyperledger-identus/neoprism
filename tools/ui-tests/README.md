@@ -204,3 +204,46 @@ other browser engines, or mobile Safari. The approved composition remains in
 `designs/neoprism.fig` and `designs/PRISM-SPEC.md`. Shared styles live in
 `bin/neoprism-node/ui-assets/prism.css`; copy that entire directory when packaging
 runtime assets, rather than only the generated Tailwind stylesheet.
+
+## Resolver outcomes and recovery (#377)
+
+`prism_outcomes.py` serves exported Maud pages at a private HTTP boundary. It
+covers invalid syntax/initial state, node-local absence, unusable stored
+operations, genuine retrieval failure, locally derived state, published
+long-form input and deactivation. No fixture route or sample data is added to
+the node. Publication/deactivation fixtures describe captured state at the
+rendering seam; real SQLite HTTP tests additionally distinguish empty storage
+from retrieval failure.
+
+Run inside `nix develop`:
+
+```sh
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/377"
+export CARGO_BUILD_JOBS=3
+export PRISM_OUTCOME_FIXTURES="$HOME/.cache/neoprism-prism-implementation/377-browser-fixtures"
+export PRISM_TEST_SESSION=prism-outcomes-377
+export PRISM_OUTCOME_PORT=18777
+cargo test -p neoprism-node
+cargo test -p neoprism-node export_outcome_browser_fixtures -- --ignored
+bun install --frozen-lockfile
+just build-assets
+python tools/ui-tests/prism_outcomes.py -v
+```
+
+Enhancement fetches the existing ordinary GET page, swaps only the result and
+updates the bookmarkable URL. It never changes API or resolution semantics.
+Pending skeletons exist only while that HTTP request is active. A 30-second
+request bound, network/HTTP/invalid-response recovery and bfcache restoration
+recover controls. Failed delivery preserves previous state/disclosures and labels
+them as the previous request, not evidence from the failed attempt. Retry links
+carry the entire submitted value; correction and Explorer links also work
+without scripts. Without JavaScript, native browser Back restores the entered
+value after network/HTTP delivery failure, followed by an ordinary GET retry.
+
+Browser checks cover every outcome with and without scripts, real delayed GET
+and repeat protection, HTTP/network failure and retry, keyboard/focus/value
+retention, back/forward URLs, desktop evidence expansion, shared copy after a
+result swap, expanded bounds at 320–1440px and scoped accessibility audits.
+Clipboard uses a deterministic system-boundary stub. Set
+`PRISM_SCREENSHOT_DIR` to capture outcome pages at 390/1440px for rendered review.
+No browser suite claims real assistive-technology or Safari certification.

@@ -17,6 +17,7 @@ pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup
                 link rel="stylesheet" href=(urls::AssetStyleSheet::new_uri());
                 link rel="stylesheet" href="/assets/prism.css";
                 script defer src="/assets/prism.js" {}
+                script defer src="/assets/resolver.js" {}
                 script defer src="/assets/copy.js" {}
                 script defer src="/assets/explorer.js" {}
                 script

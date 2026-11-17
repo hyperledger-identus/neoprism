@@ -14,6 +14,7 @@ mod identity;
 mod keys;
 pub(in crate::http) mod models;
 mod operations;
+mod outcomes;
 mod vdr;
 mod views;
 
