@@ -334,3 +334,20 @@ Before submitting a PR:
 ### Cursor / Copilot Rules
 
 If `.github/copilot-instructions.md` or `.cursor/rules/` exist, follow those additionally.
+
+## Agent skills
+
+### Issue tracker
+
+Track issues and specs in GitHub Issues. Before creating, reading, or updating
+tickets, read `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default triage labels. Before triaging, read
+`docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `GLOSSARY.md` and `docs/adr/`. Before exploring domain
+concepts or proposing architectural changes, read `docs/agents/domain.md`.
