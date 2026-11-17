@@ -136,6 +136,16 @@ body.prism {
 .prism-format { display: block; align-self: stretch; padding: 16px; border-radius: 12px; background: var(--prism-code); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
 .prism-entry .prism-entry-note { align-self: stretch; padding-top: 16px; border-top: 1px solid var(--prism-line); }
 
+/* Reusable exact-value copy enhancement. Values remain selectable without it. */
+.prism .prism-copy { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 48px; width: 48px; height: 48px; padding: 12px; border: 1px solid transparent; border-radius: 12px; background: transparent; color: var(--prism-hover); cursor: pointer; }
+.prism .prism-copy:hover { background: #eff0f8; }
+.prism .prism-copy:active { background: #e4e3f8; }
+.prism .prism-copy:disabled { color: var(--prism-secondary); cursor: not-allowed; }
+.prism .prism-copy-status:empty { display: none; }
+.prism .prism-copy-status { position: fixed; z-index: 10; bottom: 20px; left: 50%; transform: translateX(-50%); width: max-content; max-width: calc(100% - 40px); padding: 12px 16px; border: 1px solid var(--prism-line); border-radius: 12px; background: #fff; color: var(--prism-ink); box-shadow: 0 8px 24px #1820331a; }
+.prism .prism-copy-fallback { display: block; flex-basis: 100%; min-width: 0; max-width: 100%; padding: 12px; color: var(--prism-secondary); font-size: 14px; }
+.prism .prism-copy-fallback textarea { display: block; width: 100%; min-height: 72px; margin-top: 8px; padding: 12px; border: 1px solid var(--prism-line); border-radius: 12px; background: var(--prism-code); color: var(--prism-ink); font-family: 'JetBrains Mono', monospace; overflow-wrap: anywhere; resize: vertical; }
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
