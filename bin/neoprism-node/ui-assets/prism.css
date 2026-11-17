@@ -136,6 +136,60 @@ body.prism {
 .prism-format { display: block; align-self: stretch; padding: 16px; border-radius: 12px; background: var(--prism-code); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
 .prism-entry .prism-entry-note { align-self: stretch; padding-top: 16px; border-top: 1px solid var(--prism-line); }
 
+/* Resolver identity dossier (#373). Follow-up section renderers retain their own boundary. */
+.prism-resolve-form > button { min-width: 132px; }
+.prism-resolver-result { min-width: 0; overflow-wrap: anywhere; }
+.prism-resolution-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; align-items: start; }
+.prism-dossier, .prism-state-sections, .prism-evidence-rail { display: grid; gap: 16px; min-width: 0; }
+.prism-resolver-result h2 { font-size: 18px; line-height: 27px; font-weight: 600; }
+.prism-identity, .prism-keys, .prism-api { padding: 20px; min-width: 0; }
+.prism-identity { display: grid; gap: 16px; }
+.prism-identity-status { justify-self: start; padding: 8px 12px; border-radius: 8px; background: #e3f3ed; color: #006b58; font-size: 13px; }
+.prism-deactivated { background: #fce9ed; color: #943046; }
+.prism-muted, .prism-data-field dt { color: var(--prism-secondary); }
+.prism-identity-did { display: block; font-size: 14px; line-height: 22px; overflow-wrap: anywhere; }
+.prism-identity-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.prism-identity-counts { border-top: 1px solid var(--prism-line); padding-top: 16px; color: var(--prism-secondary); }
+.prism-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.prism-count { flex: none; padding: 8px 12px; border-radius: 8px; color: var(--prism-hover); background: #edebff; font-size: 12px; }
+.prism-key { border-bottom: 1px solid var(--prism-line); }
+.prism-key > summary, .prism-evidence > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 80px; cursor: pointer; list-style: none; }
+.prism-key > summary::-webkit-details-marker, .prism-evidence > summary::-webkit-details-marker { display: none; }
+.prism-key-label { display: grid; gap: 4px; min-width: 0; padding: 12px 0; }
+.prism-key-label code { font-size: 14px; overflow-wrap: anywhere; }
+.prism-disclosure-icon { display: grid; place-items: center; flex: none; width: 48px; height: 48px; border: 1px solid var(--prism-line); border-radius: 12px; color: var(--prism-hover); }
+.prism-key[open] > summary .prism-disclosure-icon svg, .prism-evidence[open] > summary .prism-disclosure-icon svg { transform: rotate(180deg); }
+.prism-key summary:hover .prism-disclosure-icon, .prism-evidence summary:hover .prism-disclosure-icon { background: #eff0f8; }
+.prism-key-fields { margin: 0 0 16px; padding: 16px; border-radius: 12px; background: var(--prism-code); }
+.prism-data-field + .prism-data-field { margin-top: 16px; }
+.prism-data-field dt { margin-bottom: 4px; }
+.prism-data-field dd { display: flex; align-items: start; gap: 12px; margin: 0; min-width: 0; }
+.prism-data-field code { flex: 1; min-width: 0; align-self: center; overflow-wrap: anywhere; font-size: 13px; line-height: 21px; }
+.prism-data-field .prism-copy { flex: none; width: 48px; min-height: 48px; padding: 12px; }
+.prism-key-help { padding-top: 16px; }
+.prism-evidence { min-width: 0; padding: 0 20px; }
+.prism-evidence > summary { min-height: 80px; }
+.prism-evidence-body { padding-bottom: 20px; }
+.prism-evidence-body p { margin-bottom: 16px; }
+.prism-evidence-body dl { margin: 0; padding-top: 16px; border-top: 1px solid var(--prism-line); }
+.prism-evidence-source { font-weight: 500; }
+.prism-api { display: grid; gap: 16px; }
+.prism-api p { color: var(--prism-secondary); }
+/* Keep legacy sections readable and in bounds until their dedicated tickets land. */
+.prism-resolver-result .m-4 { margin: 0; }
+.prism-resolver-result .card { border-color: var(--prism-line); background: var(--prism-panel); min-width: 0; }
+.prism-resolver-result .card-body { padding: 20px; min-width: 0; }
+.prism-resolver-result .text-neutral-content { color: var(--prism-secondary); }
+.prism-resolver-result .bg-base-300 { background: var(--prism-code); }
+.prism-resolver-result .border-gray-700 { border-color: var(--prism-line); }
+@media (min-width: 1280px) {
+  .prism-resolution-grid { grid-template-columns: minmax(0, 1fr) 300px; }
+}
+@media (max-width: 600px) {
+  .prism-identity-actions { flex-direction: column; }
+  .prism-identity-actions > * { width: 100%; }
+}
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
