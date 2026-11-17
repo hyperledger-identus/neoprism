@@ -1,5 +1,6 @@
 /* Exact originals only: presentation shortening must never affect copying. */
 (() => {
+  document.documentElement.classList.add('prism-copy-ready');
   const status = document.createElement('div');
   status.className = 'prism-copy-status';
   status.setAttribute('role', 'status');

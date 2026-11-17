@@ -34,7 +34,7 @@ async fn app(mode: RunMode, network: Option<NetworkIdentifier>) -> Router {
     }))
 }
 
-async fn get(app: Router, uri: &str) -> (StatusCode, String) {
+pub(super) async fn get(app: Router, uri: &str) -> (StatusCode, String) {
     let response = app
         .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
         .await

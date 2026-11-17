@@ -28,13 +28,15 @@ class CopyContract(unittest.TestCase):
 
     def setUp(self) -> None:
         browser("open", "http://127.0.0.1:18778/tools/ui-tests/copy-fixture.html")
-        evaluate(f"""document.querySelector('#original').textContent = {json.dumps(VALUE)};
+        evaluate(f"""document.querySelector('#original').textContent =
+          {json.dumps(VALUE)};
           document.querySelector('button').dataset.copyValue = {json.dumps(VALUE)}""")
         browser("focus", "button")
 
     def test_keyboard_copy_writes_complete_original_and_politely_confirms(self) -> None:
-        evaluate("""window.copied = null; Object.defineProperty(navigator, 'clipboard', {
-          configurable: true, value: {writeText: async value => {window.copied = value}}})""")
+        evaluate("""window.copied = null;
+          Object.defineProperty(navigator, 'clipboard', {configurable: true,
+            value: {writeText: async value => {window.copied = value}}})""")
         browser("press", "Enter")
         browser("wait", "--fn", "window.copied !== null")
         self.assertEqual(evaluate("window.copied"), VALUE)
@@ -57,7 +59,8 @@ class CopyContract(unittest.TestCase):
             "{writeText: async () => {throw new Error('denied')}}",
         ):
             evaluate(
-                f"Object.defineProperty(navigator, 'clipboard', {{configurable: true, value: {clipboard}}})"
+                f"Object.defineProperty(navigator, 'clipboard', "
+                f"{{configurable: true, value: {clipboard}}})"
             )
             browser("press", "Enter")
             browser(
@@ -85,7 +88,8 @@ class CopyContract(unittest.TestCase):
             browser("press", "Control+a")
             self.assertEqual(
                 evaluate(
-                    "document.activeElement.selectionEnd - document.activeElement.selectionStart"
+                    "document.activeElement.selectionEnd - "
+                    "document.activeElement.selectionStart"
                 ),
                 len(VALUE),
             )
@@ -95,7 +99,8 @@ class CopyContract(unittest.TestCase):
         self,
     ) -> None:
         evaluate("""document.querySelector('button').outerHTML =
-          '<button type="button" class="prism-copy" data-copy-value="complete original" aria-label="Copy replacement">' +
+          '<button type="button" class="prism-copy"' +
+          ' data-copy-value="complete original" aria-label="Copy replacement">' +
           '<span>Copy replacement</span></button>'""")
         browser("click", "button span")
         browser("wait", "--text", "Copied to clipboard.")
