@@ -1,4 +1,4 @@
-# Prism shell checks
+# Prism UI checks
 
 Run all commands inside `nix develop`. The browser suite requires `agent-browser`
 and Chromium on `PATH`; it chooses a named session scoped to the current worktree
@@ -24,6 +24,46 @@ nix build .#neoprism-ui-assets --no-link
 To check Nix delivery in the browser, start the node with
 `--assets-path "$(nix build .#neoprism-ui-assets --no-link --print-out-paths)/assets"`
 and run the same suite against it.
+
+## Explorer and shared copy
+
+The reusable copy contract is a `type="button"` element with `class="prism-copy"`,
+`data-copy-value` containing the complete original and a descriptive `aria-label`.
+Keep the displayed value selectable. `copy.js` delegates events (including later
+HTMX content), announces polite feedback without moving focus, and inserts an
+adjacent labelled readonly textarea if clipboard writing fails. The enhancement
+marks its parent `.prism-copy-container` to wrap flex children; the fallback spans
+grid columns. This also supports constrained cursor and identity consumers.
+
+Run the standalone copy browser fixtures:
+
+```sh
+PRISM_TEST_SESSION=prism-copy-check python tools/ui-tests/prism_copy.py
+```
+
+Explorer checks export actual HTTP-rendered responses from deterministic SQLite
+fixtures, then serve them and built assets on an ephemeral loopback port. No
+production database or sample-data route is used:
+
+```sh
+export PRISM_FIXTURE_DIR="$(mktemp -d)"
+cargo test -p neoprism-node export_explorer_browser_fixtures -- --ignored
+just build-assets
+PRISM_TEST_SESSION=prism-explorer-check python tools/ui-tests/prism_explorer.py
+```
+
+Set `PRISM_SCREENSHOT_DIR` to an existing external directory to save full-page
+390px/1440px renders of all 100 rows and empty/invalid/out-of-range/failure states.
+The browser suite blocks the HTMX CDN for deterministic rendering checks; polling
+and stale-data recovery are the separate #380 seam. Tests cover 57px rows,
+independent 48px actions, exact originals, keyboard/fallback behavior, 320–1440px
+list bounds, centered equal-width pagination and fresh script-blocked native GET
+navigation. Without copy enhancement narrow labels expose horizontally selectable
+complete originals rather than only visual abbreviations.
+
+Rust HTTP tests also cover storage ordering, the final partial page, normalized
+zero, invalid/duplicate/overflowing queries, retrieval failures without leaked
+infrastructure errors, and page-query retention on fragment refreshes.
 
 ## Resolver identity fixtures
 

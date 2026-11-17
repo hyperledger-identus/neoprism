@@ -23,6 +23,7 @@ REQUIRED = (
     "licenses/JetBrainsMono-OFL.txt",
     "neoprism.svg",
     "prism.js",
+    "copy.js",
     "prism.css",
     "styles.css",
 )

@@ -17,6 +17,7 @@ pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup
                 link rel="stylesheet" href=(urls::AssetStyleSheet::new_uri());
                 link rel="stylesheet" href="/assets/prism.css";
                 script defer src="/assets/prism.js" {}
+                script defer src="/assets/copy.js" {}
                 script defer src="/assets/cursor.js" {}
                 script
                     src="https://unpkg.com/htmx.org@2.0.4"
@@ -110,6 +111,8 @@ fn deployment(network: Option<NetworkIdentifier>) -> Markup {
 pub fn icon(name: &str) -> Markup {
     let path = match name {
         "menu" => "M4 5h16M4 12h16M4 19h16",
+        "copy" => "M9 9h12v12H9V9ZM15 5V3H3v12h2",
+        "chevron-right" => "m9 5 7 7-7 7",
         "resolver" => {
             "M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M9 12h6"
         }
