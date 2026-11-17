@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-ac8c2184.js";
+            window.path_to_searchindex_js = "searchindex-01a34b13.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-909b1515.js"></script>
+        <script src="toc-4d617f4f.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -2011,6 +2011,88 @@ git push origin "v$VERSION"
 </table>
 </div>
 <div style="break-before: page; page-break-before: always;"></div>
+<h1 id="tls-dependency-remediation-for-issue-369"><a class="header" href="#tls-dependency-remediation-for-issue-369">TLS dependency remediation for issue 369</a></h1>
+<p>This assessment accompanies the dependency-only follow-up to the six alerts
+recorded against v0.15.0 in <a href="https://github.com/hyperledger-identus/neoprism/issues/369">issue 369</a>. Advisory details and dependency
+resolution were checked on 2026-11-17. It is not a risk acceptance, an assertion
+that deployed systems were unexploitable, or confirmation that GitHub alerts
+have closed.</p>
+<h2 id="resolution-and-dependency-paths"><a class="header" href="#resolution-and-dependency-paths">Resolution and dependency paths</a></h2>
+<p>The shared <code>Cargo.lock</code> updates <code>openssl</code> 0.10.75 to 0.10.80,
+<code>openssl-sys</code> 0.9.111 to 0.9.116 (required by the updated wrapper), and
+<code>rustls-webpki</code> 0.103.6 to 0.103.13. These are compatible patch updates;
+workspace manifests, SDK git revision, and Nix inputs are unchanged.
+<code>nix/rustTools.nix</code> imports that lockfile directly, so Nix uses the same
+resolution without a separate dependency hash refresh. Git source output hashes
+are unchanged because neither git dependency changed.</p>
+<p>0.10.79 is insufficient for the current OpenSSL advisory set:
+<a href="https://github.com/advisories/GHSA-phqj-4mhp-q6mq">GHSA-phqj-4mhp-q6mq</a> also affects 0.10.79 and requires
+0.10.80. The selected version covers that advisory and the additional
+<a href="https://github.com/advisories/GHSA-xv59-967r-8726">AES-KW-PAD overflow</a> fixed in 0.10.79. The public advisory
+queries for both packages identified no higher patched-version requirement on
+the selected stable release lines. This deliberately avoids an unrelated
+latest-dependency refresh; newer patch releases exist.</p>
+<p>The resolved feature paths are:</p>
+<ul>
+<li><strong>OpenSSL (Linux/native TLS):</strong> <code>neoprism-node</code> enables the indexer’s
+<code>blockfrost</code> feature and the submitter’s <code>cardano-wallet</code> and
+<code>embedded-wallet</code> features. Blockfrost’s generated client enables reqwest
+defaults; the submitter explicitly enables reqwest <code>native-tls</code>.
+Both lead through reqwest 0.12.24, native-tls 0.2.14 (also via hyper-tls /
+tokio-native-tls), openssl, and openssl-sys. Thus disabling reqwest defaults
+in the workspace declaration alone does not remove OpenSSL.</li>
+<li><strong>WebPKI (locked optional TLS path):</strong> the lockfile/metadata path is
+reqwest 0.12.24 → hyper-rustls 0.27.7 / tokio-rustls 0.26.3 →
+rustls 0.23.32 → rustls-webpki. Reqwest’s <code>__rustls</code> feature activates
+this backend. In the checked workspace graph, including all workspace
+features and all targets, <code>cargo tree -i rustls-webpki</code> prints no active
+path: reqwest’s Rustls features are not enabled. Cargo metadata includes
+optional dependency resolution; presence there is not evidence of linking.
+The locked package is patched regardless, rather than relying on that
+feature configuration as a waiver.</li>
+</ul>
+<h2 id="six-alert-applicability-table"><a class="header" href="#six-alert-applicability-table">Six-alert applicability table</a></h2>
+<p>All six baseline package versions match the live alert ranges. “No call found”
+below means source inspection of the workspace and native-tls 0.2.14’s OpenSSL
+adapter, not a complete transitive call-graph proof. OpenSSL’s internal C use of
+cryptographic operations is distinct from calling the affected Rust wrappers.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Alert / advisory</th><th>Affected operation and precondition</th><th>Observed applicability and limits</th><th>Patched disposition</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/32">32</a> / <a href="https://github.com/advisories/GHSA-ghm9-cr32-g9qj">GHSA-ghm9-cr32-g9qj</a></td><td><code>MdCtxRef::digest_final</code> with an undersized output; affected &gt;=0.10.39, &lt;0.10.78</td><td>OpenSSL native-TLS path is active. No call to this Rust API found in inspected callers; deployed exploitability not established.</td><td>openssl 0.10.80, above fix 0.10.78</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/33">33</a> / <a href="https://github.com/advisories/GHSA-hppc-g8h3-xhp3">GHSA-hppc-g8h3-xhp3</a></td><td>Oversized returned lengths from PSK or cookie callbacks; affected &gt;=0.9.24, &lt;0.10.78</td><td>No PSK/cookie callback registration found in inspected callers. Native TLS alone does not demonstrate these callbacks are reachable.</td><td>openssl 0.10.80, above fix 0.10.78</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/34">34</a> / <a href="https://github.com/advisories/GHSA-8c75-8mhr-p7r9">GHSA-8c75-8mhr-p7r9</a></td><td><code>aes::unwrap_key</code> inverted output bounds assertion; affected &gt;=0.10.24, &lt;0.10.78</td><td>No call to this Rust API found in inspected callers. This does not rule out all transitive or downstream usage.</td><td>openssl 0.10.80, above fix 0.10.78</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/36">36</a> / <a href="https://github.com/advisories/GHSA-pqf5-4pqq-29f5">GHSA-pqf5-4pqq-29f5</a></td><td><code>Deriver::derive</code> / <code>PkeyCtxRef::derive</code> short buffer with OpenSSL 1.1.1; affected &gt;=0.9.27, &lt;0.10.78</td><td>No call found in inspected callers. Nix’s Linux build input is OpenSSL 3.6.3, not the affected 1.1.1 implementation. Other builds/deployments need their own linkage evidence.</td><td>openssl 0.10.80, above fix 0.10.78; not a platform-based waiver</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/37">37</a> / <a href="https://github.com/advisories/GHSA-82j2-j2ch-gfr8">GHSA-82j2-j2ch-gfr8</a></td><td>Malformed CRL BIT STRING; attacker-influenced CRL parsing with opt-in revocation configuration; affected &lt;0.103.13</td><td>Rustls path is locked but not activated in the checked workspace feature graph. No workspace CRL/revocation configuration found. Different downstream features/configuration remain outside this observation.</td><td>rustls-webpki 0.103.13, the fixed stable version</td></tr>
+<tr><td><a href="https://github.com/hyperledger-identus/neoprism/security/dependabot/38">38</a> / <a href="https://github.com/advisories/GHSA-xp3w-r5p5-63rr">GHSA-xp3w-r5p5-63rr</a></td><td><code>X509Ref::ocsp_responders</code> creates invalid UTF-8 from malformed certificate OCSP URLs; affected &gt;=0.9.7, &lt;0.10.79</td><td>Certificate input exists on native TLS paths, but no call to this Rust OCSP URL accessor found in inspected callers. Certificate processing alone is not proof of accessor reachability.</td><td>openssl 0.10.80, above fix 0.10.79</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="linked-openssl-and-evidence-boundaries"><a class="header" href="#linked-openssl-and-evidence-boundaries">Linked OpenSSL and evidence boundaries</a></h2>
+<p>The Linux Nix binary and checks explicitly take <code>openssl</code> as a build input and
+use pkg-config; vendored OpenSSL is not enabled in the resolved feature graph.
+The pinned Nix binary derivation supplies <code>openssl-3.6.3-dev</code>. The Rust package
+version 0.10.80 and openssl-sys version 0.9.116 are <strong>not</strong> versions of the linked
+C library. Exact built-binary ELF dependencies and closure paths belong in the
+validation evidence; the derivation alone is not a claim about a running
+production process. macOS native-tls uses a different platform backend.</p>
+<p>Reproduction commands (inside <code>nix develop</code> for Cargo commands):</p>
+<pre><code class="language-sh">cargo tree --locked --workspace --all-features --target all -e features -i openssl
+cargo tree --locked --workspace --all-features --target all -e features -i rustls-webpki
+cargo metadata --locked --format-version 1
+nix derivation show .#neoprism-bin
+nix flake check -L
+just lint-text
+</code></pre>
+<p>The remediation PR records exact-head local/hosted validation, including
+conformance and built-binary linkage evidence. Passing tests do not establish
+absence of security exposure. The six GitHub alerts must be checked again
+<strong>after merge</strong>, and a maintainer must identify the release shipping this
+lockfile. Neither alert closure nor release delivery follows from opening a PR.</p>
+<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="cli-options"><a class="header" href="#cli-options">CLI Options</a></h1>
 <h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
 <pre><code>Usage: neoprism-node &lt;COMMAND&gt;
@@ -2242,7 +2324,7 @@ info:
   description: ""
   license:
     name: ""
-  version: 0.15.0
+  version: 0.15.1
 servers:
   - url: http://localhost:8080
     description: Local
