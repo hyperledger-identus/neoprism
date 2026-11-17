@@ -67,6 +67,9 @@ class ExplorerBrowser(unittest.TestCase):
             browser("set", "viewport", str(width), "900")
             with self.subTest(width=width):
                 self.assertTrue(
+                    evaluate("document.documentElement.scrollWidth <= innerWidth")
+                )
+                self.assertTrue(
                     evaluate("""[...document.querySelectorAll('.prism-did-row')]
                 .every(row => {
                   const a = row.querySelector('a'), b = row.querySelector('button');
