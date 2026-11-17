@@ -64,6 +64,27 @@ Rust HTTP tests also cover storage ordering, the final partial page, normalized
 zero, invalid/duplicate/overflowing queries, retrieval failures without leaked
 infrastructure errors, and page-query retention on fragment refreshes.
 
+## Resolver identity fixtures
+
+The identity suite uses the real rendered Resolver page with deterministic test
+fixtures, not a production fixture endpoint. It serves built assets and exported
+HTML on loopback port 18773 (`PRISM_IDENTITY_PORT` overrides it).
+
+```sh
+export PRISM_FIXTURE_DIR="$(mktemp -d)"
+cargo test -p neoprism-node export_identity_browser_fixtures -- --ignored
+just build-assets
+python tools/ui-tests/prism_identity.py
+```
+
+Checks include all three key curves, full-value copy controls, native keyboard
+and no-script disclosures, stable pending controls, and expanded-content bounds
+at 320–1440 CSS pixels. Copy success/failure checks require the shared `copy.js`
+from #378; until integrated, they explicitly skip rather than duplicate it.
+Rendered-HTML tests additionally cover backend publication/deactivation, all
+usage enums, real counts, and selecting one latest applied operation for evidence
+without claiming a chain tip or exposing synthetic local metadata.
+
 ## Agreed seams
 
 - Rust HTTP tests cover root redirects, mode-dependent destinations, runtime

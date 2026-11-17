@@ -9,9 +9,13 @@ use models::PageQuery;
 use crate::IndexerUiState;
 use crate::http::urls;
 
+mod cursor;
 mod list;
 pub(in crate::http) mod models;
 mod views;
+
+#[cfg(test)]
+mod cursor_tests;
 
 pub fn router() -> Router<IndexerUiState> {
     Router::new()
