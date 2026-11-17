@@ -383,7 +383,7 @@ body.prism {
 
 /* Resolver outcomes and actual pending requests (#377). */
 .prism-outcome { padding: 20px; margin-bottom: 16px; min-width: 0; }
-.prism-outcome h2 { margin-bottom: 12px; }
+.prism-outcome h2 { margin-bottom: 12px; font-size: 18px; line-height: 27px; font-weight: 600; }
 .prism-outcome p { color: var(--prism-secondary); max-width: 72ch; }
 .prism-outcome-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
 .prism-outcome-diagnostics { margin-top: 20px; border-top: 1px solid var(--prism-line); }

@@ -466,6 +466,13 @@ class PrismOutcomes(unittest.TestCase):
         browser("fill", "#did", INPUTS["invalid"])
         browser("press", "Enter")
         browser("wait", "--text", "Couldn’t load this resolution")
+        self.assertGreaterEqual(
+            evaluate(
+                "parseFloat(getComputedStyle(document.querySelector("
+                "'#request-failure-title')).fontSize)"
+            ),
+            18,
+        )
         self.assertFalse(
             evaluate("document.querySelector('button[type=submit]').disabled")
         )
