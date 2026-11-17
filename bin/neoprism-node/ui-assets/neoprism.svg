@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="np-title np-desc">
+  <title id="np-title">NeoPRISM</title>
+  <desc id="np-desc">A balanced violet N with a refractive glass diagonal and rotationally symmetric joints.</desc>
+  <defs>
+    <linearGradient id="np-upright" x1="40" y1="120" x2="172" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7065ff"/>
+      <stop offset="1" stop-color="#554cf4"/>
+    </linearGradient>
+    <linearGradient id="np-glass" x1="180" y1="70" x2="332" y2="442" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#aaa0f6"/>
+      <stop offset=".34" stop-color="#b3b4ed"/>
+      <stop offset=".5" stop-color="#9ddde3"/>
+      <stop offset=".54" stop-color="#a4c6ec"/>
+      <stop offset="1" stop-color="#bca0e8"/>
+    </linearGradient>
+    <linearGradient id="np-facet" x1="256" y1="208" x2="256" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8fb7ef"/>
+      <stop offset="1" stop-color="#c3a7e8"/>
+    </linearGradient>
+    <linearGradient id="np-edge" x1="40" y1="120" x2="472" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d4ffff"/>
+      <stop offset=".5" stop-color="#eeffff"/>
+      <stop offset="1" stop-color="#d4ffff"/>
+    </linearGradient>
+    <path id="np-post" d="M40 120 172 208V388Q172 400 162 407L58 475Q40 486 40 464Z"/>
+    <clipPath id="np-diagonal">
+      <path d="M40 120 132 43Q140 36 148 44L472 392 380 469Q372 476 364 468Z"/>
+    </clipPath>
+  </defs>
+  <use href="#np-post" fill="url(#np-upright)"/>
+  <use href="#np-post" transform="rotate(180 256 256)" fill="url(#np-upright)"/>
+  <g clip-path="url(#np-diagonal)">
+    <path d="M40 120 132 43Q140 36 148 44L472 392 380 469Q372 476 364 468Z" fill="url(#np-glass)"/>
+    <path d="M40 120 472 392 380 469Q372 476 364 468Z" fill="url(#np-facet)"/>
+    <path d="M40 120 472 392" fill="none" stroke="#b5f7f6" stroke-width="5" opacity=".3"/>
+    <path d="M40 120 472 392" fill="none" stroke="url(#np-edge)" stroke-width="1.6"/>
+  </g>
+</svg>

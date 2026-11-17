@@ -2,6 +2,7 @@
   stdenv,
   tailwindcss_4,
   bun,
+  python3,
 }:
 
 let
@@ -28,11 +29,20 @@ stdenv.mkDerivation {
   name = "neoprism-ui-assets";
   src = ./../../..;
   buildInputs = [ tailwindcss_4 ];
+  nativeInstallCheckInputs = [ python3 ];
+  doInstallCheck = true;
 
   installPhase = ''
     cp -r ${bunDeps} ./node_modules
     cd ./bin/neoprism-node
     mkdir -p $out/assets
+    cp -R ./ui-assets/. $out/assets/
     tailwindcss -i ./tailwind.css -o $out/assets/styles.css
+  '';
+
+  installCheckPhase = ''
+    runHook preInstallCheck
+    python "$src/tools/verify_ui_assets.py" "$out/assets"
+    runHook postInstallCheck
   '';
 }
