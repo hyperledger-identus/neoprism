@@ -276,6 +276,23 @@ body.prism {
   .prism-identity-actions > * { width: 100%; }
 }
 
+/* Resolver VDR: complete typed content and captured raw data (#375). */
+.prism-vdr { min-width: 0; padding: 20px; }
+.prism-vdr-list { list-style: none; padding: 0; margin: 16px 0 0; }
+.prism-vdr-entry { min-width: 0; }
+.prism-vdr-entry + .prism-vdr-entry { margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--prism-line); }
+.prism-vdr dl { margin: 16px 0; }
+.prism-vdr .prism-data-field code { white-space: pre-wrap; user-select: text; }
+.prism-vdr-empty { flex: 1; align-self: center; }
+.prism-vdr-type { width: fit-content; padding: 8px 12px; border-radius: 8px; background: #edebff; color: var(--prism-hover); font-size: 12px; }
+.prism-vdr-type + p { margin-top: 12px; }
+.prism-vdr-raw { min-width: 0; margin-top: 16px; }
+.prism-vdr-raw > summary { min-height: 48px; padding: 12px; border: 1px solid var(--prism-line); border-radius: 12px; color: var(--prism-hover); cursor: pointer; }
+.prism-vdr-raw > summary:hover { background: var(--prism-code); }
+.prism-vdr-raw > p { margin-top: 12px; }
+.prism-vdr pre { min-width: 0; max-width: 100%; margin: 12px 0; padding: 16px; border-radius: 12px; background: var(--prism-code); color: var(--prism-ink); font: 400 13px/21px "JetBrains Mono", monospace; white-space: pre-wrap; overflow-wrap: anywhere; user-select: text; }
+.prism-vdr-raw-actions { display: flex; min-width: 0; }
+
 /* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
 @supports (backdrop-filter: blur(24px)) {
   .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
