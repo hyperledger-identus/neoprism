@@ -2,20 +2,25 @@ use std::path::Path;
 use std::sync::Arc;
 
 use axum::Router;
+use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use node_storage::SqliteDb;
 
 use super::tests::get;
 use crate::app::service::PrismDidService;
-use crate::{IndexerUiState, RunMode};
+use crate::{DltSourceState, IndexerUiState, RunMode};
 
 // Deterministic storage-boundary fixture, never linked from production routes.
 async fn fixture(count: u32, migrated: bool) -> Router {
+    fixture_with_cursor(count, migrated, None, 1).await
+}
+
+async fn fixture_with_cursor(count: u32, migrated: bool, cursor: Option<DltCursor>, newest_count: u32) -> Router {
     let db = SqliteDb::connect("sqlite::memory:").await.unwrap();
     if migrated {
         db.migrate().await.unwrap();
         for n in 1..=count {
             // Highest DID has newest first slot; all others share a slot to exercise DID tie-breaks.
-            let slot = if n == count { 20 } else { 10 };
+            let slot = if n > count.saturating_sub(newest_count) { 20 } else { 10 };
             let id = n.to_be_bytes().to_vec();
             sqlx::query("INSERT INTO raw_operation (id, signed_operation_data, slot, block_number, cbt, absn, osn, is_indexed, tx_hash, operation_id) VALUES (?, X'', ?, ?, '2025-01-01T00:00:00Z', 0, 0, 1, zeroblob(32), zeroblob(32))")
                 .bind(&id).bind(slot).bind(n).execute(&db.pool).await.unwrap();
@@ -34,7 +39,10 @@ async fn fixture(count: u32, migrated: bool) -> Router {
     .indexer_ui_router
     .with_state(IndexerUiState {
         prism_did_service: PrismDidService::new(Arc::new(db)),
-        dlt_source: None,
+        dlt_source: cursor.map(|cursor| DltSourceState {
+            network: NetworkIdentifier::Custom,
+            cursor_rx: tokio::sync::watch::channel(Some(cursor)).1,
+        }),
     })
 }
 
@@ -47,7 +55,7 @@ async fn explorer_empty_and_beyond_last_page_offer_truthful_recovery() {
     let (_, beyond) = get(fixture(103, true).await, "/explorer?page=3").await;
     assert!(beyond.contains("Page 3 is beyond the last page"));
     assert!(beyond.contains("Go to first page"));
-    assert!(beyond.contains("hx-get=\"/explorer/did-list?page=3\""));
+    assert!(beyond.contains("data-refresh-url=\"/explorer/did-list?page=3\""));
     assert!(!beyond.contains("No indexed DIDs yet"));
     let (status, far_beyond) = get(fixture(1, true).await, "/explorer?page=4294967295").await;
     assert_eq!(status, axum::http::StatusCode::OK);
@@ -90,18 +98,45 @@ async fn explorer_final_partial_page_and_zero_normalization_preserve_get_and_ref
     let expected = [100, 101, 102].map(|n| format!("data-copy-value=\"did:prism:{n:064x}\""));
     assert!(body.find(&expected[0]).unwrap() < body.find(&expected[1]).unwrap());
     assert!(body.find(&expected[1]).unwrap() < body.find(&expected[2]).unwrap());
-    assert!(body.contains("hx-get=\"/explorer/did-list?page=2\""));
-    assert!(body.contains("hx-trigger=\"load delay:5s\""));
+    assert!(body.contains("data-refresh-url=\"/explorer/did-list?page=2\""));
+    assert!(body.contains("data-refresh-interval=\"5000\""));
     assert_eq!(body.matches("Page 2 of 2 · 100 DIDs per page").count(), 2);
     assert!(body.contains("href=\"/explorer?page=1\""));
     assert!(!body.contains("href=\"/explorer?page=3\""));
     let (_, zero) = get(app.clone(), "/explorer?page=0").await;
     assert_eq!(zero.matches("data-copy-value=").count(), 100);
-    assert!(zero.contains("hx-get=\"/explorer/did-list?page=1\""));
+    assert!(zero.contains("data-refresh-url=\"/explorer/did-list?page=1\""));
     let (_, fragment) = get(app, "/explorer/did-list?page=2").await;
     assert_eq!(fragment.matches("data-copy-value=").count(), 3);
     assert!(!fragment.contains("prism-shell"));
-    assert!(fragment.contains("hx-get=\"/explorer/did-list?page=2\""));
+    assert!(fragment.contains("data-refresh-url=\"/explorer/did-list?page=2\""));
+}
+
+#[tokio::test]
+async fn explorer_refresh_resources_are_stable_independent_and_keep_native_recovery() {
+    let (_, body) = get(fixture(103, true).await, "/explorer?page=2").await;
+    for expected in [
+        "data-refresh-url=\"/explorer/dlt-cursor\"",
+        "data-refresh-url=\"/explorer/did-list?page=2\"",
+        "data-refresh-interval=\"2000\"",
+        "data-refresh-interval=\"5000\"",
+        "href=\"/explorer?page=2\"",
+        "Refresh sync information",
+        "Refresh indexed DIDs",
+    ] {
+        assert!(body.contains(expected), "missing {expected}");
+    }
+    assert_eq!(body.matches("data-refresh-content").count(), 2);
+    assert_eq!(body.matches("src=\"/assets/explorer.js\"").count(), 1);
+    assert!(!body.contains("/assets/cursor.js"));
+    assert!(!body.contains("hx-swap=\"outerHTML\""));
+    assert!(!body.contains("hx-trigger=\"load delay:"));
+    assert!(!body.contains("aria-busy=\"true\""));
+    let (status, failed) = get(fixture(0, false).await, "/explorer/did-list?page=2").await;
+    assert_eq!(status, axum::http::StatusCode::SERVICE_UNAVAILABLE);
+    assert!(failed.contains("data-refresh-url=\"/explorer/did-list?page=2\""));
+    assert!(failed.contains("data-refresh-state=\"failed\""));
+    assert!(failed.contains("href=\"/explorer?page=2\""));
 }
 
 // Explicit opt-in export of the HTTP seam's synthetic responses for browser checks.
@@ -111,6 +146,36 @@ async fn export_explorer_browser_fixtures() {
     let dir = std::path::PathBuf::from(std::env::var("PRISM_FIXTURE_DIR").expect("set PRISM_FIXTURE_DIR"));
     std::fs::create_dir_all(&dir).unwrap();
     let populated = fixture(1103, true).await;
+    let refresh = fixture_with_cursor(
+        1103,
+        true,
+        Some(DltCursor {
+            slot: 1042816,
+            block_hash: vec![0xab; 32],
+            cbt: Some("2026-11-17T14:51:00.123456789Z".parse().unwrap()),
+            blockfrost_page: None,
+        }),
+        1,
+    )
+    .await;
+    let (_, body) = get(refresh, "/explorer?page=3").await;
+    std::fs::write(dir.join("refresh.html"), body).unwrap();
+    for (name, uri) in [
+        ("page3.fragment", "/explorer/did-list?page=3"),
+        ("page12.fragment", "/explorer/did-list?page=12"),
+        ("beyond.fragment", "/explorer/did-list?page=13"),
+    ] {
+        let (_, body) = get(populated.clone(), uri).await;
+        std::fs::write(dir.join(name), body).unwrap();
+    }
+    for (name, app) in [
+        ("page3-updated.fragment", fixture_with_cursor(1104, true, None, 2).await),
+        ("page3-empty.fragment", fixture(0, true).await),
+        ("page3-beyond.fragment", fixture(103, true).await),
+    ] {
+        let (_, body) = get(app, "/explorer/did-list?page=3").await;
+        std::fs::write(dir.join(name), body).unwrap();
+    }
     for (name, app, uri) in [
         ("full", populated.clone(), "/explorer?page=3"),
         ("partial", populated.clone(), "/explorer?page=12"),

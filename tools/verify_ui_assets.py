@@ -25,6 +25,7 @@ REQUIRED = (
     "prism.js",
     "resolver.js",
     "copy.js",
+    "explorer.js",
     "prism.css",
     "styles.css",
 )

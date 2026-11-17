@@ -403,3 +403,20 @@ body.prism {
 @media (max-width: 600px) {
   .prism-outcome-actions { flex-direction: column; align-items: stretch; }
 }
+
+/* Explorer delivery feedback stays separate from the retained evidence (#380). */
+.prism-refresh-feedback { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 16px; border-radius: 12px; }
+.prism-refresh-feedback > p { grid-column: 1; }
+.prism-refresh-feedback > .prism-refresh-action { grid-column: 2; grid-row: 1 / span 2; }
+.prism-refresh-feedback > .prism-refresh-deferred { grid-column: 1 / -1; }
+.prism-refresh-deferred { margin-top: 12px; color: var(--prism-secondary); max-width: 75ch; }
+.prism [data-refresh-receipt] { max-width: 75ch; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.prism-sync > .prism-refresh-action { margin-top: 12px; }
+.prism [data-refresh-state="failed"] [data-refresh-status],
+.prism [data-refresh-state="failed"] [data-cursor-status] { color: #854d0e; }
+.prism [data-refresh-state="failed"] [data-cursor-status],
+.prism [data-refresh-state="failed"] .prism-refresh-feedback { background: #fff5d6; }
+@media (max-width: 600px) {
+  .prism-refresh-feedback { grid-template-columns: minmax(0, 1fr); }
+  .prism-refresh-feedback > .prism-refresh-action { grid-column: 1; grid-row: auto; justify-self: start; }
+}
