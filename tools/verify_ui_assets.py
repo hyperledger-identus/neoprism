@@ -24,6 +24,7 @@ REQUIRED = (
     "neoprism.svg",
     "prism.js",
     "copy.js",
+    "explorer.js",
     "prism.css",
     "styles.css",
 )

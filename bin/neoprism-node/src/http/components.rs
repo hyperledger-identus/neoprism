@@ -18,7 +18,7 @@ pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup
                 link rel="stylesheet" href="/assets/prism.css";
                 script defer src="/assets/prism.js" {}
                 script defer src="/assets/copy.js" {}
-                script defer src="/assets/cursor.js" {}
+                script defer src="/assets/explorer.js" {}
                 script
                     src="https://unpkg.com/htmx.org@2.0.4"
                     integrity="sha384-HGfztofotfshcF7+8n44JQL2oJmowVChPTg48S+jvZoztPfvwD79OC/LTtG6dMp+"

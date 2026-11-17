@@ -1,6 +1,7 @@
 """Explorer browser checks using exported HTTP fixtures, never production data.
 
-See README.md for the opt-in Rust export command. Polling behavior belongs to #380.
+See README.md for the opt-in Rust export command.
+Delivery transitions are in prism_refresh.py.
 """
 
 import os
@@ -54,6 +55,7 @@ class ExplorerBrowser(unittest.TestCase):
     def setUp(self) -> None:
         # Deterministic rendered-HTML seam: do not hit a CDN or run polling.
         browser("network", "route", "*unpkg.com*", "--abort")
+        browser("network", "route", "*/assets/explorer.js", "--abort")
         browser("set", "viewport", "1440", "900")
         browser("open", self.url + "/explorer?page=3")
 

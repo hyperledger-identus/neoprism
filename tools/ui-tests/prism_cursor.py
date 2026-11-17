@@ -54,7 +54,9 @@ class Handler(SimpleHTTPRequestHandler):
         if self.path.startswith("/assets/"):
             self.path = self.path.removeprefix("/assets")
             return super().do_GET()
-        if self.path == "/explorer/dlt-cursor":
+        if self.path.startswith("/explorer/did-list?"):
+            data = (FIXTURES / "empty-list.fragment").read_bytes()
+        elif self.path == "/explorer/dlt-cursor":
             if MODE == "held-failure":
                 RELEASE.wait(timeout=10)
                 self.send_error(503)
@@ -169,7 +171,8 @@ class CursorBrowser(unittest.TestCase):
         MODE = "held-failure"
         browser("open", BASE + "/supplied.html")
         receipt = evaluate(
-            "document.querySelector('[data-cursor-receipt]').textContent"
+            "document.querySelector('[data-cursor-receipt]').textCon"
+            "tent.split(' · ')[0]"
         )
         browser(
             "wait",
@@ -192,7 +195,10 @@ class CursorBrowser(unittest.TestCase):
             "Couldn’t refresh · showing last received cursor",
         )
         self.assertEqual(
-            evaluate("document.querySelector('[data-cursor-receipt]').textContent"),
+            evaluate(
+                "document.querySelector('[data-cursor-receipt]').textCon"
+                "tent.split(' · ')[0]"
+            ),
             receipt,
         )
         self.assertEqual(
@@ -244,13 +250,14 @@ class CursorBrowser(unittest.TestCase):
     def test_repeated_snapshot_updates_browser_receipt_not_block_time(self) -> None:
         browser("open", BASE + "/supplied.html")
         receipt = evaluate(
-            "document.querySelector('[data-cursor-receipt]').textContent"
+            "document.querySelector('[data-cursor-receipt]').textCon"
+            "tent.split(' · ')[0]"
         )
         browser(
             "wait",
             "--fn",
-            "document.querySelector('[data-cursor-receipt]').textContent !== "
-            + json.dumps(receipt),
+            "document.querySelector('[data-cursor-receipt]').textCon"
+            "tent.split(' · ')[0] !== " + json.dumps(receipt),
         )
         self.assertEqual(
             evaluate("document.querySelector('.prism-sync-summary time').dateTime"),
@@ -268,7 +275,7 @@ class CursorBrowser(unittest.TestCase):
     def test_shared_copy_preserves_complete_values_and_offers_manual_fallback(
         self,
     ) -> None:
-        # Isolate copying from #380's polling/interaction-preservation work.
+        # Keep actual refresh delivery active: focused copy controls must survive it.
         browser("close")
         browser("open")
         browser("network", "route", "*htmx*", "--abort", "--resource-type", "script")

@@ -68,8 +68,9 @@ PRISM_TEST_SESSION=prism-explorer-check python tools/ui-tests/prism_explorer.py
 
 Set `PRISM_SCREENSHOT_DIR` to an existing external directory to save full-page
 390px/1440px renders of all 100 rows and empty/invalid/out-of-range/failure states.
-The browser suite blocks the HTMX CDN for deterministic rendering checks; polling
-and stale-data recovery are the separate #380 seam. Tests cover 57px rows,
+The static list suite blocks HTMX and `explorer.js` for deterministic rendering
+checks. [Explorer delivery checks](PRISM-REFRESH.md) separately exercise the real
+refresh script with deterministic clock/network boundaries. Tests cover 57px rows,
 independent 48px actions, exact originals, keyboard/fallback behavior, 320–1440px
 list bounds, centered equal-width pagination and fresh script-blocked native GET
 navigation. Without copy enhancement narrow labels expose horizontally selectable
@@ -117,8 +118,10 @@ case must execute: it reads complete slot, hash (including 1024 characters) and
 nanosecond UTC timestamp values from the native clipboard, checks focus, and
 uses a denied-write boundary stub for exact readonly fallback bounds at 320px.
 The suite also covers native/no-script disclosures, responsive evidence bounds,
-scoped accessibility audits and observable receipt/request states. It blocks
-HTMX only during the copy case; polling interaction preservation remains #380.
+scoped accessibility audits and actual HTTP receipt/request states. The refresh
+script remains active during copy checks; focused controls retain their evidence.
+Receipt assertions compare successful receipt timestamps, not merely changing
+age text. No obsolete synthetic HTMX request events are dispatched.
 
 ## Agreed seams
 
