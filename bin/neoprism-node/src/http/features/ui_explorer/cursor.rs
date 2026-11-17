@@ -7,11 +7,12 @@ use crate::http::urls;
 
 /// The watch snapshot is evidence of a reported DLT position, not source liveness.
 pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
+    let present = cursor.is_some();
     html! {
         section id="dlt-cursor-card" class="prism-panel prism-sync"
             aria-labelledby="sync-heading" data-cursor-present=(cursor.is_some())
-            hx-get=(urls::ExplorerDltCursor::new_uri())
-            hx-swap="outerHTML" hx-trigger="load delay:2s" {
+            data-refresh-url=(urls::ExplorerDltCursor::new_uri())
+            data-refresh-interval="2000" data-refresh-resource="cursor" data-refresh-state="received" {
             header class="prism-sync-heading" {
                 h2 id="sync-heading" { "Sync status" }
                 p class="prism-sync-status" role="status" data-cursor-status {
@@ -19,6 +20,7 @@ pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
                     @else { "Waiting for sync information" }
                 }
             }
+            div data-refresh-content {
             @if let Some(cursor) = cursor {
                 @let slot = cursor.slot.to_string();
                 @let formatted_slot = slot.chars().enumerate().fold(String::new(), |mut text, (i, ch)| {
@@ -44,9 +46,6 @@ pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
                         }
                     }
                 }
-                p class="prism-sync-receipt" data-cursor-receipt {
-                    "Snapshot supplied with this response. Browser checks every 2 seconds when scripts are enabled."
-                }
                 p class="prism-sync-distance" { "Distance to chain tip unknown" }
                 details id="cursor-technical" class="prism-sync-details" {
                     summary aria-controls="cursor-technical-values" { "Technical details" }
@@ -64,11 +63,16 @@ pub fn dlt_cursor_card(cursor: Option<DltCursor>) -> Markup {
                     }
                 }
             } @else {
-                p class="prism-sync-receipt" data-cursor-receipt {
-                    "No cursor was supplied with this response. Browser checks every 2 seconds when scripts are enabled."
-                }
                 p class="prism-sync-distance" { "Distance to chain tip unknown" }
             }
+            }
+            p class="prism-sync-receipt" data-cursor-receipt data-refresh-receipt {
+                @if present { "Snapshot supplied with this response. " }
+                @else { "No cursor was supplied with this response. " }
+                "Browser checks every 2 seconds while visible when scripts are enabled."
+            }
+            p class="prism-refresh-deferred" data-refresh-deferred hidden {}
+            a class="prism-button prism-secondary prism-refresh-action" href="" data-refresh-action { "Refresh sync information" }
         }
     }
 }

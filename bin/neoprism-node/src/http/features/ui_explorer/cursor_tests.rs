@@ -92,6 +92,11 @@ async fn export_cursor_browser_fixtures() {
         return;
     };
     std::fs::create_dir_all(&directory).unwrap();
+    std::fs::write(
+        Path::new(&directory).join("empty-list.fragment"),
+        cursor_response(None, "/explorer/did-list?page=1").await,
+    )
+    .unwrap();
     let mut missing_timestamp = supplied_cursor();
     missing_timestamp.cbt = None;
     let mut long = missing_timestamp.clone();
@@ -121,7 +126,7 @@ async fn missing_cursor_waits_without_claiming_source_or_chain_health() {
             "Sync status",
             "Waiting for sync information",
             "Distance to chain tip unknown",
-            "hx-trigger=\"load delay:2s\"",
+            "data-refresh-interval=\"2000\"",
         ] {
             assert!(body.contains(expected), "missing {expected}");
         }

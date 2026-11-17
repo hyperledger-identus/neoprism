@@ -153,6 +153,7 @@ async fn static_assets_are_served_locally_with_browser_content_types() {
         ("/assets/prism.css", "text/css"),
         ("/assets/prism.js", "text/javascript"),
         ("/assets/copy.js", "text/javascript"),
+        ("/assets/explorer.js", "text/javascript"),
         ("/assets/fonts/Poppins-Regular.ttf", "font/ttf"),
         ("/assets/fonts/Poppins-Medium.ttf", "font/ttf"),
         ("/assets/fonts/Poppins-SemiBold.ttf", "font/ttf"),
