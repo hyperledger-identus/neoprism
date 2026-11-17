@@ -31,10 +31,12 @@ init:
 build: build-assets build-config
     cargo build --all-features
 
-# Build Tailwind CSS assets
+# Build Tailwind CSS and bundle self-hosted UI assets
 [group('neoprism')]
 [working-directory('bin/neoprism-node')]
 build-assets:
+    mkdir -p ./assets
+    cp -R ./ui-assets/. ./assets/
     tailwindcss -i tailwind.css -o ./assets/styles.css
 
 # Build Docker Compose configurations from Python sources

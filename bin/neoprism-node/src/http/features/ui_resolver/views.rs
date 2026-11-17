@@ -14,7 +14,17 @@ use crate::app::service::error::ResolutionError;
 use crate::http::{components, urls};
 
 pub fn index(network: Option<NetworkIdentifier>) -> Markup {
-    let body = search_box(None);
+    let body = html! {
+        (search_box(None))
+        section class="prism-entry prism-panel" aria-labelledby="entry-title" {
+            h2 id="entry-title" { "Start with an identity" }
+            p class="prism-entry-intro" { "Resolve a PRISM DID to inspect its keys, services, data and operation history." }
+            p { "Use a canonical DID or a long-form DID. Resolution is read-only; you don’t need a wallet." }
+            code class="prism-format" { "did:prism:<64-character hexadecimal suffix>" }
+            a class="prism-button prism-secondary" href=(urls::Explorer::new_uri(None)) { "Browse indexed DIDs" }
+            p class="prism-entry-note" { "Looking for an unpublished identity? Paste its full long-form DID, including the encoded initial state." }
+        }
+    };
     components::page_layout("Resolver", network, body)
 }
 
@@ -30,7 +40,7 @@ pub fn resolve(
     };
     let body = html! {
         (search_box(Some(did_str)))
-        div class="flex flex-row w-screen justify-center" {
+        div class="flex flex-row w-full justify-center" {
             div class="flex flex-col w-full max-w-4xl items-center" {
                 (resolution_body)
                 (did_debug_body(did_debug))
@@ -42,25 +52,23 @@ pub fn resolve(
 
 fn search_box(did: Option<&str>) -> Markup {
     html! {
-        div class="flex flex-col items-center min-w-screen py-8" {
-            form
-                method="GET"
-                action=(urls::Resolver::new_uri(None))
-                class="form-control w-full" {
-                div class="flex flex-col flex-wrap items-center space-x-2 space-y-2" {
-                    input
-                        type="text"
-                        name="did"
-                        placeholder="Enter PRISM DID"
-                        value=[did]
-                        class="input input-bordered w-9/12 max-w-xl"
-                        required;
-                    button
-                        type="submit"
-                        class="btn btn-primary"
-                        { "Resolve" }
+        header class="prism-page-header" {
+            h1 { "Identity resolver" }
+            p { "A clearer view of your decentralized identity." }
+        }
+        form method="GET" action=(urls::Resolver::new_uri(None)) class="prism-resolve-form" {
+            div class="prism-field" {
+                label for="did" { "PRISM DID" }
+                div class="prism-did-input" {
+                    (components::icon("search"))
+                    input type="text" id="did" name="did" placeholder="Enter PRISM DID"
+                        value=[did] aria-describedby="did-help" autocomplete="off" autocapitalize="none"
+                        spellcheck="false" required;
                 }
             }
+            button type="submit" class="prism-button prism-primary" { "Resolve" }
+            p id="did-help" class="sr-only" { "Enter a canonical PRISM DID or the complete long-form DID, including its encoded initial state." }
+            span class="sr-only" role="status" aria-live="polite" id="resolution-status" {}
         }
     }
 }

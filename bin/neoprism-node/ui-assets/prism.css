@@ -1,0 +1,172 @@
+@font-face {
+  font-family: Poppins;
+  src: url("fonts/Poppins-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Poppins;
+  src: url("fonts/Poppins-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: Poppins;
+  src: url("fonts/Poppins-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  src: url("fonts/JetBrainsMono-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+  --prism-primary: #5559f2;
+  --prism-hover: #4549dc;
+  --prism-pressed: #363ab8;
+  --prism-ink: #182033;
+  --prism-secondary: #475467;
+  --prism-panel: #f9f9fd;
+  --prism-line: #d6d9eb;
+  --prism-code: #eff0f8;
+}
+
+body.prism {
+  display: flow-root;
+  margin: 0;
+  min-width: 0;
+  min-height: 100vh;
+  color: var(--prism-ink);
+  font: 400 14px/1.5 Poppins, sans-serif;
+  /* Pale illumination keeps secondary text above 4.5:1 even without the shell. */
+  background: radial-gradient(ellipse at 43% 36%, #cac3ee 25%, transparent 75%),
+    radial-gradient(ellipse at 98% 92%, #bbdce3 20%, transparent 65%),
+    radial-gradient(ellipse at 48% 105%, #e9c9db 10%, transparent 55%), #e7e6ef;
+  scrollbar-color: #9598c5 var(--prism-code);
+  caret-color: var(--prism-primary);
+}
+.prism *, .prism *::before, .prism *::after { box-sizing: border-box; }
+.prism ::selection { color: var(--prism-ink); background: #d9d7ff; }
+.prism :focus-visible {
+  outline: 2px solid var(--prism-primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--prism-panel);
+}
+.prism a { text-underline-offset: 3px; }
+.prism h1, .prism h2, .prism p { margin: 0; }
+.prism code, .prism input[name="did"], .prism .font-mono {
+  font-family: "JetBrains Mono", monospace;
+  font-variant-numeric: tabular-nums;
+}
+.prism-icon { width: 24px; height: 24px; flex: none; }
+.skip-link { position: absolute; top: 8px; left: 16px; z-index: 10; padding: 12px; background: white; transform: translateY(-150%); }
+.skip-link:focus { transform: translateY(0); }
+.prism-shell {
+  display: grid;
+  grid-template-columns: 216px minmax(0, 1fr);
+  min-height: calc(100svh - 64px);
+  margin: 32px;
+  border: 1px solid #ffffffbc;
+  border-radius: 24px;
+  background: #eeeef7;
+  box-shadow: 0 24px 60px #34334d24;
+}
+.prism-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100svh - 66px);
+  align-self: start;
+  position: sticky;
+  top: 32px;
+  padding: 24px;
+  border-radius: 24px 0 0 24px;
+  border-right: 1px solid #ffffffc9;
+  background: #f7f5fc;
+}
+.prism-brand { display: flex; align-items: center; gap: 12px; color: var(--prism-ink); text-decoration: none; min-height: 48px; }
+.prism-brand img { flex: none; width: 24px; height: 24px; }
+.prism-brand strong { display: block; font-size: 18px; font-weight: 600; line-height: 27px; }
+.prism-brand small { display: block; font-size: 12px; line-height: 18px; color: var(--prism-secondary); white-space: nowrap; }
+.prism-navigation { display: flex; flex-direction: column; gap: 8px; margin-top: 24px; }
+.prism-navigation a { display: flex; gap: 12px; align-items: center; min-height: 48px; padding: 12px; border-radius: 12px; text-decoration: none; color: var(--prism-secondary); font-weight: 500; }
+.prism-navigation a:hover { background: #eff0f8; color: var(--prism-hover); }
+.prism-navigation a[aria-current="page"] { background: white; color: var(--prism-hover); }
+.prism-deployment { margin-top: auto; padding-top: 32px; }
+.prism-metadata { padding-top: 24px; border-top: 1px solid var(--prism-line); color: var(--prism-secondary); font-size: 12px; }
+.prism-metadata p + p { margin-top: 4px; }
+.prism-metadata .prism-network { color: var(--prism-ink); font-size: 14px; }
+.prism-github { display: flex; align-items: center; gap: 12px; min-height: 48px; margin-top: 24px; color: var(--prism-secondary); font-size: 12px; text-decoration: none; }
+.prism-github:hover { color: var(--prism-hover); text-decoration: underline; }
+.prism-mobile-header { display: none; }
+.prism-workspace { min-width: 0; padding: 32px; }
+.prism-page-header { margin-bottom: 24px; }
+.prism-page-header h1 { font-size: 30px; line-height: 45px; font-weight: 600; }
+.prism-page-header p { margin-top: 4px; color: var(--prism-secondary); }
+.prism-resolve-form { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+.prism-field { flex: 1; min-width: 0; }
+.prism-field label { display: block; margin-bottom: 8px; color: var(--prism-secondary); }
+.prism-did-input { display: flex; align-items: center; gap: 12px; padding: 0 16px; min-height: 56px; border: 1px solid var(--prism-line); border-radius: 12px; background: var(--prism-panel); color: var(--prism-secondary); }
+.prism-did-input:focus-within { outline: 2px solid var(--prism-primary); outline-offset: 2px; }
+.prism-did-input input { min-width: 0; width: 100%; min-height: 54px; padding: 0; border: 0; background: transparent; color: var(--prism-ink); font-size: 14px; line-height: 1.5; }
+.prism-did-input input:focus-visible { outline: 0; box-shadow: none; }
+.prism-did-input input::placeholder { color: var(--prism-secondary); opacity: 1; }
+.prism-button { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; padding: 12px 24px; border: 1px solid transparent; border-radius: 12px; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 22px; text-decoration: none; cursor: pointer; transition: background-color 150ms ease-out, color 150ms ease-out; }
+.prism-primary { background: var(--prism-primary); color: white; }
+.prism-primary:hover { background: var(--prism-hover); }
+.prism-primary:active { background: var(--prism-pressed); }
+.prism-button:disabled { background: #e1e3ef; color: #475467; cursor: wait; }
+.prism-secondary { border-color: var(--prism-line); color: var(--prism-hover); background: var(--prism-panel); }
+.prism-secondary:hover { background: #eff0f8; }
+.prism-secondary:active { background: #e4e3f8; }
+.prism-panel { border: 1px solid white; border-radius: 20px; background: var(--prism-panel); }
+.prism-entry { display: flex; flex-direction: column; align-items: start; gap: 16px; padding: 20px; }
+.prism-entry h2 { font-size: 18px; line-height: 27px; font-weight: 600; }
+.prism-entry p { color: var(--prism-secondary); }
+.prism-entry .prism-entry-intro { color: var(--prism-ink); font-size: 18px; line-height: 27px; }
+.prism-format { display: block; align-self: stretch; padding: 16px; border-radius: 12px; background: var(--prism-code); font-size: 13px; line-height: 20px; overflow-wrap: anywhere; }
+.prism-entry .prism-entry-note { align-self: stretch; padding-top: 16px; border-top: 1px solid var(--prism-line); }
+
+/* Surface-only blur: the text and data are never filtered. Opaque defaults work without it. */
+@supports (backdrop-filter: blur(24px)) {
+  .prism-shell { background: #f8f8fc26; backdrop-filter: blur(24px); }
+  .prism-sidebar { background: #f7f5fceb; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .prism-shell { background: #eeeef7; backdrop-filter: none; }
+  .prism-sidebar { background: #f7f5fc; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prism *, .prism *::before, .prism *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 800px) {
+  .prism-shell { display: block; min-height: 0; margin: 20px; border: 0; border-radius: 0; background: transparent; backdrop-filter: none; box-shadow: none; }
+  .prism-sidebar { display: none; }
+  .prism-mobile-header { display: block; margin-bottom: 24px; }
+  .prism-mobile-header .prism-brand { width: max-content; max-width: calc(100% - 60px); }
+  .prism-mobile-menu { margin-top: -48px; }
+  .prism-mobile-menu > summary { display: flex; align-items: center; justify-content: center; width: 48px; height: 48px; margin-left: auto; border: 1px solid var(--prism-line); border-radius: 12px; background: var(--prism-panel); color: var(--prism-hover); cursor: pointer; list-style: none; }
+  .prism-mobile-menu > summary::-webkit-details-marker { display: none; }
+  .prism-mobile-menu[open] > summary { background: #eff0f8; }
+  .prism-mobile-destinations { margin-top: 16px; padding: 16px; border: 1px solid white; border-radius: 20px; background: #f7f5fc; }
+  .prism-mobile-destinations .prism-navigation { margin: 0 0 24px; }
+  .prism-workspace { padding: 0; }
+  .prism-page-header h1 { font-size: 26px; line-height: 39px; }
+  .prism-page-header p { font-size: 16px; line-height: 24px; }
+  .prism-resolve-form { flex-direction: column; align-items: stretch; }
+  .prism-resolve-form > button { margin-top: 0; }
+  .prism-did-input input { font-size: 16px; }
+  .prism-entry .prism-entry-intro { font-size: 16px; line-height: 24px; }
+  .prism-entry .prism-secondary { align-self: stretch; }
+  .prism-format { font-size: 14px; line-height: 21px; }
+}
