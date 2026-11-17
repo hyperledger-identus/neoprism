@@ -222,7 +222,7 @@ handoff crop index identify original captures, exact regions and pinned sources.
 | Environment | Executed / limitation |
 | --- | --- |
 | Installed Linux Chromium 157.0.8103.38 | Automated workflows, native clipboard round trips, axe, keyboard, rendered regions and preference emulation executed |
-| Current stable Chrome/Edge 158.0.8127.36 | Not executed; installed Chromium reports behind stable; Chromium is not certification of branded Chrome or Edge |
+| Stable Chrome / Edge | Not executed; validation-time warning reported stable Chrome 158.0.8127.36 ahead of installed Chromium; no branded Chrome/Edge certification |
 | Firefox / Gecko | Not available, not executed |
 | Safari / WebKit on macOS | Not available, not executed |
 | Mobile Safari / physical iOS or Android | Not available, not executed; responsive desktop emulation only |
