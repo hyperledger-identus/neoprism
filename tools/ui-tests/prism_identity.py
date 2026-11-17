@@ -336,6 +336,43 @@ class PrismIdentity(unittest.TestCase):
                     .every(e => e.getBoundingClientRect().height >= 48)""")
                 )
 
+    def test_labelled_copy_did_fits_one_line_without_shrinking_icon_targets(
+        self,
+    ) -> None:
+        evaluate(
+            "document.querySelectorAll('main details').forEach(e => e.open = true)"
+        )
+        for width in (320, 390, 720, 1024, 1440):
+            with self.subTest(width=width):
+                browser("set", "viewport", str(width), "900")
+                browser("wait", "--fn", "document.fonts.status === 'loaded'")
+                geometry = evaluate("""(() => {
+                    const button = document.querySelector(
+                        'button[aria-label="Copy DID"]');
+                    const range = document.createRange();
+                    range.selectNodeContents(button);
+                    const label = range.getBoundingClientRect();
+                    const box = button.getBoundingClientRect();
+                    const style = getComputedStyle(button);
+                    const left = parseFloat(style.paddingLeft);
+                    const right = parseFloat(style.paddingRight);
+                    return {
+                        lines: range.getClientRects().length,
+                        fits: label.left >= box.left + left
+                            && label.right <= box.right - right,
+                        height: box.height,
+                        icons: Array.from(document.querySelectorAll(
+                            '.prism-data-field .prism-copy')).every(e => {
+                                const r = e.getBoundingClientRect();
+                                return r.width === 48 && r.height === 48;
+                            })
+                    };
+                })()""")
+                self.assertEqual(geometry["lines"], 1, geometry)
+                self.assertTrue(geometry["fits"], geometry)
+                self.assertEqual(geometry["height"], 48, geometry)
+                self.assertTrue(geometry["icons"], geometry)
+
     def test_copy_success_preserves_complete_did_coordinate_and_evidence(self) -> None:
         self.enterContext(grant_clipboard_permissions(browser, URL))
         evaluate("""document.querySelectorAll('main details')
@@ -414,10 +451,9 @@ class PrismIdentity(unittest.TestCase):
         before = evaluate(
             "document.querySelector('button[type=submit]').getBoundingClientRect().width"
         )
-        evaluate(
-            "document.querySelector('form').addEventListener('submit', "
-            "e => e.preventDefault(), {once:true})"
-        )
+        # Hold the fetch boundary; preventing native submission does not hold
+        # the enhanced GET. prism_outcomes.py separately tests real delayed HTTP.
+        evaluate("window.fetch = () => new Promise(() => {})")
         browser("focus", "#did")
         browser("press", "Enter")
         self.assertTrue(

@@ -1,5 +1,10 @@
 # Prism UI checks
 
+See [combined validation](PRISM-VALIDATION.md) for the shipped-system receipt,
+all-nine-suite reproduction, external rendered evidence and explicit browser/AT
+limitations. [System and interactions](../../docs/src/references/prism-ui.md)
+documents the shipped design and production deviations.
+
 Run all commands inside `nix develop`. The browser suite requires `agent-browser`
 and Chromium on `PATH`; it chooses a named session scoped to the current worktree
 and closes that session afterward. It does not use production data.
@@ -165,7 +170,7 @@ and empty pages exist only in test output; no production sample route is added.
 Hashes use the complete 64-character SHA-256 values supported by the backend.
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/375"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-vdr"
 export CARGO_BUILD_JOBS=2
 export PRISM_VDR_FIXTURES="$(mktemp -d)"
 cargo test -p neoprism-node vdr_tests
@@ -218,10 +223,10 @@ from retrieval failure.
 Run inside `nix develop`:
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/377"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-outcomes"
 export CARGO_BUILD_JOBS=3
-export PRISM_OUTCOME_FIXTURES="$HOME/.cache/neoprism-prism-implementation/377-browser-fixtures"
-export PRISM_TEST_SESSION=prism-outcomes-377
+export PRISM_OUTCOME_FIXTURES="$(mktemp -d)"
+export PRISM_TEST_SESSION=prism-outcomes-check
 export PRISM_OUTCOME_PORT=18777
 cargo test -p neoprism-node
 cargo test -p neoprism-node export_outcome_browser_fixtures -- --ignored
@@ -241,7 +246,8 @@ without scripts. Without JavaScript, native browser Back restores the entered
 value after network/HTTP delivery failure, followed by an ordinary GET retry.
 
 Browser checks cover every outcome with and without scripts, real delayed GET
-and repeat protection, HTTP/network failure and retry, keyboard/focus/value
+and repeat protection, HTTP/network/malformed-success failure and real 30-second
+timeout recovery with retry, keyboard/focus/value
 retention, back/forward URLs, desktop evidence expansion, shared copy after a
 result swap, expanded bounds at 320–1440px and scoped accessibility audits.
 Clipboard uses a deterministic system-boundary stub. Set

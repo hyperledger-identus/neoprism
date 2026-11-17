@@ -131,8 +131,9 @@ class Handler(SimpleHTTPRequestHandler):
 class RefreshBrowser(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.server = ThreadingHTTPServer(("127.0.0.1", 18880), Handler)
-        cls.url = "http://127.0.0.1:18880"
+        port = int(os.environ.get("PRISM_REFRESH_PORT", "18880"))
+        cls.server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        cls.url = f"http://127.0.0.1:{cls.server.server_port}"
         threading.Thread(target=cls.server.serve_forever, daemon=True).start()
 
     @classmethod
@@ -734,7 +735,7 @@ class RefreshBrowser(unittest.TestCase):
                 self.assertTrue(
                     evaluate("""[...document.querySelectorAll(
                   `[data-refresh-action], [data-refresh-status], [data-cursor-status],
-                   [data-refresh-receipt]`)].every(node => {
+                  [data-refresh-receipt]`)].every(node => {
                     const rect = node.getBoundingClientRect();
                     return rect.left >= 0 && rect.right <= innerWidth
                       && (!node.matches('a') || rect.height >= 48);

@@ -4,10 +4,10 @@ Run in `nix develop` from your worktree. These tests use the approved browser
 workflow and real HTTP-rendered HTML seams, not production fixture routes.
 
 ```sh
-export CARGO_TARGET_DIR=/home/pat/Desktop/workspace/iog/neoprism/.git/prism-build-cache/380
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-refresh"
 export CARGO_BUILD_JOBS=2
-export PRISM_FIXTURE_DIR=/home/pat/.cache/neoprism-prism-implementation/380-fixtures
-export PRISM_CURSOR_FIXTURES=/home/pat/.cache/neoprism-prism-implementation/380-cursors
+export PRISM_FIXTURE_DIR="$(mktemp -d)"
+export PRISM_CURSOR_FIXTURES="$(mktemp -d)"
 cargo test -p neoprism-node --all-features
 cargo test -p neoprism-node export_explorer_browser_fixtures -- --ignored
 cargo test -p neoprism-node export_cursor_browser_fixtures
@@ -15,8 +15,10 @@ just build-assets
 PRISM_TEST_SESSION=prism-380-refresh python tools/ui-tests/prism_refresh.py -v
 ```
 
-`prism_refresh.py` owns loopback port 18880 and closes its named browser/server.
-Use a unique session and port when adapting this suite for concurrent work.
+`prism_refresh.py` owns loopback port 18880 by default (`PRISM_REFRESH_PORT`
+overrides it) and closes its named browser/server. Use a unique session and port
+when adapting this suite for concurrent work. See [combined validation](PRISM-VALIDATION.md)
+for final integration evidence and the explicit unexecuted browser/AT matrix.
 Fixtures are generated through the actual Explorer document/fragment routes,
 backed by deterministic SQLite records and cursor watch snapshots. Responses
 contain no production data. A test-only HTTP server delivers those exact HTML

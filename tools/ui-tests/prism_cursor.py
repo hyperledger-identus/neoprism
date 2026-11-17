@@ -83,6 +83,32 @@ class CursorBrowser(unittest.TestCase):
         RELEASE.clear()
         browser("set", "viewport", "390", "898")
 
+    def test_square_copy_controls_render_legible_icons_not_wrapped_labels(self) -> None:
+        browser("open", BASE + "/supplied.html")
+        browser("focus", ".prism-sync summary")
+        browser("press", "Enter")
+        for width in (320, 390, 801, 1440):
+            with self.subTest(width=width):
+                browser("set", "viewport", str(width), "900")
+                controls = evaluate("""Array.from(document.querySelectorAll(
+                    '.prism-sync button.prism-copy')).map(button => {
+                        const box = button.getBoundingClientRect();
+                        const icon = button.querySelector('svg[aria-hidden="true"]');
+                        const mark = icon?.getBoundingClientRect();
+                        return {width: box.width, height: box.height,
+                            label: button.ariaLabel,
+                            text: button.textContent.trim(),
+                            iconFits: !!mark && mark.width >= 20 && mark.height >= 20
+                                && mark.left >= box.left && mark.right <= box.right
+                                && mark.top >= box.top && mark.bottom <= box.bottom};
+                    })""")
+                self.assertEqual(len(controls), 3)
+                for control in controls:
+                    self.assertTrue(control["iconFits"], control)
+                    self.assertEqual(control["text"], "", control)
+                    self.assertTrue(control["label"].startswith("Copy "), control)
+                    self.assertEqual((control["width"], control["height"]), (48, 48))
+
     def test_native_disclosure_and_all_values_fit_narrow_widths_without_scripts(
         self,
     ) -> None:

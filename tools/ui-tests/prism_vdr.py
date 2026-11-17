@@ -190,7 +190,7 @@ class PrismVdr(unittest.TestCase):
                 )
                 self.assertTrue(
                     evaluate("""[...document.querySelectorAll('#vdr-entries button')]
-                     .every(e => e.type === 'button'
+                    .every(e => e.type === 'button'
                         && e.ariaLabel.startsWith('Copy VDR entry '))""")
                 )
                 if page == "vdr-empty":

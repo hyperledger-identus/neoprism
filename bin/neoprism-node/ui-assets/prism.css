@@ -235,6 +235,9 @@ body.prism {
 .prism-muted, .prism-data-field dt { color: var(--prism-secondary); }
 .prism-identity-did { display: block; font-size: 14px; line-height: 22px; overflow-wrap: anywhere; }
 .prism-identity-actions { display: flex; flex-wrap: wrap; gap: 12px; }
+/* The labelled identity action is not a square row/icon copy target. */
+.prism .prism-identity-actions > .prism-copy { flex-basis: auto; width: auto; padding: 12px 24px; border-color: var(--prism-line); background: var(--prism-panel); white-space: nowrap; }
+.prism .prism-identity-actions > .prism-copy:hover { background: var(--prism-code); }
 .prism-identity-counts { border-top: 1px solid var(--prism-line); padding-top: 16px; color: var(--prism-secondary); }
 .prism-section-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
 .prism-count { flex: none; padding: 8px 12px; border-radius: 8px; color: var(--prism-hover); background: #edebff; font-size: 12px; }
@@ -273,7 +276,7 @@ body.prism {
 }
 @media (max-width: 600px) {
   .prism .prism-identity-actions { flex-direction: column; flex-wrap: nowrap; }
-  .prism-identity-actions > * { width: 100%; }
+  .prism .prism-identity-actions > * { width: 100%; }
 }
 
 /* Resolver operation inspection (#376): exact text wraps visually, never in data. */
