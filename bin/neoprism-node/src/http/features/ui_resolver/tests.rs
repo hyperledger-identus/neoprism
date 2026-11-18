@@ -376,6 +376,67 @@ fn safe_domain_diagnostics_keep_rejection_context_but_stop_at_crypto_and_protobu
     assert!(!body.contains(&raw_leaf));
 }
 
+#[test]
+fn operation_summaries_identify_each_proto_kind_without_opening_payloads() {
+    use identus_did_prism::proto::prism::prism_operation::Operation;
+
+    let cases = [
+        (Some(Operation::CreateDid(Default::default())), "Create DID"),
+        (Some(Operation::UpdateDid(Default::default())), "Update DID"),
+        (Some(Operation::DeactivateDid(Default::default())), "Deactivate DID"),
+        (
+            Some(Operation::ProtocolVersionUpdate(Default::default())),
+            "Update protocol version",
+        ),
+        (
+            Some(Operation::CreateStorageEntry(Default::default())),
+            "Create VDR entry",
+        ),
+        (
+            Some(Operation::UpdateStorageEntry(Default::default())),
+            "Update VDR entry",
+        ),
+        (
+            Some(Operation::DeactivateStorageEntry(Default::default())),
+            "Deactivate VDR entry",
+        ),
+        (None, "Unknown operation"),
+    ];
+    for (operation, label) in cases {
+        let mut entry = history_entry(7, "master-0");
+        entry.1.operation.as_mut().unwrap().operation = operation;
+        let body = super::operations::history(&[entry]).into_string();
+        let summary = body.split("</summary>").next().unwrap();
+        assert!(summary.contains(label), "missing operation kind: {label}");
+        assert!(summary.contains("Operation 1"));
+        assert!(summary.contains("07 Mar 2025, 12:34 UTC"));
+        assert!(summary.contains("datetime=\"2025-03-07T12:34:56+00:00\""));
+        assert!(summary.contains("Applied"));
+        assert!(body.contains("href=\"#operation-history\""));
+    }
+}
+
+#[test]
+fn identity_counts_link_to_focusable_sections_including_empty_state() {
+    let body = views::resolve(None, LONG_FORM, Ok(local_identity()), vec![]).into_string();
+    assert!(body.contains("aria-label=\"Identity sections\""));
+    for id in [
+        "public-keys",
+        "services",
+        "contexts",
+        "vdr-entries",
+        "operation-history",
+    ] {
+        assert!(body.contains(&format!("href=\"#{id}\"")), "missing section link: {id}");
+        assert!(
+            body.contains(&format!("id=\"{id}\" tabindex=\"-1\"")),
+            "missing focus target: {id}"
+        );
+    }
+    assert!(body.contains("id=\"identity-summary\" tabindex=\"-1\""));
+    assert!(body.contains("href=\"#identity-summary\""));
+}
+
 fn evidence_history() -> History {
     let mut rejected = history_entry(99, "rejected-signer");
     rejected.2 = Some(ProcessError::SignedPrismOperationInvalidSignature);
@@ -828,7 +889,7 @@ fn locally_derived_identity_has_real_counts_full_copy_value_and_separate_api_act
     for expected in [
         "Locally derived",
         "No ledger confirmation",
-        "1 public key ·",
+        "1 public key",
         "0 services",
         "0 contexts",
         "0 VDR entries",

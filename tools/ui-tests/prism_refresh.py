@@ -201,6 +201,96 @@ class RefreshBrowser(unittest.TestCase):
         self.assertEqual(len(self.calls("cursor")), 3)
         self.assertEqual(len(self.calls("list")), 1)
 
+    def test_routine_polling_is_quiet_but_manual_checks_and_failures_are_visible(
+        self,
+    ) -> None:
+        evaluate("net.hold.cursor = true")
+        self.advance(2000)
+        browser("wait", "--fn", "!!net.releases.cursor")
+        self.assertTrue(evaluate("$('[data-cursor-status]').hidden"))
+        self.assertTrue(evaluate("$('#did-list [data-refresh-status]').hidden"))
+        evaluate("net.releases.cursor()")
+        browser("wait", "--fn", "!$('[aria-busy=true]')")
+        MODES["cursor"] = "http"
+        evaluate("net.releases.cursor = null")
+        self.advance(2000)
+        browser("wait", "--fn", "!!net.releases.cursor")
+        evaluate("net.releases.cursor()")
+        browser(
+            "wait", "--fn", "$('[data-cursor-status]').textContent.includes('Couldn’t')"
+        )
+        self.assertTrue(evaluate("$('[data-cursor-status]').checkVisibility()"))
+        evaluate("net.releases.cursor = null")
+        self.advance(2000)
+        browser("wait", "--fn", "!!net.releases.cursor")
+        self.assertIn("Couldn’t", evaluate("$('[data-cursor-status]').textContent"))
+        self.assertEqual(
+            evaluate("$('#dlt-cursor-card').dataset.refreshFeedbackState"), "failed"
+        )
+        evaluate("net.releases.cursor()")
+        browser("wait", "--fn", "!$('[aria-busy=true]')")
+        evaluate("net.releases.cursor = null")
+        browser("click", "#dlt-cursor-card [data-refresh-action]")
+        browser("wait", "--fn", "!!net.releases.cursor")
+        self.assertTrue(evaluate("$('[data-cursor-status]').checkVisibility()"))
+        self.assertIn("Checking", evaluate("$('[data-cursor-status]').textContent"))
+        evaluate("net.releases.cursor()")
+        browser("wait", "--fn", "!$('[aria-busy=true]')")
+        MODES["cursor"] = "supplied"
+        evaluate("net.releases.cursor = null")
+        browser("click", "#dlt-cursor-card [data-refresh-action]")
+        browser("wait", "--fn", "!!net.releases.cursor")
+        evaluate("net.releases.cursor()")
+        browser("wait", "--fn", "!$('[aria-busy=true]')")
+        self.assertTrue(evaluate("$('[data-cursor-status]').hidden"))
+
+    def test_waiting_position_and_empty_list_keep_diagnostics_out_of_the_default_view(
+        self,
+    ) -> None:
+        MODES.update(cursor="waiting", list="empty")
+        self.advance(5000, 2)
+        visible = evaluate("document.querySelector('main').innerText")
+        self.assertIn("Chain position", visible)
+        self.assertIn("No position reported yet", visible)
+        self.assertIn("Chain-tip distance unknown", visible)
+        self.assertIn("No indexed DIDs on this node", visible)
+        for absent in (
+            "This browser",
+            "Browser receipt",
+            "Checks every",
+            "response received",
+        ):
+            self.assertNotIn(absent, visible)
+        for selector in ("#cursor-technical", "#list-delivery"):
+            browser("focus", selector + " > summary")
+            browser("press", "Enter")
+            self.assertTrue(
+                evaluate(
+                    f"document.querySelector('{selector} [data-refresh-receipt]')"
+                    ".checkVisibility()"
+                )
+            )
+
+    def test_cursor_appearance_preserves_an_open_technical_disclosure(self) -> None:
+        browser("focus", "#cursor-technical > summary")
+        browser("press", "Enter")
+        evaluate("window.keptTechnical = $('#cursor-technical')")
+        browser("focus", "#did-list [data-refresh-action]")
+        for mode in ("waiting", "supplied"):
+            MODES["cursor"] = mode
+            self.advance(2000)
+            browser(
+                "wait",
+                "--fn",
+                "!!$('.prism-sync-slot')"
+                if mode == "supplied"
+                else "!$('.prism-sync-slot')",
+            )
+            self.assertTrue(
+                evaluate("""$('#cursor-technical') === keptTechnical
+                && keptTechnical.open""")
+            )
+
     def test_hidden_pause_and_immediate_return_restart_both_cadences(self) -> None:
         self.advance(2000, 1)
         self.visibility(True)
@@ -224,9 +314,14 @@ class RefreshBrowser(unittest.TestCase):
     def test_repeated_failures_retain_independent_evidence_then_recover(
         self,
     ) -> None:
-        before_cursor = evaluate(
-            "$('#dlt-cursor-card [data-refresh-content]').innerHTML"
-        )
+        # Delivery metadata is mutable even while ledger evidence is retained.
+        cursor_evidence = """(() => {
+            const content = $('#dlt-cursor-card [data-refresh-content]')
+                .cloneNode(true);
+            content.querySelector('[data-refresh-receipt]')?.remove();
+            return content.innerHTML;
+        })()"""
+        before_cursor = evaluate(cursor_evidence)
         before_list = evaluate("$('#did-list [data-refresh-content]').innerHTML")
         MODES.update(cursor="http", list="network")
         self.advance(2000, 1)
@@ -259,7 +354,7 @@ class RefreshBrowser(unittest.TestCase):
         )
         self.assertEqual(
             before_cursor,
-            evaluate("$('#dlt-cursor-card [data-refresh-content]').innerHTML"),
+            evaluate(cursor_evidence),
         )
         self.assertEqual(
             before_list,
@@ -274,9 +369,9 @@ class RefreshBrowser(unittest.TestCase):
         self.advance(1000, 4)
         self.assertEqual(
             evaluate("$('[data-cursor-status]').textContent"),
-            "Waiting for sync information",
+            "No position reported yet",
         )
-        self.assertIsNone(evaluate("$('#cursor-technical')"))
+        self.assertFalse(evaluate("$('#cursor-technical').open"))
         self.assertIn(
             "No cursor was supplied",
             evaluate("$('[data-cursor-receipt]').textContent"),
@@ -381,7 +476,7 @@ class RefreshBrowser(unittest.TestCase):
         self.assertEqual(evaluate("$('#dlt-cursor-card').ariaBusy"), "true")
         self.assertEqual(
             evaluate("$('[data-cursor-status]').textContent"),
-            "Checking for sync information…",
+            "",
         )
         self.visibility(True)
         MODES["cursor"] = "waiting"
@@ -394,12 +489,12 @@ class RefreshBrowser(unittest.TestCase):
         browser(
             "wait",
             "--fn",
-            "$('[data-cursor-status]').textContent === 'Waiting for sync information'",
+            "$('[data-cursor-status]').textContent === 'No position reported yet'",
         )
         self.assertEqual(len(self.calls("cursor")), 2)
         self.assertFalse(evaluate("seenSlots.includes('18,446,744,073,709,551,615')"))
         self.assertIn(
-            "Distance to chain tip unknown",
+            "Chain-tip distance unknown",
             evaluate("$('#dlt-cursor-card').textContent"),
         )
 
@@ -426,7 +521,7 @@ class RefreshBrowser(unittest.TestCase):
         browser(
             "wait",
             "--fn",
-            "$('[data-cursor-status]').textContent === 'Cursor received'",
+            "$('[data-cursor-status]').textContent === ''",
         )
         self.assertEqual(len(self.calls("cursor")), 2)
         self.assertEqual(
@@ -541,7 +636,7 @@ class RefreshBrowser(unittest.TestCase):
         MODES["list"] = "empty"
         self.advance(5000, 2)
         self.assertIn(
-            "No indexed DIDs yet",
+            "No indexed DIDs on this node",
             evaluate("$('#did-list').textContent"),
         )
         self.assertEqual(
@@ -558,7 +653,7 @@ class RefreshBrowser(unittest.TestCase):
             evaluate("$('#did-list').textContent"),
         )
         self.assertNotIn(
-            "No indexed DIDs yet",
+            "No indexed DIDs on this node",
             evaluate("$('#did-list').textContent"),
         )
         self.assertTrue(self.calls("list")[-1]["url"].endswith("page=3"))
@@ -639,9 +734,29 @@ class RefreshBrowser(unittest.TestCase):
         finally:
             browser("network", "unroute", "*")
 
+    def test_mobile_explorer_shows_an_identity_before_the_first_fold(self) -> None:
+        browser("set", "viewport", "390", "844")
+        self.assertTrue(
+            evaluate("""(() => {
+            const row = document.querySelector('.prism-did-row')
+                .getBoundingClientRect();
+            return row.top >= 0 && row.bottom <= innerHeight;
+        })()""")
+        )
+        self.assertFalse(evaluate("$('[data-cursor-receipt]').checkVisibility()"))
+        self.assertFalse(
+            evaluate("$('#did-list [data-refresh-receipt]').checkVisibility()")
+        )
+        self.assertIsNone(evaluate("$('[data-refresh-age]')"))
+        self.assertFalse(evaluate("$('[data-cursor-status]').checkVisibility()"))
+        self.assertFalse(
+            evaluate("$('#did-list [data-refresh-status]').checkVisibility()")
+        )
+
     def test_selecting_receipt_text_is_not_destroyed_by_age_or_response_updates(
         self,
     ) -> None:
+        evaluate("$('#cursor-technical').open = true")
         evaluate("""const node = $('[data-cursor-receipt]');
           const range = document.createRange(); range.selectNodeContents(node);
           getSelection().removeAllRanges(); getSelection().addRange(range);
@@ -695,7 +810,7 @@ class RefreshBrowser(unittest.TestCase):
         self.assertEqual(
             evaluate("document.querySelectorAll('.prism-did-row').length"), 0
         )
-        self.assertIsNone(evaluate("$('#cursor-technical')"))
+        self.assertFalse(evaluate("$('#cursor-technical').open"))
         MODES.update(cursor="http", list="http")
         self.advance(5000, 4)
         self.assertIn(
@@ -745,15 +860,13 @@ class RefreshBrowser(unittest.TestCase):
             audit = browser("a11y", "--selector", selector)
             self.assertEqual(audit["counts"]["violations"], 0, audit)
         browser("focus", "#dlt-cursor-card [data-refresh-action]")
-        self.assertEqual(
-            evaluate("document.activeElement.textContent"), "Retry sync information"
-        )
+        self.assertEqual(evaluate("document.activeElement.textContent"), "Retry")
         MODES["cursor"] = "supplied"
         browser("press", "Enter")
         browser(
             "wait",
             "--fn",
-            "$('[data-cursor-status]').textContent === 'Cursor received'",
+            "$('[data-cursor-status]').textContent === ''",
         )
         self.assertTrue(
             evaluate("document.activeElement.matches('[data-refresh-action]')")

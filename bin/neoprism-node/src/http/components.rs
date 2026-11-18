@@ -123,6 +123,8 @@ pub fn icon(name: &str) -> Markup {
     let path = match name {
         "menu" => "M4 5h16M4 12h16M4 19h16",
         "copy" => "M9 9h12v12H9V9ZM15 5V3H3v12h2",
+        "refresh" => "M20 7v5h-5 M4 17v-5h5 M6.1 8a6 6 0 0 1 9.9-2L20 12 M4 12l4 6a6 6 0 0 0 9.9-2",
+        "chevron-left" => "m15 5-7 7 7 7",
         "chevron-right" => "m9 5 7 7-7 7",
         "resolver" => {
             "M8 3H5a2 2 0 0 0-2 2v3m13-5h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3m8 0h3a2 2 0 0 0 2-2v-3M9 12h6"

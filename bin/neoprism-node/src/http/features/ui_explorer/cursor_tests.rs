@@ -43,12 +43,12 @@ fn supplied_cursor() -> DltCursor {
 async fn supplied_cursor_exposes_summary_and_exact_native_technical_evidence() {
     let body = cursor_response(Some(supplied_cursor()), "/explorer/dlt-cursor").await;
     for expected in [
-        "Sync status",
+        "Chain position",
         "Reported slot",
         "1,042,816",
         "Block time · UTC",
         "17 Nov 2026, 14:51:00 UTC",
-        "Distance to chain tip unknown",
+        "Chain-tip distance unknown",
         "<details",
         "Technical details",
         "Reported slot · raw",
@@ -63,6 +63,21 @@ async fn supplied_cursor_exposes_summary_and_exact_native_technical_evidence() {
         assert!(body.contains(expected), "missing {expected}");
     }
     assert!(!body.contains("min-w-screen"));
+}
+
+#[tokio::test]
+async fn delivery_details_are_collapsed_for_present_and_missing_positions() {
+    for cursor in [Some(supplied_cursor()), None] {
+        let body = cursor_response(cursor, "/explorer/dlt-cursor").await;
+        let (summary, details) = body.split_once("<details").expect("technical details in both states");
+        assert!(summary.contains("Chain position"));
+        assert!(summary.contains("Chain-tip distance unknown"));
+        assert!(!summary.contains("data-refresh-receipt"));
+        assert!(!summary.contains("Browser checks"));
+        assert!(!body.contains("data-refresh-age"));
+        assert!(details.contains("data-cursor-receipt"));
+        assert!(!details.split('>').next().unwrap().contains(" open"));
+    }
 }
 
 #[tokio::test]
@@ -118,19 +133,16 @@ async fn missing_cursor_waits_without_claiming_source_or_chain_health() {
     for uri in ["/explorer", "/explorer/dlt-cursor"] {
         let body = cursor_response(None, uri).await;
         for expected in [
-            "Sync status",
-            "Waiting for sync information",
-            "Distance to chain tip unknown",
+            "Chain position",
+            "No position reported yet",
+            "Chain-tip distance unknown",
             "data-refresh-interval=\"2000\"",
+            "Technical details",
+            "data-cursor-receipt",
         ] {
             assert!(body.contains(expected), "missing {expected}");
         }
-        for absent in [
-            "Sync not enabled",
-            "Fully synced",
-            "Technical details",
-            "Current sync slot",
-        ] {
+        for absent in ["Sync not enabled", "Fully synced", "Current sync slot"] {
             assert!(!body.contains(absent), "unexpected {absent}");
         }
     }

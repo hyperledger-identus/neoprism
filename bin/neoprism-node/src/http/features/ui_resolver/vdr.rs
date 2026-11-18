@@ -9,7 +9,7 @@ pub(super) fn entries(storages: &[StorageState]) -> Markup {
     let mut sorted = storages.iter().collect::<Vec<_>>();
     sorted.sort_by_key(|s| s.init_operation_hash.to_vec());
     html! {
-        section id="vdr-entries" class="prism-panel prism-vdr" aria-labelledby="vdr-title" {
+        section id="vdr-entries" tabindex="-1" class="prism-panel prism-vdr" aria-labelledby="vdr-title" {
             div class="prism-section-heading" {
                 h2 id="vdr-title" { "VDR entries" }
                 span class="prism-count" { (storages.len()) }

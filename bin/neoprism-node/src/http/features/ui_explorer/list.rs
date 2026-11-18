@@ -15,8 +15,7 @@ pub fn render(dids: Paginated<CanonicalPrismDid>) -> Markup {
             html! {
                     div class="prism-panel prism-list-state" {
                         @if dids.total_items == 0 {
-                            h2 { "No indexed DIDs yet" }
-                            p { "This node has no indexed identities to show. You can still resolve a known DID." }
+                            h2 { "No indexed DIDs on this node" }
                             a class="prism-button prism-secondary" href=(urls::Resolver::new_uri(None)) { "Resolve a known DID" }
                         } @else {
                             h2 { "Page " (page) " is beyond the last page" }
@@ -33,8 +32,6 @@ pub fn render(dids: Paginated<CanonicalPrismDid>) -> Markup {
         html! {
                 (pagination(&dids, "Top"))
                 div class="prism-panel prism-indexed-dids" {
-                    h2 { "Indexed DIDs" }
-                    p class="prism-list-order" { "Newest first-indexed slot first · DID order breaks ties" }
                     ul class="prism-did-rows" {
                         @for did in &dids.items {
                             @let value = did.to_string();
@@ -54,37 +51,48 @@ pub fn render(dids: Paginated<CanonicalPrismDid>) -> Markup {
                             }
                         }
                     }
-                    p class="prism-list-count" { (dids.items.len()) " items on this page" }
+                    p class="prism-list-count" {
+                        (dids.items.len()) " " (if dids.items.len() == 1 { "DID" } else { "DIDs" })
+                        @if dids.total_pages() > 1 { " on this page" }
+                    }
                 }
                 (pagination(&dids, "Bottom"))
-                p class="prism-list-note" { "DID list refreshes every 5 seconds while visible without changing your page. Copy always uses the full DID." }
         },
     )
 }
 
 fn resource(page: u32, state: &str, content: Markup) -> Markup {
     html! {
-        section id="did-list" class="prism-explorer-list" aria-label="Indexed identities"
+        section id="did-list" class="prism-explorer-list" aria-labelledby="indexed-dids-title"
             data-refresh-url=(urls::ExplorerDidList::new_uri(Some(PageQuery { page: Some(page) })))
             data-refresh-interval="5000" data-refresh-resource="list" data-refresh-state=(state) {
-            div class="prism-refresh-feedback" {
-                p role="status" data-refresh-status {
+            header class="prism-refresh-feedback" {
+                h2 id="indexed-dids-title" { "Indexed DIDs" }
+                p role="status" data-refresh-status hidden[state != "failed"] {
                     @if state == "failed" { "Couldn’t load indexed DIDs" }
-                    @else { "Indexed DID response supplied" }
                 }
+                p class="prism-refresh-deferred" data-refresh-deferred hidden {}
+                a class="prism-button prism-secondary prism-refresh-action" data-refresh-action
+                    href=(urls::Explorer::new_uri(Some(PageQuery { page: Some(page) })))
+                    aria-label=(if state == "failed" { "Retry indexed DIDs" } else { "Refresh indexed DIDs" }) {
+                    span data-refresh-label {
+                        @if state == "failed" { "Retry" }
+                        @else { "Refresh" }
+                    }
+                    span class="prism-refresh-icon" aria-hidden="true" { (components::icon("refresh")) }
+                }
+            }
+            div data-refresh-content { (content) }
+            details id="list-delivery" class="prism-delivery-details" {
+                summary aria-label="Indexed DIDs technical details" { "Technical details" }
                 p class="prism-sync-receipt" data-refresh-receipt {
                     @if state == "failed" { "No indexed DID response received. " }
                     @else { "Indexed DID response supplied with this response. " }
                     "Browser checks every 5 seconds while visible when scripts are enabled."
                 }
-                p class="prism-refresh-deferred" data-refresh-deferred hidden {}
-                a class="prism-button prism-secondary prism-refresh-action" data-refresh-action
-                    href=(urls::Explorer::new_uri(Some(PageQuery { page: Some(page) }))) {
-                    @if state == "failed" { "Retry indexed DIDs" }
-                    @else { "Refresh indexed DIDs" }
-                }
+                p { "Newest first-indexed slot first · DID order breaks ties" }
+                p { "Refresh keeps the selected page. Copy uses the complete DID." }
             }
-            div data-refresh-content { (content) }
         }
     }
 }
@@ -119,11 +127,26 @@ pub fn unavailable(page: u32) -> Markup {
 fn page_link(page: u32, current: u32, class: &str, label: &str) -> Markup {
     html! {
         a class=(class) href=(urls::Explorer::new_uri(Some(PageQuery { page: Some(page) })))
-            aria-current=[(page == current).then_some("page")] { (label) }
+            aria-current=[(page == current).then_some("page")]
+            aria-label=[matches!(label, "Previous" | "Next").then_some(label)] { (page_label(label)) }
+    }
+}
+
+fn page_label(label: &str) -> Markup {
+    html! {
+        @if matches!(label, "Previous" | "Next") {
+            span class="prism-page-direction-label" { (label) }
+            span class="prism-page-direction-icon" aria-hidden="true" {
+                (components::icon(if label == "Previous" { "chevron-left" } else { "chevron-right" }))
+            }
+        } @else { (label) }
     }
 }
 
 fn pagination(dids: &Paginated<CanonicalPrismDid>, position: &str) -> Markup {
+    if dids.total_pages() <= 1 {
+        return html! {};
+    }
     let current = dids.current_page + 1;
     let total = dids.total_pages();
     // Bounded work even for a very large dataset. Mobile shows first/current/last.
@@ -158,11 +181,11 @@ fn pagination(dids: &Paginated<CanonicalPrismDid>, position: &str) -> Markup {
                 }
                 div class="prism-page-previous" {
                     @if current > 1 { (page_link(current - 1, current, "prism-page-direction", "Previous")) }
-                    @else { span class="prism-page-direction" aria-disabled="true" { "Previous" } }
+                    @else { span class="prism-page-direction" aria-disabled="true" aria-label="Previous" { (page_label("Previous")) } }
                 }
                 div class="prism-page-next" {
                     @if current < total { (page_link(current + 1, current, "prism-page-direction", "Next")) }
-                    @else { span class="prism-page-direction" aria-disabled="true" { "Next" } }
+                    @else { span class="prism-page-direction" aria-disabled="true" aria-label="Next" { (page_label("Next")) } }
                 }
             }
         }

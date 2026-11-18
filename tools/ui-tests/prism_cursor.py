@@ -111,11 +111,18 @@ class CursorBrowser(unittest.TestCase):
                         evaluate(
                             "document.querySelector('[data-cursor-status]').textContent"
                         ),
-                        "Waiting for sync information",
+                        "No position reported yet",
                     )
-                    self.assertIsNone(
-                        evaluate("document.querySelector('.prism-sync details')")
+                    self.assertFalse(
+                        evaluate("document.querySelector('.prism-sync details').open")
                     )
+                    self.assertFalse(
+                        evaluate(
+                            "document.querySelector('[data-cursor-receipt]').checkVisibility()"
+                        )
+                    )
+                    browser("focus", ".prism-sync summary")
+                    browser("press", "Enter")
                 else:
                     browser("focus", ".prism-sync summary")
                     browser("press", "Enter")
@@ -172,7 +179,7 @@ class CursorBrowser(unittest.TestCase):
                         )
                         if fixture != "waiting":
                             self.assertEqual(
-                                len(columns.split()), 1 if width <= 600 else 2
+                                len(columns.split()), 1 if width <= 360 else 2
                             )
         finally:
             browser("network", "unroute", "*")
@@ -195,7 +202,7 @@ class CursorBrowser(unittest.TestCase):
         )
         self.assertEqual(
             evaluate("document.querySelector('[data-cursor-status]').textContent"),
-            "Checking for sync information…",
+            "",
         )
         RELEASE.set()
         browser(
@@ -220,7 +227,7 @@ class CursorBrowser(unittest.TestCase):
             "1042816",
         )
         self.assertIn(
-            "Distance to chain tip unknown",
+            "Chain-tip distance unknown",
             evaluate("document.querySelector('#dlt-cursor-card').textContent"),
         )
         self.assertNotIn(
@@ -255,9 +262,9 @@ class CursorBrowser(unittest.TestCase):
             evaluate("document.querySelector('[data-cursor-status]').textContent"),
             "Couldn’t refresh sync information · no cursor received",
         )
-        self.assertIsNone(evaluate("document.querySelector('.prism-sync details')"))
+        self.assertFalse(evaluate("document.querySelector('.prism-sync details').open"))
         self.assertIn(
-            "Distance to chain tip unknown",
+            "Chain-tip distance unknown",
             evaluate("document.querySelector('.prism-sync').textContent"),
         )
 

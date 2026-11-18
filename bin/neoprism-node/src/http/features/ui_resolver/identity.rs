@@ -29,7 +29,7 @@ pub(super) fn copy(label: &str, value: &str) -> Markup {
 pub(super) fn summary(did: &PrismDid, state: &DidState, operation_count: usize) -> Markup {
     let did = did.to_did().to_string();
     html! {
-        section class="prism-panel prism-identity" aria-labelledby="identity-title" {
+        section id="identity-summary" tabindex="-1" class="prism-panel prism-identity" aria-labelledby="identity-title" {
             h2 id="identity-title" { "Identity" }
             @if state.is_published && state.is_deactivated() {
                 p class="prism-identity-status prism-deactivated" { "Deactivated" }
@@ -45,16 +45,17 @@ pub(super) fn summary(did: &PrismDid, state: &DidState, operation_count: usize) 
                 (copy("DID", &did))
                 (api_link(&did))
             }
-            p class="prism-identity-counts" {
-                @for (index, (count, singular, plural)) in [
-                    (state.public_keys.len(), "public key", "public keys"),
-                    (state.services.len(), "service", "services"),
-                    (state.context.len(), "context", "contexts"),
-                    (state.storage.len(), "VDR entry", "VDR entries"),
-                    (operation_count, "operation", "operations"),
-                ].iter().enumerate() {
-                    @if index > 0 { " · " }
-                    (count) " " (if *count == 1 { singular } else { plural })
+            nav class="prism-identity-counts" aria-label="Identity sections" {
+                @for (target, count, singular, plural) in [
+                    ("public-keys", state.public_keys.len(), "public key", "public keys"),
+                    ("services", state.services.len(), "service", "services"),
+                    ("contexts", state.context.len(), "context", "contexts"),
+                    ("vdr-entries", state.storage.len(), "VDR entry", "VDR entries"),
+                    ("operation-history", operation_count, "operation", "operations"),
+                ] {
+                    a href=(format!("#{target}")) {
+                        (count) " " (if count == 1 { singular } else { plural })
+                    }
                 }
             }
         }

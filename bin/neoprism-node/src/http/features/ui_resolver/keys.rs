@@ -9,7 +9,7 @@ pub(super) fn public_keys(keys: &[PublicKey]) -> Markup {
     let mut sorted = keys.iter().collect::<Vec<_>>();
     sorted.sort_by_key(|key| key.id.to_string());
     html! {
-        section id="public-keys" class="prism-panel prism-keys" aria-labelledby="keys-title" {
+        section id="public-keys" tabindex="-1" class="prism-panel prism-keys" aria-labelledby="keys-title" {
             div class="prism-section-heading" {
                 h2 id="keys-title" { "Public keys" }
                 span class="prism-count" { (keys.len()) " keys" }

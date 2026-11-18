@@ -50,7 +50,6 @@
     const seconds = Number(element.dataset.refreshInterval) / 1000;
     const content = element.querySelector('[data-refresh-content]');
     const status = element.querySelector('[data-cursor-status], [data-refresh-status]');
-    const receipt = element.querySelector('[data-refresh-receipt]');
     const action = element.querySelector('[data-refresh-action]');
     let inflight = false;
     let generation = 0;
@@ -59,6 +58,8 @@
     let timer;
     let refreshOnReturn = false;
     let state = element.dataset.refreshState;
+    let pendingFrom = state;
+    let manualRefresh = false;
     let present = element.dataset.cursorPresent === 'true';
     let lastReceipt = state === 'received' ? Date.now() : null;
     let receivedPresent = present;
@@ -83,9 +84,12 @@
       let statusText;
       let receiptText;
       element.dataset.refreshState = state;
-      if (state === 'pending') {
-        statusText = cursor ? 'Checking for sync information…' : 'Refreshing indexed DIDs…';
-      } else if (state === 'failed') {
+      // Routine polling stays quiet and keeps any prior warning until recovery.
+      const feedbackState = state === 'pending' && !manualRefresh ? pendingFrom : state;
+      element.dataset.refreshFeedbackState = feedbackState;
+      if (feedbackState === 'pending') {
+        statusText = cursor ? 'Checking chain position…' : 'Refreshing indexed DIDs…';
+      } else if (feedbackState === 'failed') {
         if (staged) {
           statusText = `Couldn’t refresh · received ${cursor ? 'sync information' : 'DID'} update waiting`;
         } else {
@@ -95,19 +99,25 @@
         }
       } else {
         statusText = staged ? 'Response received · display update waiting'
-          : (cursor ? (present ? 'Cursor received' : 'Waiting for sync information') : 'Indexed DID response received');
+          : (cursor && !present ? 'No position reported yet' : '');
       }
-      const cadence = `${state === 'failed' ? 'Retries' : 'Checks'} every ${seconds} seconds while visible.`;
+      const cadence = `${feedbackState === 'failed' ? 'Retries' : 'Checks'} every ${seconds} seconds while visible.`;
       if (lastReceipt === null) {
         receiptText = `No successful response received by this browser. ${cadence}`;
       } else {
         const kind = cursor ? (receivedPresent ? 'received the cursor snapshot' : 'checked for sync information') : 'received the indexed DID response';
         receiptText = `This browser last successfully ${kind} at ${new Date(lastReceipt).toISOString()} · ${Math.max(0, Math.floor((Date.now() - lastReceipt) / 1000))} seconds ago. ${cursor && !receivedPresent ? 'No cursor was supplied. ' : ''}${cadence}`;
       }
+      // Cursor delivery details travel with the retained cursor content. Re-query
+      // after reconciliation, including transitions to or from a missing cursor.
+      const receipt = element.querySelector('[data-refresh-receipt]');
+      const actionText = feedbackState === 'failed' ? 'Retry' : 'Refresh';
+      action.setAttribute('aria-label', `${actionText} ${cursor ? 'chain position' : 'indexed DIDs'}`);
       const metadataHeld = [
         setText(status, statusText), setText(receipt, receiptText),
-        setText(action, `${state === 'failed' ? 'Retry' : 'Refresh'} ${cursor ? 'sync information' : 'indexed DIDs'}`),
+        setText(action.querySelector('[data-refresh-label]') || action, actionText),
       ].some(Boolean);
+      status.hidden = status.textContent.length === 0;
       deferred.hidden = !staged && !metadataHeld;
       setText(deferred, [
         staged ? 'A newer response is waiting. Displayed values stay unchanged while you focus or select here; move focus and clear the selection to show the update.' : '',
@@ -118,7 +128,7 @@
 
     // Event/timer dispatch is intentionally fire-and-forget; this function handles
     // request failures and owns response state, cancellation, and cleanup.
-    const request = async () => {
+    const request = async (manual = false) => {
       if (inflight || !active || document.hidden) return;
       const version = generation;
       const page = location.pathname + location.search;
@@ -126,6 +136,8 @@
       const current = () => active && version === generation && element.isConnected
         && page === location.pathname + location.search && url === element.dataset.refreshUrl;
       const previousState = state;
+      pendingFrom = state;
+      manualRefresh = manual;
       inflight = true;
       refreshOnReturn = false;
       controller = new AbortController();
@@ -171,7 +183,7 @@
     action.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
-      void request();
+      void request(true);
     });
     document.addEventListener('visibilitychange', () => {
       clearTimeout(timer);

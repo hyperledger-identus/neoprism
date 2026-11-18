@@ -58,6 +58,7 @@ pub fn resolve(
                             (identity::summary(did, state, if state.is_published { did_debug.len() } else { 0 }))
                             (did_document_body(state))
                             (&operation_history)
+                            a class="prism-return-link" href="#identity-summary" { "Back to identity" }
                         }
                         aside class="prism-evidence-rail" aria-label="Identity evidence and API" {
                             (ledger)

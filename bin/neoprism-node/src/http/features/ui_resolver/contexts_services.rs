@@ -7,7 +7,7 @@ use crate::http::components::disclosure_icon;
 
 pub(super) fn contexts(contexts: &[String]) -> Markup {
     html! {
-        section id="contexts" class="prism-panel prism-contexts" aria-labelledby="contexts-title" {
+        section id="contexts" tabindex="-1" class="prism-panel prism-contexts" aria-labelledby="contexts-title" {
             @if contexts.is_empty() {
                 h2 id="contexts-title" { "Contexts · 0" }
                 p class="prism-muted" { "No contexts" }
@@ -36,7 +36,7 @@ pub(super) fn contexts(contexts: &[String]) -> Markup {
 
 pub(super) fn services(services: &[Service]) -> Markup {
     html! {
-        section id="services" class="prism-panel prism-services" aria-labelledby="services-title" {
+        section id="services" tabindex="-1" class="prism-panel prism-services" aria-labelledby="services-title" {
             h2 id="services-title" { "Services · " (services.len()) }
             @if services.is_empty() {
                 p class="prism-muted" { "No services" }

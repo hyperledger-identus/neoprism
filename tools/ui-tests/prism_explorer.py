@@ -192,7 +192,7 @@ class ExplorerBrowser(unittest.TestCase):
         self,
     ) -> None:
         for fixture, expected in (
-            ("empty", "No indexed DIDs yet"),
+            ("empty", "No indexed DIDs on this node"),
             ("beyond", "beyond the last page"),
             ("failure", "Couldn’t load indexed DIDs"),
             ("invalid", "Choose a valid page"),

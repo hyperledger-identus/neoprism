@@ -49,14 +49,14 @@ async fn fixture_with_cursor(count: u32, migrated: bool, cursor: Option<DltCurso
 #[tokio::test]
 async fn explorer_empty_and_beyond_last_page_offer_truthful_recovery() {
     let (_, empty) = get(fixture(0, true).await, "/explorer").await;
-    assert!(empty.contains("No indexed DIDs yet"));
+    assert!(empty.contains("No indexed DIDs on this node"));
     assert!(empty.contains("Resolve a known DID"));
     assert!(!empty.contains("Page 1 of 0"));
     let (_, beyond) = get(fixture(103, true).await, "/explorer?page=3").await;
     assert!(beyond.contains("Page 3 is beyond the last page"));
     assert!(beyond.contains("Go to first page"));
     assert!(beyond.contains("data-refresh-url=\"/explorer/did-list?page=3\""));
-    assert!(!beyond.contains("No indexed DIDs yet"));
+    assert!(!beyond.contains("No indexed DIDs on this node"));
     let (status, far_beyond) = get(fixture(1, true).await, "/explorer?page=4294967295").await;
     assert_eq!(status, axum::http::StatusCode::OK);
     assert!(far_beyond.contains("Page 4294967295 is beyond the last page"));
@@ -71,7 +71,7 @@ async fn explorer_retrieval_failure_is_generic_recoverable_and_not_empty() {
         assert!(body.contains("href=\"/explorer?page=2\""));
         assert!(body.contains("Try again"));
         assert!(body.contains("Resolve a known DID"));
-        assert!(!body.contains("No indexed DIDs yet"));
+        assert!(!body.contains("No indexed DIDs on this node"));
         assert!(!body.contains("no such table"));
         assert!(!body.contains("did_stats"));
     }
@@ -113,6 +113,20 @@ async fn explorer_final_partial_page_and_zero_normalization_preserve_get_and_ref
 }
 
 #[tokio::test]
+async fn single_page_omits_redundant_pagination_and_uses_singular_did_count() {
+    let (_, body) = get(fixture(1, true).await, "/explorer").await;
+    assert!(!body.contains("class=\"prism-pagination\""));
+    assert!(body.contains("class=\"prism-list-count\">1 DID</p>"));
+    assert!(body.contains("data-refresh-status hidden"));
+    assert!(!body.contains("data-refresh-age"));
+    let list = body.split("id=\"did-list\"").nth(1).unwrap();
+    let (summary, details) = list.split_once("id=\"list-delivery\"").unwrap();
+    assert!(!summary.contains("Indexed DID response supplied"));
+    assert!(details.contains("data-refresh-receipt"));
+    assert!(body.contains("Newest first-indexed slot first"));
+}
+
+#[tokio::test]
 async fn explorer_refresh_resources_are_stable_independent_and_keep_native_recovery() {
     let (_, body) = get(fixture(103, true).await, "/explorer?page=2").await;
     for expected in [
@@ -121,7 +135,7 @@ async fn explorer_refresh_resources_are_stable_independent_and_keep_native_recov
         "data-refresh-interval=\"2000\"",
         "data-refresh-interval=\"5000\"",
         "href=\"/explorer?page=2\"",
-        "Refresh sync information",
+        "Refresh chain position",
         "Refresh indexed DIDs",
     ] {
         assert!(body.contains(expected), "missing {expected}");

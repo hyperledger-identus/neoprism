@@ -32,6 +32,64 @@ class PrismIdentity(unittest.TestCase):
         browser("set", "viewport", "390", "900")
         browser("open", URL + "/indexed.html")
 
+    def test_summary_counts_navigate_to_sections_with_keyboard_and_without_scripts(
+        self,
+    ) -> None:
+        for scripts in (True, False):
+            with self.subTest(scripts=scripts):
+                if not scripts:
+                    browser(
+                        "network", "route", "*", "--abort", "--resource-type", "script"
+                    )
+                try:
+                    browser("open", URL + "/indexed.html")
+                    for target in (
+                        "public-keys",
+                        "services",
+                        "contexts",
+                        "vdr-entries",
+                        "operation-history",
+                    ):
+                        browser("focus", f'.prism-identity-counts a[href="#{target}"]')
+                        browser("press", "Enter")
+                        browser("wait", "--fn", f"location.hash === '#{target}'")
+                        self.assertTrue(
+                            evaluate(f"""(() => {{
+                            const target = document.getElementById('{target}');
+                            const link = document.querySelector(
+                                '.prism-identity-counts a[href="#{target}"]');
+                            return location.hash === '#{target}'
+                                && document.activeElement === target
+                                && target.getBoundingClientRect().top >= 0
+                                && target.getBoundingClientRect().top < innerHeight
+                                && link.getBoundingClientRect().height >= 48;
+                        }})()""")
+                        )
+                    browser("focus", 'a[href="#identity-summary"]')
+                    browser("press", "Enter")
+                    self.assertEqual(
+                        evaluate("document.activeElement.id"), "identity-summary"
+                    )
+                finally:
+                    if not scripts:
+                        browser("network", "unroute", "*")
+
+    def test_section_back_navigation_preserves_the_dossier_and_open_inspectors(
+        self,
+    ) -> None:
+        evaluate("""window.sectionSentinel = document.querySelector('.prism-dossier');
+            document.querySelector('.prism-key').open = true;""")
+        for target in ("public-keys", "operation-history"):
+            browser("focus", f'.prism-identity-counts a[href="#{target}"]')
+            browser("press", "Enter")
+        browser("back")
+        browser("wait", "--fn", "location.hash === '#public-keys'")
+        self.assertTrue(
+            evaluate("""window.sectionSentinel
+            === document.querySelector('.prism-dossier')
+            && document.querySelector('.prism-key').open""")
+        )
+
     def test_captured_json_copy_preserves_crlf_bare_cr_unicode_and_markup(self) -> None:
         self.enterContext(grant_clipboard_permissions(browser, URL))
         browser("open", URL + "/lossless.html")

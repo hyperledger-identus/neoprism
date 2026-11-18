@@ -40,6 +40,22 @@ class PrismShell(unittest.TestCase):
         browser("set", "viewport", "390", "898")
         browser("open", BASE_URL + "/resolver")
 
+    def test_resolve_action_aligns_with_the_input_surface(self) -> None:
+        for width in (801, 1024, 1440):
+            with self.subTest(width=width):
+                browser("set", "viewport", str(width), "900")
+                self.assertTrue(
+                    evaluate("""(() => {
+                    const field = document.querySelector('.prism-did-input')
+                        .getBoundingClientRect();
+                    const button = document.querySelector('.prism-resolve-form button')
+                        .getBoundingClientRect();
+                    return field.height === 48 && button.height === 48
+                        && Math.abs(field.top - button.top) < 1
+                        && Math.abs(field.bottom - button.bottom) < 1;
+                })()""")
+                )
+
     def test_mobile_brand_home_remains_clickable_beside_menu(self) -> None:
         browser("click", ".prism-mobile-header .prism-brand")
         browser("wait", "--url", "**/resolver")

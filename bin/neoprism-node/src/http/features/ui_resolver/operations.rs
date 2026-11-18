@@ -1,6 +1,7 @@
 //! Operation history is evidence captured during resolution, not a success-only view.
 use identus_did_prism::dlt::OperationMetadata;
 use identus_did_prism::prelude::SignedPrismOperation;
+use identus_did_prism::proto::prism::prism_operation::Operation;
 use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
@@ -10,7 +11,7 @@ pub(super) type HistoryEntry = (OperationMetadata, SignedPrismOperation, Option<
 
 pub(super) fn history(entries: &[HistoryEntry]) -> Markup {
     html! {
-        section id="operation-history" class="prism-panel prism-operations" aria-labelledby="operations-title" {
+        section id="operation-history" tabindex="-1" class="prism-panel prism-operations" aria-labelledby="operations-title" {
             div class="prism-section-heading" {
                 h2 id="operations-title" { "Operation history" }
                 span class="prism-count" { (entries.len()) }
@@ -45,7 +46,13 @@ fn operation(
     html! {
         details class="prism-operation" {
             summary {
-                span { "Operation " (index) }
+                span class="prism-operation-label" {
+                    span class="prism-operation-kind" { (operation_kind(signed)) }
+                    span class="prism-muted" {
+                        "Operation " (index) " · "
+                        time datetime=(block.cbt.to_rfc3339()) { (block.cbt.format("%d %b %Y, %H:%M UTC")) }
+                    }
+                }
                 span class=(if error.is_some() { "prism-operation-outcome prism-operation-rejected" } else { "prism-operation-outcome" }) { (outcome) }
             }
             dl class="prism-operation-fields" {
@@ -83,8 +90,26 @@ fn operation(
                     (identity::copy(&format!("operation {index} complete signed payload"), &payload))
                 }
                 pre tabindex="0" aria-label=(format!("Operation {index} complete signed payload")) { code { (&payload) } }
+                a class="prism-return-link" href="#operation-history" { "Back to operation history" }
             }
         }
+    }
+}
+
+fn operation_kind(signed: &SignedPrismOperation) -> &'static str {
+    match signed
+        .operation
+        .as_ref()
+        .and_then(|operation| operation.operation.as_ref())
+    {
+        Some(Operation::CreateDid(_)) => "Create DID",
+        Some(Operation::UpdateDid(_)) => "Update DID",
+        Some(Operation::DeactivateDid(_)) => "Deactivate DID",
+        Some(Operation::ProtocolVersionUpdate(_)) => "Update protocol version",
+        Some(Operation::CreateStorageEntry(_)) => "Create VDR entry",
+        Some(Operation::UpdateStorageEntry(_)) => "Update VDR entry",
+        Some(Operation::DeactivateStorageEntry(_)) => "Deactivate VDR entry",
+        _ => "Unknown operation",
     }
 }
 

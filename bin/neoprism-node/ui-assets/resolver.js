@@ -11,6 +11,7 @@
   if (!form || !input || !button || !status || !pending || !result || !recovery || !retry || !previous || !window.fetch) return;
 
   let request = null;
+  let resolvedUrl = location.pathname + location.search;
   const ready = () => {
     button.disabled = false;
     button.textContent = "Resolve";
@@ -56,6 +57,7 @@
       if (nextInput.getAttribute("aria-invalid") === "true") input.setAttribute("aria-invalid", "true");
       else input.removeAttribute("aria-invalid");
       history.pushState(null, "", url);
+      resolvedUrl = location.pathname + location.search;
       status.textContent = announcement;
     } catch {
       if (controller !== request) return;
@@ -94,6 +96,9 @@
     }
     if (!request) ready();
   });
-  // Restoring a bookmarked GET must resolve that URL, not show another DID’s state.
-  window.addEventListener("popstate", () => location.reload());
+  // DID-query history must resolve that URL, but section-only navigation keeps
+  // the current dossier and its open inspectors intact.
+  window.addEventListener("popstate", () => {
+    if (location.pathname + location.search !== resolvedUrl) location.reload();
+  });
 })();
