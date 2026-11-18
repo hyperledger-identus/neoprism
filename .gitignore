@@ -1,4 +1,5 @@
 target/
+target-prism/
 .envrc
 .env
 *.db
@@ -10,5 +11,16 @@ __pycache__
 lcov.info
 artifacts/indexer-parity/
 
+# Local design workspace: track only explicitly approved deliverables.
+/designs/*
+!/designs/neoprism.fig
+!/designs/neoprism.svg
+!/designs/README.md
+!/designs/PRISM-SPEC.md
+
 # bv (beads viewer) local config and caches
 .bv/
+
+# impeccable skill engine binary (downloaded per-platform by the launcher,
+# verified against .pi/skills/impeccable/scripts/engine-checksums.txt)
+.pi/skills/impeccable/scripts/bin/

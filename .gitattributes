@@ -4,6 +4,7 @@
 # Scripts -- must be LF (executed in Docker/Linux)
 *.sh text eol=lf
 *.bash text eol=lf
+*.cmd text eol=crlf
 
 # Data/config
 *.sql text eol=lf
@@ -27,6 +28,8 @@
 # Docs
 *.md text eol=lf
 *.txt text eol=lf
+# Keep upstream font notices byte-identical to their published hashes.
+bin/neoprism-node/ui-assets/licenses/*-OFL.txt whitespace=-blank-at-eol
 
 # Docker
 Dockerfile text eol=lf

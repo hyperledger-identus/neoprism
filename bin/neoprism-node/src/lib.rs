@@ -1,5 +1,4 @@
 #![allow(non_snake_case)]
-#![feature(error_reporter)]
 
 use std::fs;
 #[cfg(unix)]

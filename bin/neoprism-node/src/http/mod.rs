@@ -13,6 +13,13 @@ mod components;
 mod features;
 mod urls;
 
+#[cfg(test)]
+mod explorer_tests;
+#[cfg(test)]
+mod test_support;
+#[cfg(test)]
+mod tests;
+
 pub use features::api::build_openapi;
 
 #[derive(Default)]

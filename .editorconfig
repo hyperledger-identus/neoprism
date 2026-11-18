@@ -27,5 +27,10 @@ indent_size = unset
 [LICENSE]
 indent_size = unset
 
+# Preserve the exact upstream font license notices and their published hashes.
+[bin/neoprism-node/ui-assets/licenses/*-OFL.txt]
+indent_size = unset
+trim_trailing_whitespace = false
+
 [Makefile]
 indent_style = tab

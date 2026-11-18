@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "open-pencil": {
+      "command": "openpencil-mcp",
+      "cwd": ".",
+      "env": {
+        "OPENPENCIL_MCP_ROOT": ".",
+        "OPENPENCIL_MCP_EVAL": "0"
+      },
+      "exposure": "codemode",
+      "description": "Inspect and edit designs in the running OpenPencil desktop app"
+    }
+  }
+}
