@@ -11,15 +11,25 @@ record tokens, responsive composition, safety boundaries and deliberate deviatio
 **The three independent reviews at integration `0309ec3` are complete.** Standards
 reported one documented Pydantic breach and seven duplication findings; Spec
 reported one lossless-copy defect; rendered acceptance reported no material
-visual blocker. Their recovered summaries are in
-`.git/prism-run-artifacts/repair-context.md`; the earlier raw reports and images
-were lost with ephemeral session storage. They are not newly executed reviews.
+visual blocker. Their recovered summaries were kept in the run's local,
+untracked `prism-run-artifacts/repair-context.md` (see the scope note below); the
+earlier raw reports and images were lost with ephemeral session storage. They are
+not newly executed reviews.
 
 This replacement resumes the interrupted single repair pass, not another review
 round. All nine findings are addressed below. Parent verification and ticket
-closure remain separate: this record does not itself close #381. Durable repair
-logs, fixtures, renders, detector receipts, bundle and exact-SHA handoff live in
-`.git/prism-run-artifacts/review-repair/` in the common repository, not HOME/tmp.
+closure remain separate: this record does not itself close #381.
+
+Repair logs, renders, detector receipts and the exact-SHA handoff were kept
+during the run under `<git-common-dir>/prism-run-artifacts/`, deliberately
+outside ephemeral HOME and `/tmp`. That directory is **machine-local and
+untracked**: it is not part of this repository and does not survive a clone, a
+fresh checkout or `git gc`. This committed record, not those files, is the
+durable artefact; any surviving copy is supporting material for the machine that
+produced it. The regenerated fixtures and the recovery Git bundle were pruned
+afterwards: fixtures are reproducible from the exporters documented in the suite
+README, and the bundle's commits are already reachable in repository history and
+on `origin` (`git cat-file -e 4b2d180`).
 
 ### Nine finding dispositions
 
@@ -92,7 +102,7 @@ filesystem. Use a unique validation ID, ports and named browser sessions.
 
 ```sh
 export VALIDATION_ID=prism-check
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/$VALIDATION_ID"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/$VALIDATION_ID"
 export CARGO_BUILD_JOBS=3
 export FIXTURES="$(mktemp -d)"
 export PRISM_FIXTURE_DIR="$FIXTURES/identity"
@@ -217,8 +227,9 @@ each whole label rectangle and WCAG sRGB math. Explorer heading contrast was
 least 4.59. These are sampled normal-text AA results, not universal certification.
 Axe's gradient-backed contrast rule remains incomplete, not an automated pass.
 
-Fresh **post-repair** receipts are retained under
-`.git/prism-run-artifacts/review-repair/repair-evidence/`:
+Fresh **post-repair** receipts were captured in the run's local
+`prism-run-artifacts/review-repair/repair-evidence/` (machine-local and
+untracked, per the scope note above):
 
 - `capture-index.json` identifies actual pages, selectors, widths and filenames.
   Focused faithful fallback is captured at 320/390/1440px, with raw text,

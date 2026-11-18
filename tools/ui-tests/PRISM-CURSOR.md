@@ -4,7 +4,7 @@ Run from the ticket worktree inside `nix develop`. The seams are real HTTP
 responses/rendered HTML and browser workflows, not upstream-indexer health.
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-cursor"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/ui-cursor"
 export CARGO_BUILD_JOBS=3
 export PRISM_CURSOR_FIXTURES="$(mktemp -d)"
 bun install --frozen-lockfile

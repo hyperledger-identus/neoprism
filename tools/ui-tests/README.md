@@ -39,6 +39,20 @@ To check Nix delivery in the browser, start the node with
 `--assets-path "$(nix build .#neoprism-ui-assets --no-link --print-out-paths)/assets"`
 and run the same suite against it.
 
+## Shared build cache
+
+Every suite below sets `CARGO_TARGET_DIR` to `<repository-root>/target-prism/<id>`
+via the git common dir, so concurrent worktrees share one cache instead of each
+rebuilding the workspace. The directory sits outside `.git` and is gitignored: it
+stays visible to `du`, `git clean -fdX` and ordinary cleanup, rather than growing
+unnoticed inside the git directory. Remove your own subdirectory when a
+validation run is finished; the cache is never evidence and is always
+regenerable.
+
+```sh
+rm -rf "$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/$ID"
+```
+
 ## Explorer and shared copy
 
 The reusable copy contract is a `type="button"` element with `class="prism-copy"`,
@@ -183,7 +197,7 @@ and empty pages exist only in test output; no production sample route is added.
 Hashes use the complete 64-character SHA-256 values supported by the backend.
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-vdr"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/ui-vdr"
 export CARGO_BUILD_JOBS=2
 export PRISM_VDR_FIXTURES="$(mktemp -d)"
 cargo test -p neoprism-node vdr_tests
@@ -236,7 +250,7 @@ from retrieval failure.
 Run inside `nix develop`:
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-outcomes"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/ui-outcomes"
 export CARGO_BUILD_JOBS=3
 export PRISM_OUTCOME_FIXTURES="$(mktemp -d)"
 export PRISM_TEST_SESSION=prism-outcomes-check

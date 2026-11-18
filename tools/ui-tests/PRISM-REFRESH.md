@@ -4,7 +4,7 @@ Run in `nix develop` from your worktree. These tests use the approved browser
 workflow and real HTTP-rendered HTML seams, not production fixture routes.
 
 ```sh
-export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/prism-build-cache/ui-refresh"
+export CARGO_TARGET_DIR="$(git rev-parse --path-format=absolute --git-common-dir)/../target-prism/ui-refresh"
 export CARGO_BUILD_JOBS=2
 export PRISM_FIXTURE_DIR="$(mktemp -d)"
 export PRISM_CURSOR_FIXTURES="$(mktemp -d)"
