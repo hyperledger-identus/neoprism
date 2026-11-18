@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.16.0) - 2026-11-18
+
+### 🚀 Features
+
+- *(ui)* Ship Prism Resolver and Explorer redesign ([#382](https://github.com/hyperledger-identus/neoprism/pull/382))
+
 ## [0.15.1](https://github.com/hyperledger-identus/neoprism/releases/tag/v0.15.1) - 2026-11-17
 
 ### Security fixes
