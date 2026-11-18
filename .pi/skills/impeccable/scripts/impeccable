@@ -88,7 +88,7 @@ case $0 in
 esac
 [ -n "$dir" ] || dir=/
 caller_pwd=$PWD
-CDPATH= cd -- "$dir" || { echo "impeccable: cannot enter the launcher directory $dir" >&2; exit 127; }
+CDPATH='' cd -- "$dir" || { echo "impeccable: cannot enter the launcher directory $dir" >&2; exit 127; }
 dir=$PWD
 skill_dir=${dir%/*}
 [ -n "$skill_dir" ] || skill_dir=/

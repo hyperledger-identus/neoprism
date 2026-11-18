@@ -116,6 +116,8 @@
       action.setAttribute('aria-disabled', String(inflight));
     };
 
+    // Event/timer dispatch is intentionally fire-and-forget; this function handles
+    // request failures and owns response state, cancellation, and cleanup.
     const request = async () => {
       if (inflight || !active || document.hidden) return;
       const version = generation;
@@ -156,7 +158,7 @@
         if (active) render();
         if (active && refreshOnReturn && !document.hidden) {
           refreshOnReturn = false;
-          request();
+          void request();
         }
       }
     };
@@ -164,12 +166,12 @@
     const tick = () => {
       if (document.hidden) return;
       arm();
-      request();
+      void request();
     };
     action.addEventListener('click', (event) => {
       if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       event.preventDefault();
-      request();
+      void request();
     });
     document.addEventListener('visibilitychange', () => {
       clearTimeout(timer);
@@ -178,7 +180,7 @@
         controller?.abort();
       } else {
         if (inflight) refreshOnReturn = true;
-        else request();
+        else void request();
         arm();
       }
     });
@@ -192,7 +194,7 @@
       if (!event.persisted) return;
       active = true;
       if (inflight) refreshOnReturn = true;
-      else request();
+      else void request();
       if (!document.hidden) arm();
     });
     content.addEventListener('focusout', () => queueMicrotask(flush));
