@@ -9,6 +9,7 @@ use node_storage::SqliteDb;
 use tower::ServiceExt;
 
 use super::router;
+use super::test_support::LONG_FORM;
 use crate::app::service::PrismDidService;
 use crate::{AppState, DltSourceState, IndexerUiState, RunMode, VERSION};
 
@@ -136,8 +137,6 @@ async fn resolver_get_retains_escaped_input_and_hands_long_form_to_existing_reso
     assert!(invalid.contains("Check the DID format"));
     assert!(invalid.contains("aria-invalid=\"true\""));
 
-    // Published documentation's deterministic long-form DID; never emitted as entry sample data.
-    const LONG_FORM: &str = "did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU";
     let (status, body) = get(app, &format!("/resolver?did={LONG_FORM}")).await;
     assert_eq!(status, StatusCode::OK);
     assert!(body.contains(&format!("value=\"{LONG_FORM}\"")));

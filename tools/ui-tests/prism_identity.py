@@ -5,20 +5,16 @@ PRISM_FIXTURE_DIR to a directory outside the checkout; run just build-assets.
 This suite serves those exact rendered pages and built assets on a private port.
 """
 
-import functools
-import http.server
 import json
 import os
-import shutil
-import threading
 import unittest
 from pathlib import Path
 
 from clipboard_permissions import grant_clipboard_permissions
+from fixture_server import fixture_server
 from prism_shell import browser, evaluate
 
 FIXTURES = Path(os.environ["PRISM_FIXTURE_DIR"])
-ROOT = Path(__file__).resolve().parents[2]
 PORT = int(os.environ.get("PRISM_IDENTITY_PORT", "18773"))
 URL = f"http://127.0.0.1:{PORT}"
 
@@ -26,25 +22,95 @@ URL = f"http://127.0.0.1:{PORT}"
 class PrismIdentity(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        shutil.copytree(
-            ROOT / "bin/neoprism-node/assets", FIXTURES / "assets", dirs_exist_ok=True
-        )
-        handler = functools.partial(
-            http.server.SimpleHTTPRequestHandler, directory=str(FIXTURES)
-        )
-        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), handler)
-        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
-        cls.thread.start()
+        cls.server = cls.enterClassContext(fixture_server(FIXTURES, PORT))
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.server.shutdown()
-        cls.server.server_close()
         browser("close")
 
     def setUp(self) -> None:
         browser("set", "viewport", "390", "900")
         browser("open", URL + "/indexed.html")
+
+    def test_captured_json_copy_preserves_crlf_bare_cr_unicode_and_markup(self) -> None:
+        self.enterContext(grant_clipboard_permissions(browser, URL))
+        browser("open", URL + "/lossless.html")
+        evaluate(
+            "document.querySelectorAll('main details').forEach(e => e.open = true)"
+        )
+        expected = (
+            '{\r\n"uri":"https://example.test/雪?x=1&y=<tag>",\r"label":"café 🧪"\r\n}'
+        )
+        browser("focus", 'button[aria-label="Copy service lossless captured endpoint"]')
+        browser("press", "Enter")
+        browser("wait", "--text", "Copied to clipboard.")
+        self.assertEqual(browser("clipboard", "read")["text"], expected)
+
+    def test_manual_copy_preserves_captured_crlf_and_bare_cr_without_normalization(
+        self,
+    ) -> None:
+        self.enterContext(grant_clipboard_permissions(browser, URL))
+        browser("open", URL + "/lossless.html")
+        browser("set", "viewport", "320", "900")
+        evaluate(
+            "document.querySelectorAll('main details').forEach(e => e.open = true)"
+        )
+        expected = (
+            '{\r\n"uri":"https://example.test/雪?x=1&y=<tag>",\r"label":"café 🧪"\r\n}'
+        )
+        for clipboard in (
+            "undefined",
+            "{writeText: async () => {throw new Error('denied')}}",
+        ):
+            with self.subTest(clipboard=clipboard):
+                evaluate(
+                    "Object.defineProperty(navigator, 'clipboard', "
+                    f"{{configurable: true, value: {clipboard}}})"
+                )
+                browser(
+                    "focus",
+                    'button[aria-label="Copy service lossless captured endpoint"]',
+                )
+                browser("press", "Enter")
+                browser(
+                    "wait",
+                    "--text",
+                    "Couldn’t copy. Select the value beside the button "
+                    "to copy manually.",
+                )
+                self.assertEqual(
+                    evaluate("document.activeElement.ariaLabel"),
+                    "Copy service lossless captured endpoint",
+                )
+                # Observe the user-visible fallback, never the encoded transport.
+                self.assertEqual(
+                    evaluate(
+                        """(() => {
+                            const field = document.querySelector(
+                                '.prism-copy-fallback').lastElementChild;
+                            return field.value ?? field.textContent;
+                        })()"""
+                    ),
+                    expected,
+                )
+                browser("press", "Tab")
+                browser("press", "Control+a")
+                self.assertEqual(evaluate("window.getSelection().toString()"), expected)
+                browser("press", "Control+c")
+                evaluate("delete navigator.clipboard")
+                self.assertEqual(browser("clipboard", "read")["text"], expected)
+                self.assertTrue(
+                    evaluate(
+                        """(() => {
+                            const r = document.activeElement.getBoundingClientRect();
+                            return r.left >= 0 && r.right <= innerWidth
+                                && r.width >= 140;
+                        })()"""
+                    )
+                )
+                self.assertTrue(
+                    evaluate("document.documentElement.scrollWidth <= innerWidth")
+                )
 
     def test_context_and_service_copy_preserves_complete_captured_and_readable_values(
         self,

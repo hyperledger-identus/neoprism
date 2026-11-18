@@ -4,9 +4,17 @@ use maud::{Markup, html};
 use crate::http::urls;
 
 pub(super) fn copy(label: &str, value: &str) -> Markup {
+    // HTML parsing normalizes literal CR/CRLF and replaces NUL. JSON escapes
+    // those code points before Maud performs the usual attribute escaping.
+    let encoded = value.contains(['\r', '\0']);
+    let transport = if encoded {
+        serde_json::to_string(value).expect("strings can be serialized")
+    } else {
+        value.to_owned()
+    };
     html! {
         button type="button" class="prism-copy prism-button prism-secondary"
-            data-copy-value=(value) aria-label=(format!("Copy {label}")) {
+            data-copy-value=(transport) data-copy-encoding=[encoded.then_some("json")] aria-label=(format!("Copy {label}")) {
             @if label == "DID" { "Copy DID" }
             @else {
                 svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true" {

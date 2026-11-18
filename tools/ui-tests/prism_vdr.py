@@ -1,18 +1,14 @@
 """VDR browser checks over real Resolver HTML, without production fixture routes."""
 
-import functools
-import http.server
 import json
 import os
-import shutil
-import threading
 import unittest
 from pathlib import Path
 
+from fixture_server import fixture_server
 from prism_shell import browser, evaluate
 
 FIXTURES = Path(os.environ["PRISM_VDR_FIXTURES"])
-ROOT = Path(__file__).resolve().parents[2]
 PORT = int(os.environ.get("PRISM_VDR_PORT", "18775"))
 URL = f"http://127.0.0.1:{PORT}"
 
@@ -20,23 +16,12 @@ URL = f"http://127.0.0.1:{PORT}"
 class PrismVdr(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        shutil.copytree(
-            ROOT / "bin/neoprism-node/assets", FIXTURES / "assets", dirs_exist_ok=True
-        )
-        cls.server = http.server.ThreadingHTTPServer(
-            ("127.0.0.1", PORT),
-            functools.partial(
-                http.server.SimpleHTTPRequestHandler, directory=str(FIXTURES)
-            ),
-        )
-        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.server = cls.enterClassContext(fixture_server(FIXTURES, PORT))
         browser("network", "route", "https://unpkg.com/*", "--abort")
 
     @classmethod
     def tearDownClass(cls) -> None:
         browser("close")
-        cls.server.shutdown()
-        cls.server.server_close()
 
     def setUp(self) -> None:
         browser("set", "viewport", "390", "900")

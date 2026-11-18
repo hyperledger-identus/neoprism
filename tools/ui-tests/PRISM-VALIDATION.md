@@ -8,11 +8,39 @@ tickets #372–380 were merged, verified and closed. Visual authority remains
 previews. [Shipped system and interaction contracts](../../docs/src/references/prism-ui.md)
 record tokens, responsive composition, safety boundaries and deliberate deviations.
 
-**Independent rendered review and two-axis Standards/Spec code review remain
-parent-owned and pending.** This record does not mark #381 complete. The exact
-final implementation SHA, portable receipt names and external evidence location
-are recorded in the implementer's handoff; reviewers must inspect the actual
-merged diff and rendered crops, not treat this implementation record as approval.
+**The three independent reviews at integration `0309ec3` are complete.** Standards
+reported one documented Pydantic breach and seven duplication findings; Spec
+reported one lossless-copy defect; rendered acceptance reported no material
+visual blocker. Their recovered summaries are in
+`.git/prism-run-artifacts/repair-context.md`; the earlier raw reports and images
+were lost with ephemeral session storage. They are not newly executed reviews.
+
+This replacement resumes the interrupted single repair pass, not another review
+round. All nine findings are addressed below. Parent verification and ticket
+closure remain separate: this record does not itself close #381. Durable repair
+logs, fixtures, renders, detector receipts, bundle and exact-SHA handoff live in
+`.git/prism-run-artifacts/review-repair/` in the common repository, not HOME/tmp.
+
+### Nine finding dispositions
+
+| Finding | Repair |
+| --- | --- |
+| Spec: captured CRLF/bare CR altered by HTML and textarea normalization | Central conditional JSON transport/decode; faithful text-node fallback with native full-selection copy |
+| Standards: unchecked external CLI envelope | Strict Pydantic envelope and failing-before-fix validation checks |
+| S1: duplicate browser/evaluate adapter | Shared session-parameterized `browser_adapter.Browser` |
+| S2: repeated fixture server lifecycle | Shared `fixture_server` context manager; specialized failure handlers stay local |
+| S3: repeated published-history recovery checks | Focused setup/assertion helpers; HTTP, malformed-200 and real timeout mechanisms remain explicit |
+| S4: repeated long-form identity fixture | Shared HTTP test-only constant/constructor |
+| S5: repeated section splitting | Shared test-only section helper with descriptive failures |
+| S6: repeated HTTP oneshot/body decoding | Reuse existing HTTP `get`; status assertions remain local |
+| S7: repeated chevron SVG | Shared render helper with identical visual markup |
+
+The copy regression first failed on real captured valid JSON containing CRLF,
+bare CR, Unicode and markup characters. Transport then passed before a separate
+manual-fallback regression exposed textarea normalization. Final tests compare
+native clipboard, fallback text, selection and native keyboard copy against the
+known original literal, including missing and denied async clipboard access.
+No existing assertions were weakened and no browser checks were skipped.
 
 ## Approved seams and integration findings
 
@@ -144,24 +172,29 @@ Stop only the servers you started. Browser suites close their owned sessions.
 | --- | --- |
 | Workspace tests, all features | Passed; 106 node tests, five opt-in exporters separately executed |
 | Workspace Clippy, all targets/all features | Passed with `-D warnings` |
-| Rustfmt | Passed |
-| Shell / shared copy / identity | 8 / 5 / 12 passed |
+| Rustfmt / changed Python Ruff / Pydantic boundary tests | Passed; two envelope tests include invalid response subcases |
+| Shell / shared copy / identity | 8 / 5 / 14 passed |
 | VDR / operations / outcomes | 4 / 5 / 13 passed |
 | Refresh / Explorer / cursor | 15 / 5 / 7 passed |
-| All nine browser suites | 74 passed, zero skips |
+| All nine browser suites | 76 passed, zero skips; fresh fixtures, serial native clipboard suites |
 | Nix-delivered shell | Eight additional browser checks passed |
 | Development + Nix assets | Required scripts/fonts/logo/licenses preserved; byte checks passed |
 | Mode/Scalar preservation | HTTP tests passed; generated API sources unchanged from review baseline |
 | Changed-file Ruff, Markdownlint, EditorConfig | Passed |
 | Repository-wide `just lint-text` | Existing vendored `.pi` failures; see below |
-| Final mechanical design detector | One run, 29 complete changed text/SVG UI targets; raw `[]`, exit 0 |
-| Independent rendered + Standards/Spec review | Pending, parent-owned |
+| Final mechanical design detector | One authorized post-repair run, 30 changed text/SVG UI targets; raw `[]`, exit 0 |
+| Independent rendered + Standards/Spec review | Completed at `0309ec3`; recovered findings repaired, parent merge verification remains |
 
 The detector target manifest includes changed shared shell, Resolver/Explorer
 renderers and tests, Tailwind entry, SVG, CSS and all four browser scripts.
-Binary fonts/licenses are verified by asset delivery instead. No rules were
-disabled and no pinned-design warnings were suppressed: this run emitted no
-findings. That mechanical result is not a visual review or accessibility proof.
+Binary fonts/licenses are verified by asset delivery instead. The prior
+pre-repair #381 detector returned `[]`, according to the recovered parent
+receipt, but its raw artifact was lost; it did not verify the repaired bytes.
+The one authorized final scan ran after all copy/icon changes. Its exact targets
+and hashes, command, raw output and exit code are preserved as
+`detector-{targets,command,raw,exit}.json` in the durable repair directory.
+No rules were disabled or suppressed. Neither scan is a visual review or
+accessibility proof.
 
 The full text-lint command reports **261 Markdown findings in 18 vendored skill
 files and 28 EditorConfig errors**, all under `.pi/skills/impeccable`. YAML and
@@ -170,58 +203,47 @@ checks; skills/config exclusions were not edited or suppressed.
 
 ## Rendered and accessibility evidence
 
-Evidence is external, under the handoff's `381-evidence` directory, not shipped
-as UI content. `renders/capture-index.json`, `references/crop-index.json` and the
-handoff crop index identify original captures, exact regions and pinned sources.
+Evidence provenance matters: the earlier independent rendered review inspected
+1440/390px entry, identity/actions/keys/evidence/services, VDR/operations,
+Explorer/pagination, expanded Sync, 320px long/pending/failure, copy fallback and
+opaque/recovery states. It found no blocking/material visual issue. Those raw
+images were lost with ephemeral HOME storage; the recovered report is not a
+claim that they remain available.
 
-- Actual 1440/390px entry, identity, expanded keys/contexts, VDR, operations,
-  Explorer list/pagination and expanded sync pages are captured. Additional
-  320px long VDR/pending/failure and 801px identity captures are retained.
-- `renders/*-identity-panel.png`, `*-entry-panel.png`, `*-key.png`, `*-context.png`,
-  `*-vdr.png`, `*-operation.png`, `*-sync.png`, `*-row.png` and `*-pagination.png`
-  are actual region renders, not enlarged thumbnails. Corresponding pinned
-  reference crops are retained in `references/` and were inspected directly.
-- Entry shell, typography, illumination, 20px mobile inset, data surfaces, row
-  density and copy/action geometry track the pinned world. Exact real content
-  changes heights: long-form input, multiple curves/services and full payloads
-  exceed the static illustrative examples. The single-line native DID field
-  scrolls horizontally rather than inserting mockup line breaks. Identifiers
-  remain contiguous selectable monospace text rather than splitting method and
-  suffix into separately styled blocks. Resolve has a stable 132px minimum to
-  accommodate the pending label. Native disclosures keep browser markers.
-- Cursor **snapshot supplied** is intentionally not a green proof-of-freshness
-  badge. Receipt text and explicit native refresh/retry controls add truthful
-  delivery state and document height absent from static specimens. API-result
-  notices/mockup footers/sample telemetry are deliberately omitted.
-- Scripted keyboard checks cover navigation/menus/Escape focus return, labelled
-  disclosures, separate copy/link targets, manual fallback, pending/recovery,
-  exact GET retry and no focus theft. Fresh script-blocked contexts cover native
-  GET navigation, disclosure access and recovery. IME events are synthetic only.
-- Expanded layouts test 320/390px, intermediate widths around 600/800/801px,
-  1024/1280/1440px and long data. CSS layout magnification is 200%; native browser
-  chrome zoom UI and physical-device text scaling were not certified.
-- Whole entry page and scoped feature axe 4.12.1 audits report zero violations;
-  manual rendered-region inspection complements them. Focus is a visible 2px
-  external ring. Visible controls are at least 48px high; independent row/icon
-  actions retain 48px squares. Status announcements are polite and do not steal
-  focus; reading order follows document order.
-- Computed representative contrast ratios: body/panel 15.46:1, secondary/panel
-  7.32:1, white/primary 5.13:1, secondary action/panel 6.17:1. These are samples,
-  not a claim that every possible browser/data/assistive-technology state was
-  manually certified. Feature axe audits additionally check displayed contrast.
-  The Explorer main-region audit leaves one contrast rule incomplete for five
-  gradient-backed labels (heading, subtitle, both page-count labels and list
-  note) at each size. This is not an automated pass: the full raw result is
-  retained in `renders/refresh-render-checks.json`. Regional inspection and the
-  solid-palette samples supplement it; parent independent review must retain
-  this limitation rather than treating zero violations as complete coverage.
-- Reduced motion is tested. Owned CDP emulation of reduced transparency/motion
-  verifies opaque shell/sidebar, no backdrop filter, no text filter and zero
-  transition duration (`preferences-contrast.json`). The shell suite also drops
-  the enhancement `@supports` block at the stylesheet capability boundary to
-  exercise shipped opaque defaults, not a different engine's implementation.
-- `pre-fix/cursor-wrapped-copy-390.png` and red/green logs preserve the integration
-  regression evidence. Final renders show the corrected icon targets.
+Recovered independent contrast sampling used the darkest background pixel in
+each whole label rectangle and WCAG sRGB math. Explorer heading contrast was
+11.12/10.43 at 1440/390px; intro 5.25/4.94; top page count 5.12/4.67; bottom count
+5.37/5.02; list note 5.34/5.03. Mobile resolver guidance/label samples were at
+least 4.59. These are sampled normal-text AA results, not universal certification.
+Axe's gradient-backed contrast rule remains incomplete, not an automated pass.
+
+Fresh **post-repair** receipts are retained under
+`.git/prism-run-artifacts/review-repair/repair-evidence/`:
+
+- `capture-index.json` identifies actual pages, selectors, widths and filenames.
+  Focused faithful fallback is captured at 320/390/1440px, with raw text,
+  readonly role/name, outline and overflow proofs plus accessibility snapshots.
+- `fallback-*-axe.json` retains scoped service-region audits: zero violations.
+  This does not certify browser/AT combinations or all gradients.
+- `{key,context,evidence}-icon-{390,1440}.png` shows the extracted chevrons in
+  their actual key, context and evidence regions. Shared helper markup is
+  unchanged. Fallback wrapping, focus ring and icon appearance were inspected
+  at native capture widths; no cosmetic redesign was made.
+- `logs/copy-transport-{red,green}.log` and
+  `logs/copy-fallback-{red,green2}.log` retain the two failing-before-fix
+  regressions and successful reruns. An intermediate green-attempt log records
+  a test-script global-const redeclaration error, subsequently corrected without
+  weakening any assertion. Final full-suite logs are authoritative.
+- `validate.sh`, all nine `logs/browser-*.log`, fresh exporters, workspace,
+  Clippy, format, envelope validation and development/Nix asset receipts are
+  durable. Five opt-in exporters still carry intentional Rust ignore markers
+  and are explicitly executed; browser suites have zero skips.
+
+The existing workflow suites cover native GET/no-script disclosures, exact
+values, keyboard focus, 48px targets, pending/recovery, responsive long content,
+reduced motion, CSS layout magnification and opaque capability fallback.
+Synthetic IME events, owned CDP preferences and deterministic clipboard denial
+are boundary tests, not OS/browser/AT interoperability certification.
 
 ## Honest browser / assistive-technology matrix
 
@@ -238,5 +260,5 @@ handoff crop index identify original captures, exact regions and pinned sources.
 
 No system packages were installed and no shared browser was updated. WCAG 2.2 AA
 is the validation target, **not a conformance certification** from axe plus
-keyboard checks. Outstanding browser/AT checks and parent reviews remain explicit
+keyboard checks. Outstanding browser/AT checks and parent merge verification remain explicit
 release/review limitations; they must not be silently converted into passes.

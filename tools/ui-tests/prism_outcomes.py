@@ -5,21 +5,19 @@ No production fixture routes or backend semantics are changed.
 """
 
 import contextlib
-import functools
 import http.server
 import json
 import os
-import shutil
 import threading
 import time
 import unittest
 from pathlib import Path
 from urllib.parse import parse_qs, urlencode, urlparse
 
+from fixture_server import fixture_server
 from prism_shell import browser, evaluate
 
 FIXTURES = Path(os.environ["PRISM_OUTCOME_FIXTURES"])
-ROOT = Path(__file__).resolve().parents[2]
 PORT = int(os.environ.get("PRISM_OUTCOME_PORT", "18777"))
 URL = f"http://127.0.0.1:{PORT}"
 INPUTS = json.loads((FIXTURES / "inputs.json").read_text())
@@ -86,20 +84,15 @@ class PrismOutcomes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        shutil.copytree(
-            ROOT / "bin/neoprism-node/assets", FIXTURES / "assets", dirs_exist_ok=True
+        cls.server = cls.enterClassContext(
+            fixture_server(FIXTURES, PORT, Handler, OutcomeServer)
         )
-        handler = functools.partial(Handler, directory=str(FIXTURES))
-        cls.server = OutcomeServer(("127.0.0.1", PORT), handler)
-        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
         browser("open")
         browser("network", "route", "**/htmx.org/**", "--abort")
 
     @classmethod
     def tearDownClass(cls) -> None:
         cls.server.hold.set()
-        cls.server.shutdown()
-        cls.server.server_close()
         browser("close")
 
     def setUp(self) -> None:
@@ -461,25 +454,14 @@ class PrismOutcomes(unittest.TestCase):
             evaluate("document.querySelectorAll('.prism-operation').length"), 0
         )
 
-    def test_http_failure_retains_prior_history_and_exact_retry_get_then_recovers(
-        self,
-    ) -> None:
+    def open_published_history(self) -> str:
         self.server.outcome = "published"
         browser("open", URL + "/resolver?" + urlencode({"did": INPUTS["published"]}))
         browser("focus", ".prism-operation > summary")
         browser("press", "Enter")
-        original = evaluate("document.querySelector('#operation-history').textContent")
-        self.server.failure = 503
-        browser("fill", "#did", INPUTS["invalid"])
-        browser("press", "Enter")
-        browser("wait", "--text", "Couldn’t load this resolution")
-        self.assertGreaterEqual(
-            evaluate(
-                "parseFloat(getComputedStyle(document.querySelector("
-                "'#request-failure-title')).fontSize)"
-            ),
-            18,
-        )
+        return evaluate("document.querySelector('#operation-history').textContent")
+
+    def assert_failed_history(self, original: str) -> None:
         self.assertFalse(
             evaluate("document.querySelector('button[type=submit]').disabled")
         )
@@ -496,6 +478,31 @@ class PrismOutcomes(unittest.TestCase):
             original,
         )
         self.assertTrue(evaluate("document.querySelector('.prism-operation').open"))
+
+    def assert_retry_controls_ready(self) -> None:
+        self.assertFalse(
+            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
+        )
+        self.assertFalse(
+            evaluate("document.querySelector('button[type=submit]').disabled")
+        )
+
+    def test_http_failure_retains_prior_history_and_exact_retry_get_then_recovers(
+        self,
+    ) -> None:
+        original = self.open_published_history()
+        self.server.failure = 503
+        browser("fill", "#did", INPUTS["invalid"])
+        browser("press", "Enter")
+        browser("wait", "--text", "Couldn’t load this resolution")
+        self.assertGreaterEqual(
+            evaluate(
+                "parseFloat(getComputedStyle(document.querySelector("
+                "'#request-failure-title')).fontSize)"
+            ),
+            18,
+        )
+        self.assert_failed_history(original)
         self.assertIn(
             "Previous result",
             evaluate("document.querySelector('#resolution-recovery').textContent"),
@@ -511,12 +518,7 @@ class PrismOutcomes(unittest.TestCase):
         browser("focus", "#resolution-retry")
         browser("press", "Enter")
         browser("wait", "--text", "Check the DID format")
-        self.assertFalse(
-            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
-        )
-        self.assertFalse(
-            evaluate("document.querySelector('button[type=submit]').disabled")
-        )
+        self.assert_retry_controls_ready()
         self.assertTrue(
             evaluate(
                 "document.querySelector('#did').getAttribute('aria-invalid') === 'true'"
@@ -533,31 +535,12 @@ class PrismOutcomes(unittest.TestCase):
     def test_malformed_success_retains_labelled_previous_result_and_can_retry(
         self,
     ) -> None:
-        self.server.outcome = "published"
-        browser("open", URL + "/resolver?" + urlencode({"did": INPUTS["published"]}))
-        browser("focus", ".prism-operation > summary")
-        browser("press", "Enter")
-        original = evaluate("document.querySelector('#operation-history').textContent")
+        original = self.open_published_history()
         self.server.malformed = True
         browser("fill", "#did", INPUTS["invalid"])
         browser("press", "Enter")
         browser("wait", "--text", "Couldn’t load this resolution")
-        self.assertFalse(
-            evaluate("document.querySelector('button[type=submit]').disabled")
-        )
-        self.assertFalse(evaluate("document.querySelector('#did').readOnly"))
-        self.assertFalse(
-            evaluate("document.querySelector('#resolution-pending').checkVisibility()")
-        )
-        self.assertEqual(evaluate("document.activeElement.id"), "did")
-        self.assertEqual(
-            evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
-        )
-        self.assertEqual(
-            evaluate("document.querySelector('#operation-history').textContent"),
-            original,
-        )
-        self.assertTrue(evaluate("document.querySelector('.prism-operation').open"))
+        self.assert_failed_history(original)
         self.assertTrue(
             evaluate("document.querySelector('#resolution-previous').checkVisibility()")
         )
@@ -582,12 +565,7 @@ class PrismOutcomes(unittest.TestCase):
         browser("focus", "#resolution-retry")
         browser("press", "Enter")
         browser("wait", "--text", OUTCOMES["invalid"])
-        self.assertFalse(
-            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
-        )
-        self.assertFalse(
-            evaluate("document.querySelector('button[type=submit]').disabled")
-        )
+        self.assert_retry_controls_ready()
         self.assertEqual(
             evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
         )
@@ -595,11 +573,7 @@ class PrismOutcomes(unittest.TestCase):
     def test_real_thirty_second_timeout_recovers_controls_previous_history_and_retry(
         self,
     ) -> None:
-        self.server.outcome = "published"
-        browser("open", URL + "/resolver?" + urlencode({"did": INPUTS["published"]}))
-        browser("focus", ".prism-operation > summary")
-        browser("press", "Enter")
-        original = evaluate("document.querySelector('#operation-history').textContent")
+        original = self.open_published_history()
         self.server.delayed = True
         browser("fill", "#did", INPUTS["invalid"])
         started = time.monotonic()
@@ -620,27 +594,10 @@ class PrismOutcomes(unittest.TestCase):
             elapsed = time.monotonic() - started
             self.assertGreaterEqual(elapsed, 29)
             self.assertLess(elapsed, 40)
-            self.assertFalse(
-                evaluate("document.querySelector('button[type=submit]').disabled")
-            )
-            self.assertFalse(evaluate("document.querySelector('#did').readOnly"))
-            self.assertFalse(
-                evaluate(
-                    "document.querySelector('#resolution-pending').checkVisibility()"
-                )
-            )
+            self.assert_failed_history(original)
             self.assertFalse(
                 evaluate("document.querySelector('form').hasAttribute('aria-busy')")
             )
-            self.assertEqual(evaluate("document.activeElement.id"), "did")
-            self.assertEqual(
-                evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
-            )
-            self.assertEqual(
-                evaluate("document.querySelector('#operation-history').textContent"),
-                original,
-            )
-            self.assertTrue(evaluate("document.querySelector('.prism-operation').open"))
             self.assertTrue(
                 evaluate(
                     "document.querySelector('#resolution-previous').checkVisibility()"
@@ -665,12 +622,7 @@ class PrismOutcomes(unittest.TestCase):
         browser("focus", "#resolution-retry")
         browser("press", "Enter")
         browser("wait", "--text", OUTCOMES["invalid"])
-        self.assertFalse(
-            evaluate("document.querySelector('#resolution-recovery').checkVisibility()")
-        )
-        self.assertFalse(
-            evaluate("document.querySelector('button[type=submit]').disabled")
-        )
+        self.assert_retry_controls_ready()
         self.assertEqual(
             evaluate("document.querySelector('#did').value"), INPUTS["invalid"]
         )

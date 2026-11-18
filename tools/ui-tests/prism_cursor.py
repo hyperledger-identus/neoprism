@@ -16,6 +16,7 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from browser_adapter import Browser
 from clipboard_permissions import grant_clipboard_permissions
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -32,21 +33,8 @@ MODE = "supplied"
 RELEASE = threading.Event()
 
 
-def browser(*args: str) -> dict[str, Any]:
-    result = subprocess.run(
-        ["agent-browser", "--session", SESSION, "--json", *args],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    payload = json.loads(result.stdout)
-    if not payload["success"]:
-        raise AssertionError(payload)
-    return payload["data"]
-
-
-def evaluate(script: str) -> Any:
-    return browser("eval", script)["result"]
+browser = Browser(SESSION)
+evaluate = browser.evaluate
 
 
 class Handler(SimpleHTTPRequestHandler):

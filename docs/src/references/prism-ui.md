@@ -63,8 +63,11 @@ logo and font licenses ship locally in both development and Nix asset bundles.
   `type="button"`, `data-copy-value`, descriptive accessible name and
   `prism-copy`. Delegation also handles swapped results. A successful write
   announces polite feedback without moving focus. Denied/missing clipboard
-  access supplies an adjacent labelled readonly textarea with the exact value;
-  readers can Tab to it and select manually. Values remain selectable without
+  access supplies an adjacent labelled readonly field; readers can Tab to it
+  and select manually. CR/NUL values use JSON-string attribute transport before
+  decoding. Their fallback uses literal text nodes rather than newline-normalizing
+  textarea setters, with scoped select-all and exact full-selection native copy.
+  Ordinary values retain textarea fallback. Values remain selectable without
   JavaScript. Copy controls do not become nested links.
 
 ## Resolver
@@ -157,11 +160,16 @@ No fixture routes/data, wallet/editor workflow, resolution/indexing/storage
 semantic changes, generated Scalar redesign or embedded-executable asset work
 are part of Prism. Runtime asset distribution remains the existing model.
 
-## Validation and remaining review
+## Validation and review repair
 
 See [the reproducible validation record](https://github.com/hyperledger-identus/neoprism/blob/main/tools/ui-tests/PRISM-VALIDATION.md)
 for commands, seams, browser/assistive-technology limitations and evidence names.
 Automated axe and keyboard checks are evidence toward WCAG 2.2 AA, not a WCAG
-certification. Independent rendered review and two-axis code review are
-**parent-owned and pending**; integration ticket #381 is not complete until those
-reviews and any required repairs have been independently verified.
+certification. The independent Standards review found one Pydantic validation
+breach and seven duplication findings; the independent Spec review found one
+lossless-copy defect. All nine are addressed in the single #381 repair pass.
+Independent rendered acceptance found no material visual blocker. These recovered
+reports concern integration `0309ec3`; fresh post-repair fallback/icon captures,
+76 browser checks plus eight Nix-shell checks, and the final mechanical scan are
+separate evidence. The parent still owns merge verification and ticket closure;
+unavailable browsers and real assistive technologies are not certified.

@@ -1,4 +1,6 @@
 //! Test-only rendering fixtures; never mounted by the application router.
+use identus_did_prism::protocol::resolver::resolve_unpublished;
+
 use super::*;
 use crate::app::service::error::{InvalidDid, ResolutionError};
 

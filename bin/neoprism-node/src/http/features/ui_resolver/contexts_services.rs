@@ -3,6 +3,7 @@ use maud::{Markup, html};
 use serde_json::{Value, json};
 
 use super::identity::copy;
+use crate::http::components::disclosure_icon;
 
 pub(super) fn contexts(contexts: &[String]) -> Markup {
     html! {
@@ -133,16 +134,6 @@ fn field(label: &str, value: &str, copy_label: &str) -> Markup {
         div class="prism-data-field" {
             dt { (label) }
             dd { pre { code { (value) } } (copy(copy_label, value)) }
-        }
-    }
-}
-
-fn disclosure_icon() -> Markup {
-    html! {
-        span class="prism-disclosure-icon" aria-hidden="true" {
-            svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" {
-                path d="m6 9 6 6 6-6" {}
-            }
         }
     }
 }

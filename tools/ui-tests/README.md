@@ -45,9 +45,22 @@ The reusable copy contract is a `type="button"` element with `class="prism-copy"
 `data-copy-value` containing the complete original and a descriptive `aria-label`.
 Keep the displayed value selectable. `copy.js` delegates events (including later
 HTMX content), announces polite feedback without moving focus, and inserts an
-adjacent labelled readonly textarea if clipboard writing fails. The enhancement
-marks its parent `.prism-copy-container` to wrap flex children; the fallback spans
-grid columns. This also supports constrained cursor and identity consumers.
+adjacent labelled readonly field if clipboard writing fails. Values containing
+CR or NUL use JSON-string transport (`data-copy-encoding="json"`) to survive HTML
+parsing, then decode before copying. Ordinary values retain literal transport.
+Because textarea setters also normalize newlines, CR/NUL fallback uses a
+focusable readonly text region with exact text nodes, local select-all and a
+native copy-event handler for complete selection. Other values use a textarea.
+The enhancement marks its parent `.prism-copy-container` to wrap flex children;
+the fallback spans grid columns. This also supports constrained consumers.
+
+`browser_adapter.py` validates the external CLI envelope with strict Pydantic
+types and scopes calls to the owning session. Run its boundary checks with
+`python tools/ui-tests/test_browser_adapter.py -v`. Fixture suites share an
+owned server context manager; specialized failure handlers stay in their suites.
+The identity suite includes valid captured JSON with CRLF, bare CR, Unicode and
+markup characters: native clipboard, denied/missing access, exact selectable
+fallback and native keyboard manual copy are compared against a known literal.
 
 Run the standalone copy browser fixtures:
 

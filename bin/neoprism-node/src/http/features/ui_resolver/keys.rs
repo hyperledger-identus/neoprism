@@ -3,6 +3,7 @@ use identus_did_prism::did::operation::{KeyUsage, PublicKey, PublicKeyData};
 use maud::{Markup, html};
 
 use super::identity::copy;
+use crate::http::components::disclosure_icon;
 
 pub(super) fn public_keys(keys: &[PublicKey]) -> Markup {
     let mut sorted = keys.iter().collect::<Vec<_>>();
@@ -49,11 +50,7 @@ fn key_disclosure(key: &PublicKey) -> Markup {
                     code { (id) }
                     span class="prism-muted" { (friendly_usage) " · " (jwk.crv) }
                 }
-                span class="prism-disclosure-icon" aria-hidden="true" {
-                    svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" {
-                        path d="m6 9 6 6 6-6" {}
-                    }
-                }
+                (disclosure_icon())
             }
             dl class="prism-key-fields" {
                 (field("ID", Some(&id), &format!("key {id} ID")))

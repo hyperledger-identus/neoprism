@@ -2,14 +2,13 @@ use std::io::Write;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 
+use identus_did_prism::did::PrismDid;
 use identus_did_prism::did::operation::{OperationParameters, PublicKey, Service};
-use identus_did_prism::did::{DidState, PrismDid};
 use identus_did_prism::dlt::{BlockMetadata, OperationMetadata, TxId};
 use identus_did_prism::prelude::SignedPrismOperation;
 use identus_did_prism::proto::prism_ssi::public_key::Key_data;
 use identus_did_prism::proto::prism_ssi::{self, KeyUsage};
 use identus_did_prism::protocol::error::ProcessError;
-use identus_did_prism::protocol::resolver::resolve_unpublished;
 
 #[path = "outcome_tests.rs"]
 mod outcome_tests;
@@ -388,16 +387,7 @@ fn evidence_history() -> History {
 }
 
 use super::views;
-
-// Deterministic fixture only: never offered as a production sample.
-const LONG_FORM: &str = "did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU";
-
-fn local_identity() -> (PrismDid, DidState) {
-    let did: PrismDid = LONG_FORM.parse().unwrap();
-    let PrismDid::LongForm(long) = &did else { unreachable!() };
-    let state = resolve_unpublished(long.operation().unwrap()).unwrap();
-    (did, state)
-}
+use crate::http::test_support::{LONG_FORM, local_identity, section};
 
 #[test]
 #[ignore = "exports test-only operation fixtures for the browser seam"]
@@ -510,8 +500,7 @@ fn services_expose_complete_types_and_uri_object_array_shapes_inline() {
     let (did, mut state) = local_identity();
     state.services = detail_services();
     let body = views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string();
-    let services = body.split("id=\"services\"").nth(1).expect("services section");
-    let services = services.split("</section>").next().unwrap();
+    let services = section(&body, "services");
     for expected in [
         "Services · 3",
         "<details",
@@ -574,8 +563,7 @@ fn service_captured_fields_keep_spacing_order_and_exact_raw_typed_representation
 fn empty_contexts_and_services_are_explicit_without_empty_disclosures() {
     let body = views::resolve(None, LONG_FORM, Ok(local_identity()), vec![]).into_string();
     for (id, message) in [("contexts", "No contexts"), ("services", "No services")] {
-        let section = body.split(&format!("id=\"{id}\"")).nth(1).expect("section");
-        let section = section.split("</section>").next().unwrap();
+        let section = section(&body, id);
         assert!(section.contains(message));
         assert!(!section.contains("<details"));
         assert!(!section.contains("data-copy-value"));
@@ -590,8 +578,7 @@ fn contexts_keep_supplied_order_exact_copy_values_and_native_disclosure() {
         "https://example.test/a".into(),
     ];
     let body = views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string();
-    let contexts = body.split("id=\"contexts\"").nth(1).expect("contexts section");
-    let contexts = contexts.split("</section>").next().unwrap();
+    let contexts = section(&body, "contexts");
     assert!(contexts.contains("<details"));
     assert!(contexts.contains("<summary"));
     assert!(contexts.contains("Contexts · 2"));
@@ -667,6 +654,26 @@ fn evidence_uses_one_latest_applied_operation_not_rejected_history_or_chain_tip(
 fn export_identity_browser_fixtures() {
     let dir = std::env::var("PRISM_FIXTURE_DIR").expect("set PRISM_FIXTURE_DIR outside the checkout");
     std::fs::create_dir_all(&dir).unwrap();
+    // Valid captured JSON whitespace includes both CRLF and bare CR; do not normalize it.
+    let (did, mut state) = local_identity();
+    state.services = vec![
+        Service::parse(
+            &prism_ssi::Service {
+                id: "lossless".into(),
+                type_: "Profile".into(),
+                service_endpoint: "{\r\n\"uri\":\"https://example.test/雪?x=1&y=<tag>\",\r\"label\":\"café 🧪\"\r\n}"
+                    .into(),
+                ..Default::default()
+            },
+            &OperationParameters::v1(),
+        )
+        .unwrap(),
+    ];
+    std::fs::write(
+        std::path::Path::new(&dir).join("lossless.html"),
+        views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string(),
+    )
+    .unwrap();
     for (name, published, empty) in [
         ("indexed", true, false),
         ("local", false, false),

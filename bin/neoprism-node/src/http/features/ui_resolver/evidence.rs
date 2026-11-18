@@ -5,6 +5,7 @@ use identus_did_prism::protocol::error::ProcessError;
 use maud::{Markup, html};
 
 use super::identity::copy;
+use crate::http::components::disclosure_icon;
 
 pub(super) fn ledger(
     state: &DidState,
@@ -25,11 +26,7 @@ pub(super) fn ledger(
         details id="ledger-evidence" class="prism-panel prism-evidence" {
             summary {
                 h2 { "Ledger evidence" }
-                span class="prism-disclosure-icon" aria-hidden="true" {
-                    svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" {
-                        path d="m6 9 6 6 6-6" {}
-                    }
-                }
+                (disclosure_icon())
             }
             div class="prism-evidence-body" {
                 @match selected {

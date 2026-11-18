@@ -4,18 +4,9 @@ use std::rc::Rc;
 use identus_apollo::hash::Sha256Digest;
 use identus_did_prism::did::operation::{StatusListData, StorageData};
 use identus_did_prism::did::{DidState, PrismDid, StorageState};
-use identus_did_prism::protocol::resolver::resolve_unpublished;
 
 use super::views;
-
-const LONG_FORM: &str = "did:prism:9b5118411248d9663b6ab15128fba8106511230ff654e7514cdcc4ce919bde9b:Cj8KPRI7CgdtYXN0ZXIwEAFKLgoJc2VjcDI1NmsxEiEDHpf-yhIns-LP3tLvA8icC5FJ1ZlBwbllPtIdNZ3q0jU";
-
-fn fixture() -> (PrismDid, DidState) {
-    let did: PrismDid = LONG_FORM.parse().unwrap();
-    let PrismDid::LongForm(long) = &did else { unreachable!() };
-    let state = resolve_unpublished(long.operation().unwrap()).unwrap();
-    (did, state)
-}
+use crate::http::test_support::{LONG_FORM, local_identity as fixture, section};
 
 fn render(did: PrismDid, state: DidState) -> String {
     views::resolve(None, LONG_FORM, Ok((did, state)), vec![]).into_string()
@@ -34,13 +25,7 @@ fn vdr_bytes_keep_complete_hashes_hex_data_and_captured_raw_in_a_native_disclosu
     let (did, mut state) = fixture();
     state.storage = vec![entry(0x12, 0xab, StorageData::Bytes(vec![0, 10, 128, 255]))];
     let body = render(did, state);
-    let section = body
-        .split("id=\"vdr-entries\"")
-        .nth(1)
-        .unwrap()
-        .split("</section>")
-        .next()
-        .unwrap();
+    let section = section(&body, "vdr-entries");
     for expected in [
         "Initial operation hash",
         "Last operation hash",
@@ -75,13 +60,7 @@ fn vdr_status_list_keeps_numeric_state_name_and_detail_without_interpretation() 
         }),
     )];
     let body = render(did, state);
-    let section = body
-        .split("id=\"vdr-entries\"")
-        .nth(1)
-        .unwrap()
-        .split("</section>")
-        .next()
-        .unwrap();
+    let section = section(&body, "vdr-entries");
     for expected in [
         "StatusList",
         "<dt>State</dt>",
@@ -109,13 +88,7 @@ fn vdr_ipfs_is_complete_selectable_text_not_an_automatic_external_request() {
         StorageData::Ipfs("bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi".into()),
     )];
     let body = render(did, state);
-    let section = body
-        .split("id=\"vdr-entries\"")
-        .nth(1)
-        .unwrap()
-        .split("</section>")
-        .next()
-        .unwrap();
+    let section = section(&body, "vdr-entries");
     assert!(section.contains("<dt>IPFS value</dt>"));
     assert!(section.contains("data-copy-value=\"bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi\""));
     assert!(section.contains("Ipfs(&quot;bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi&quot;)"));
@@ -140,13 +113,7 @@ fn vdr_empty_typed_values_are_explicit_but_copy_the_actual_empty_string() {
         entry(2, 2, StorageData::Ipfs(String::new())),
     ];
     let body = render(did, state);
-    let section = body
-        .split("id=\"vdr-entries\"")
-        .nth(1)
-        .unwrap()
-        .split("</section>")
-        .next()
-        .unwrap();
+    let section = section(&body, "vdr-entries");
     assert_eq!(section.matches(">Empty</span>").count(), 4);
     assert_eq!(section.matches("data-copy-value=\"\"").count(), 4);
     assert!(section.contains("data-copy-value=\"-9223372036854775808\""));
@@ -158,13 +125,12 @@ fn vdr_empty_typed_values_are_explicit_but_copy_the_actual_empty_string() {
 async fn vdr_empty_is_delivered_by_the_real_get_route_without_fixture_endpoints() {
     use std::sync::Arc;
 
-    use axum::body::{Body, to_bytes};
-    use axum::http::{Request, StatusCode};
+    use axum::http::StatusCode;
     use node_storage::SqliteDb;
-    use tower::ServiceExt;
 
     use crate::IndexerUiState;
     use crate::app::service::PrismDidService;
+    use crate::http::tests::get;
 
     let db = SqliteDb::connect("sqlite::memory:").await.unwrap();
     db.migrate().await.unwrap();
@@ -172,27 +138,13 @@ async fn vdr_empty_is_delivered_by_the_real_get_route_without_fixture_endpoints(
         prism_did_service: PrismDidService::new(Arc::new(db)),
         dlt_source: None,
     });
-    let response = app
-        .clone()
-        .oneshot(
-            Request::builder()
-                .uri(format!("/resolver?did={LONG_FORM}"))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    let body = String::from_utf8(body.to_vec()).unwrap();
+    let (status, body) = get(app.clone(), &format!("/resolver?did={LONG_FORM}")).await;
+    assert_eq!(status, StatusCode::OK);
     assert!(body.contains("No VDR entries"));
     assert!(body.contains("aria-labelledby=\"vdr-title\""));
     assert!(body.contains("/assets/copy.js"));
-    let response = app
-        .oneshot(Request::builder().uri("/vdr.html").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+    let (status, _) = get(app, "/vdr.html").await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
 }
 
 #[test]
@@ -253,8 +205,7 @@ fn export_vdr_browser_fixtures() {
 fn vdr_empty_is_explicit_compact_and_has_no_empty_disclosures() {
     let (did, state) = fixture();
     let body = render(did, state);
-    let section = body.split("id=\"vdr-entries\"").nth(1).expect("labelled VDR section");
-    let section = section.split("</section>").next().unwrap();
+    let section = section(&body, "vdr-entries");
     assert!(section.contains("No VDR entries"));
     assert!(!section.contains("<details"));
     assert!(!section.contains("data-copy-value"));
