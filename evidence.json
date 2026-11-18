@@ -1,0 +1,122 @@
+[
+  {
+    "file": "resolver-entry-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/resolver",
+    "rows": 0,
+    "width": 1440
+  },
+  {
+    "file": "resolver-entry-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/resolver",
+    "rows": 0,
+    "width": 390
+  },
+  {
+    "file": "explorer-waiting-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/explorer",
+    "rows": 0,
+    "width": 1440
+  },
+  {
+    "file": "explorer-waiting-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/explorer",
+    "rows": 0,
+    "width": 390
+  },
+  {
+    "file": "resolver-identity-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/resolver?did=did:prism:4e7b56cced2aaa77061fde0b6646b3e1f0b07d4fd1af72d336dd577507931130",
+    "rows": 0,
+    "width": 1440
+  },
+  {
+    "file": "resolver-identity-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/resolver?did=did:prism:4e7b56cced2aaa77061fde0b6646b3e1f0b07d4fd1af72d336dd577507931130",
+    "rows": 0,
+    "width": 390
+  },
+  {
+    "file": "operation-history-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/resolver?did=did:prism:4e7b56cced2aaa77061fde0b6646b3e1f0b07d4fd1af72d336dd577507931130#operation-history",
+    "rows": 0,
+    "width": 1440
+  },
+  {
+    "file": "operation-history-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/resolver?did=did:prism:4e7b56cced2aaa77061fde0b6646b3e1f0b07d4fd1af72d336dd577507931130#operation-history",
+    "rows": 0,
+    "width": 390
+  },
+  {
+    "file": "explorer-populated-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/explorer",
+    "rows": 100,
+    "width": 1440
+  },
+  {
+    "file": "explorer-populated-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/explorer",
+    "rows": 100,
+    "width": 390
+  },
+  {
+    "file": "explorer-technical-desktop.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 1440,
+    "documentWidth": 1440,
+    "height": 1000,
+    "path": "/explorer",
+    "rows": 100,
+    "width": 1440
+  },
+  {
+    "file": "explorer-technical-mobile.png",
+    "source_commit": "ac9c72d1d1b25727fbfe8c2c2af99a9c65fb9ad9",
+    "clientWidth": 390,
+    "documentWidth": 390,
+    "height": 844,
+    "path": "/explorer",
+    "rows": 100,
+    "width": 390
+  }
+]
