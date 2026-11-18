@@ -4,18 +4,14 @@ No production fixture route. Run export_operation_browser_fixtures with
 PRISM_OPERATION_FIXTURES set to an external directory, then just build-assets.
 """
 
-import functools
-import http.server
 import os
-import shutil
-import threading
 import unittest
 from pathlib import Path
 
+from fixture_server import fixture_server
 from prism_shell import browser, evaluate
 
 FIXTURES = Path(os.environ["PRISM_OPERATION_FIXTURES"])
-ROOT = Path(__file__).resolve().parents[2]
 PORT = int(os.environ.get("PRISM_OPERATION_PORT", "18776"))
 URL = f"http://127.0.0.1:{PORT}"
 
@@ -23,22 +19,12 @@ URL = f"http://127.0.0.1:{PORT}"
 class PrismOperations(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        shutil.copytree(
-            ROOT / "bin/neoprism-node/assets", FIXTURES / "assets", dirs_exist_ok=True
-        )
-        handler = functools.partial(
-            http.server.SimpleHTTPRequestHandler, directory=str(FIXTURES)
-        )
-        cls.server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), handler)
-        cls.thread = threading.Thread(target=cls.server.serve_forever, daemon=True)
-        cls.thread.start()
+        cls.server = cls.enterClassContext(fixture_server(FIXTURES, PORT))
         browser("open")
         browser("network", "route", "**/htmx.org/**", "--abort")
 
     @classmethod
     def tearDownClass(cls) -> None:
-        cls.server.shutdown()
-        cls.server.server_close()
         browser("close")
 
     def setUp(self) -> None:

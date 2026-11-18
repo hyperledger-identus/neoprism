@@ -1,13 +1,12 @@
 use std::path::Path;
 use std::sync::Arc;
 
-use axum::body::{Body, to_bytes};
-use axum::http::{Request, StatusCode};
+use axum::http::StatusCode;
 use identus_did_prism::dlt::{DltCursor, NetworkIdentifier};
 use node_storage::SqliteDb;
-use tower::ServiceExt;
 
 use crate::app::service::PrismDidService;
+use crate::http::tests::get;
 use crate::{DltSourceState, IndexerUiState, RunMode};
 
 async fn cursor_response(cursor: Option<DltCursor>, uri: &str) -> String {
@@ -26,13 +25,9 @@ async fn cursor_response(cursor: Option<DltCursor>, uri: &str) -> String {
             cursor_rx: tokio::sync::watch::channel(cursor).1,
         }),
     });
-    let response = app
-        .oneshot(Request::builder().uri(uri).body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-    assert_eq!(response.status(), StatusCode::OK);
-    let bytes = to_bytes(response.into_body(), usize::MAX).await.unwrap();
-    String::from_utf8(bytes.to_vec()).unwrap()
+    let (status, body) = get(app, uri).await;
+    assert_eq!(status, StatusCode::OK);
+    body
 }
 
 fn supplied_cursor() -> DltCursor {

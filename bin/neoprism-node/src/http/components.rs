@@ -4,6 +4,16 @@ use maud::{DOCTYPE, Markup, html};
 use crate::VERSION;
 use crate::http::urls;
 
+pub(super) fn disclosure_icon() -> Markup {
+    html! {
+        span class="prism-disclosure-icon" aria-hidden="true" {
+            svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" {
+                path d="m6 9 6 6 6-6" {}
+            }
+        }
+    }
+}
+
 /// Shared Prism chrome for the indexer UI. Submitter-only mode does not mount these pages.
 pub fn page_layout(title: &str, network: Option<NetworkIdentifier>, body: Markup) -> Markup {
     html! {

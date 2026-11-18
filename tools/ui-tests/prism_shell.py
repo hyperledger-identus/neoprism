@@ -6,12 +6,12 @@ Run inside nix develop after just build-assets and cargo build -p neoprism-node:
 Requires agent-browser and Chromium. Uses a named, isolated browser session.
 """
 
-import json
 import os
 import subprocess
 import unittest
-from typing import Any
 from urllib.parse import parse_qs, urlparse
+
+from browser_adapter import Browser
 
 BASE_URL = os.environ.get("PRISM_TEST_URL", "http://127.0.0.1:18772")
 SESSION = (
@@ -31,21 +31,8 @@ SESSION = (
 )
 
 
-def browser(*args: str) -> dict[str, Any]:
-    result = subprocess.run(
-        ["agent-browser", "--session", SESSION, "--json", *args],
-        check=True,
-        capture_output=True,
-        text=True,
-    )
-    payload = json.loads(result.stdout)
-    if not payload["success"]:
-        raise AssertionError(payload)
-    return payload["data"]
-
-
-def evaluate(script: str) -> Any:
-    return browser("eval", script)["result"]
+browser = Browser(SESSION)
+evaluate = browser.evaluate
 
 
 class PrismShell(unittest.TestCase):
